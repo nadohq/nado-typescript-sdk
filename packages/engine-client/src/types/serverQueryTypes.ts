@@ -14,32 +14,14 @@ export interface EngineServerNoncesParams {
 
 export interface EngineServerSubaccountInfoQueryParams {
   subaccount: string;
-  txns?: Array<
-    | {
-        mint_lp: {
-          product_id: number;
-          subaccount: string;
-          amount_base: string;
-          quote_amount_low: string;
-          quote_amount_high: string;
-        };
-      }
-    | {
-        burn_lp: {
-          product_id: number;
-          subaccount: string;
-          amount_lp: string;
-        };
-      }
-    | {
-        apply_delta: {
-          product_id: number;
-          subaccount: string;
-          amount_delta: string;
-          v_quote_delta: string;
-        };
-      }
-  >;
+  txns?: Array<{
+    apply_delta: {
+      product_id: number;
+      subaccount: string;
+      amount_delta: string;
+      v_quote_delta: string;
+    };
+  }>;
 }
 
 export interface EngineServerIsolatedPositionsQueryParams {
@@ -109,13 +91,6 @@ export interface EngineServerMaxOrderSizeQueryParams {
   reduce_only: string | null;
 }
 
-export interface EngineServerMaxMintLpQueryParams {
-  sender: string;
-  product_id: number;
-  // If not given, engine defaults to true (leverage/borrow enabled)
-  spot_leverage: string | null;
-}
-
 export interface EngineServerLinkedSignerParams {
   subaccount: string;
 }
@@ -138,7 +113,6 @@ export interface EngineServerQueryRequestByType {
   market_liquidity: EngineServerMarketLiquidityQueryParams;
   market_price: EngineServerMarketPriceQueryParams;
   market_prices: EngineServerMarketPricesQueryParams;
-  max_lp_mintable: EngineServerMaxMintLpQueryParams;
   max_vlp_mintable: EngineServerMaxMintVlpQueryParams;
   max_order_size: EngineServerMaxOrderSizeQueryParams;
   max_withdrawable: EngineServerMaxWithdrawableQueryParams;
@@ -328,11 +302,6 @@ export interface EngineServerMaxWithdrawableResponse {
 
 export type EngineServerTimeResponse = number;
 
-export interface EngineServerMaxMintLpResponse {
-  max_base_amount: string;
-  max_quote_amount: string;
-}
-
 export interface EngineServerIpBlockResponse {
   blocked: boolean;
   reason: string;
@@ -377,7 +346,6 @@ export interface EngineServerQueryResponseByType {
   market_liquidity: EngineServerMarketLiquidityResponse;
   market_price: EngineServerMarketPriceResponse;
   market_prices: EngineServerMarketPricesResponse;
-  max_lp_mintable: EngineServerMaxMintLpResponse;
   max_vlp_mintable: EngineServerMaxMintVlpResponse;
   max_order_size: EngineServerMaxOrderSizeResponse;
   max_withdrawable: EngineServerMaxWithdrawableResponse;

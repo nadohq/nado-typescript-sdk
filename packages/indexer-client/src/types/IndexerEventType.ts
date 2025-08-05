@@ -4,8 +4,6 @@ export type IndexerEventType =
   | 'withdraw_collateral'
   | 'settle_pnl'
   | 'match_orders'
-  | 'mint_lp'
-  | 'burn_lp'
   | 'transfer_quote'
   | 'mint_vlp'
   | 'burn_vlp';

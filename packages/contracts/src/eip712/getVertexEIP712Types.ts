@@ -23,26 +23,6 @@ export function getVertexEIP712Types(
           { name: 'nonce', type: 'uint64' },
         ],
       };
-    case 'mint_lp':
-      return {
-        MintLp: [
-          { name: 'sender', type: 'bytes32' },
-          { name: 'productId', type: 'uint32' },
-          { name: 'amountBase', type: 'uint128' },
-          { name: 'quoteAmountLow', type: 'uint128' },
-          { name: 'quoteAmountHigh', type: 'uint128' },
-          { name: 'nonce', type: 'uint64' },
-        ],
-      };
-    case 'burn_lp':
-      return {
-        BurnLp: [
-          { name: 'sender', type: 'bytes32' },
-          { name: 'productId', type: 'uint32' },
-          { name: 'amount', type: 'uint128' },
-          { name: 'nonce', type: 'uint64' },
-        ],
-      };
     case 'place_order':
       return {
         Order: [

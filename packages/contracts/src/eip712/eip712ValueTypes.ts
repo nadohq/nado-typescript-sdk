@@ -1,7 +1,6 @@
 import { BigDecimalish } from '@vertex-protocol/utils';
 import { Hex } from 'viem';
 import {
-  EIP712BurnLpParams,
   EIP712BurnVlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
@@ -9,7 +8,6 @@ import {
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
-  EIP712MintLpParams,
   EIP712MintVlpParams,
   EIP712OrderParams,
   EIP712TransferQuoteParams,
@@ -25,10 +23,6 @@ type WithEIP712Sender<
 
 export type EIP712WithdrawCollateralValues =
   WithEIP712Sender<EIP712WithdrawCollateralParams>;
-
-export type EIP712MintLpValues = WithEIP712Sender<EIP712MintLpParams>;
-
-export type EIP712BurnLpValues = WithEIP712Sender<EIP712BurnLpParams>;
 
 export type EIP712LiquidateSubaccountValues = Omit<
   WithEIP712Sender<EIP712LiquidateSubaccountParams>,
@@ -79,7 +73,6 @@ export type EIP712BurnVlpValues = WithEIP712Sender<EIP712BurnVlpParams>;
  * All possible requests to be signed, to the EIP712 value interface
  */
 export interface SignableRequestTypeToEIP712Values {
-  burn_lp: EIP712BurnLpValues;
   burn_vlp: EIP712BurnVlpValues;
   cancel_orders: EIP712OrderCancellationValues;
   cancel_product_orders: EIP712ProductOrdersCancellationValues;
@@ -87,7 +80,6 @@ export interface SignableRequestTypeToEIP712Values {
   link_signer: EIP712LinkSignerValues;
   liquidate_subaccount: EIP712LiquidateSubaccountValues;
   list_trigger_orders: EIP712ListTriggerOrdersValues;
-  mint_lp: EIP712MintLpValues;
   mint_vlp: EIP712MintVlpValues;
   place_isolated_order: EIP712IsolatedOrderValues;
   place_order: EIP712OrderValues;

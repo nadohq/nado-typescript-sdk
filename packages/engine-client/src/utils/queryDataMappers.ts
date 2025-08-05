@@ -109,9 +109,6 @@ export function mapEngineServerSpotProduct(
         product.risk.short_weight_maintenance_x18,
       ),
       tokenAddr: product.config.token,
-      totalLpBaseAmount: toBigDecimal(product.lp_state.base.amount),
-      totalLpQuoteAmount: toBigDecimal(product.lp_state.quote.amount),
-      totalLpSupply: toBigDecimal(product.lp_state.supply),
     },
   };
 }
@@ -138,9 +135,6 @@ export function mapEngineServerPerpProduct(
         product.risk.short_weight_maintenance_x18,
       ),
       openInterest: toBigDecimal(product.state.open_interest),
-      totalLpBaseAmount: toBigDecimal(product.lp_state.base),
-      totalLpQuoteAmount: toBigDecimal(product.lp_state.quote),
-      totalLpSupply: toBigDecimal(product.lp_state.supply),
       cumulativeFundingLong: removeDecimals(
         product.state.cumulative_funding_long_x18,
       ),
@@ -176,7 +170,6 @@ export function mapSubaccountSummary(
 
     balances.push({
       amount: toBigDecimal(spotBalance.balance.amount),
-      lpAmount: toBigDecimal(spotBalance.lp_balance.amount),
       healthContributions: mapEngineServerBalanceHealthContributions(
         baseResponse.health_contributions[spotBalance.product_id],
       ),
@@ -194,7 +187,6 @@ export function mapSubaccountSummary(
 
     balances.push({
       amount: toBigDecimal(perpBalance.balance.amount),
-      lpAmount: toBigDecimal(perpBalance.lp_balance.amount),
       vQuoteBalance: toBigDecimal(perpBalance.balance.v_quote_balance),
       healthContributions: mapEngineServerBalanceHealthContributions(
         baseResponse.health_contributions[perpBalance.product_id],
@@ -242,7 +234,6 @@ export function mapEngineServerIsolatedPositions(
       },
       baseBalance: {
         amount: toBigDecimal(perpBalance.balance.amount),
-        lpAmount: toBigDecimal(perpBalance.lp_balance.amount),
         vQuoteBalance: toBigDecimal(perpBalance.balance.v_quote_balance),
         // Health contributions === healths for an isolated position
         healthContributions: {
@@ -254,7 +245,6 @@ export function mapEngineServerIsolatedPositions(
       },
       quoteBalance: {
         amount: toBigDecimal(quoteBalance.balance.amount),
-        lpAmount: toBigDecimal(quoteBalance.lp_balance.amount),
         healthContributions: {
           initial: toBigDecimal(position.quote_healths[0]),
           maintenance: toBigDecimal(position.quote_healths[1]),

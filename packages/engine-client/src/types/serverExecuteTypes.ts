@@ -1,10 +1,8 @@
 import {
-  EIP712BurnLpValues,
   EIP712BurnVlpValues,
   EIP712IsolatedOrderParams,
   EIP712LinkSignerValues,
   EIP712LiquidateSubaccountValues,
-  EIP712MintLpValues,
   EIP712MintVlpValues,
   EIP712OrderCancellationValues,
   EIP712OrderParams,
@@ -25,14 +23,12 @@ export interface EngineServerCancelOrdersResponse {
 }
 
 export interface EngineServerExecuteResponseDataByType {
-  burn_lp: null;
   burn_vlp: null;
   cancel_and_place: EngineServerPlaceOrderResponse;
   cancel_orders: EngineServerCancelOrdersResponse;
   cancel_product_orders: EngineServerCancelOrdersResponse;
   link_signer: null;
   liquidate_subaccount: null;
-  mint_lp: null;
   mint_vlp: null;
   place_isolated_order: EngineServerPlaceOrderResponse;
   place_order: EngineServerPlaceOrderResponse;
@@ -108,7 +104,6 @@ type WithSpotLeverage<T> = T & {
 };
 
 export interface EngineServerExecuteRequestByType {
-  burn_lp: SignedTx<EIP712BurnLpValues>;
   burn_vlp: SignedTx<EIP712BurnVlpValues>;
   cancel_and_place: EngineServiceCancelAndPlaceParams;
   cancel_orders: EngineServerCancelOrdersParams;
@@ -120,7 +115,6 @@ export interface EngineServerExecuteRequestByType {
   >;
   link_signer: SignedTx<EIP712LinkSignerValues>;
   liquidate_subaccount: SignedTx<EIP712LiquidateSubaccountValues>;
-  mint_lp: WithSpotLeverage<SignedTx<EIP712MintLpValues>>;
   mint_vlp: WithSpotLeverage<SignedTx<EIP712MintVlpValues>>;
   place_isolated_order: EngineServerPlaceIsolatedOrderParams;
   place_order: EngineServerPlaceOrderParams;

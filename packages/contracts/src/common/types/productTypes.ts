@@ -40,10 +40,6 @@ interface BaseProduct {
   longWeightMaintenance: BigDecimal;
   // Weight used to calculate maint. health for a short position
   shortWeightMaintenance: BigDecimal;
-  // LP state
-  totalLpQuoteAmount: BigDecimal;
-  totalLpBaseAmount: BigDecimal;
-  totalLpSupply: BigDecimal;
 }
 
 /**

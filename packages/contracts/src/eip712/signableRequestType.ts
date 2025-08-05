@@ -1,5 +1,4 @@
 import {
-  EIP712BurnLpParams,
   EIP712BurnVlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
@@ -8,7 +7,6 @@ import {
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
-  EIP712MintLpParams,
   EIP712MintVlpParams,
   EIP712OrderParams,
   EIP712TransferQuoteParams,
@@ -19,7 +17,6 @@ import {
  * All possible requests to be signed, to the expected params
  */
 export interface SignableRequestTypeToParams {
-  burn_lp: EIP712BurnLpParams;
   burn_vlp: EIP712BurnVlpParams;
   cancel_orders: EIP712CancelOrdersParams;
   cancel_product_orders: EIP712CancelProductOrdersParams;
@@ -27,7 +24,6 @@ export interface SignableRequestTypeToParams {
   link_signer: EIP712LinkSignerParams;
   liquidate_subaccount: EIP712LiquidateSubaccountParams;
   list_trigger_orders: EIP712ListTriggerOrdersParams;
-  mint_lp: EIP712MintLpParams;
   mint_vlp: EIP712MintVlpParams;
   place_isolated_order: EIP712IsolatedOrderParams;
   place_order: EIP712OrderParams;

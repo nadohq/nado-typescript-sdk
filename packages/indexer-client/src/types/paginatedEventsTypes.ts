@@ -75,27 +75,6 @@ export type GetIndexerSubaccountCollateralEventsResponse =
   PaginatedIndexerEventsResponse<IndexerCollateralEvent>;
 
 /**
- * LP
- */
-
-export type GetIndexerSubaccountLpEventsParams = BaseSubaccountPaginationParams;
-
-export interface IndexerLpEvent extends BaseIndexerPaginatedEvent {
-  // Positive for mint, negative for burn
-  lpDelta: BigDecimal;
-  // Deltas for base and quote
-  baseDelta: BigDecimal;
-  quoteDelta: BigDecimal;
-  baseSnapshot: IndexerEventBalanceStateSnapshot;
-  // Only if the LP event is for a spot product
-  // This typing could probably be improved
-  quoteSnapshot?: IndexerEventSpotStateSnapshot;
-}
-
-export type GetIndexerSubaccountLpEventsResponse =
-  PaginatedIndexerEventsResponse<IndexerLpEvent>;
-
-/**
  * VLP
  */
 export type GetIndexerSubaccountVlpEventsParams =
@@ -147,15 +126,6 @@ type WithIndexerEvent<
 };
 
 export interface IndexerLiquidationEvent extends BaseIndexerPaginatedEvent {
-  // LPs are decomposed first
-  lps: WithIndexerEvent<
-    {
-      amountLpDecomposed: BigDecimal;
-      // Change in underlying asset / perp balance from decomposition
-      underlyingBalanceDelta: BigDecimal;
-    },
-    IndexerEventBalanceStateSnapshot
-  >[];
   // Either spot or perp will then be liquidated if the subaccount maint. health is below 0
   // Both spot & perp can be liquidated in the same event from a spread liquidation
   spot?: WithIndexerEvent<

@@ -34,31 +34,10 @@ export interface SubaccountIsolatedPosition {
 
 export type GetEngineIsolatedPositionsResponse = SubaccountIsolatedPosition[];
 
-export type SubaccountTx =
-  | {
-      type: 'mint_lp';
-      tx: SubaccountMintLpTx;
-    }
-  | {
-      type: 'burn_lp';
-      tx: SubaccountBurnLpTx;
-    }
-  | {
-      type: 'apply_delta';
-      tx: SubaccountProductDeltaTx;
-    };
-
-export interface SubaccountMintLpTx {
-  productId: number;
-  amountBase: BigDecimal;
-  amountQuoteLow: BigDecimal;
-  amountQuoteHigh: BigDecimal;
-}
-
-export interface SubaccountBurnLpTx {
-  productId: number;
-  amountLp: BigDecimal;
-}
+export type SubaccountTx = {
+  type: 'apply_delta';
+  tx: SubaccountProductDeltaTx;
+};
 
 export interface SubaccountProductDeltaTx {
   productId: number;
@@ -252,18 +231,6 @@ export interface GetEngineMaxWithdrawableParams extends Subaccount {
 }
 
 export type GetEngineMaxWithdrawableResponse = BigDecimal;
-
-export interface GetEngineMaxMintLpAmountParams extends Subaccount {
-  productId: number;
-  // If not given, engine defaults to true (leverage/borrow enabled) for spot
-  // Do not pass this for perp products
-  spotLeverage?: boolean;
-}
-
-export interface GetEngineMaxMintLpAmountResponse {
-  maxBaseAmount: BigDecimal;
-  maxQuoteAmount: BigDecimal;
-}
 
 export type GetEngineTimeResponse = EngineServerTimeResponse;
 

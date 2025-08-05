@@ -18,20 +18,6 @@ export interface EIP712WithdrawCollateralParams extends Subaccount {
   nonce: string;
 }
 
-export interface EIP712MintLpParams extends Subaccount {
-  productId: number;
-  amountBase: BigDecimalish;
-  quoteAmountLow: BigDecimalish;
-  quoteAmountHigh: BigDecimalish;
-  nonce: string;
-}
-
-export interface EIP712BurnLpParams extends Subaccount {
-  productId: number;
-  amount: BigDecimalish;
-  nonce: string;
-}
-
 export interface EIP712LiquidateSubaccountParams extends Subaccount {
   // Subaccount being liquidated
   liquidateeOwner: string;

@@ -37,28 +37,6 @@ export class WebSocketExecuteAPI extends BaseVertexAPI {
   }
 
   /**
-   * Builds ws message for the `mint_lp` execute action.
-   * @param params MintLp params.
-   * @returns `mint_lp` execute message
-   */
-  async buildMintLpMessage(
-    params: EngineExecuteRequestParamsByType['mint_lp'],
-  ) {
-    return this.context.engineClient.payloadBuilder.buildMintLpPayload(params);
-  }
-
-  /**
-   * Builds ws message for the `burn_lp` execute action.
-   * @param params BurnLp params.
-   * @returns `burn_lp` execute message
-   */
-  async buildBurnLpMessage(
-    params: EngineExecuteRequestParamsByType['burn_lp'],
-  ) {
-    return this.context.engineClient.payloadBuilder.buildBurnLpPayload(params);
-  }
-
-  /**
    * Builds ws message for the `place_order` execute action.
    * @param params PlaceOrder params.
    * @returns `place_order` execute message

@@ -157,15 +157,6 @@ async function subaccountQueriesTests(context: RunContext) {
     debugPrint('Withdrawal ETA', withdrawalEta?.toString() ?? 'N/A');
   }
 
-  const lpEvents = await client.getPaginatedSubaccountLpEvents({
-    limit: 1,
-    startCursor: undefined,
-    subaccountName: subaccount.subaccountName,
-    subaccountOwner: subaccount.subaccountOwner,
-  });
-
-  debugPrint('Paginated LP events', lpEvents);
-
   const vlpEvents = await client.getPaginatedSubaccountVlpEvents({
     limit: 1,
     startCursor: undefined,
