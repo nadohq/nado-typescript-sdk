@@ -4,12 +4,12 @@ import {
   QUOTE_PRODUCT_ID,
 } from '@vertex-protocol/contracts';
 import { addDecimals, toBigInt } from '@vertex-protocol/utils';
+import test from 'node:test';
 import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
+import { debugPrint } from '../utils/debugPrint';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
-import test from 'node:test';
-import { debugPrint } from '../utils/debugPrint';
 
 async function collateralTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -69,7 +69,7 @@ async function collateralTests(context: RunContext) {
   Transfer collateral
    */
 
-  const quoteTransferAmount = addDecimals(100, 6);
+  const quoteTransferAmount = addDecimals(100);
 
   const transferResult1 = await vertexClient.spot.transferQuote({
     amount: quoteTransferAmount,
