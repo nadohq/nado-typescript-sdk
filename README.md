@@ -5,14 +5,6 @@ for interacting with the Nado API and contracts.
 
 [SDK Docs](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
-## 0.x.x → 1.x.x Breaking Changes
-
-`1.x.x` now uses `viem` instead of `ethers`. When upgrading to `1.x.x`:
-
-- Remove `ethers` and add `viem` as dependencies
-- The `ethers` `Wallet` instance has been replaced with `viem`'s `WalletClient`
-- The `ethers` `Provider` instance has been replaced with `viem`'s `PublicClient`
-
 ## Packages
 
 ### `@nadohq/client`

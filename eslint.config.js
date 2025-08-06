@@ -48,10 +48,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: [
-      '**/.nx/',
-      '**/node_modules/',
-      '**/dist',
-    ],
+    ignores: ['**/.nx/', '**/node_modules/', '**/dist', 'apps/docs'],
   },
 );
