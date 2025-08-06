@@ -1,4 +1,4 @@
-import { addDecimals, toBigInt } from '@vertex-protocol/utils';
+import { addDecimals, toBigInt } from '@nadohq/utils';
 import { encodeAbiParameters, parseAbiParameters } from 'viem';
 import {
   EIP712WithdrawCollateralParams,

@@ -9,7 +9,7 @@ import {
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import { EngineServerExecuteSuccessResult } from './serverExecuteTypes';
 
 /**

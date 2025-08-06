@@ -1,7 +1,7 @@
-import { IndexerClient } from '@vertex-protocol/indexer-client';
+import { IndexerClient } from '@nadohq/indexer-client';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
-import { nowInSeconds, TimeInSeconds } from '@vertex-protocol/utils';
+import { nowInSeconds, TimeInSeconds } from '@nadohq/utils';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 

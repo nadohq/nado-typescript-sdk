@@ -1,15 +1,15 @@
+import { EIP712OrderParams } from '@nadohq/contracts';
 import {
   EngineExecuteRequestParamsByType,
   WithSignature,
-} from '@vertex-protocol/engine-client';
-import { BaseVertexAPI } from '../base';
-import { EIP712OrderParams } from '@vertex-protocol/contracts';
+} from '@nadohq/engine-client';
+import { BaseNadoAPI } from '../base';
 
 /**
  * Builds execute messages as expected by the server to send over Websocket.
- * @example vertexClient.ws.execute.buildPlaceOrderMessage(...)
+ * @example nadoClient.ws.execute.buildPlaceOrderMessage(...)
  */
-export class WebSocketExecuteAPI extends BaseVertexAPI {
+export class WebSocketExecuteAPI extends BaseNadoAPI {
   /**
    * Builds ws message for the `liquidate_subaccount` execute action.
    * @param params LiquidateSubaccount params.

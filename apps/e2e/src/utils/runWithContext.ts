@@ -1,10 +1,7 @@
-import {
-  CHAIN_ENV_TO_CHAIN,
-  VERTEX_DEPLOYMENTS,
-} from '@vertex-protocol/contracts';
-import { ENGINE_CLIENT_ENDPOINTS } from '@vertex-protocol/engine-client';
-import { INDEXER_CLIENT_ENDPOINTS } from '@vertex-protocol/indexer-client';
-import { TRIGGER_CLIENT_ENDPOINTS } from '@vertex-protocol/trigger-client';
+import { CHAIN_ENV_TO_CHAIN, NADO_DEPLOYMENTS } from '@nadohq/contracts';
+import { ENGINE_CLIENT_ENDPOINTS } from '@nadohq/engine-client';
+import { INDEXER_CLIENT_ENDPOINTS } from '@nadohq/indexer-client';
+import { TRIGGER_CLIENT_ENDPOINTS } from '@nadohq/trigger-client';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
@@ -39,7 +36,7 @@ export async function runWithContext(runFn: RunFn) {
       indexer: INDEXER_CLIENT_ENDPOINTS[env.chainEnv],
       trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
     },
-    contracts: VERTEX_DEPLOYMENTS[env.chainEnv],
+    contracts: NADO_DEPLOYMENTS[env.chainEnv],
   };
 
   await runFn(context);

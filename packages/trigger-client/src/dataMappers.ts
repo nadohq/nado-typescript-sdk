@@ -3,7 +3,7 @@ import {
   removeDecimals,
   toBigDecimal,
   toIntegerString,
-} from '@vertex-protocol/utils';
+} from '@nadohq/utils';
 import {
   TriggerCriteria,
   TriggerOrder,

@@ -1,4 +1,4 @@
-import { BigDecimalish } from '@vertex-protocol/utils';
+import { BigDecimalish } from '@nadohq/utils';
 import { Hex } from 'viem';
 import {
   EIP712BurnVlpParams,

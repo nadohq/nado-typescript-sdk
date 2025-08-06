@@ -1,9 +1,9 @@
-import { EIP712OrderValues } from '@vertex-protocol/contracts';
+import { EIP712OrderValues } from '@nadohq/contracts';
 import {
   EngineServerExecuteFailureResult,
   EngineServerExecuteRequestByType,
   EngineServerExecuteSuccessResult,
-} from '@vertex-protocol/engine-client';
+} from '@nadohq/engine-client';
 
 export type TriggerServerTriggerCriteria =
   // These trigger on fast oracle price

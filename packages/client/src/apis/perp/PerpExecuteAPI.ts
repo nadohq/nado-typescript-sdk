@@ -1,7 +1,7 @@
-import { SettlePnlParams } from '@vertex-protocol/contracts';
-import { BaseVertexAPI } from '../base';
+import { SettlePnlParams } from '@nadohq/contracts';
+import { BaseNadoAPI } from '../base';
 
-export class PerpExecuteAPI extends BaseVertexAPI {
+export class PerpExecuteAPI extends BaseNadoAPI {
   settlePnl(_params: SettlePnlParams) {
     throw Error('Not implemented');
   }

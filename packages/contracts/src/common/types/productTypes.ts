@@ -1,4 +1,4 @@
-import { BigDecimal } from '@vertex-protocol/utils';
+import { BigDecimal } from '@nadohq/utils';
 
 /**
  * Representation of the ProductEngineType enum used within the contract

@@ -1,4 +1,4 @@
-import { BaseVertexAPI } from '../base';
+import { BaseNadoAPI } from '../base';
 import { OptionalSignatureParams } from '../types';
 import {
   CancelAndPlaceOrderParams,
@@ -11,7 +11,7 @@ import {
   PlaceTriggerOrderParams,
 } from './types';
 
-export class MarketExecuteAPI extends BaseVertexAPI {
+export class MarketExecuteAPI extends BaseNadoAPI {
   /**
    * Places an order through the engine
    * @param params

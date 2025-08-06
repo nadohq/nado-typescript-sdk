@@ -1,9 +1,6 @@
-import { createVertexClient, VertexClient } from '@vertex-protocol/client';
-import {
-  getVertexEIP712Values,
-  QUOTE_PRODUCT_ID,
-} from '@vertex-protocol/contracts';
-import { addDecimals, toBigInt } from '@vertex-protocol/utils';
+import { createNadoClient, NadoClient } from '@nadohq/client';
+import { getNadoEIP712Values, QUOTE_PRODUCT_ID } from '@nadohq/contracts';
+import { addDecimals, toBigInt } from '@nadohq/utils';
 import test from 'node:test';
 import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
 import { debugPrint } from '../utils/debugPrint';
@@ -15,7 +12,7 @@ async function collateralTests(context: RunContext) {
   const walletClient = context.getWalletClient();
   const publicClient = context.publicClient;
 
-  const vertexClient: VertexClient = createVertexClient(context.env.chainEnv, {
+  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
     walletClient,
     publicClient,
   });
@@ -28,7 +25,7 @@ async function collateralTests(context: RunContext) {
 
   console.log('Minting tokens');
   await waitForTransaction(
-    vertexClient.spot._mintMockERC20({
+    nadoClient.spot._mintMockERC20({
       amount: quoteMintAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
@@ -37,7 +34,7 @@ async function collateralTests(context: RunContext) {
 
   console.log('Approving allowance');
   await waitForTransaction(
-    vertexClient.spot.approveAllowance({
+    nadoClient.spot.approveAllowance({
       amount: quoteMintAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
@@ -46,7 +43,7 @@ async function collateralTests(context: RunContext) {
 
   console.log('Depositing tokens');
   await waitForTransaction(
-    vertexClient.spot.deposit({
+    nadoClient.spot.deposit({
       subaccountName: 'default',
       productId: QUOTE_PRODUCT_ID,
       amount: quoteDepositAmount,
@@ -56,7 +53,7 @@ async function collateralTests(context: RunContext) {
 
   console.log('Depositing tokens with referral code');
   await waitForTransaction(
-    vertexClient.spot.deposit({
+    nadoClient.spot.deposit({
       subaccountName: 'default',
       productId: QUOTE_PRODUCT_ID,
       amount: quoteDepositWithReferralAmount,
@@ -71,14 +68,14 @@ async function collateralTests(context: RunContext) {
 
   const quoteTransferAmount = addDecimals(100);
 
-  const transferResult1 = await vertexClient.spot.transferQuote({
+  const transferResult1 = await nadoClient.spot.transferQuote({
     amount: quoteTransferAmount,
     subaccountName: 'default',
     recipientSubaccountName: 'default2',
   });
   debugPrint('Transfer result #1', transferResult1);
 
-  const transferResult2 = await vertexClient.spot.transferQuote({
+  const transferResult2 = await nadoClient.spot.transferQuote({
     amount: quoteTransferAmount,
     subaccountName: 'default2',
     recipientSubaccountName: 'default',
@@ -93,7 +90,7 @@ async function collateralTests(context: RunContext) {
   const slowModeFeeAmount = addDecimals(1, 6);
 
   console.log('Withdrawing tokens');
-  const withdrawalResult = await vertexClient.spot.withdraw({
+  const withdrawalResult = await nadoClient.spot.withdraw({
     subaccountName: 'default',
     productId: QUOTE_PRODUCT_ID,
     amount: withdrawAmount,
@@ -103,16 +100,16 @@ async function collateralTests(context: RunContext) {
   console.log('Slow mode withdrawal');
   // 1. approve 1 USDC for submitting slow-mode tx
   await waitForTransaction(
-    vertexClient.spot.approveAllowance({
+    nadoClient.spot.approveAllowance({
       amount: slowModeFeeAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
     publicClient,
   );
   // 2. generate withdraw collateral tx
-  const tx = getVertexEIP712Values('withdraw_collateral', {
+  const tx = getNadoEIP712Values('withdraw_collateral', {
     amount: withdrawAmount,
-    nonce: await vertexClient.context.engineClient.getTxNonce(),
+    nonce: await nadoClient.context.engineClient.getTxNonce(),
     productId: QUOTE_PRODUCT_ID,
     subaccountName: 'default',
     subaccountOwner: walletClientAddress,
@@ -133,7 +130,7 @@ async function collateralTests(context: RunContext) {
   console.log('Submitting slow mode withdrawal');
   // 3. submit via slow-mode
   await waitForTransaction(
-    vertexClient.context.contracts.endpoint.write.submitSlowModeTransaction([
+    nadoClient.context.contracts.endpoint.write.submitSlowModeTransaction([
       encodedSlowModeTx,
     ]),
     publicClient,

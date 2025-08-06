@@ -1,45 +1,42 @@
-import { createVertexClient, VertexClient } from '@vertex-protocol/client';
-import { runWithContext } from '../utils/runWithContext';
-import { RunContext } from '../utils/types';
+import { createNadoClient, NadoClient } from '@nadohq/client';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
+import { runWithContext } from '../utils/runWithContext';
+import { RunContext } from '../utils/types';
 
 async function queryTests(context: RunContext) {
   const walletClient = context.getWalletClient();
   const publicClient = context.publicClient;
 
-  const vertexClient: VertexClient = createVertexClient(context.env.chainEnv, {
+  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
     walletClient,
     publicClient,
   });
 
   const walletClientAddress = walletClient.account.address;
 
-  debugPrint('Engine time', await vertexClient.context.engineClient.getTime());
-  debugPrint('Symbols', await vertexClient.context.engineClient.getSymbols({}));
+  debugPrint('Engine time', await nadoClient.context.engineClient.getTime());
+  debugPrint('Symbols', await nadoClient.context.engineClient.getSymbols({}));
 
   // Fetches state from offchain sequencer
   debugPrint(
     'Engine All Markets',
-    await vertexClient.market.getAllEngineMarkets(),
+    await nadoClient.market.getAllEngineMarkets(),
   );
-  debugPrint(
-    'Edge all markets',
-    await vertexClient.market.getAllEngineMarkets(),
-  );
+  debugPrint('Edge all markets', await nadoClient.market.getAllEngineMarkets());
 
   // Fetches state from Arbitrum
-  debugPrint('On-Chain all markets', await vertexClient.market.getAllMarkets());
+  debugPrint('On-Chain all markets', await nadoClient.market.getAllMarkets());
 
   debugPrint(
     'Latest market prices',
-    await vertexClient.market.getLatestMarketPrices({
+    await nadoClient.market.getLatestMarketPrices({
       productIds: [1, 2, 3],
     }),
   );
   debugPrint(
     'Market liquidity',
-    await vertexClient.market.getMarketLiquidity({
+    await nadoClient.market.getMarketLiquidity({
       productId: 3,
       // Per side of the book
       depth: 5,
@@ -49,7 +46,7 @@ async function queryTests(context: RunContext) {
   // Subaccount state from engine
   debugPrint(
     'Subaccount state from engine',
-    await vertexClient.subaccount.getEngineSubaccountSummary({
+    await nadoClient.subaccount.getEngineSubaccountSummary({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
     }),
@@ -57,7 +54,7 @@ async function queryTests(context: RunContext) {
   // Subaccount state from Arbitrum
   debugPrint(
     'Subaccount state on-chain',
-    await vertexClient.subaccount.getSubaccountSummary({
+    await nadoClient.subaccount.getSubaccountSummary({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
     }),
@@ -65,7 +62,7 @@ async function queryTests(context: RunContext) {
 
   debugPrint(
     'Isolated positions',
-    await vertexClient.subaccount.getIsolatedPositions({
+    await nadoClient.subaccount.getIsolatedPositions({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
     }),
@@ -73,7 +70,7 @@ async function queryTests(context: RunContext) {
 
   debugPrint(
     'Subaccount fee rates',
-    await vertexClient.subaccount.getSubaccountFeeRates({
+    await nadoClient.subaccount.getSubaccountFeeRates({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
     }),
@@ -81,7 +78,7 @@ async function queryTests(context: RunContext) {
 
   debugPrint(
     'Subaccount linked signer with rate limit',
-    await vertexClient.subaccount.getSubaccountLinkedSignerWithRateLimit({
+    await nadoClient.subaccount.getSubaccountLinkedSignerWithRateLimit({
       subaccount: {
         subaccountOwner: walletClientAddress,
         subaccountName: 'default',
@@ -91,7 +88,7 @@ async function queryTests(context: RunContext) {
 
   debugPrint(
     'Referral code',
-    await vertexClient.subaccount.getReferralCode({
+    await nadoClient.subaccount.getReferralCode({
       subaccount: {
         subaccountOwner: walletClientAddress,
         subaccountName: 'default',
@@ -101,7 +98,7 @@ async function queryTests(context: RunContext) {
 
   debugPrint(
     'Open subaccount orders',
-    await vertexClient.market.getOpenSubaccountOrders({
+    await nadoClient.market.getOpenSubaccountOrders({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
       productId: 1,
@@ -110,7 +107,7 @@ async function queryTests(context: RunContext) {
 
   debugPrint(
     'Open subaccount multi-product orders',
-    await vertexClient.market.getOpenSubaccountMultiProductOrders({
+    await nadoClient.market.getOpenSubaccountMultiProductOrders({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
       productIds: [1, 2, 3],

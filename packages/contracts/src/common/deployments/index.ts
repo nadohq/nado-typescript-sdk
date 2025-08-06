@@ -1,20 +1,20 @@
-import { getValidatedAddress } from '@vertex-protocol/utils';
+import { getValidatedAddress } from '@nadohq/utils';
 import { Address } from 'viem';
 import ArbitrumOneCoreDeployment from './core/deployment.arbitrumOne.json' with { type: 'json' };
 import ArbitrumSepoliaCoreDeployment from './core/deployment.arbitrumSepolia.json' with { type: 'json' };
 import LocalCoreDeployment from './core/deployment.localhost.json' with { type: 'json' };
 
 import { ChainEnv } from '../types';
-import { VertexContractName } from '../vertexAbis';
+import { NadoContractName } from '../nadoAbis';
 
-export type VertexDeploymentAddresses = {
-  [name in VertexContractName]: Address;
+export type NadoDeploymentAddresses = {
+  [name in NadoContractName]: Address;
 };
 
 /**
- * Known deployment addresses for the Vertex contracts
+ * Known deployment addresses for the Nado contracts
  */
-export const VERTEX_DEPLOYMENTS: Record<ChainEnv, VertexDeploymentAddresses> = {
+export const NADO_DEPLOYMENTS: Record<ChainEnv, NadoDeploymentAddresses> = {
   arbitrumTestnet: validateDeployment({
     ...ArbitrumSepoliaCoreDeployment,
   }),
@@ -27,8 +27,8 @@ export const VERTEX_DEPLOYMENTS: Record<ChainEnv, VertexDeploymentAddresses> = {
 };
 
 function validateDeployment(
-  deployment: Record<VertexContractName, string>,
-): Record<VertexContractName, Address> {
+  deployment: Record<NadoContractName, string>,
+): Record<NadoContractName, Address> {
   return {
     clearinghouse: getValidatedAddress(deployment.clearinghouse),
     endpoint: getValidatedAddress(deployment.endpoint),

@@ -3,8 +3,8 @@ import {
   EngineMintVlpParams,
   EngineTransferQuoteParams,
   EngineWithdrawCollateralParams,
-} from '@vertex-protocol/engine-client';
-import { BigDecimalish } from '@vertex-protocol/utils';
+} from '@nadohq/engine-client';
+import { BigDecimalish } from '@nadohq/utils';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
 export type ProductIdOrTokenAddress =

@@ -1,5 +1,5 @@
-import { Subaccount } from '@vertex-protocol/contracts';
-import { IndexerClient } from '@vertex-protocol/indexer-client';
+import { Subaccount } from '@nadohq/contracts';
+import { IndexerClient } from '@nadohq/indexer-client';
 import { getServerError } from '../utils/getServerError';
 import { RunContext } from '../utils/types';
 import { runWithContext } from '../utils/runWithContext';

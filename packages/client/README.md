@@ -1,3 +1,3 @@
-# `@vertex-protocol/client`
+# `@nadohq/client`
 
-Contains the high level `VertexClient`
+Contains the high level `NadoClient`

@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { ChainEnv } from '@vertex-protocol/contracts';
-import { getValidatedHex } from '@vertex-protocol/utils';
+import { ChainEnv } from '@nadohq/contracts';
+import { getValidatedHex } from '@nadohq/utils';
 import { Env } from './types';
 
 const chainEnv: ChainEnv =

@@ -3,24 +3,24 @@ import {
   getIsolatedOrderDigest,
   getOrderDigest,
   getOrderNonce,
+  NADO_ABIS,
   QUOTE_PRODUCT_ID,
   subaccountToHex,
-  VERTEX_ABIS,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import {
   EngineClient,
-  EngineOrderParams,
   EngineIsolatedOrderParams,
-} from '@vertex-protocol/engine-client';
-import { addDecimals } from '@vertex-protocol/utils';
+  EngineOrderParams,
+} from '@nadohq/engine-client';
+import { addDecimals } from '@nadohq/utils';
+import test from 'node:test';
 import { createWalletClient, getContract, http, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { getExpiration } from '../utils/getExpiration';
-import { RunContext } from '../utils/types';
-import { runWithContext } from '../utils/runWithContext';
-import { delay } from '../utils/delay';
-import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
+import { getExpiration } from '../utils/getExpiration';
+import { runWithContext } from '../utils/runWithContext';
+import { RunContext } from '../utils/types';
 
 async function signerAndOrderTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -33,7 +33,7 @@ async function signerAndOrderTests(context: RunContext) {
   });
 
   const clearinghouse = getContract({
-    abi: VERTEX_ABIS.clearinghouse,
+    abi: NADO_ABIS.clearinghouse,
     address: context.contracts.clearinghouse,
     client: walletClient,
   });

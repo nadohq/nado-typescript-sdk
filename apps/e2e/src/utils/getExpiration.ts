@@ -1,8 +1,5 @@
-import {
-  getExpirationTimestamp,
-  OrderExpirationType,
-} from '@vertex-protocol/contracts';
-import { nowInSeconds } from '@vertex-protocol/utils';
+import { getExpirationTimestamp, OrderExpirationType } from '@nadohq/contracts';
+import { nowInSeconds } from '@nadohq/utils';
 
 export function getExpiration(
   expirationType: OrderExpirationType = 'default',

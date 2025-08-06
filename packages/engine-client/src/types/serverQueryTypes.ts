@@ -1,4 +1,4 @@
-import { HealthStatus } from '@vertex-protocol/contracts';
+import { HealthStatus } from '@nadohq/contracts';
 import {
   EngineServerHealthBreakdown,
   EngineServerPerpBalance,

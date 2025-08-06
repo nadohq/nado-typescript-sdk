@@ -1,14 +1,10 @@
-import { QUOTE_PRODUCT_ID, Subaccount } from '@vertex-protocol/contracts';
-import { IndexerClient } from '@vertex-protocol/indexer-client';
-import {
-  nowInSeconds,
-  TimeInSeconds,
-  toBigDecimal,
-} from '@vertex-protocol/utils';
-import { RunContext } from '../utils/types';
-import { runWithContext } from '../utils/runWithContext';
+import { QUOTE_PRODUCT_ID, Subaccount } from '@nadohq/contracts';
+import { IndexerClient } from '@nadohq/indexer-client';
+import { nowInSeconds, TimeInSeconds, toBigDecimal } from '@nadohq/utils';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
+import { runWithContext } from '../utils/runWithContext';
+import { RunContext } from '../utils/types';
 
 async function subaccountQueriesTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -168,6 +164,8 @@ async function subaccountQueriesTests(context: RunContext) {
 
   const latestWithdrawal = await client.getEvents({
     eventTypes: ['withdraw_collateral'],
+    // Query an older event such that the fast withdrawal signature is available
+    maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
     limit: {
       type: 'txs',
       value: 1,

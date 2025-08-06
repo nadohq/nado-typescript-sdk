@@ -4,18 +4,15 @@ import {
   EIP712ListTriggerOrdersParams,
   EIP712OrderParams,
   getDefaultRecvTime,
+  getNadoEIP712Values,
   getOrderNonce,
   getSignedTransactionRequest,
   getTriggerOrderNonce,
-  getVertexEIP712Values,
   SignableRequestType,
   SignableRequestTypeToParams,
   WalletClientWithAccount,
-} from '@vertex-protocol/contracts';
-import {
-  toIntegerString,
-  WalletNotProvidedError,
-} from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { toIntegerString, WalletNotProvidedError } from '@nadohq/utils';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { mapServerOrderInfo, mapTriggerCriteria } from './dataMappers';
 import {
@@ -91,7 +88,7 @@ export class TriggerClient {
 
     const executeParams: TriggerServerExecuteRequestByType['place_order'] = {
       id: params.id ?? null,
-      order: getVertexEIP712Values('place_order', orderParams),
+      order: getNadoEIP712Values('place_order', orderParams),
       trigger: mapTriggerCriteria(params.triggerCriteria),
       signature,
       product_id: params.productId,
@@ -110,7 +107,7 @@ export class TriggerClient {
       subaccountName: params.subaccountName,
       subaccountOwner: params.subaccountOwner,
     };
-    const tx = getVertexEIP712Values('cancel_orders', cancelOrdersParams);
+    const tx = getNadoEIP712Values('cancel_orders', cancelOrdersParams);
 
     const executeParams: TriggerServerExecuteRequestByType['cancel_orders'] = {
       signature: await this.sign(
@@ -132,7 +129,7 @@ export class TriggerClient {
       subaccountName: params.subaccountName,
       subaccountOwner: params.subaccountOwner,
     };
-    const tx = getVertexEIP712Values(
+    const tx = getNadoEIP712Values(
       'cancel_product_orders',
       cancelProductOrdersParams,
     );
@@ -164,7 +161,7 @@ export class TriggerClient {
       subaccountOwner: params.subaccountOwner,
     };
 
-    const tx = getVertexEIP712Values('list_trigger_orders', signatureParams);
+    const tx = getNadoEIP712Values('list_trigger_orders', signatureParams);
     const signature = await this.sign(
       'list_trigger_orders',
       params.verifyingAddr,

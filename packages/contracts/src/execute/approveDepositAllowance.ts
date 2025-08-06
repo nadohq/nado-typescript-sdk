@@ -1,4 +1,4 @@
-import { BigDecimalish, toBigInt } from '@vertex-protocol/utils';
+import { BigDecimalish, toBigInt } from '@nadohq/utils';
 import { ERC20_ABI, WithContract, WriteableContractInstance } from '../common';
 
 export interface ApproveDepositAllowanceParams {

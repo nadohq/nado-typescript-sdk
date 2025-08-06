@@ -1,12 +1,12 @@
-import { WithContracts } from '@vertex-protocol/contracts';
-import { WalletNotProvidedError } from '@vertex-protocol/utils';
+import { WithContracts } from '@nadohq/contracts';
+import { WalletNotProvidedError } from '@nadohq/utils';
 
-import { VertexClientContext } from '../context';
+import { NadoClientContext } from '../context';
 
-export class BaseVertexAPI {
-  readonly context: VertexClientContext;
+export class BaseNadoAPI {
+  readonly context: NadoClientContext;
 
-  constructor(context: VertexClientContext) {
+  constructor(context: NadoClientContext) {
     this.context = context;
   }
 

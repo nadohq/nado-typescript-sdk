@@ -1,5 +1,5 @@
-import { createDeterministicLinkedSignerPrivateKey } from '@vertex-protocol/contracts';
-import { WalletNotProvidedError } from '@vertex-protocol/utils';
+import { createDeterministicLinkedSignerPrivateKey } from '@nadohq/contracts';
+import { WalletNotProvidedError } from '@nadohq/utils';
 import { Mixin } from 'ts-mixer';
 import { privateKeyToAccount } from 'viem/accounts';
 import { SubaccountExecuteAPI } from './SubaccountExecuteAPI';

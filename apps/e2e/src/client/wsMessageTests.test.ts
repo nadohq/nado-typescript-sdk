@@ -1,15 +1,11 @@
-import {
-  createVertexClient,
-  PlaceOrderParams,
-  VertexClient,
-} from '@vertex-protocol/client';
+import { createNadoClient, NadoClient, PlaceOrderParams } from '@nadohq/client';
 import {
   getOrderDigest,
   getOrderNonce,
   QUOTE_PRODUCT_ID,
   subaccountToHex,
-} from '@vertex-protocol/contracts';
-import { addDecimals, nowInSeconds } from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { addDecimals, nowInSeconds } from '@nadohq/utils';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 import { runWithContext } from '../utils/runWithContext';
@@ -18,7 +14,7 @@ import { RunContext } from '../utils/types';
 async function wsMessageTests(context: RunContext) {
   const walletClient = context.getWalletClient();
   const publicClient = context.publicClient;
-  const vertexClient: VertexClient = createVertexClient(context.env.chainEnv, {
+  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
     walletClient,
     publicClient,
   });
@@ -33,7 +29,7 @@ async function wsMessageTests(context: RunContext) {
     amount: addDecimals(0.01),
   };
 
-  const contracts = await vertexClient.context.engineClient.getContracts();
+  const contracts = await nadoClient.context.engineClient.getContracts();
   // Address for product ID of 1
   const verifyingAddr = contracts.orderbookAddrs[1];
 
@@ -42,14 +38,14 @@ async function wsMessageTests(context: RunContext) {
     subaccountOwner: walletClientAddress,
     nonce: getOrderNonce(),
   };
-  const wsOrderSig = await vertexClient.context.engineClient.sign(
+  const wsOrderSig = await nadoClient.context.engineClient.sign(
     'place_order',
     verifyingAddr,
     chainId,
     wsOrder,
   );
 
-  const wsPlaceOrderReq = vertexClient.ws.execute.buildPlaceOrderMessage({
+  const wsPlaceOrderReq = nadoClient.ws.execute.buildPlaceOrderMessage({
     productId: 1,
     order: wsOrder,
     signature: wsOrderSig,
@@ -63,7 +59,7 @@ async function wsMessageTests(context: RunContext) {
     chainId,
   });
 
-  const wsCancelOrdersReq = vertexClient.ws.execute.buildCancelOrdersMessage({
+  const wsCancelOrdersReq = nadoClient.ws.execute.buildCancelOrdersMessage({
     subaccountOwner: walletClientAddress,
     subaccountName: 'default',
     productIds: [1],
@@ -75,7 +71,7 @@ async function wsMessageTests(context: RunContext) {
   debugPrint('Cancel Order WS request', wsCancelOrdersReq);
 
   const wsWithdrawCollateralReq =
-    await vertexClient.ws.execute.buildWithdrawCollateralMessage({
+    await nadoClient.ws.execute.buildWithdrawCollateralMessage({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
       productId: QUOTE_PRODUCT_ID,
@@ -85,7 +81,7 @@ async function wsMessageTests(context: RunContext) {
 
   debugPrint('Withdraw Collateral WS request', wsWithdrawCollateralReq);
 
-  const wsQuerySubaccountInfoReq = vertexClient.ws.query.buildQueryMessage(
+  const wsQuerySubaccountInfoReq = nadoClient.ws.query.buildQueryMessage(
     'subaccount_info',
     {
       subaccount: subaccountToHex({
@@ -97,21 +93,21 @@ async function wsMessageTests(context: RunContext) {
 
   debugPrint('Query subaccount info WS request', wsQuerySubaccountInfoReq);
 
-  const wsTradeStream = vertexClient.ws.subscription.buildSubscriptionParams(
+  const wsTradeStream = nadoClient.ws.subscription.buildSubscriptionParams(
     'trade',
     {
       product_id: QUOTE_PRODUCT_ID,
     },
   );
   const wsTradeSubscriptionReq =
-    vertexClient.ws.subscription.buildSubscriptionMessage(
+    nadoClient.ws.subscription.buildSubscriptionMessage(
       1,
       'subscribe',
       wsTradeStream,
     );
   debugPrint('Trade subscription WS request', wsTradeSubscriptionReq);
 
-  const wsFillStream = vertexClient.ws.subscription.buildSubscriptionParams(
+  const wsFillStream = nadoClient.ws.subscription.buildSubscriptionParams(
     'fill',
     {
       product_id: 1,
@@ -120,7 +116,7 @@ async function wsMessageTests(context: RunContext) {
     },
   );
   const wsFillUnsubscribeReq =
-    vertexClient.ws.subscription.buildSubscriptionMessage(
+    nadoClient.ws.subscription.buildSubscriptionMessage(
       1,
       'unsubscribe',
       wsFillStream,
@@ -129,7 +125,7 @@ async function wsMessageTests(context: RunContext) {
   debugPrint('Fill unsubscribe WS request', wsFillUnsubscribeReq);
 
   const wsListSubscriptionsReq =
-    vertexClient.ws.subscription.buildSubscriptionMessage(1, 'list', {});
+    nadoClient.ws.subscription.buildSubscriptionMessage(1, 'list', {});
 
   debugPrint('List subscriptions WS request', wsListSubscriptionsReq);
 }

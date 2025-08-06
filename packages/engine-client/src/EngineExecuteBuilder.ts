@@ -1,11 +1,11 @@
 import {
   EIP712IsolatedOrderParams,
   EIP712OrderParams,
+  getNadoEIP712Values,
   getOrderNonce,
-  getVertexEIP712Values,
   SignableRequestType,
   SignableRequestTypeToParams,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineExecuteRequestParamsByType,
@@ -40,7 +40,7 @@ export class EngineExecuteBuilder {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getVertexEIP712Values('liquidate_subaccount', paramsWithNonce);
+    const tx = getNadoEIP712Values('liquidate_subaccount', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
       'liquidate_subaccount',
       paramsWithNonce,
@@ -68,7 +68,7 @@ export class EngineExecuteBuilder {
       paramsWithNonce,
     );
 
-    const tx = getVertexEIP712Values('withdraw_collateral', paramsWithNonce);
+    const tx = getNadoEIP712Values('withdraw_collateral', paramsWithNonce);
     return {
       signature,
       tx,
@@ -114,7 +114,7 @@ export class EngineExecuteBuilder {
       }
     >,
   ): EngineServerExecutePlaceOrderPayload {
-    const orderEIP712Values = getVertexEIP712Values(
+    const orderEIP712Values = getNadoEIP712Values(
       'place_order',
       clientParams.order,
     );
@@ -169,7 +169,7 @@ export class EngineExecuteBuilder {
       }
     >,
   ): EngineServerExecutePlaceIsolatedOrderPayload {
-    const isolatedOrderEIP712Values = getVertexEIP712Values(
+    const isolatedOrderEIP712Values = getNadoEIP712Values(
       'place_isolated_order',
       clientParams.order,
     );
@@ -219,7 +219,7 @@ export class EngineExecuteBuilder {
       EngineExecuteRequestParamsByType['cancel_orders'] & { nonce: string }
     >,
   ): EngineServerExecuteRequestByType['cancel_orders'] {
-    const tx = getVertexEIP712Values('cancel_orders', clientParams);
+    const tx = getNadoEIP712Values('cancel_orders', clientParams);
 
     return {
       tx,
@@ -238,7 +238,7 @@ export class EngineExecuteBuilder {
     const nonce = this.getOrderNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getVertexEIP712Values('cancel_product_orders', paramsWithNonce);
+    const tx = getNadoEIP712Values('cancel_product_orders', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
       'cancel_product_orders',
       paramsWithNonce,
@@ -262,7 +262,7 @@ export class EngineExecuteBuilder {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getVertexEIP712Values('link_signer', paramsWithNonce);
+    const tx = getNadoEIP712Values('link_signer', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
       'link_signer',
       paramsWithNonce,
@@ -286,7 +286,7 @@ export class EngineExecuteBuilder {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getVertexEIP712Values('transfer_quote', paramsWithNonce);
+    const tx = getNadoEIP712Values('transfer_quote', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
       'transfer_quote',
       paramsWithNonce,
@@ -309,7 +309,7 @@ export class EngineExecuteBuilder {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getVertexEIP712Values('mint_vlp', paramsWithNonce);
+    const tx = getNadoEIP712Values('mint_vlp', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
       'mint_vlp',
       paramsWithNonce,
@@ -333,7 +333,7 @@ export class EngineExecuteBuilder {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getVertexEIP712Values('burn_vlp', paramsWithNonce);
+    const tx = getNadoEIP712Values('burn_vlp', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
       'burn_vlp',
       paramsWithNonce,

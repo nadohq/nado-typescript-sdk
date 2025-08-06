@@ -3,8 +3,8 @@ import {
   SignableRequestType,
   SignableRequestTypeToParams,
   WalletClientWithAccount,
-} from '@vertex-protocol/contracts';
-import { WalletNotProvidedError } from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { WalletNotProvidedError } from '@nadohq/utils';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   EngineServerExecuteRequestByType,

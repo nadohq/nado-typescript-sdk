@@ -1,22 +1,22 @@
 import {
-  EngineServerSubscriptionRequestType,
-  EngineServerSubscriptionRequestByType,
   EngineServerSubscriptionRequest,
-  EngineServerSubscriptionStreamParamsType,
-  EngineServerSubscriptionStreamParamsByType,
+  EngineServerSubscriptionRequestByType,
+  EngineServerSubscriptionRequestType,
   EngineServerSubscriptionStream,
-} from '@vertex-protocol/engine-client';
-import { BaseVertexAPI } from '../base';
+  EngineServerSubscriptionStreamParamsByType,
+  EngineServerSubscriptionStreamParamsType,
+} from '@nadohq/engine-client';
+import { BaseNadoAPI } from '../base';
 
 /**
  * Builds subscription messages as expected by the server to send over Websocket.
  *
  * @example
- * const tradeSubscriptionParams = vertexClient.ws.subscription.buildSubscriptionParams('trade', ...);
- * const tradeSubscriptionMessage = vertexClient.ws.subscription.buildSubscriptionMessage(
+ * const tradeSubscriptionParams = nadoClient.ws.subscription.buildSubscriptionParams('trade', ...);
+ * const tradeSubscriptionMessage = nadoClient.ws.subscription.buildSubscriptionMessage(
  *    'subscribe', tradeSubscriptionParams);
  */
-export class WebSocketSubscriptionAPI extends BaseVertexAPI {
+export class WebSocketSubscriptionAPI extends BaseNadoAPI {
   /**
    * Builds a subscription request message as expected by the server via Websocket.
    * @param requestType name of request to build message for.
