@@ -11,7 +11,7 @@ import {
   EIP712TransferQuoteValues,
   EIP712WithdrawCollateralValues,
   SignedTx,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import { EngineServerOrderResponse } from './serverQueryTypes';
 
 export interface EngineServerPlaceOrderResponse {

@@ -4,7 +4,7 @@ import {
   ProductEngineType,
   SpotProduct,
 } from './productTypes';
-import { BigDecimal } from '@vertex-protocol/utils';
+import { BigDecimal } from '@nadohq/utils';
 
 /**
  * Shared properties of a market

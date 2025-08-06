@@ -1,8 +1,8 @@
 import {
   ChainEnv,
-  VertexDeploymentAddresses,
+  NadoDeploymentAddresses,
   WalletClientWithAccount,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import { Hex, PublicClient } from 'viem';
 
 export interface Env {
@@ -18,7 +18,7 @@ export interface RunContext {
     trigger: string;
     indexer: string;
   };
-  contracts: VertexDeploymentAddresses;
+  contracts: NadoDeploymentAddresses;
 
   // Throws on invalid / non-existent private key
   getWalletClient(): WalletClientWithAccount;

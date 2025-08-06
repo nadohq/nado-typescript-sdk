@@ -1,7 +1,7 @@
 {
   "name": "node-compat-test",
   "version": "0.1.0",
-  "description": "Tests loading @vertex-protocol/client in a pure Node.js environment",
+  "description": "Tests loading @nadohq/client in a pure Node.js environment",
   "type": "module",
   "private": true,
   "author": "Frank Jia <frank@inkfnd.com>",

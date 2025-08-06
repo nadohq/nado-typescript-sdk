@@ -1,10 +1,6 @@
-import { EngineClient } from '@vertex-protocol/engine-client';
-import { VERTEX_ABIS, VLP_PRODUCT_ID } from '@vertex-protocol/contracts';
-import {
-  addDecimals,
-  removeDecimals,
-  BigDecimals,
-} from '@vertex-protocol/utils';
+import { EngineClient } from '@nadohq/engine-client';
+import { NADO_ABIS, VLP_PRODUCT_ID } from '@nadohq/contracts';
+import { addDecimals, removeDecimals, BigDecimals } from '@nadohq/utils';
 import { RunContext } from '../utils/types';
 import { getContract } from 'viem';
 import { runWithContext } from '../utils/runWithContext';
@@ -22,7 +18,7 @@ async function vlpTests(context: RunContext) {
   });
 
   const clearinghouse = getContract({
-    abi: VERTEX_ABIS.clearinghouse,
+    abi: NADO_ABIS.clearinghouse,
     address: context.contracts.clearinghouse,
     client: walletClient,
   });

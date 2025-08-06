@@ -1,6 +1,6 @@
 {
-  "name": "@vertex-protocol/utils",
-  "version": "1.15.0",
+  "name": "@nadohq/utils",
+  "version": "0.1.0-alpha.0",
   "type": "module",
   "sideEffects": false,
   "description": "",

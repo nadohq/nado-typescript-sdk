@@ -1,9 +1,9 @@
 import { BigDecimal, BigDecimalish, toBigDecimal } from './bigDecimal';
 
 /**
- * All Vertex balances have 18 decimals. Ex. 1e18 = 1.0
+ * All Nado balances have 18 decimals. Ex. 1e18 = 1.0
  */
-export const VERTEX_PRODUCT_DECIMALS = 18;
+export const NADO_PRODUCT_DECIMALS = 18;
 
 /**
  * Determines the result type after adjusting decimals based on the input type `T`.
@@ -19,12 +19,12 @@ type AdjustDecimalsResult<T extends BigDecimalish | undefined> =
  * Adds the specified # of decimals to the number. For example, value = 1, decimals = 2, returns 100.
  *
  * @param value can be undefined for better developer experience. If undefined, returns undefined.
- * @param decimals number of decimal places to add, defaults to 18, which is the standard within Vertex
+ * @param decimals number of decimal places to add, defaults to 18, which is the standard within Nado
  */
 
 export function addDecimals<T extends BigDecimalish | undefined>(
   value: T,
-  decimals: number = VERTEX_PRODUCT_DECIMALS,
+  decimals: number = NADO_PRODUCT_DECIMALS,
 ): AdjustDecimalsResult<T> {
   const getResult = () => {
     if (value == null) {
@@ -44,11 +44,11 @@ export function addDecimals<T extends BigDecimalish | undefined>(
  * Removes the specified # of decimals from the number. For example, value = 100, decimals = 2, returns 1.
  *
  * @param value can be undefined for better developer experience. If undefined, returns undefined.
- * @param decimals number of decimal places to remove, defaults to 18, which is the standard within Vertex
+ * @param decimals number of decimal places to remove, defaults to 18, which is the standard within Nado
  */
 export function removeDecimals<T extends BigDecimalish | undefined>(
   value: T,
-  decimals: number = VERTEX_PRODUCT_DECIMALS,
+  decimals: number = NADO_PRODUCT_DECIMALS,
 ): AdjustDecimalsResult<T> {
   const getResult = () => {
     if (value == null) {

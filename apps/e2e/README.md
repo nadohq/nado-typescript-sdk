@@ -1,4 +1,4 @@
-# Vertex SDK E2E Scripts
+# Nado SDK E2E Scripts
 
 ## Setup
 
@@ -11,7 +11,7 @@ Before running any tests, make sure to configure your environment and set up the
 ## E2E Tests
 
 | Command          | Description                       |
-| ---------------- | --------------------------------- |
+|------------------|-----------------------------------|
 | yarn e2e         | Runs all E2E tests                |
 | yarn e2e:client  | Runs all client-related E2E tests |
 | yarn e2e:engine  | Runs all engine-client E2E tests  |

@@ -1,4 +1,4 @@
-export * from './createVertexClient';
+export * from './createNadoClient';
 export * from './client';
 export * from './context';
 
@@ -8,8 +8,8 @@ export * from './apis/spot';
 export * from './apis/subaccount';
 
 // Subpackage exports
-export * from '@vertex-protocol/utils';
-export * from '@vertex-protocol/contracts';
-export * from '@vertex-protocol/engine-client';
-export * from '@vertex-protocol/indexer-client';
-export * from '@vertex-protocol/trigger-client';
+export * from '@nadohq/utils';
+export * from '@nadohq/contracts';
+export * from '@nadohq/engine-client';
+export * from '@nadohq/indexer-client';
+export * from '@nadohq/trigger-client';

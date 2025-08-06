@@ -1,12 +1,12 @@
-import { EIP712OrderValues } from '@vertex-protocol/contracts';
+import { EIP712OrderValues } from '@nadohq/contracts';
 import {
   EngineServerPerpBalance,
   EngineServerPerpProduct,
   EngineServerSpotBalance,
   EngineServerSpotProduct,
-} from '@vertex-protocol/engine-client';
+} from '@nadohq/engine-client';
 import { IndexerEventType } from './IndexerEventType';
-import { VertexTx } from './VertexTx';
+import { NadoTx } from './NadoTx';
 
 export interface IndexerServerSnapshotsInterval {
   count: number;
@@ -83,7 +83,7 @@ export interface IndexerServerEvent {
 export interface IndexerServerTx {
   submission_idx: string;
   timestamp: string;
-  tx: VertexTx;
+  tx: NadoTx;
 }
 
 /**

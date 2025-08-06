@@ -1,4 +1,4 @@
-import { toIntegerString } from '@vertex-protocol/utils';
+import { toIntegerString } from '@nadohq/utils';
 import { getDefaultRecvTime } from './recvTime';
 
 /**

@@ -1,9 +1,10 @@
 import {
   EIP712LeaderboardAuthenticationValues,
   SignedTx,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import { IndexerEventType } from './IndexerEventType';
 import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
+import { NadoWithdrawCollateralTx } from './NadoTx';
 import {
   IndexerServerCandlestick,
   IndexerServerEvent,
@@ -22,7 +23,6 @@ import {
   IndexerServerTx,
   IndexerServerVlpSnapshot,
 } from './serverModelTypes';
-import { VertexWithdrawCollateralTx } from './VertexTx';
 
 /**
  * Params
@@ -370,7 +370,7 @@ export interface IndexerServerLeaderboardContestsResponse {
 
 export interface IndexerServerFastWithdrawalSignatureResponse {
   idx: string;
-  tx: VertexWithdrawCollateralTx['withdraw_collateral'];
+  tx: NadoWithdrawCollateralTx['withdraw_collateral'];
   tx_bytes: string;
   signatures: string[];
 }

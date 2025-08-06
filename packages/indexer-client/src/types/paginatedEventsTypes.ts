@@ -1,5 +1,5 @@
-import { Subaccount } from '@vertex-protocol/contracts';
-import { BigDecimal } from '@vertex-protocol/utils';
+import { Subaccount } from '@nadohq/contracts';
+import { BigDecimal } from '@nadohq/utils';
 import {
   GetIndexerInterestFundingPaymentsParams,
   GetIndexerInterestFundingPaymentsResponse,
@@ -15,7 +15,7 @@ import {
   IndexerOrder,
 } from './clientTypes';
 import { CollateralEventType } from './collateralEventType';
-import { VertexTx } from './VertexTx';
+import { NadoTx } from './NadoTx';
 
 export interface IndexerPaginationParams {
   limit: number;
@@ -42,7 +42,7 @@ type BaseSubaccountPaginationParams = Subaccount &
 export interface BaseIndexerPaginatedEvent extends Subaccount {
   timestamp: BigDecimal;
   submissionIndex: string;
-  tx: VertexTx;
+  tx: NadoTx;
 }
 
 export interface PaginatedIndexerEventsResponse<

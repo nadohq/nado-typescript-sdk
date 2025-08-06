@@ -1,6 +1,6 @@
 {
-  "name": "@vertex-protocol/trigger-client",
-  "version": "1.15.0",
+  "name": "@nadohq/trigger-client",
+  "version": "0.1.0-alpha.0",
   "type": "module",
   "sideEffects": false,
   "description": "> TODO: description",
@@ -37,9 +37,9 @@
     }
   },
   "dependencies": {
-    "@vertex-protocol/contracts": "^1.15.0",
-    "@vertex-protocol/engine-client": "^1.15.0",
-    "@vertex-protocol/utils": "^1.15.0",
+    "@nadohq/contracts": "^0.1.0-alpha.0",
+    "@nadohq/engine-client": "^0.1.0-alpha.0",
+    "@nadohq/utils": "^0.1.0-alpha.0",
     "axios": "*",
     "ts-mixer": "*"
   },

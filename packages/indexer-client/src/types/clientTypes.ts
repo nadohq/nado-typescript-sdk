@@ -8,8 +8,8 @@ import {
   SpotBalance,
   SpotMarket,
   Subaccount,
-} from '@vertex-protocol/contracts';
-import { BigDecimal } from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { BigDecimal } from '@nadohq/utils';
 import { Hex } from 'viem';
 import { CandlestickPeriod } from './CandlestickPeriod';
 import { IndexerEventType } from './IndexerEventType';
@@ -18,7 +18,7 @@ import {
   IndexerServerFastWithdrawalSignatureParams,
   IndexerServerListSubaccountsParams,
 } from './serverTypes';
-import { VertexTx, VertexWithdrawCollateralTx } from './VertexTx';
+import { NadoTx, NadoWithdrawCollateralTx } from './NadoTx';
 
 /**
  * Base types
@@ -75,7 +75,7 @@ export interface IndexerEventWithTx<
     IndexerEventBalanceStateSnapshot = IndexerEventBalanceStateSnapshot,
 > extends IndexerEvent<TStateType> {
   timestamp: BigDecimal;
-  tx: VertexTx;
+  tx: NadoTx;
 }
 
 /**
@@ -416,7 +416,7 @@ export interface IndexerMatchEvent extends Subaccount {
   >;
   preBalances: IndexerMatchEventBalances;
   postBalances: IndexerMatchEventBalances;
-  tx: VertexTx;
+  tx: NadoTx;
 }
 
 export type GetIndexerMatchEventsResponse = IndexerMatchEvent[];
@@ -634,7 +634,7 @@ export type GetIndexerFastWithdrawalSignatureParams =
 
 export interface GetIndexerFastWithdrawalSignatureResponse {
   idx: bigint;
-  tx: VertexWithdrawCollateralTx['withdraw_collateral'];
+  tx: NadoWithdrawCollateralTx['withdraw_collateral'];
   txBytes: Hex;
   signatures: Hex[];
 }

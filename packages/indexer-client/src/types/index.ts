@@ -6,4 +6,4 @@ export * from './CandlestickPeriod';
 export * from './IndexerEventType';
 export * from './IndexerLeaderboardType';
 export * from './collateralEventType';
-export * from './VertexTx';
+export * from './NadoTx';

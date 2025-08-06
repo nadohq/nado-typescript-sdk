@@ -1,21 +1,21 @@
 import {
   addDecimals,
-  createVertexClient,
+  createNadoClient,
+  NadoClient,
   PlaceOrderParams,
-  VertexClient,
-} from '@vertex-protocol/client';
-import { getOrderDigest, getOrderNonce } from '@vertex-protocol/contracts';
+} from '@nadohq/client';
+import { getOrderDigest, getOrderNonce } from '@nadohq/contracts';
+import test from 'node:test';
+import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
-import test from 'node:test';
-import { debugPrint } from '../utils/debugPrint';
 
 async function orderTests(context: RunContext) {
   const walletClient = context.getWalletClient();
   const publicClient = context.publicClient;
 
-  const vertexClient: VertexClient = createVertexClient(context.env.chainEnv, {
+  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
     walletClient,
     publicClient,
   });
@@ -24,7 +24,7 @@ async function orderTests(context: RunContext) {
   const walletClientAddress = walletClient.account.address;
 
   // Query all markets for price information
-  const allMarkets = await vertexClient.market.getAllMarkets();
+  const allMarkets = await nadoClient.market.getAllMarkets();
 
   // Place spot order
   const spotOrderProductId = 3;
@@ -47,14 +47,14 @@ async function orderTests(context: RunContext) {
     amount: addDecimals(-3.5),
   };
 
-  const orderResult = await vertexClient.market.placeOrder({
+  const orderResult = await nadoClient.market.placeOrder({
     order: orderParams,
     productId: spotOrderProductId,
   });
 
   debugPrint('Place order result', orderResult);
 
-  const orderCustomIdResult = await vertexClient.market.placeOrder({
+  const orderCustomIdResult = await nadoClient.market.placeOrder({
     id: 100,
     order: orderParams,
     productId: spotOrderProductId,
@@ -63,7 +63,7 @@ async function orderTests(context: RunContext) {
   debugPrint('Place order w/ custom id result', orderCustomIdResult);
 
   const subaccountOrders =
-    await vertexClient.context.engineClient.getSubaccountOrders({
+    await nadoClient.context.engineClient.getSubaccountOrders({
       productId: spotOrderProductId,
       subaccountName: 'default',
       subaccountOwner: walletClientAddress,
@@ -72,7 +72,7 @@ async function orderTests(context: RunContext) {
   debugPrint('Subaccount orders', subaccountOrders);
 
   console.log(`Cancelling order`);
-  const cancelResult = await vertexClient.market.cancelOrders({
+  const cancelResult = await nadoClient.market.cancelOrders({
     digests: subaccountOrders.orders.map((order) => order.digest),
     productIds: subaccountOrders.orders.map((order) => order.productId),
     subaccountName: 'default',
@@ -82,7 +82,7 @@ async function orderTests(context: RunContext) {
 
   const perpOrderProductId = 4;
 
-  const perpOrderResult = await vertexClient.market.placeOrder({
+  const perpOrderResult = await nadoClient.market.placeOrder({
     order: orderParams,
     productId: perpOrderProductId,
   });
@@ -92,13 +92,13 @@ async function orderTests(context: RunContext) {
   const perpOrderDigest = getOrderDigest({
     order: perpOrderResult.orderParams,
     verifyingAddr:
-      await vertexClient.context.engineClient.getOrderbookAddress(
+      await nadoClient.context.engineClient.getOrderbookAddress(
         perpOrderProductId,
       ),
     chainId,
   });
 
-  const cancelAndPlaceResult = await vertexClient.market.cancelAndPlace({
+  const cancelAndPlaceResult = await nadoClient.market.cancelAndPlace({
     cancelOrders: {
       digests: [perpOrderDigest],
       productIds: [perpOrderProductId],

@@ -19,8 +19,8 @@
     "visibility",
     "source-order"
   ],
-  "customTitle": "Vertex Typescript SDK Documentation",
-  "customDescription": "Vertex Typescript SDK Documentation",
+  "customTitle": "Nado Typescript SDK Documentation",
+  "customDescription": "Nado Typescript SDK Documentation",
   "plugin": [
     "typedoc-plugin-missing-exports",
     "typedoc-plugin-extras"

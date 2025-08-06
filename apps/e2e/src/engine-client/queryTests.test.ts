@@ -1,4 +1,4 @@
-import { EngineClient } from '@vertex-protocol/engine-client';
+import { EngineClient } from '@nadohq/engine-client';
 import { RunContext } from '../utils/types';
 import { runWithContext } from '../utils/runWithContext';
 import test from 'node:test';

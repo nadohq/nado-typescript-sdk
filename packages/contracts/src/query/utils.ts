@@ -1,16 +1,16 @@
-import { removeDecimals, toBigDecimal } from '@vertex-protocol/utils';
+import { removeDecimals, toBigDecimal } from '@nadohq/utils';
 import { ReadContractReturnType } from 'viem';
 import {
   BalanceHealthContributions,
+  NadoAbis,
   PerpProduct,
   ProductEngineType,
   SpotProduct,
-  VertexAbis,
 } from '../common';
 import { calcTotalBorrowed, calcTotalDeposited } from '../utils';
 
 type GetAllProductsResponse = ReadContractReturnType<
-  VertexAbis['querier'],
+  NadoAbis['querier'],
   'getAllProducts'
 >;
 

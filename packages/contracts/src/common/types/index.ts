@@ -6,5 +6,5 @@ export * from './marketTypes';
 export * from './productTypes';
 export * from './subaccountTypes';
 export * from './utilExecuteTypes';
-export * from './vertexContractTypes';
+export * from './nadoContractTypes';
 export * from './viemTypes';

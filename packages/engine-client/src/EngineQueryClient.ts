@@ -2,7 +2,7 @@ import {
   encodeSignedOrder,
   MarketWithProduct,
   subaccountToHex,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import {
   addDecimals,
   BigDecimal,
@@ -10,7 +10,7 @@ import {
   removeDecimals,
   toBigDecimal,
   toIntegerString,
-} from '@vertex-protocol/utils';
+} from '@nadohq/utils';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineServerStatusResponse,

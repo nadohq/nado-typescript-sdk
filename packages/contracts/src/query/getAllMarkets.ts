@@ -1,4 +1,4 @@
-import { removeDecimals, toBigDecimal } from '@vertex-protocol/utils';
+import { removeDecimals, toBigDecimal } from '@nadohq/utils';
 import { MarketWithProduct, ProductEngineType, WithContracts } from '../common';
 import { mapContractPerpProduct, mapContractSpotProduct } from './utils';
 

@@ -1,12 +1,8 @@
 import {
   GetEngineMaxMintVlpAmountParams,
   GetEngineMaxWithdrawableParams,
-} from '@vertex-protocol/engine-client';
-import {
-  BigDecimal,
-  getValidatedAddress,
-  toBigDecimal,
-} from '@vertex-protocol/utils';
+} from '@nadohq/engine-client';
+import { BigDecimal, getValidatedAddress, toBigDecimal } from '@nadohq/utils';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import { GetTokenAllowanceParams, GetTokenWalletBalanceParams } from './types';
 
@@ -29,7 +25,7 @@ export class SpotQueryAPI extends BaseSpotAPI {
   }
 
   /**
-   * Helper to get current token balance in the user's wallet (i.e. not in a Vertex subaccount)
+   * Helper to get current token balance in the user's wallet (i.e. not in a Nado subaccount)
    */
   async getTokenWalletBalance({
     address,

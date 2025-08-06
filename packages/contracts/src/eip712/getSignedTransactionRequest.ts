@@ -1,8 +1,8 @@
 import { WalletClientWithAccount } from '../common';
-import { getVertexEIP712Domain } from './getVertexEIP712Domain';
-import { getVertexEIP712PrimaryType } from './getVertexEIP712PrimaryType';
-import { getVertexEIP712Types } from './getVertexEIP712Types';
-import { getVertexEIP712Values } from './getVertexEIP712Values';
+import { getNadoEIP712Domain } from './getNadoEIP712Domain';
+import { getNadoEIP712PrimaryType } from './getNadoEIP712PrimaryType';
+import { getNadoEIP712Types } from './getNadoEIP712Types';
+import { getNadoEIP712Values } from './getNadoEIP712Values';
 import {
   SignableRequestType,
   SignableRequestTypeToParams,
@@ -22,9 +22,9 @@ export function getSignedTransactionRequest<
   TReqType extends SignableRequestType,
 >(params: Params<TReqType>) {
   return params.walletClient.signTypedData({
-    domain: getVertexEIP712Domain(params.verifyingContract, params.chainId),
-    types: getVertexEIP712Types(params.requestType),
-    primaryType: getVertexEIP712PrimaryType(params.requestType),
-    message: getVertexEIP712Values(params.requestType, params.requestParams),
+    domain: getNadoEIP712Domain(params.verifyingContract, params.chainId),
+    types: getNadoEIP712Types(params.requestType),
+    primaryType: getNadoEIP712PrimaryType(params.requestType),
+    message: getNadoEIP712Values(params.requestType, params.requestParams),
   });
 }

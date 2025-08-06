@@ -12,8 +12,8 @@ import {
   SpotBalanceWithProduct,
   Subaccount,
   SubaccountSummaryResponse,
-} from '@vertex-protocol/contracts';
-import { BigDecimal } from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { BigDecimal } from '@nadohq/utils';
 import {
   EngineServerNoncesParams,
   EngineServerTimeResponse,

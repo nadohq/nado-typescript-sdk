@@ -1,10 +1,11 @@
-# Agent Instructions for Vertex SDK
+# Agent Instructions for Nado SDK
 
 This file provides guidance to LLMs when working with code in this repository.
 
 ## Repository Overview
 
-The Vertex TypeScript SDK is a monorepo containing utilities for interacting with the Vertex Protocol API and contracts. The project uses Lerna for workspace management and provides a comprehensive SDK for trading on Vertex.
+The Nado TypeScript SDK is a monorepo containing utilities for interacting with the Nado Protocol API and contracts. The
+project uses Lerna for workspace management and provides a comprehensive SDK for trading on Nado.
 
 ## Key Commands
 
@@ -23,7 +24,7 @@ The Vertex TypeScript SDK is a monorepo containing utilities for interacting wit
 - **IMPORTANT**: Run `yarn build` before running any E2E tests to ensure all packages are built
 - `yarn --cwd apps/e2e e2e` - Run all E2E tests
 - `yarn --cwd apps/e2e e2e:client` - Run client-specific E2E tests
-- `yarn --cwd apps/e2e e2e:engine` - Run engine-client E2E tests  
+- `yarn --cwd apps/e2e e2e:engine` - Run engine-client E2E tests
 - `yarn --cwd apps/e2e e2e:indexer` - Run indexer-client E2E tests
 - `yarn --cwd apps/e2e e2e:trigger` - Run trigger-client E2E tests
 
@@ -36,8 +37,9 @@ The Vertex TypeScript SDK is a monorepo containing utilities for interacting wit
 ### Individual Package Scripts
 
 Each package in `packages/` has these common scripts:
+
 - `yarn build` - Build the specific package
-- `yarn clean` - Clean build artifacts  
+- `yarn clean` - Clean build artifacts
 - `yarn dev` - Watch mode for development
 - `yarn lint` - Check linting rules only
 - `yarn lint:fix` - Fix linting issues automatically
@@ -49,16 +51,16 @@ Each package in `packages/` has these common scripts:
 
 The project follows a monorepo pattern with these core packages:
 
-1. **`@vertex-protocol/client`** - Main entry point that composes all other packages into a unified `VertexClient`
-2. **`@vertex-protocol/engine-client`** - Handles off-chain matching engine communication
-3. **`@vertex-protocol/indexer-client`** - Provides indexer queries for historical data
-4. **`@vertex-protocol/trigger-client`** - Manages trigger service for stop orders
-5. **`@vertex-protocol/contracts`** - Contract utilities, ABIs, and on-chain interactions
-6. **`@vertex-protocol/utils`** - Common utilities including bignumber.js for decimal math
+1. **`@nadohq/client`** - Main entry point that composes all other packages into a unified `NadoClient`
+2. **`@nadohq/engine-client`** - Handles off-chain matching engine communication
+3. **`@nadohq/indexer-client`** - Provides indexer queries for historical data
+4. **`@nadohq/trigger-client`** - Manages trigger service for stop orders
+5. **`@nadohq/contracts`** - Contract utilities, ABIs, and on-chain interactions
+6. **`@nadohq/utils`** - Common utilities including bignumber.js for decimal math
 
 ### Client Architecture
 
-- `VertexClient` is the main class that orchestrates all API interactions
+- `NadoClient` is the main class that orchestrates all API interactions
 - Uses `viem` for Ethereum wallet/provider functionality
 - Supports both chain signers and linked signers for trading
 - Modular API design with separate classes for Market, Spot, Perp, Subaccount, and WebSocket operations
@@ -76,21 +78,22 @@ The project follows a monorepo pattern with these core packages:
 
 After making edits, **ALWAYS** run the following verification sequence:
 
-1. **Type Check**  
-   - Run `yarn typecheck` to verify all TypeScript types are correct across all packages
-2. **Lint Check**  
-   - Run `yarn lint` to run ESLint with auto-fix and Prettier formatting
-3. **Build**  
-   - Run `yarn build` to build all packages before running any tests
+1. **Type Check**
+    - Run `yarn typecheck` to verify all TypeScript types are correct across all packages
+2. **Lint Check**
+    - Run `yarn lint` to run ESLint with auto-fix and Prettier formatting
+3. **Build**
+    - Run `yarn build` to build all packages before running any tests
 4. **Tests**
-   - Run `yarn test` to run all tests across the codebase
+    - Run `yarn test` to run all tests across the codebase
+
 ### Requirements
+
 - **All commands must pass** before considering a task complete
 - **Fix errors immediately** - If any command fails, address issues and re-run the full sequence
 - **Build before adding E2E tests** - Always run `yarn build` before E2E testing to ensure packages are properly built
 - **Add basic sanity E2E tests** - Never skip writing E2E tests for new features, client APIs, or user flows
 - **Do NOT write unit tests** - any unit tests should be written manually
-
 
 ## TypeScript SDK Style Guide
 

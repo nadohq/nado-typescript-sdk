@@ -1,4 +1,4 @@
-import { BigDecimal } from '@vertex-protocol/utils';
+import { BigDecimal } from '@nadohq/utils';
 import { IndexerPerpBalance, IndexerSpotBalance } from '../types';
 
 /**

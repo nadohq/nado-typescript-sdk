@@ -4,12 +4,14 @@
 
 **🚨 ALWAYS use JSDoc format (`/** ... */`) for:**
 
-- **ALL exported functions** - Every function with `export` keyword must have JSDoc docstring describing its purpose, parameters, and return value
+- **ALL exported functions** - Every function with `export` keyword must have JSDoc docstring describing its purpose,
+  parameters, and return value
 - **ALL exported variables/constants** - Any constant or variable with `export` keyword used outside the current file
 - **ALL exported types and interfaces** - Including their properties and purpose
 - **ALL interface/type properties** - Individual property descriptions
 
-**⚠️ When you see `export function`, `export const`, `export type`, or `export interface`, automatically add JSDoc format.**
+**⚠️ When you see `export function`, `export const`, `export type`, or `export interface`, automatically add JSDoc
+format.**
 
 ### When NOT to Use JSDoc Format
 
@@ -133,7 +135,7 @@ export class EngineServerFailureError extends Error {
 - **Use camelCase** for variables, functions, and methods
 - **Use PascalCase** for classes, interfaces, types, and enums
 - **Use CAPITAL_SNAKE_CASE** for constants and environment variables
-- **Client classes** should end with `Client` (e.g., `MarketClient`, `VertexClient`)
+- **Client classes** should end with `Client` (e.g., `MarketClient`, `NadoClient`)
 - **Error classes** should end with `Error` (e.g., `ValidationError`, `NetworkError`)
 - **Type guards** should start with `is` (e.g., `isMarketOrder`, `isValidAddress`)
 

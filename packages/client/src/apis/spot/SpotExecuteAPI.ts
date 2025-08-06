@@ -5,8 +5,8 @@ import {
   isWriteableContract,
   MintMockERC20Params,
   MOCK_ERC20_ABI,
-} from '@vertex-protocol/contracts';
-import { toBigInt, WalletNotProvidedError } from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { toBigInt, WalletNotProvidedError } from '@nadohq/utils';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import {
   ApproveAllowanceParams,

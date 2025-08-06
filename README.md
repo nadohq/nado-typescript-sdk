@@ -1,9 +1,9 @@
-# Vertex Typescript SDK
+# Nado Typescript SDK
 
-Monorepo for the Vertex TS SDK. The Vertex SDK is a collection of utilities
-for interacting with the Vertex API and contracts.
+Monorepo for the Nado TS SDK. The Nado SDK is a collection of utilities
+for interacting with the Nado API and contracts.
 
-[SDK Docs](https://vertex-protocol.github.io/vertex-typescript-sdk/index.html)
+[SDK Docs](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
 ## 0.x.x → 1.x.x Breaking Changes
 
@@ -15,23 +15,23 @@ for interacting with the Vertex API and contracts.
 
 ## Packages
 
-### `@vertex-protocol/client`
+### `@nadohq/client`
 
-Exposes the top-level `VertexClient`, which composes subpackages for API & contract interaction.
+Exposes the top-level `NadoClient`, which composes subpackages for API & contract interaction.
 
-### `@vertex-protocol/engine-client`
+### `@nadohq/engine-client`
 
 Exports queries & executes that talk to the off-chain matching engine.
 
-### `@vertex-protocol/indexer-client`
+### `@nadohq/indexer-client`
 
 Exports queries that talk to the indexer.
 
-### `@vertex-protocol/trigger-client`
+### `@nadohq/trigger-client`
 
 Exports queries and executes that talk to the trigger service (used for stop & TP/SL orders).
 
-### `@vertex-protocol/utils`
+### `@nadohq/utils`
 
 Common utilities, including [`bignumber.js`](https://mikemcl.github.io/bignumber.js/), which is used for representing
 large numbers.
@@ -48,7 +48,7 @@ This is a Lerna monorepo. See `package.json` for common tasks, some of which are
 
 **link/unlink-local**: Used for local package development.
 Uses `yarn link/unlink` ([docs](https://classic.yarnpkg.com/en/docs/cli/link))
-to enable other local repos to consume Vertex packages without having to publish a new version.
+to enable other local repos to consume Nado packages without having to publish a new version.
 
 > When making a change to the SDK, you will need to build the SDK, then run `yarn install --force` on the consuming
 > repo for the changes to be picked up.

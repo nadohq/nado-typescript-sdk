@@ -1,4 +1,4 @@
-import { toPrintableObject } from '@vertex-protocol/utils';
+import { toPrintableObject } from '@nadohq/utils';
 
 /**
  * Logs a labeled, pretty-printed version of an object to the console

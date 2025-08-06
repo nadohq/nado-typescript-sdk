@@ -1,20 +1,20 @@
 import {
   getSubaccountSummary,
   GetSubaccountSummaryParams,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import {
   GetEngineEstimatedSubaccountSummaryParams,
   GetEngineIsolatedPositionsParams,
   GetEngineSubaccountFeeRatesParams,
   GetEngineSubaccountSummaryParams,
-} from '@vertex-protocol/engine-client';
+} from '@nadohq/engine-client';
 import {
   GetIndexerLinkedSignerParams,
   GetIndexerReferralCodeParams,
-} from '@vertex-protocol/indexer-client';
-import { BaseVertexAPI } from '../base';
+} from '@nadohq/indexer-client';
+import { BaseNadoAPI } from '../base';
 
-export class SubaccountQueryAPI extends BaseVertexAPI {
+export class SubaccountQueryAPI extends BaseNadoAPI {
   /**
    * Returns a comprehensive summary for a subaaccount, including its balances and health
    *

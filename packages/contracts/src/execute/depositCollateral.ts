@@ -1,4 +1,4 @@
-import { BigDecimalish, toBigInt } from '@vertex-protocol/utils';
+import { BigDecimalish, toBigInt } from '@nadohq/utils';
 import { toHex } from 'viem';
 import { WithContract } from '../common';
 import { subaccountNameToBytes12 } from '../utils';

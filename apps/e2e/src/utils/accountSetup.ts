@@ -1,9 +1,5 @@
-import {
-  createVertexClient,
-  QUOTE_PRODUCT_ID,
-  VertexClient,
-} from '@vertex-protocol/client';
-import { addDecimals } from '@vertex-protocol/utils';
+import { createNadoClient, NadoClient, QUOTE_PRODUCT_ID } from '@nadohq/client';
+import { addDecimals } from '@nadohq/utils';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
@@ -12,7 +8,7 @@ async function accountSetup(context: RunContext) {
   const walletClient = context.getWalletClient();
   const publicClient = context.publicClient;
 
-  const vertexClient: VertexClient = createVertexClient(context.env.chainEnv, {
+  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
     walletClient,
     publicClient,
   });
@@ -21,7 +17,7 @@ async function accountSetup(context: RunContext) {
 
   console.log('Minting tokens');
   await waitForTransaction(
-    vertexClient.spot._mintMockERC20({
+    nadoClient.spot._mintMockERC20({
       amount: quoteDepositAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
@@ -30,7 +26,7 @@ async function accountSetup(context: RunContext) {
 
   console.log('Approving allowance');
   await waitForTransaction(
-    vertexClient.spot.approveAllowance({
+    nadoClient.spot.approveAllowance({
       amount: quoteDepositAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
@@ -39,7 +35,7 @@ async function accountSetup(context: RunContext) {
 
   console.log('Depositing tokens');
   await waitForTransaction(
-    vertexClient.spot.deposit({
+    nadoClient.spot.deposit({
       subaccountName: 'default',
       productId: QUOTE_PRODUCT_ID,
       amount: quoteDepositAmount,

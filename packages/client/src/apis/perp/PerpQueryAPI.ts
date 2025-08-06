@@ -1,10 +1,10 @@
-import { BaseVertexAPI } from '../base';
 import {
   GetIndexerMultiProductPerpPricesParams,
   GetIndexerPerpPricesParams,
-} from '@vertex-protocol/indexer-client';
+} from '@nadohq/indexer-client';
+import { BaseNadoAPI } from '../base';
 
-export class PerpQueryAPI extends BaseVertexAPI {
+export class PerpQueryAPI extends BaseNadoAPI {
   /**
    * Gets the latest index & mark price for a perp product
    * @param params
