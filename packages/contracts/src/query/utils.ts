@@ -44,9 +44,6 @@ export function mapContractSpotProduct(
       product.risk.longWeightMaintenanceX18,
     ),
     oraclePrice: removeDecimals(product.oraclePriceX18),
-    totalLpBaseAmount: toBigDecimal(product.lpState.base.amount),
-    totalLpQuoteAmount: toBigDecimal(product.lpState.quote.amount),
-    totalLpSupply: toBigDecimal(product.lpState.supply),
   };
 }
 
@@ -72,9 +69,6 @@ export function mapContractPerpProduct(
     ),
     oraclePrice: removeDecimals(product.oraclePriceX18),
     openInterest: toBigDecimal(product.state.openInterest),
-    totalLpBaseAmount: toBigDecimal(product.lpState.base),
-    totalLpQuoteAmount: toBigDecimal(product.lpState.quote),
-    totalLpSupply: toBigDecimal(product.lpState.supply),
   };
 }
 

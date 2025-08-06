@@ -77,53 +77,6 @@ export class EngineExecuteBuilder {
   }
 
   /**
-   * Builds server payload for the `mint_lp` execute action.
-   * @param clientParams Client MintLp params.
-   * @returns `mint_lp` payload
-   */
-  async buildMintLpPayload(
-    clientParams: EngineExecuteRequestParamsByType['mint_lp'],
-  ): Promise<EngineServerExecuteRequestByType['mint_lp']> {
-    const nonce = await this.getTxNonceIfNeeded(clientParams);
-    const paramsWithNonce = { ...clientParams, nonce };
-
-    const tx = getVertexEIP712Values('mint_lp', paramsWithNonce);
-    const signature = await this.getSignatureIfNeeded(
-      'mint_lp',
-      paramsWithNonce,
-    );
-
-    return {
-      signature,
-      tx,
-      spot_leverage: clientParams.spotLeverage ?? null,
-    };
-  }
-
-  /**
-   * Builds server payload for the `burn_lp` execute action.
-   * @param clientParams Client BurnLp params.
-   * @returns `burn_lp` payload
-   */
-  async buildBurnLpPayload(
-    clientParams: EngineExecuteRequestParamsByType['burn_lp'],
-  ): Promise<EngineServerExecuteRequestByType['burn_lp']> {
-    const nonce = await this.getTxNonceIfNeeded(clientParams);
-    const paramsWithNonce = { ...clientParams, nonce };
-
-    const tx = getVertexEIP712Values('burn_lp', paramsWithNonce);
-    const signature = await this.getSignatureIfNeeded(
-      'burn_lp',
-      paramsWithNonce,
-    );
-
-    return {
-      signature,
-      tx,
-    };
-  }
-
-  /**
    * Builds server payload for the `place_order` execute action.
    *
    * @param clientParams Client PlaceOrder params.

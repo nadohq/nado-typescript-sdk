@@ -78,8 +78,6 @@ export interface IndexerServerEvent {
   net_funding_cumulative: string;
   net_entry_unrealized: string;
   net_entry_cumulative: string;
-  net_entry_lp_unrealized: string;
-  net_entry_lp_cumulative: string;
 }
 
 export interface IndexerServerTx {

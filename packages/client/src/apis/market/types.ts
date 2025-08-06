@@ -1,9 +1,7 @@
 import {
-  EngineBurnLpParams,
   EngineCancelOrdersParams,
   EngineCancelProductOrdersParams,
   EngineIsolatedOrderParams,
-  EngineMintLpParams,
   EngineOrderParams,
   EnginePlaceIsolatedOrderParams,
   EnginePlaceOrderParams,
@@ -54,14 +52,6 @@ export type CancelTriggerOrdersParams = OptionalSignatureParams<
 
 export type CancelTriggerProductOrdersParams = OptionalSignatureParams<
   OptionalSubaccountOwner<TriggerCancelProductOrdersParams>
->;
-
-export type MintLpParams = OptionalSignatureParams<
-  OptionalSubaccountOwner<EngineMintLpParams>
->;
-
-export type BurnLpParams = OptionalSignatureParams<
-  OptionalSubaccountOwner<EngineBurnLpParams>
 >;
 
 export type GetTriggerOrdersParams =

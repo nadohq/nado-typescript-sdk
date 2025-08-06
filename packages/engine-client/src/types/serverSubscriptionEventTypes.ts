@@ -57,7 +57,6 @@ export interface EngineServerSubscriptionFillEvent {
 export interface EngineServerSubscriptionPositionChangeEvent {
   timestamp: string;
   product_id: number;
-  is_lp: false;
   subaccount: string;
   amount: string;
   v_quote_amount: string;

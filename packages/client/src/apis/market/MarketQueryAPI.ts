@@ -6,7 +6,6 @@ import {
   GetEngineMarketLiquidityParams,
   GetEngineMarketPriceParams,
   GetEngineMarketPricesParams,
-  GetEngineMaxMintLpAmountParams,
   GetEngineMaxOrderSizeParams,
   GetEngineSubaccountOrdersParams,
   GetEngineSubaccountProductOrdersParams,
@@ -112,14 +111,6 @@ export class MarketQueryAPI extends BaseVertexAPI {
    */
   async getMaxOrderSize(params: GetEngineMaxOrderSizeParams) {
     return this.context.engineClient.getMaxOrderSize(params);
-  }
-
-  /**
-   * Queries engine to determine maximum base & quote amounts for minting LPs
-   * @param params
-   */
-  async getMaxMintLpAmount(params: GetEngineMaxMintLpAmountParams) {
-    return this.context.engineClient.getMaxMintLpAmount(params);
   }
 
   /**

@@ -14,8 +14,6 @@ interface BaseBalance {
   productId: number;
   // Amount for the balance
   amount: BigDecimal;
-  // Amount for the LP balance
-  lpAmount: BigDecimal;
   // Contributions to subaccount health
   healthContributions: BalanceHealthContributions;
 }

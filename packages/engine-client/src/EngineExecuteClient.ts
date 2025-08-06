@@ -32,20 +32,6 @@ export class EngineExecuteClient extends EngineBaseClient {
     );
   }
 
-  async mintLp(params: EngineExecuteRequestParamsByType['mint_lp']) {
-    return this.execute(
-      'mint_lp',
-      await this.payloadBuilder.buildMintLpPayload(params),
-    );
-  }
-
-  async burnLp(params: EngineExecuteRequestParamsByType['burn_lp']) {
-    return this.execute(
-      'burn_lp',
-      await this.payloadBuilder.buildBurnLpPayload(params),
-    );
-  }
-
   async placeOrder(
     params: EngineExecuteRequestParamsByType['place_order'],
   ): Promise<EnginePlaceOrderResult> {

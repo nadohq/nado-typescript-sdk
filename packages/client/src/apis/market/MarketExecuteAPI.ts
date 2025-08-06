@@ -1,45 +1,17 @@
 import { BaseVertexAPI } from '../base';
 import { OptionalSignatureParams } from '../types';
 import {
-  BurnLpParams,
   CancelAndPlaceOrderParams,
   CancelOrdersParams,
   CancelProductOrdersParams,
   CancelTriggerOrdersParams,
   CancelTriggerProductOrdersParams,
-  MintLpParams,
   PlaceIsolatedOrderParams,
   PlaceOrderParams,
   PlaceTriggerOrderParams,
 } from './types';
 
 export class MarketExecuteAPI extends BaseVertexAPI {
-  /**
-   * Mint LP tokens through engine
-   * @param params
-   */
-  async mintLp(params: MintLpParams) {
-    return this.context.engineClient.mintLp({
-      ...params,
-      chainId: this.getWalletClientChainIdIfNeeded(params),
-      verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),
-      subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
-    });
-  }
-
-  /**
-   * Burn LP tokens through engine
-   * @param params
-   */
-  async burnLp(params: BurnLpParams) {
-    return this.context.engineClient.burnLp({
-      ...params,
-      chainId: this.getWalletClientChainIdIfNeeded(params),
-      verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),
-      subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
-    });
-  }
-
   /**
    * Places an order through the engine
    * @param params

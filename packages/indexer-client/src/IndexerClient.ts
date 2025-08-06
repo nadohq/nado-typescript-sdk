@@ -20,8 +20,6 @@ import {
   GetIndexerSubaccountInterestFundingPaymentsParams,
   GetIndexerSubaccountLiquidationEventsParams,
   GetIndexerSubaccountLiquidationEventsResponse,
-  GetIndexerSubaccountLpEventsParams,
-  GetIndexerSubaccountLpEventsResponse,
   GetIndexerSubaccountMatchEventParams,
   GetIndexerSubaccountMatchEventsResponse,
   GetIndexerSubaccountSettlementEventsParams,
@@ -33,7 +31,6 @@ import {
   IndexerEventSpotStateSnapshot,
   IndexerEventWithTx,
   IndexerLiquidationEvent,
-  IndexerLpEvent,
   IndexerSettlementEvent,
   IndexerVlpEvent,
   PaginatedIndexerEventsResponse,
@@ -66,94 +63,6 @@ export class IndexerClient extends IndexerBaseClient {
       isolated,
     });
 
-    return this.getPaginationEventsResponse(events, requestedLimit);
-  }
-
-  async getPaginatedSubaccountLpEvents(
-    params: GetIndexerSubaccountLpEventsParams,
-  ): Promise<GetIndexerSubaccountLpEventsResponse> {
-    const {
-      startCursor,
-      maxTimestampInclusive,
-      limit: requestedLimit,
-      subaccountName,
-      subaccountOwner,
-    } = params;
-
-    // There are 2 events per mint/burn for spot - one associated with the product & the other with the quote
-    // There is only 1 event per mint/burn for perp - associated with the product, where the quote delta is encoded in vQuote
-    const limit = requestedLimit + 1;
-    const baseResponse = await this.getEvents({
-      startCursor,
-      maxTimestampInclusive,
-      eventTypes: ['mint_lp', 'burn_lp'],
-      limit: {
-        type: 'txs',
-        value: limit,
-      },
-      subaccount: { subaccountName, subaccountOwner },
-    });
-
-    // Now aggregate results by the submission index, use map to maintain insertion order
-    const eventsBySubmissionIdx = new Map<string, IndexerLpEvent>();
-
-    baseResponse.forEach((event) => {
-      const mappedEvent = (() => {
-        const existingEvent = eventsBySubmissionIdx.get(event.submissionIndex);
-        if (existingEvent) {
-          return existingEvent;
-        }
-
-        const newEvent: IndexerLpEvent = {
-          // These fields will be updated properly later
-          lpDelta: toBigDecimal(0),
-          baseDelta: toBigDecimal(0),
-          quoteDelta: toBigDecimal(0),
-          baseSnapshot: event.state,
-          quoteSnapshot: undefined,
-          timestamp: event.timestamp,
-          submissionIndex: event.submissionIndex,
-          tx: event.tx,
-          ...subaccountFromHex(event.subaccount),
-        };
-        eventsBySubmissionIdx.set(event.submissionIndex, newEvent);
-
-        return newEvent;
-      })();
-
-      const balanceDelta = event.state.postBalance.amount.minus(
-        event.state.preBalance.amount,
-      );
-      const lpBalanceDelta = event.state.postBalance.lpAmount.minus(
-        event.state.preBalance.lpAmount,
-      );
-
-      // Perp - this should be the only relevant event
-      if (event.state.type === ProductEngineType.PERP) {
-        mappedEvent.lpDelta = lpBalanceDelta;
-        mappedEvent.baseDelta = balanceDelta;
-        mappedEvent.quoteDelta = event.state.postBalance.vQuoteBalance.minus(
-          event.state.preBalance.vQuoteBalance,
-        );
-        mappedEvent.baseSnapshot = event.state;
-        return;
-      }
-
-      // Quote
-      if (event.state.market.productId === QUOTE_PRODUCT_ID) {
-        mappedEvent.quoteDelta = balanceDelta;
-        mappedEvent.quoteSnapshot = event.state;
-        return;
-      }
-
-      // Spot
-      mappedEvent.lpDelta = lpBalanceDelta;
-      mappedEvent.baseDelta = balanceDelta;
-      mappedEvent.baseSnapshot = event.state;
-    });
-
-    // Force cast to get rid of the `Partial`
-    const events = Array.from(eventsBySubmissionIdx.values());
     return this.getPaginationEventsResponse(events, requestedLimit);
   }
 
@@ -403,7 +312,6 @@ export class IndexerClient extends IndexerBaseClient {
         }
 
         const newEvent: Partial<IndexerLiquidationEvent> = {
-          lps: [],
           perp: undefined,
           spot: undefined,
           quote: undefined,
@@ -418,52 +326,37 @@ export class IndexerClient extends IndexerBaseClient {
       const balanceDelta = event.state.postBalance.amount.minus(
         event.state.preBalance.amount,
       );
-      const lpBalanceDelta = event.state.postBalance.lpAmount.minus(
-        event.state.preBalance.lpAmount,
-      );
 
       // Event without balance change - not part of this liq
       // However, we could have zero balance changes for the quote product if this was a partial liquidation
       if (
         balanceDelta.isZero() &&
-        lpBalanceDelta.isZero() &&
         event.state.market.productId !== QUOTE_PRODUCT_ID
       ) {
         return;
       }
 
-      if (!lpBalanceDelta.isZero()) {
-        // LP Decomposition
-        mappedEvent.lps?.push({
-          amountLpDecomposed: lpBalanceDelta.negated(),
-          underlyingBalanceDelta: balanceDelta,
-          indexerEvent: event,
-        });
+      if (event.state.type === ProductEngineType.PERP) {
+        mappedEvent.perp = {
+          amountLiquidated: balanceDelta.negated(),
+          // This cast is safe because we're checking for event.state.type
+          indexerEvent:
+            event as IndexerEventWithTx<IndexerEventPerpStateSnapshot>,
+        };
+      } else if (event.state.market.productId === QUOTE_PRODUCT_ID) {
+        mappedEvent.quote = {
+          balanceDelta,
+          indexerEvent:
+            event as IndexerEventWithTx<IndexerEventSpotStateSnapshot>,
+        };
       } else {
-        // Actual underlying balance change
-        if (event.state.type === ProductEngineType.PERP) {
-          mappedEvent.perp = {
-            amountLiquidated: balanceDelta.negated(),
-            // This cast is safe because we're checking for event.state.type
-            indexerEvent:
-              event as IndexerEventWithTx<IndexerEventPerpStateSnapshot>,
-          };
-        } else if (event.state.market.productId === QUOTE_PRODUCT_ID) {
-          mappedEvent.quote = {
-            balanceDelta,
-            indexerEvent:
-              event as IndexerEventWithTx<IndexerEventSpotStateSnapshot>,
-          };
-        } else {
-          mappedEvent.spot = {
-            amountLiquidated: balanceDelta.negated(),
-            indexerEvent:
-              event as IndexerEventWithTx<IndexerEventSpotStateSnapshot>,
-          };
-        }
+        mappedEvent.spot = {
+          amountLiquidated: balanceDelta.negated(),
+          indexerEvent:
+            event as IndexerEventWithTx<IndexerEventSpotStateSnapshot>,
+        };
       }
 
-      // Valid liq, so set into map
       eventsBySubmissionIdx.set(event.submissionIndex, mappedEvent);
     });
 

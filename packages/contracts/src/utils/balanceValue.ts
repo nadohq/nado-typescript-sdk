@@ -1,10 +1,5 @@
-import { BigDecimal, toBigDecimal } from '@vertex-protocol/utils';
-import {
-  BalanceWithProduct,
-  PerpBalanceWithProduct,
-  Product,
-  SpotBalanceWithProduct,
-} from '../common';
+import { BigDecimal } from '@vertex-protocol/utils';
+import { PerpBalanceWithProduct, SpotBalanceWithProduct } from '../common';
 
 /**
  * Calculates the quote value of a spot balance, in terms of quote units
@@ -41,36 +36,4 @@ export function calcPerpBalanceValue(
   return balanceWithProduct.amount
     .multipliedBy(balanceWithProduct.oraclePrice)
     .plus(balanceWithProduct.vQuoteBalance);
-}
-
-/**
- * Calculates the implied value of an LP balance, in terms of quote units
- *
- * @param balanceWithProduct
- */
-export function calcLpBalanceValue(
-  balanceWithProduct: BalanceWithProduct,
-): BigDecimal {
-  const lpBalance = balanceWithProduct.lpAmount;
-  if (lpBalance.isZero()) {
-    return toBigDecimal(0);
-  }
-
-  return calcLpTokenValue(balanceWithProduct).times(lpBalance);
-}
-
-/**
- * Calculates the implied value of an LP token, in terms of quote units
- *
- * @param product
- */
-export function calcLpTokenValue(product: Product) {
-  if (product.totalLpSupply.isZero()) {
-    return toBigDecimal(0);
-  }
-  const baseValue = product.totalLpBaseAmount
-    .div(product.totalLpSupply)
-    .multipliedBy(product.oraclePrice);
-  const quoteValue = product.totalLpQuoteAmount.div(product.totalLpSupply);
-  return baseValue.plus(quoteValue);
 }

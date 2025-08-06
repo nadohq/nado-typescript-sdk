@@ -56,7 +56,6 @@ export async function getSubaccountSummary({
 
     balances.push({
       amount: toBigDecimal(spotBalance.balance.amount),
-      lpAmount: toBigDecimal(spotBalance.lpBalance.amount),
       healthContributions: mapHealthContributions(
         subaccountInfo.healthContributions[Number(spotBalance.productId)],
       ),
@@ -75,7 +74,6 @@ export async function getSubaccountSummary({
 
     balances.push({
       amount: toBigDecimal(perpBalance.balance.amount),
-      lpAmount: toBigDecimal(perpBalance.lpBalance.amount),
       vQuoteBalance: toBigDecimal(perpBalance.balance.vQuoteBalance),
       healthContributions: mapHealthContributions(
         subaccountInfo.healthContributions[Number(perpBalance.productId)],

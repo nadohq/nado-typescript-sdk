@@ -10,10 +10,10 @@ import {
   subaccountToHex,
 } from '@vertex-protocol/contracts';
 import { addDecimals, nowInSeconds } from '@vertex-protocol/utils';
-import { runWithContext } from '../utils/runWithContext';
-import { RunContext } from '../utils/types';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
+import { runWithContext } from '../utils/runWithContext';
+import { RunContext } from '../utils/types';
 
 async function wsMessageTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -73,28 +73,6 @@ async function wsMessageTests(context: RunContext) {
   });
 
   debugPrint('Cancel Order WS request', wsCancelOrdersReq);
-
-  const wsMintLpReq = await vertexClient.ws.execute.buildMintLpMessage({
-    productId: 1,
-    subaccountOwner: walletClientAddress,
-    subaccountName: 'default',
-    amountBase: addDecimals(1),
-    quoteAmountLow: addDecimals(1000),
-    quoteAmountHigh: addDecimals(2000),
-    signature: '',
-  });
-
-  debugPrint('Mint LP WS request', wsMintLpReq);
-
-  const wsBurnLpReq = await vertexClient.ws.execute.buildBurnLpMessage({
-    productId: 1,
-    subaccountOwner: walletClientAddress,
-    subaccountName: 'default',
-    amount: addDecimals(1),
-    signature: '',
-  });
-
-  debugPrint('Burn LP WS request', wsBurnLpReq);
 
   const wsWithdrawCollateralReq =
     await vertexClient.ws.execute.buildWithdrawCollateralMessage({

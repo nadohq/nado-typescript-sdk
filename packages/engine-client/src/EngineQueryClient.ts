@@ -5,12 +5,12 @@ import {
 } from '@vertex-protocol/contracts';
 import {
   addDecimals,
+  BigDecimal,
   mapValues,
   removeDecimals,
   toBigDecimal,
   toIntegerString,
 } from '@vertex-protocol/utils';
-import { BigDecimal } from '@vertex-protocol/utils';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineServerStatusResponse,
@@ -31,8 +31,6 @@ import {
   GetEngineMarketPriceResponse,
   GetEngineMarketPricesParams,
   GetEngineMarketPricesResponse,
-  GetEngineMaxMintLpAmountParams,
-  GetEngineMaxMintLpAmountResponse,
   GetEngineMaxMintVlpAmountParams,
   GetEngineMaxMintVlpAmountResponse,
   GetEngineMaxOrderSizeParams,
@@ -148,14 +146,6 @@ export class EngineQueryClient extends EngineBaseClient {
           EngineServerSubaccountInfoQueryParams['txns']
         >[number] => {
           switch (tx.type) {
-            case 'burn_lp':
-              return {
-                burn_lp: {
-                  product_id: tx.tx.productId,
-                  subaccount,
-                  amount_lp: toIntegerString(tx.tx.amountLp),
-                },
-              };
             case 'apply_delta':
               return {
                 apply_delta: {
@@ -163,16 +153,6 @@ export class EngineQueryClient extends EngineBaseClient {
                   subaccount,
                   amount_delta: toIntegerString(tx.tx.amountDelta),
                   v_quote_delta: toIntegerString(tx.tx.vQuoteDelta),
-                },
-              };
-            case 'mint_lp':
-              return {
-                mint_lp: {
-                  product_id: tx.tx.productId,
-                  subaccount,
-                  amount_base: toIntegerString(tx.tx.amountBase),
-                  quote_amount_low: toIntegerString(tx.tx.amountQuoteLow),
-                  quote_amount_high: toIntegerString(tx.tx.amountQuoteHigh),
                 },
               };
           }
@@ -509,30 +489,6 @@ export class EngineQueryClient extends EngineBaseClient {
     });
 
     return toBigDecimal(baseResponse.max_withdrawable);
-  }
-
-  /**
-   * Retrieves the estimated max base & quote amounts for minting LPs
-   *
-   * @param params
-   */
-  async getMaxMintLpAmount(
-    params: GetEngineMaxMintLpAmountParams,
-  ): Promise<GetEngineMaxMintLpAmountResponse> {
-    const baseResponse = await this.query('max_lp_mintable', {
-      product_id: params.productId,
-      sender: subaccountToHex({
-        subaccountOwner: params.subaccountOwner,
-        subaccountName: params.subaccountName,
-      }),
-      spot_leverage:
-        params.spotLeverage != null ? String(params.spotLeverage) : null,
-    });
-
-    return {
-      maxBaseAmount: toBigDecimal(baseResponse.max_base_amount),
-      maxQuoteAmount: toBigDecimal(baseResponse.max_quote_amount),
-    };
   }
 
   /**

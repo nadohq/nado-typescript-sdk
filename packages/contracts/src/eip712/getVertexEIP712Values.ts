@@ -1,14 +1,12 @@
 import { addDecimals, toIntegerString } from '@vertex-protocol/utils';
 import { subaccountToHex } from '../utils/bytes32';
 import {
-  EIP712BurnLpValues,
   EIP712BurnVlpValues,
   EIP712IsolatedOrderValues,
   EIP712LeaderboardAuthenticationValues,
   EIP712LinkSignerValues,
   EIP712LiquidateSubaccountValues,
   EIP712ListTriggerOrdersValues,
-  EIP712MintLpValues,
   EIP712MintVlpValues,
   EIP712OrderCancellationValues,
   EIP712OrderValues,
@@ -22,8 +20,6 @@ import {
   SignableRequestTypeToParams,
 } from './signableRequestType';
 import {
-  EIP712BurnLpParams,
-  EIP712BurnVlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
   EIP712IsolatedOrderParams,
@@ -31,11 +27,11 @@ import {
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
-  EIP712MintLpParams,
   EIP712MintVlpParams,
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
+  EIP712BurnVlpParams,
 } from './signatureParamTypes';
 
 /**
@@ -57,12 +53,6 @@ export function getVertexEIP712Values<TReqType extends SignableRequestType>(
       values = getWithdrawCollateralValues(
         params as EIP712WithdrawCollateralParams,
       );
-      break;
-    case 'mint_lp':
-      values = getMintLpValues(params as EIP712MintLpParams);
-      break;
-    case 'burn_lp':
-      values = getBurnLpValues(params as EIP712BurnLpParams);
       break;
     case 'place_order':
       values = getOrderValues(params as EIP712OrderParams);
@@ -115,32 +105,6 @@ export function getVertexEIP712Values<TReqType extends SignableRequestType>(
 function getWithdrawCollateralValues(
   params: EIP712WithdrawCollateralParams,
 ): EIP712WithdrawCollateralValues {
-  return {
-    sender: subaccountToHex({
-      subaccountOwner: params.subaccountOwner,
-      subaccountName: params.subaccountName,
-    }),
-    productId: params.productId,
-    amount: toIntegerString(params.amount),
-    nonce: params.nonce,
-  };
-}
-
-function getMintLpValues(params: EIP712MintLpParams): EIP712MintLpValues {
-  return {
-    sender: subaccountToHex({
-      subaccountOwner: params.subaccountOwner,
-      subaccountName: params.subaccountName,
-    }),
-    productId: params.productId,
-    amountBase: toIntegerString(params.amountBase),
-    quoteAmountLow: toIntegerString(params.quoteAmountLow),
-    quoteAmountHigh: toIntegerString(params.quoteAmountHigh),
-    nonce: params.nonce,
-  };
-}
-
-function getBurnLpValues(params: EIP712BurnLpParams): EIP712BurnLpValues {
   return {
     sender: subaccountToHex({
       subaccountOwner: params.subaccountOwner,

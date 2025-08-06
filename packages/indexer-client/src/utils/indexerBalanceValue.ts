@@ -1,6 +1,5 @@
 import { BigDecimal } from '@vertex-protocol/utils';
 import { IndexerPerpBalance, IndexerSpotBalance } from '../types';
-import { calcLpTokenValue, Market } from '@vertex-protocol/contracts';
 
 /**
  * Most of these calculations take oraclePrice as a separate parameter. This allows us to not rely on the Snapshot
@@ -44,17 +43,4 @@ export function calcIndexerPerpBalanceValue(
   oraclePrice: BigDecimal,
 ): BigDecimal {
   return balance.amount.multipliedBy(oraclePrice).plus(balance.vQuoteBalance);
-}
-
-/**
- * Calculates the implied value of an LP indexer balance, in terms of quote units
- *
- * @param balance
- * @param market
- */
-export function calcIndexerLpBalanceValue(
-  balance: IndexerSpotBalance | IndexerPerpBalance,
-  market: Market,
-): BigDecimal {
-  return calcLpTokenValue(market.product).times(balance.lpAmount);
 }

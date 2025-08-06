@@ -53,8 +53,6 @@ export interface IndexerBalanceTrackedVars {
   netFundingCumulative: BigDecimal;
   netEntryUnrealized: BigDecimal;
   netEntryCumulative: BigDecimal;
-  netEntryLpUnrealized: BigDecimal;
-  netEntryLpCumulative: BigDecimal;
 }
 
 export interface IndexerEvent<

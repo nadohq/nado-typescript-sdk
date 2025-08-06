@@ -79,14 +79,12 @@ export function mapIndexerServerBalance(
   if ('spot' in balance) {
     return {
       amount: toBigDecimal(balance.spot.balance.amount),
-      lpAmount: toBigDecimal(balance.spot.lp_balance.amount),
       productId: balance.spot.product_id,
       type: ProductEngineType.SPOT,
     };
   }
   return {
     amount: toBigDecimal(balance.perp.balance.amount),
-    lpAmount: toBigDecimal(balance.perp.lp_balance.amount),
     productId: balance.perp.product_id,
     type: ProductEngineType.PERP,
     vQuoteBalance: toBigDecimal(balance.perp.balance.v_quote_balance),
@@ -153,8 +151,6 @@ export function mapIndexerEvent(event: IndexerServerEvent): IndexerEvent {
     submissionIndex: event.submission_idx,
     trackedVars: {
       netEntryCumulative: toBigDecimal(event.net_entry_cumulative),
-      netEntryLpCumulative: toBigDecimal(event.net_entry_lp_cumulative),
-      netEntryLpUnrealized: toBigDecimal(event.net_entry_lp_unrealized),
       netEntryUnrealized: toBigDecimal(event.net_entry_unrealized),
       netFundingCumulative: toBigDecimal(event.net_funding_cumulative),
       netFundingUnrealized: toBigDecimal(event.net_funding_unrealized),

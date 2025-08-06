@@ -9,18 +9,9 @@ export interface EngineServerSpotBalanceData {
   last_cumulative_multiplier_x18: string;
 }
 
-export interface EngineServerSpotLpBalanceData {
-  amount: string;
-}
-
 export interface EngineServerPerpBalanceData {
   amount: string;
   v_quote_balance: string;
-  last_cumulative_funding_x18: string;
-}
-
-export interface EngineServerPerpLpBalanceData {
-  amount: string;
   last_cumulative_funding_x18: string;
 }
 
@@ -37,7 +28,6 @@ export interface EngineServerBookInfo {
   price_increment_x18: string;
   min_size: string;
   collected_fees: string;
-  lp_spread_x18: string;
 }
 
 export interface EngineServerSpotConfig {
@@ -55,25 +45,11 @@ export interface EngineServerSpotState {
   total_borrows_normalized: string;
 }
 
-export interface EngineServerSpotLpState {
-  supply: string;
-  quote: EngineServerSpotBalanceData;
-  base: EngineServerSpotBalanceData;
-}
-
 export interface EngineServerPerpState {
   cumulative_funding_long_x18: string;
   cumulative_funding_short_x18: string;
   available_settle: string;
   open_interest: string;
-}
-
-export interface EngineServerPerpLpState {
-  supply: string;
-  base: string;
-  quote: string;
-  last_cumulative_funding_x18: string;
-  cumulative_funding_per_lp_x18: string;
 }
 
 export interface EngineServerSpotProduct {
@@ -82,14 +58,12 @@ export interface EngineServerSpotProduct {
   risk: EngineServerRisk;
   config: EngineServerSpotConfig;
   state: EngineServerSpotState;
-  lp_state: EngineServerSpotLpState;
   book_info: EngineServerBookInfo;
 }
 
 export interface EngineServerSpotBalance {
   product_id: number;
   balance: EngineServerSpotBalanceData;
-  lp_balance: EngineServerSpotLpBalanceData;
 }
 
 export interface EngineServerPerpProduct {
@@ -98,14 +72,12 @@ export interface EngineServerPerpProduct {
   index_price_x18: string;
   risk: EngineServerRisk;
   state: EngineServerPerpState;
-  lp_state: EngineServerPerpLpState;
   book_info: EngineServerBookInfo;
 }
 
 export interface EngineServerPerpBalance {
   product_id: number;
   balance: EngineServerPerpBalanceData;
-  lp_balance: EngineServerPerpLpBalanceData;
 }
 
 export type EngineServerProductType = 'perp' | 'spot';
