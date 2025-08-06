@@ -1,10 +1,10 @@
-import { ContractInstance, ERC20_ABI } from '@vertex-protocol/contracts';
-import { getValidatedAddress } from '@vertex-protocol/utils';
+import { ContractInstance, ERC20_ABI } from '@nadohq/contracts';
+import { getValidatedAddress } from '@nadohq/utils';
 import { getContract } from 'viem';
-import { BaseVertexAPI } from '../base';
+import { BaseNadoAPI } from '../base';
 import { ProductIdOrTokenAddress } from './types';
 
-export class BaseSpotAPI extends BaseVertexAPI {
+export class BaseSpotAPI extends BaseNadoAPI {
   /**
    * Retrieves the ERC20 token contract for a spot product
    */

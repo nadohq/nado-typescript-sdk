@@ -1,2 +1,2 @@
-# `@vertex-protocol/indexer-client`
+# `@nadohq/indexer-client`
 

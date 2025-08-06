@@ -1,4 +1,4 @@
-# `@vertex-protocol/contracts`
+# `@nadohq/contracts`
 
 Exports:
 

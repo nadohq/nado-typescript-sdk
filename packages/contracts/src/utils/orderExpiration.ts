@@ -1,4 +1,4 @@
-import { BigDecimalish, toBigInt } from '@vertex-protocol/utils';
+import { BigDecimalish, toBigInt } from '@nadohq/utils';
 
 // All valid "special" order expiration types
 export type OrderExpirationType = 'default' | 'ioc' | 'fok' | 'post_only';

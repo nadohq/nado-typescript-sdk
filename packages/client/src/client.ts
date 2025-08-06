@@ -1,24 +1,24 @@
-import { WalletClientWithAccount } from '@vertex-protocol/contracts';
+import { WalletClientWithAccount } from '@nadohq/contracts';
 import { MarketAPI } from './apis/market';
 import { PerpAPI } from './apis/perp';
 import { SpotAPI } from './apis/spot';
 import { SubaccountAPI } from './apis/subaccount';
 import { WebsocketAPI } from './apis/ws';
-import { createClientContext, VertexClientContext } from './context';
+import { createClientContext, NadoClientContext } from './context';
 
 /**
- * Client for querying and executing against Vertex Clearinghouse.
- * Usually not instantiated directly. Instead, use {@link createVertexClient:CLIENT}.
+ * Client for querying and executing against Nado Clearinghouse.
+ * Usually not instantiated directly. Instead, use {@link createNadoClient:CLIENT}.
  */
-export class VertexClient {
-  context!: VertexClientContext;
+export class NadoClient {
+  context!: NadoClientContext;
   market!: MarketAPI;
   subaccount!: SubaccountAPI;
   spot!: SpotAPI;
   perp!: PerpAPI;
   ws!: WebsocketAPI;
 
-  constructor(context: VertexClientContext) {
+  constructor(context: NadoClientContext) {
     this.setupFromContext(context);
   }
 
@@ -38,7 +38,7 @@ export class VertexClient {
    * Sets the WalletClient for the client. Will cause a full reload of the current context.
    * @param walletClient
    */
-  setWalletClient(walletClient: VertexClientContext['walletClient']) {
+  setWalletClient(walletClient: NadoClientContext['walletClient']) {
     const newContext = createClientContext(
       {
         contractAddresses: this.context.contractAddresses,
@@ -56,7 +56,7 @@ export class VertexClient {
     this.setupFromContext(newContext);
   }
 
-  private setupFromContext(context: VertexClientContext) {
+  private setupFromContext(context: NadoClientContext) {
     this.context = context;
     this.market = new MarketAPI(context);
     this.subaccount = new SubaccountAPI(context);

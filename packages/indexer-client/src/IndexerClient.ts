@@ -3,8 +3,8 @@ import {
   QUOTE_PRODUCT_ID,
   subaccountFromHex,
   VLP_PRODUCT_ID,
-} from '@vertex-protocol/contracts';
-import { toBigDecimal, toIntegerString } from '@vertex-protocol/utils';
+} from '@nadohq/contracts';
+import { toBigDecimal, toIntegerString } from '@nadohq/utils';
 
 import { IndexerBaseClient } from './IndexerBaseClient';
 import {
@@ -37,7 +37,7 @@ import {
 } from './types';
 
 /**
- * Indexer client providing paginated queries for historical data from the Vertex indexer service
+ * Indexer client providing paginated queries for historical data from the Nado indexer service
  */
 export class IndexerClient extends IndexerBaseClient {
   async getPaginatedSubaccountMatchEvents(

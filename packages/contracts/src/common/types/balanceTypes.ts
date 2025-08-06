@@ -1,4 +1,4 @@
-import { BigDecimal } from '@vertex-protocol/utils';
+import { BigDecimal } from '@nadohq/utils';
 import { HealthType } from './healthTypes';
 import { PerpProduct, ProductEngineType, SpotProduct } from './productTypes';
 

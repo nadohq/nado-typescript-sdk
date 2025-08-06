@@ -1,2 +1,2 @@
-# `@vertex-protocol/trigger-client`
+# `@nadohq/trigger-client`
 

@@ -1,8 +1,5 @@
-import {
-  EIP712ListTriggerOrdersValues,
-  SignedTx,
-} from '@vertex-protocol/contracts';
-import { EngineServerExecuteResult } from '@vertex-protocol/engine-client';
+import { EIP712ListTriggerOrdersValues, SignedTx } from '@nadohq/contracts';
+import { EngineServerExecuteResult } from '@nadohq/engine-client';
 import { TriggerServerPlaceOrderParams } from './serverExecuteTypes';
 
 export type TriggerServerOrderStatus =

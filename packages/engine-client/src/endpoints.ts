@@ -1,4 +1,4 @@
-import { ChainEnv } from '@vertex-protocol/contracts';
+import { ChainEnv } from '@nadohq/contracts';
 
 export const ENGINE_CLIENT_ENDPOINTS: Record<ChainEnv, string> = {
   local: 'http://localhost:80',

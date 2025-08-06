@@ -1,36 +1,33 @@
 import {
   ChainEnv,
-  VERTEX_ABIS,
-  VERTEX_DEPLOYMENTS,
-  VertexContractName,
-  VertexContracts,
-  VertexDeploymentAddresses,
+  NADO_ABIS,
+  NADO_DEPLOYMENTS,
+  NadoContractName,
+  NadoContracts,
+  NadoDeploymentAddresses,
   WalletClientWithAccount,
-} from '@vertex-protocol/contracts';
-import {
-  ENGINE_CLIENT_ENDPOINTS,
-  EngineClient,
-} from '@vertex-protocol/engine-client';
+} from '@nadohq/contracts';
+import { ENGINE_CLIENT_ENDPOINTS, EngineClient } from '@nadohq/engine-client';
 import {
   INDEXER_CLIENT_ENDPOINTS,
   IndexerClient,
-} from '@vertex-protocol/indexer-client';
+} from '@nadohq/indexer-client';
 import {
   TRIGGER_CLIENT_ENDPOINTS,
   TriggerClient,
-} from '@vertex-protocol/trigger-client';
+} from '@nadohq/trigger-client';
 import { getContract, PublicClient } from 'viem';
 
 /**
- * Context required to use the Vertex client.
+ * Context required to use the Nado client.
  */
-export interface VertexClientContext {
+export interface NadoClientContext {
   publicClient: PublicClient;
   walletClient?: WalletClientWithAccount;
   // If provided, this is used to sign engine transactions instead of the account associated with walletClient
   linkedSignerWalletClient?: WalletClientWithAccount;
-  contracts: VertexContracts;
-  contractAddresses: VertexDeploymentAddresses;
+  contracts: NadoContracts;
+  contractAddresses: NadoDeploymentAddresses;
   engineClient: EngineClient;
   indexerClient: IndexerClient;
   triggerClient: TriggerClient;
@@ -39,8 +36,8 @@ export interface VertexClientContext {
 /**
  * Args for creating a context
  */
-interface VertexClientContextOpts {
-  contractAddresses: VertexDeploymentAddresses;
+interface NadoClientContextOpts {
+  contractAddresses: NadoDeploymentAddresses;
   engineEndpoint: string;
   indexerEndpoint: string;
   triggerEndpoint: string;
@@ -49,12 +46,12 @@ interface VertexClientContextOpts {
 /**
  * Args for signing configuration for creating a context
  */
-export type CreateVertexClientContextAccountOpts = Pick<
-  VertexClientContext,
+export type CreateNadoClientContextAccountOpts = Pick<
+  NadoClientContext,
   'walletClient' | 'linkedSignerWalletClient' | 'publicClient'
 >;
 
-export type CreateVertexClientContextOpts = VertexClientContextOpts | ChainEnv;
+export type CreateNadoClientContextOpts = NadoClientContextOpts | ChainEnv;
 
 /**
  * Utility function to create client context from options
@@ -63,15 +60,15 @@ export type CreateVertexClientContextOpts = VertexClientContextOpts | ChainEnv;
  * @param accountOpts
  */
 export function createClientContext(
-  opts: CreateVertexClientContextOpts,
-  accountOpts: CreateVertexClientContextAccountOpts,
-): VertexClientContext {
+  opts: CreateNadoClientContextOpts,
+  accountOpts: CreateNadoClientContextAccountOpts,
+): NadoClientContext {
   const {
     contractAddresses,
     engineEndpoint,
     indexerEndpoint,
     triggerEndpoint,
-  } = ((): VertexClientContextOpts => {
+  } = ((): NadoClientContextOpts => {
     // Custom options
     if (typeof opts === 'object') {
       return opts;
@@ -79,7 +76,7 @@ export function createClientContext(
 
     const chainEnv = opts;
     return {
-      contractAddresses: VERTEX_DEPLOYMENTS[chainEnv],
+      contractAddresses: NADO_DEPLOYMENTS[chainEnv],
       engineEndpoint: ENGINE_CLIENT_ENDPOINTS[chainEnv],
       indexerEndpoint: INDEXER_CLIENT_ENDPOINTS[chainEnv],
       triggerEndpoint: TRIGGER_CLIENT_ENDPOINTS[chainEnv],
@@ -92,37 +89,37 @@ export function createClientContext(
     linkedSignerWalletClient,
     publicClient,
     contracts: {
-      querier: getVertexContract({
+      querier: getNadoContract({
         contractAddresses,
         contractName: 'querier',
         walletClient,
         publicClient,
       }),
-      clearinghouse: getVertexContract({
+      clearinghouse: getNadoContract({
         contractAddresses,
         contractName: 'clearinghouse',
         walletClient,
         publicClient,
       }),
-      endpoint: getVertexContract({
+      endpoint: getNadoContract({
         contractAddresses,
         contractName: 'endpoint',
         walletClient,
         publicClient,
       }),
-      spotEngine: getVertexContract({
+      spotEngine: getNadoContract({
         contractAddresses,
         contractName: 'spotEngine',
         walletClient,
         publicClient,
       }),
-      perpEngine: getVertexContract({
+      perpEngine: getNadoContract({
         contractAddresses,
         contractName: 'perpEngine',
         walletClient,
         publicClient,
       }),
-      withdrawPool: getVertexContract({
+      withdrawPool: getNadoContract({
         contractAddresses,
         contractName: 'withdrawPool',
         walletClient,
@@ -147,22 +144,22 @@ export function createClientContext(
   };
 }
 
-interface GetVertexContractParams<T extends VertexContractName> {
-  contractAddresses: VertexDeploymentAddresses;
+interface GetNadoContractParams<T extends NadoContractName> {
+  contractAddresses: NadoDeploymentAddresses;
   contractName: T;
   walletClient?: WalletClientWithAccount;
   publicClient: PublicClient;
 }
 
-function getVertexContract<T extends VertexContractName>({
+function getNadoContract<T extends NadoContractName>({
   contractAddresses,
   contractName,
   walletClient,
   publicClient,
-}: GetVertexContractParams<T>): VertexContracts[T] {
+}: GetNadoContractParams<T>): NadoContracts[T] {
   return getContract({
     address: contractAddresses[contractName],
-    abi: VERTEX_ABIS[contractName],
+    abi: NADO_ABIS[contractName],
     client: walletClient ?? publicClient,
-  }) as VertexContracts[T];
+  }) as NadoContracts[T];
 }

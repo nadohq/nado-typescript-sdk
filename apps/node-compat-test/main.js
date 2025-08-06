@@ -1,8 +1,8 @@
 // this js file is treated as ESM since the package.json has "type": "module"
-import { createClientContext } from '@vertex-protocol/client';
+import { createClientContext } from '@nadohq/client';
 
 if (typeof createClientContext !== 'function') {
   throw new Error('unexpected import');
 }
 
-console.log('Successfully loaded @vertex-protocol/client in ESM');
+console.log('Successfully loaded @nadohq/client in ESM');

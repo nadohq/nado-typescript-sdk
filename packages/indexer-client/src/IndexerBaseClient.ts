@@ -2,15 +2,15 @@ import {
   EIP712LeaderboardAuthenticationParams,
   EIP712LeaderboardAuthenticationValues,
   getDefaultRecvTime,
+  getNadoEIP712Values,
   getSignedTransactionRequest,
-  getVertexEIP712Values,
   SignableRequestType,
   SignableRequestTypeToParams,
   SignedTx,
   subaccountFromHex,
   subaccountToHex,
   WalletClientWithAccount,
-} from '@vertex-protocol/contracts';
+} from '@nadohq/contracts';
 import {
   getValidatedHex,
   mapValues,
@@ -20,7 +20,7 @@ import {
   toBigInt,
   toIntegerString,
   WalletNotProvidedError,
-} from '@vertex-protocol/utils';
+} from '@nadohq/utils';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapIndexerCandlesticks,
@@ -681,7 +681,7 @@ export class IndexerBaseClient {
       subaccountOwner: params.subaccountOwner,
     };
 
-    const tx = getVertexEIP712Values(
+    const tx = getNadoEIP712Values(
       'leaderboard_authentication',
       signatureParams,
     );

@@ -1,7 +1,7 @@
-import { BaseVertexAPI } from '../base';
+import { BaseNadoAPI } from '../base';
 import { LinkSignerParams, LiquidateSubaccountParams } from './types';
 
-export class SubaccountExecuteAPI extends BaseVertexAPI {
+export class SubaccountExecuteAPI extends BaseNadoAPI {
   /**
    * Liquidates a subaccount
    *

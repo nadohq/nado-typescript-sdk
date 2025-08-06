@@ -1,4 +1,4 @@
-import { ProductEngineType } from '@vertex-protocol/contracts';
+import { ProductEngineType } from '@nadohq/contracts';
 import { EngineServerProductType } from '../types';
 
 export function mapProductEngineType(

@@ -1,4 +1,4 @@
-import { BigDecimalish } from '@vertex-protocol/utils';
+import { BigDecimalish } from '@nadohq/utils';
 import { Address } from 'viem';
 import { Subaccount } from '../common';
 

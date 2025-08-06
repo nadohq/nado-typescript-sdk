@@ -1,7 +1,7 @@
-const { createClientContext } = require('@vertex-protocol/client');
+const { createClientContext } = require('@nadohq/client');
 
 if (typeof createClientContext !== 'function') {
   throw new Error('unexpected import');
 }
 
-console.log('Successfully loaded @vertex-protocol/client in CJS');
+console.log('Successfully loaded @nadohq/client in CJS');

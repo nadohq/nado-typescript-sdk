@@ -2,25 +2,19 @@ import {
   depositCollateral,
   getOrderDigest,
   getTriggerOrderNonce,
-  VERTEX_ABIS,
   MOCK_ERC20_ABI,
-} from '@vertex-protocol/contracts';
-import {
-  EngineClient,
-  EngineOrderParams,
-} from '@vertex-protocol/engine-client';
-import {
-  TriggerClient,
-  TriggerPlaceOrderParams,
-} from '@vertex-protocol/trigger-client';
-import { addDecimals, toBigInt } from '@vertex-protocol/utils';
+  NADO_ABIS,
+} from '@nadohq/contracts';
+import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
+import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
+import { addDecimals, toBigInt } from '@nadohq/utils';
+import test from 'node:test';
 import { getContract } from 'viem';
+import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
-import test from 'node:test';
-import { debugPrint } from '../utils/debugPrint';
 
 async function fullSanity(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -38,7 +32,7 @@ async function fullSanity(context: RunContext) {
   });
 
   const clearinghouse = getContract({
-    abi: VERTEX_ABIS.clearinghouse,
+    abi: NADO_ABIS.clearinghouse,
     address: context.contracts.clearinghouse,
     client: walletClient,
   });
@@ -49,7 +43,7 @@ async function fullSanity(context: RunContext) {
   });
   const endpointAddr = context.contracts.endpoint;
   const endpoint = getContract({
-    abi: VERTEX_ABIS.endpoint,
+    abi: NADO_ABIS.endpoint,
     address: endpointAddr,
     client: walletClient,
   });

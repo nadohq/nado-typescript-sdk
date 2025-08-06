@@ -1,13 +1,10 @@
-import {
-  CandlestickPeriod,
-  IndexerClient,
-} from '@vertex-protocol/indexer-client';
-import { RunContext } from '../utils/types';
-import { nowInSeconds, TimeInSeconds } from '@vertex-protocol/utils';
-import { runWithContext } from '../utils/runWithContext';
-import { QUOTE_PRODUCT_ID } from '@vertex-protocol/contracts';
+import { QUOTE_PRODUCT_ID } from '@nadohq/contracts';
+import { CandlestickPeriod, IndexerClient } from '@nadohq/indexer-client';
+import { nowInSeconds, TimeInSeconds } from '@nadohq/utils';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
+import { runWithContext } from '../utils/runWithContext';
+import { RunContext } from '../utils/types';
 
 async function marketsQueriesTests(context: RunContext) {
   const walletClient = context.getWalletClient();

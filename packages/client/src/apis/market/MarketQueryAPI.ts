@@ -1,7 +1,4 @@
-import {
-  getAllMarkets,
-  GetAllMarketsResponse,
-} from '@vertex-protocol/contracts';
+import { getAllMarkets, GetAllMarketsResponse } from '@nadohq/contracts';
 import {
   GetEngineMarketLiquidityParams,
   GetEngineMarketPriceParams,
@@ -10,7 +7,7 @@ import {
   GetEngineSubaccountOrdersParams,
   GetEngineSubaccountProductOrdersParams,
   ValidateEngineOrderParams,
-} from '@vertex-protocol/engine-client';
+} from '@nadohq/engine-client';
 import {
   GetIndexerCandlesticksParams,
   GetIndexerEdgeCandlesticksParams,
@@ -22,11 +19,11 @@ import {
   GetIndexerOrdersParams,
   GetIndexerOrdersResponse,
   GetIndexerProductSnapshotsParams,
-} from '@vertex-protocol/indexer-client';
-import { BaseVertexAPI } from '../base';
+} from '@nadohq/indexer-client';
+import { BaseNadoAPI } from '../base';
 import { GetTriggerOrdersParams } from './types';
 
-export class MarketQueryAPI extends BaseVertexAPI {
+export class MarketQueryAPI extends BaseNadoAPI {
   /**
    * Retrieves all market states from the on-chain contracts
    */

@@ -1,9 +1,9 @@
 {
   "nodeUrl": "https://arb1.arbitrum.io/rpc",
   "explorerUrl": "https://explorer.arbitrum.io",
-  "subgraphCoreUrl": "https://api.thegraph.com/subgraphs/name/vertex-protocol/vertex-prod-core",
-  "subgraphMarketsUrl": "https://api.thegraph.com/subgraphs/name/vertex-protocol/vertex-prod-markets",
-  "subgraphCandleSticksUrl": "https://api.thegraph.com/subgraphs/name/vertex-protocol/vertex-prod-candlesticks",
+  "subgraphCoreUrl": "https://api.thegraph.com/subgraphs/name/nado-protocol/nado-prod-core",
+  "subgraphMarketsUrl": "https://api.thegraph.com/subgraphs/name/nado-protocol/nado-prod-markets",
+  "subgraphCandleSticksUrl": "https://api.thegraph.com/subgraphs/name/nado-protocol/nado-prod-candlesticks",
   "startBlock": 67108377,
   "deployer": "0xB746472C10f9F128FF9F5029f424cC91bb1D8C3a",
   "quote": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",

@@ -1,4 +1,4 @@
-import { toBigDecimal } from '@vertex-protocol/utils';
+import { toBigDecimal } from '@nadohq/utils';
 import {
   BalanceWithProduct,
   HealthStatusByType,

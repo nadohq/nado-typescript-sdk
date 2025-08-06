@@ -1,5 +1,5 @@
 import { TriggerServerQueryFailureResponse } from './serverQueryTypes';
-import { EngineServerExecuteFailureResult } from '@vertex-protocol/engine-client';
+import { EngineServerExecuteFailureResult } from '@nadohq/engine-client';
 
 export class TriggerServerFailureError extends Error {
   constructor(

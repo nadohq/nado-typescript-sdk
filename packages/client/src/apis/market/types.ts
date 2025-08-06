@@ -5,13 +5,13 @@ import {
   EngineOrderParams,
   EnginePlaceIsolatedOrderParams,
   EnginePlaceOrderParams,
-} from '@vertex-protocol/engine-client';
+} from '@nadohq/engine-client';
 import {
   TriggerCancelOrdersParams,
   TriggerCancelProductOrdersParams,
   TriggerListOrdersParams,
   TriggerPlaceOrderParams,
-} from '@vertex-protocol/trigger-client';
+} from '@nadohq/trigger-client';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
 type ClientOrderParams<T> = Omit<OptionalSignatureParams<T>, 'order'> & {

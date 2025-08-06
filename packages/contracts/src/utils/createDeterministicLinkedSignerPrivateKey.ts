@@ -1,6 +1,6 @@
 import { keccak256 } from 'viem';
 import { Subaccount, WalletClientWithAccount } from '../common';
-import { getVertexEIP712Domain } from '../eip712';
+import { getNadoEIP712Domain } from '../eip712';
 import { subaccountToHex } from './bytes32';
 
 interface Params extends Subaccount {
@@ -28,7 +28,7 @@ export async function createDeterministicLinkedSignerPrivateKey(
   } = params;
 
   const signedMessage = await walletClient.signTypedData({
-    domain: getVertexEIP712Domain(endpointAddress, chainId),
+    domain: getNadoEIP712Domain(endpointAddress, chainId),
     types: {
       CreateLinkedSignerWallet: [{ name: 'subaccount', type: 'bytes32' }],
     },

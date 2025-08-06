@@ -5,7 +5,7 @@ import {
   removeDecimals,
   TimeInSeconds,
   toBigDecimal,
-} from '@vertex-protocol/utils';
+} from '@nadohq/utils';
 import { SpotProduct } from '../common';
 
 /**

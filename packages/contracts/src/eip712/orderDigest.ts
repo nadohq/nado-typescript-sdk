@@ -1,8 +1,8 @@
 import { hashTypedData } from 'viem';
-import { getVertexEIP712Domain } from './getVertexEIP712Domain';
-import { getVertexEIP712PrimaryType } from './getVertexEIP712PrimaryType';
-import { getVertexEIP712Types } from './getVertexEIP712Types';
-import { getVertexEIP712Values } from './getVertexEIP712Values';
+import { getNadoEIP712Domain } from './getNadoEIP712Domain';
+import { getNadoEIP712PrimaryType } from './getNadoEIP712PrimaryType';
+import { getNadoEIP712Types } from './getNadoEIP712Types';
+import { getNadoEIP712Values } from './getNadoEIP712Values';
 import {
   EIP712IsolatedOrderParams,
   EIP712OrderParams,
@@ -22,10 +22,10 @@ interface OrderDigestParams {
 export function getOrderDigest(params: OrderDigestParams): string {
   const { chainId, order, verifyingAddr } = params;
   return hashTypedData({
-    domain: getVertexEIP712Domain(verifyingAddr, chainId),
-    message: getVertexEIP712Values('place_order', order),
-    primaryType: getVertexEIP712PrimaryType('place_order'),
-    types: getVertexEIP712Types('place_order'),
+    domain: getNadoEIP712Domain(verifyingAddr, chainId),
+    message: getNadoEIP712Values('place_order', order),
+    primaryType: getNadoEIP712PrimaryType('place_order'),
+    types: getNadoEIP712Types('place_order'),
   });
 }
 
@@ -46,9 +46,9 @@ export function getIsolatedOrderDigest(
   const { chainId, order, verifyingAddr } = params;
   // For digest purposes, we use the same types as the place_order, not place_isolated_order
   return hashTypedData({
-    domain: getVertexEIP712Domain(verifyingAddr, chainId),
-    message: getVertexEIP712Values('place_order', order),
-    primaryType: getVertexEIP712PrimaryType('place_order'),
-    types: getVertexEIP712Types('place_order'),
+    domain: getNadoEIP712Domain(verifyingAddr, chainId),
+    message: getNadoEIP712Values('place_order', order),
+    primaryType: getNadoEIP712PrimaryType('place_order'),
+    types: getNadoEIP712Types('place_order'),
   });
 }
