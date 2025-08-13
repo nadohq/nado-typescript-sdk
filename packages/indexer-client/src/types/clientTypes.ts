@@ -677,3 +677,9 @@ export interface GetIndexerBacklogResponse {
   // Current submission rate in transactions per second (float) (null if unavailable)
   txsPerSecond: BigDecimal | null;
 }
+
+export type GetIndexerSubaccountDDAParams = Subaccount;
+
+export interface GetIndexerSubaccountDDAResponse {
+  address: string;
+}

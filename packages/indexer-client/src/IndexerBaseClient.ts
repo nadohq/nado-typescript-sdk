@@ -104,8 +104,10 @@ import {
   IndexerSubaccountSnapshot,
   ListIndexerSubaccountsParams,
   ListIndexerSubaccountsResponse,
+  GetIndexerSubaccountDDAParams,
   UpdateIndexerLeaderboardRegistrationParams,
   UpdateIndexerLeaderboardRegistrationResponse,
+  GetIndexerSubaccountDDAResponse,
 } from './types';
 
 export interface IndexerClientOpts {
@@ -784,6 +786,25 @@ export class IndexerBaseClient {
 
     return {
       snapshots: baseResponse.snapshots.map(mapIndexerVlpSnapshot),
+    };
+  }
+
+  /**
+   * Retrieves the subaccount's DDA (Direct Deposit Address)
+   * @param params
+   */
+  async getSubaccountDDA(
+    params: GetIndexerSubaccountDDAParams,
+  ): Promise<GetIndexerSubaccountDDAResponse> {
+    const baseResponse = await this.query('direct_deposit_address', {
+      subaccount: subaccountToHex({
+        subaccountOwner: params.subaccountOwner,
+        subaccountName: params.subaccountName,
+      }),
+    });
+
+    return {
+      address: baseResponse.v1_address,
     };
   }
 

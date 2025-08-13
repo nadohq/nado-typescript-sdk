@@ -197,11 +197,16 @@ export interface IndexerServerVlpSnapshotsParams {
   interval: IndexerServerSnapshotsInterval;
 }
 
+export interface IndexerServerDDAQueryParams {
+  subaccount: string;
+}
+
 // Request
 export interface IndexerServerQueryRequestByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsParams;
   backlog: Record<string, never>;
   candlesticks: IndexerServerCandlesticksParams;
+  direct_deposit_address: IndexerServerDDAQueryParams;
   edge_candlesticks: IndexerEdgeServerCandlesticksParams;
   edge_market_snapshots: IndexerEdgeServerMarketSnapshotsParams;
   events: IndexerServerEventsParams;
@@ -379,6 +384,10 @@ export interface IndexerServerVlpSnapshotsResponse {
   snapshots: IndexerServerVlpSnapshot[];
 }
 
+export interface IndexerServerDDAResponse {
+  v1_address: string;
+}
+
 export interface IndexerServerBacklogResponse {
   // Total number of transactions stored in the indexer DB
   total_txs: string;
@@ -399,6 +408,7 @@ export interface IndexerServerQueryResponseByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsResponse;
   backlog: IndexerServerBacklogResponse;
   candlesticks: IndexerServerCandlesticksResponse;
+  direct_deposit_address: IndexerServerDDAResponse;
   edge_candlesticks: IndexerEdgeServerCandlesticksResponse;
   edge_market_snapshots: IndexerEdgeServerMarketSnapshotsResponse;
   events: IndexerServerEventsResponse;
