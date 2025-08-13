@@ -1,7 +1,7 @@
 import {
   depositCollateral,
   getOrderDigest,
-  getTriggerOrderNonce,
+  getOrderNonce,
   MOCK_ERC20_ABI,
   NADO_ABIS,
 } from '@nadohq/contracts';
@@ -75,7 +75,7 @@ async function fullSanity(context: RunContext) {
 
   const ethProductId = 3;
   const ethOrderbookAddr = await engineClient.getOrderbookAddress(ethProductId);
-  const nonce = getTriggerOrderNonce();
+  const nonce = getOrderNonce();
 
   const shortStopOrder: EngineOrderParams & { nonce: string } = {
     amount: addDecimals(-0.1),
@@ -112,7 +112,7 @@ async function fullSanity(context: RunContext) {
   const btcPerpOrderbookAddr =
     await engineClient.getOrderbookAddress(btcPerpProductId);
 
-  const longStopNonce = getTriggerOrderNonce();
+  const longStopNonce = getOrderNonce();
 
   const longStopOrder: EngineOrderParams & { nonce: string } = {
     nonce: longStopNonce,
@@ -145,7 +145,7 @@ async function fullSanity(context: RunContext) {
 
   debugPrint('Long stop order result', longStopResult);
 
-  const shortStopMidBookNonce = getTriggerOrderNonce();
+  const shortStopMidBookNonce = getOrderNonce();
 
   const shortStopMidBookOrder: EngineOrderParams & { nonce: string } = {
     amount: addDecimals(-0.2),

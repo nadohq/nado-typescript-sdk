@@ -3,47 +3,18 @@ import {
   EIP712CancelProductOrdersParams,
   Subaccount,
 } from '@nadohq/contracts';
-import {
-  EngineOrderParams,
-  EngineServerExecuteResult,
-} from '@nadohq/engine-client';
-import { BigDecimal, BigDecimalish } from '@nadohq/utils';
+import { EngineOrderParams } from '@nadohq/engine-client';
+import { BigDecimal } from '@nadohq/utils';
 import { TriggerServerOrder } from './serverQueryTypes';
+import { TriggerCriteria, TriggerOrderStatus } from './clientModelTypes';
 
 type WithOptionalNonce<T> = Omit<T, 'nonce'> & { nonce?: string };
 
-export type TriggerCriteriaType =
-  | 'oracle_price_above'
-  | 'oracle_price_below'
-  | 'last_price_above'
-  | 'last_price_below'
-  | 'mid_price_above'
-  | 'mid_price_below';
-
-export type TriggerCriteria = {
-  type: TriggerCriteriaType;
-  triggerPrice: BigDecimalish;
-};
-
-export type TriggerOrderStatus =
-  | {
-      type: 'pending';
-    }
-  | {
-      type: 'cancelled';
-      reason: string;
-    }
-  | {
-      type: 'triggered';
-      result: EngineServerExecuteResult;
-    }
-  | {
-      type: 'internal_error';
-      error: string;
-    };
-
 interface SignatureParams {
-  // Orderbook address for placement, endpoint address for cancellation & listing
+  /**
+   * Address derived from productId for placement (see getOrderVerifyingAddr)
+   * endpoint address for cancellation & listing
+   */
   verifyingAddr: string;
   chainId: number;
 }

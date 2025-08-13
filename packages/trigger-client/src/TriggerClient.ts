@@ -7,7 +7,6 @@ import {
   getNadoEIP712Values,
   getOrderNonce,
   getSignedTransactionRequest,
-  getTriggerOrderNonce,
   SignableRequestType,
   SignableRequestTypeToParams,
   WalletClientWithAccount,
@@ -77,7 +76,8 @@ export class TriggerClient {
       price: params.order.price,
       subaccountName: params.order.subaccountName,
       subaccountOwner: params.order.subaccountOwner,
-      nonce: params.nonce ?? getTriggerOrderNonce(),
+      nonce: params.nonce ?? getOrderNonce(),
+      appendix: params.order.appendix,
     };
     const signature = await this.sign(
       'place_order',

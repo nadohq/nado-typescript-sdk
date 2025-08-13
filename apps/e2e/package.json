@@ -13,7 +13,7 @@
   "scripts": {
     "account-setup": "tsx ./src/utils/accountSetup.ts",
     "e2e": "tsx --test --test-concurrency=1 ./src/**/*.test.ts",
-    "e2e:client": "tsx --test --test-concurrency=1 ./src/client/*.test.ts",
+    "e2e:client": "tsx --test --test-concurrency=1 ./src/client/wsMessageTests.test.ts",
     "e2e:engine": "tsx --test --test-concurrency=1 ./src/engine-client/*.test.ts",
     "e2e:indexer": "tsx --test --test-concurrency=1 ./src/indexer-client/*.test.ts",
     "e2e:trigger": "tsx --test --test-concurrency=1 ./src/trigger-client/*.test.ts",

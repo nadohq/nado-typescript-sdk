@@ -1,17 +1,17 @@
 import {
   BalanceHealthContributions,
   BalanceSide,
+  BalanceWithProduct,
   EIP712OrderParams,
-  GetAllMarketsResponse,
-  GetSubaccountSummaryParams,
   HealthGroup,
-  OrderExpirationType,
+  HealthStatusByType,
+  MarketWithProduct,
+  OrderAppendix,
   PerpBalanceWithProduct,
   ProductEngineType,
   SignedEIP712OrderParams,
   SpotBalanceWithProduct,
   Subaccount,
-  SubaccountSummaryResponse,
 } from '@nadohq/contracts';
 import { BigDecimal } from '@nadohq/utils';
 import {
@@ -19,9 +19,13 @@ import {
   EngineServerTimeResponse,
 } from './serverQueryTypes';
 
-export type GetEngineSubaccountSummaryResponse = SubaccountSummaryResponse;
+export type GetEngineSubaccountSummaryResponse = {
+  exists: boolean;
+  balances: BalanceWithProduct[];
+  health: HealthStatusByType;
+};
 
-export type GetEngineSubaccountSummaryParams = GetSubaccountSummaryParams;
+export type GetEngineSubaccountSummaryParams = Subaccount;
 
 export type GetEngineIsolatedPositionsParams = Subaccount;
 
@@ -54,10 +58,9 @@ export interface GetEngineContractsResponse {
   orderbookAddrs: string[];
 }
 
-export type GetEngineEstimatedSubaccountSummaryParams =
-  GetSubaccountSummaryParams & {
-    txs: SubaccountTx[];
-  };
+export type GetEngineEstimatedSubaccountSummaryParams = Subaccount & {
+  txs: SubaccountTx[];
+};
 
 export type GetEngineNoncesParams = EngineServerNoncesParams;
 
@@ -91,7 +94,7 @@ export interface EngineSymbol {
   longWeightMaintenance: BigDecimal;
 }
 
-export type GetEngineAllMarketsResponse = GetAllMarketsResponse;
+export type GetEngineAllMarketsResponse = MarketWithProduct[];
 
 export interface GetEngineHealthGroupsResponse {
   healthGroups: HealthGroup[];
@@ -114,9 +117,8 @@ export interface EngineOrder extends Subaccount {
   margin: BigDecimal | null;
   nonce: string;
   digest: string;
-  orderParams: EIP712OrderParams;
   placementTime: number;
-  orderType: OrderExpirationType;
+  appendix: OrderAppendix;
 }
 
 export type GetEngineOrderResponse = EngineOrder;

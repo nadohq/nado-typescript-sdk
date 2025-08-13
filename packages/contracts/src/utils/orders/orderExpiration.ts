@@ -1,7 +1,5 @@
 import { BigDecimalish, toBigInt } from '@nadohq/utils';
-
-// All valid "special" order expiration types
-export type OrderExpirationType = 'default' | 'ioc' | 'fok' | 'post_only';
+import { OrderExpirationType } from '../../common';
 
 // Encodes all aspects of an order expiration number
 export interface OrderExpirationConfig {

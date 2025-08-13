@@ -1,5 +1,4 @@
 import {
-  EIP712IsolatedOrderParams,
   EIP712OrderParams,
   getNadoEIP712Values,
   getOrderNonce,
@@ -9,7 +8,6 @@ import {
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineExecuteRequestParamsByType,
-  EngineServerExecutePlaceIsolatedOrderPayload,
   EngineServerExecutePlaceOrderPayload,
   EngineServerExecuteRequestByType,
   SignatureParams,
@@ -89,7 +87,7 @@ export class EngineExecuteBuilder {
     const orderWithNonce = { ...clientParams.order, nonce };
 
     const signature = await this.getSignatureIfNeeded('place_order', {
-      // Gets expected type
+      // Gets expected type (signature params from `clientPrams` and order params from `orderWithNonce`)
       ...clientParams,
       ...orderWithNonce,
     });
@@ -126,61 +124,7 @@ export class EngineExecuteBuilder {
         order: orderEIP712Values,
         signature: clientParams.signature,
         spot_leverage: clientParams.spotLeverage ?? null,
-      },
-      orderParams: clientParams.order,
-    };
-  }
-
-  /**
-   * Builds server payload for the `place_isolated_order` execute action.
-   *
-   * @param clientParams Client PlaceIsolatedOrder params.
-   * @returns `place_isolated_order` payload
-   */
-  async buildIsolatedPlaceOrderPayload(
-    clientParams: EngineExecuteRequestParamsByType['place_isolated_order'],
-  ): Promise<EngineServerExecutePlaceIsolatedOrderPayload> {
-    const nonce = this.getOrderNonceIfNeeded(clientParams);
-    const orderWithNonce = { ...clientParams.order, nonce };
-
-    const signature = await this.getSignatureIfNeeded('place_isolated_order', {
-      // Gets expected type
-      ...clientParams,
-      ...orderWithNonce,
-    });
-
-    return this.buildPlaceIsolatedOrderPayloadSync({
-      ...clientParams,
-      order: orderWithNonce,
-      signature,
-    });
-  }
-
-  /**
-   * Synchronously builds server payload for the `place_isolated_order` execute action.
-   *
-   * @param clientParams Client PlaceIsolatedOrder params.
-   * @returns `place_isolated_order` payload
-   */
-  buildPlaceIsolatedOrderPayloadSync(
-    clientParams: WithSignature<
-      EngineExecuteRequestParamsByType['place_isolated_order'] & {
-        order: EIP712IsolatedOrderParams;
-      }
-    >,
-  ): EngineServerExecutePlaceIsolatedOrderPayload {
-    const isolatedOrderEIP712Values = getNadoEIP712Values(
-      'place_isolated_order',
-      clientParams.order,
-    );
-
-    return {
-      payload: {
-        id: clientParams.id ?? null,
-        product_id: clientParams.productId,
-        isolated_order: isolatedOrderEIP712Values,
-        signature: clientParams.signature,
-        borrow_margin: clientParams.borrowMargin ?? null,
+        borrow_margin: clientParams.borrowMargin,
       },
       orderParams: clientParams.order,
     };
@@ -343,6 +287,22 @@ export class EngineExecuteBuilder {
       signature,
       tx,
     };
+  }
+
+  /**
+   * Builds server payload for the `place_orders` execute action.
+   * @param clientParams Client PlaceOrders params.
+   * @returns `place_orders` payload
+   */
+  async buildPlaceOrdersPayload(
+    clientParams: EngineExecuteRequestParamsByType['place_orders'],
+  ): Promise<EngineServerExecuteRequestByType['place_orders']> {
+    return Promise.all(
+      clientParams.map(async (orderParams) => {
+        const payload = await this.buildPlaceOrderPayload(orderParams);
+        return payload.payload;
+      }),
+    );
   }
 
   protected async getSignatureIfNeeded<T extends SignableRequestType>(

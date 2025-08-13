@@ -2,7 +2,6 @@ import {
   EIP712BurnVlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
-  EIP712IsolatedOrderParams,
   EIP712LeaderboardAuthenticationParams,
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
@@ -25,7 +24,6 @@ export interface SignableRequestTypeToParams {
   liquidate_subaccount: EIP712LiquidateSubaccountParams;
   list_trigger_orders: EIP712ListTriggerOrdersParams;
   mint_vlp: EIP712MintVlpParams;
-  place_isolated_order: EIP712IsolatedOrderParams;
   place_order: EIP712OrderParams;
   transfer_quote: EIP712TransferQuoteParams;
   withdraw_collateral: EIP712WithdrawCollateralParams;

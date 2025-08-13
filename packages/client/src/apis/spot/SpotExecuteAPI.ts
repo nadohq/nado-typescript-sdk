@@ -3,7 +3,6 @@ import {
   depositCollateral,
   DepositCollateralParams,
   isWriteableContract,
-  MintMockERC20Params,
   MOCK_ERC20_ABI,
 } from '@nadohq/contracts';
 import { toBigInt, WalletNotProvidedError } from '@nadohq/utils';
@@ -11,6 +10,7 @@ import { BaseSpotAPI } from './BaseSpotAPI';
 import {
   ApproveAllowanceParams,
   BurnVlpParams,
+  MintMockERC20Params,
   MintVlpParams,
   TransferQuoteParams,
   WithdrawCollateralParams,

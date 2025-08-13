@@ -1,5 +1,5 @@
-import { getAllMarkets, GetAllMarketsResponse } from '@nadohq/contracts';
 import {
+  GetEngineAllMarketsResponse,
   GetEngineMarketLiquidityParams,
   GetEngineMarketPriceParams,
   GetEngineMarketPricesParams,
@@ -25,24 +25,17 @@ import { GetTriggerOrdersParams } from './types';
 
 export class MarketQueryAPI extends BaseNadoAPI {
   /**
-   * Retrieves all market states from the on-chain contracts
-   */
-  async getAllMarkets(): Promise<GetAllMarketsResponse> {
-    return getAllMarkets(this.context.contracts);
-  }
-
-  /**
    * Retrieves all market states from the offchain engine
    */
-  async getAllEngineMarkets(): Promise<GetAllMarketsResponse> {
+  async getAllMarkets(): Promise<GetEngineAllMarketsResponse> {
     return this.context.engineClient.getAllMarkets();
   }
 
   /**
    * Get all edge engine markets
    */
-  async getEdgeAllEngineMarkets(): Promise<
-    Record<number, GetAllMarketsResponse>
+  async getEdgeAllMarkets(): Promise<
+    Record<number, GetEngineAllMarketsResponse>
   > {
     return this.context.engineClient.getEdgeAllMarkets();
   }

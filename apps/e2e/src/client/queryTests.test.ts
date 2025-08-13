@@ -19,11 +19,8 @@ async function queryTests(context: RunContext) {
   debugPrint('Symbols', await nadoClient.context.engineClient.getSymbols({}));
 
   // Fetches state from offchain sequencer
-  debugPrint(
-    'Engine All Markets',
-    await nadoClient.market.getAllEngineMarkets(),
-  );
-  debugPrint('Edge all markets', await nadoClient.market.getAllEngineMarkets());
+  debugPrint('All Markets', await nadoClient.market.getAllMarkets());
+  debugPrint('Edge all markets', await nadoClient.market.getEdgeAllMarkets());
 
   // Fetches state from Arbitrum
   debugPrint('On-Chain all markets', await nadoClient.market.getAllMarkets());
@@ -46,7 +43,7 @@ async function queryTests(context: RunContext) {
   // Subaccount state from engine
   debugPrint(
     'Subaccount state from engine',
-    await nadoClient.subaccount.getEngineSubaccountSummary({
+    await nadoClient.subaccount.getSubaccountSummary({
       subaccountOwner: walletClientAddress,
       subaccountName: 'default',
     }),

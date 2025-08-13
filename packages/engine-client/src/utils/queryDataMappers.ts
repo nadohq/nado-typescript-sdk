@@ -2,18 +2,13 @@ import {
   BalanceHealthContributions,
   calcTotalBorrowed,
   calcTotalDeposited,
-  OrderExpirationType,
   PerpMarket,
   ProductEngineType,
   SpotMarket,
   subaccountFromHex,
+  unpackOrderAppendix,
 } from '@nadohq/contracts';
-import {
-  mapValues,
-  removeDecimals,
-  toBigDecimal,
-  toIntegerString,
-} from '@nadohq/utils';
+import { mapValues, removeDecimals, toBigDecimal } from '@nadohq/utils';
 import {
   EngineMarketPrice,
   EngineOrder,
@@ -58,18 +53,8 @@ export function mapEngineServerOrder(
     totalAmount: toBigDecimal(order.amount),
     unfilledAmount: toBigDecimal(order.unfilled_amount),
     margin: order.margin ? toBigDecimal(order.margin) : null,
-    // Standardizes from hex
-    // toFixed is required as toString gives values with `e`
-    orderParams: {
-      amount: toIntegerString(order.amount),
-      expiration: toIntegerString(order.expiration),
-      nonce: order.nonce,
-      price: toIntegerString(removeDecimals(order.price_x18)),
-      subaccountOwner: subaccount.subaccountOwner,
-      subaccountName: subaccount.subaccountName,
-    },
     placementTime: order.placed_at,
-    orderType: order.order_type as OrderExpirationType,
+    appendix: unpackOrderAppendix(BigInt(order.appendix)),
   };
 }
 

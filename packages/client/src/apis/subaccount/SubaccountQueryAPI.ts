@@ -1,8 +1,4 @@
 import {
-  getSubaccountSummary,
-  GetSubaccountSummaryParams,
-} from '@nadohq/contracts';
-import {
   GetEngineEstimatedSubaccountSummaryParams,
   GetEngineIsolatedPositionsParams,
   GetEngineSubaccountFeeRatesParams,
@@ -16,19 +12,10 @@ import { BaseNadoAPI } from '../base';
 
 export class SubaccountQueryAPI extends BaseNadoAPI {
   /**
-   * Returns a comprehensive summary for a subaaccount, including its balances and health
-   *
-   * @see {@link getSubaccountSummary:CONTRACTS | getSubaccountSummary}
-   */
-  async getSubaccountSummary(params: GetSubaccountSummaryParams) {
-    return getSubaccountSummary(this.paramsWithContracts(params));
-  }
-
-  /**
    * Gets the subaccount state according to the offchain engine
    * @param params
    */
-  async getEngineSubaccountSummary(params: GetEngineSubaccountSummaryParams) {
+  async getSubaccountSummary(params: GetEngineSubaccountSummaryParams) {
     return this.context.engineClient.getSubaccountSummary(params);
   }
 

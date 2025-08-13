@@ -1,12 +1,11 @@
+import { getOrderVerifyingAddress } from '@nadohq/contracts';
 import { BaseNadoAPI } from '../base';
-import { OptionalSignatureParams } from '../types';
 import {
   CancelAndPlaceOrderParams,
   CancelOrdersParams,
   CancelProductOrdersParams,
   CancelTriggerOrdersParams,
   CancelTriggerProductOrdersParams,
-  PlaceIsolatedOrderParams,
   PlaceOrderParams,
   PlaceTriggerOrderParams,
 } from './types';
@@ -26,30 +25,9 @@ export class MarketExecuteAPI extends BaseNadoAPI {
         subaccountOwner: this.getSubaccountOwnerIfNeeded(params.order),
       },
       chainId: this.getWalletClientChainIdIfNeeded(params),
-      verifyingAddr: await this.getOrderbookVerifyingAddressIfNeeded(params),
+      verifyingAddr: getOrderVerifyingAddress(params.productId),
       productId,
       spotLeverage: params.spotLeverage,
-      nonce,
-    });
-  }
-
-  /**
-   * Places an isolated order through the engine
-   * @param params
-   */
-  async placeIsolatedOrder(params: PlaceIsolatedOrderParams) {
-    const { id: orderId, productId, order, nonce, borrowMargin } = params;
-
-    return this.context.engineClient.placeIsolatedOrder({
-      id: orderId,
-      order: {
-        ...order,
-        subaccountOwner: this.getSubaccountOwnerIfNeeded(params.order),
-      },
-      chainId: this.getWalletClientChainIdIfNeeded(params),
-      verifyingAddr: await this.getOrderbookVerifyingAddressIfNeeded(params),
-      productId,
-      borrowMargin,
       nonce,
     });
   }
@@ -91,9 +69,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
           ...order,
           subaccountOwner,
         },
-        verifyingAddr: await this.getOrderbookVerifyingAddressIfNeeded(
-          params.placeOrder,
-        ),
+        verifyingAddr: getOrderVerifyingAddress(productId),
         chainId,
         productId,
         spotLeverage,
@@ -123,7 +99,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
     return this.context.triggerClient.placeTriggerOrder({
       ...params,
       chainId: this.getWalletClientChainIdIfNeeded(params),
-      verifyingAddr: await this.getOrderbookVerifyingAddressIfNeeded(params),
+      verifyingAddr: getOrderVerifyingAddress(params.productId),
       order: {
         subaccountOwner: this.getSubaccountOwnerIfNeeded(params.order),
         ...params.order,
@@ -155,15 +131,5 @@ export class MarketExecuteAPI extends BaseNadoAPI {
       subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
       verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),
     });
-  }
-
-  protected async getOrderbookVerifyingAddressIfNeeded(
-    params: OptionalSignatureParams<{
-      productId: number;
-    }>,
-  ): Promise<string> {
-    return (
-      params.verifyingAddr ?? (await this.getOrderbookAddress(params.productId))
-    );
   }
 }

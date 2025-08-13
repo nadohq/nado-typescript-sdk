@@ -2,7 +2,6 @@ import { addDecimals, toIntegerString } from '@nadohq/utils';
 import { subaccountToHex } from '../utils/bytes32';
 import {
   EIP712BurnVlpValues,
-  EIP712IsolatedOrderValues,
   EIP712LeaderboardAuthenticationValues,
   EIP712LinkSignerValues,
   EIP712LiquidateSubaccountValues,
@@ -20,9 +19,9 @@ import {
   SignableRequestTypeToParams,
 } from './signableRequestType';
 import {
+  EIP712BurnVlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
-  EIP712IsolatedOrderParams,
   EIP712LeaderboardAuthenticationParams,
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
@@ -31,7 +30,6 @@ import {
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
-  EIP712BurnVlpParams,
 } from './signatureParamTypes';
 
 /**
@@ -56,9 +54,6 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
       break;
     case 'place_order':
       values = getOrderValues(params as EIP712OrderParams);
-      break;
-    case 'place_isolated_order':
-      values = getIsolatedOrderValues(params as EIP712IsolatedOrderParams);
       break;
     case 'list_trigger_orders':
       values = getListTriggerOrdersValues(
@@ -126,15 +121,7 @@ function getOrderValues(params: EIP712OrderParams): EIP712OrderValues {
     amount: toIntegerString(params.amount),
     expiration: toIntegerString(params.expiration),
     nonce: params.nonce,
-  };
-}
-
-function getIsolatedOrderValues(
-  params: EIP712IsolatedOrderParams,
-): EIP712IsolatedOrderValues {
-  return {
-    ...getOrderValues(params),
-    margin: toIntegerString(params.margin),
+    appendix: toIntegerString(params.appendix),
   };
 }
 

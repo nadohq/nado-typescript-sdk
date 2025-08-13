@@ -5,6 +5,7 @@ export * from './healthTypes';
 export * from './marketTypes';
 export * from './productTypes';
 export * from './subaccountTypes';
-export * from './utilExecuteTypes';
 export * from './nadoContractTypes';
 export * from './viemTypes';
+export * from './OrderExpirationType';
+export * from './orderAppendixTypes';

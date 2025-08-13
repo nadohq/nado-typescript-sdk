@@ -2,7 +2,6 @@ import {
   EIP712BurnVlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
-  EIP712IsolatedOrderParams,
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
   EIP712MintVlpParams,
@@ -50,15 +49,7 @@ export type EnginePlaceOrderParams = WithBaseEngineExecuteParams<{
   order: EngineOrderParams;
   // If not given, engine defaults to true (leverage/borrow enabled)
   spotLeverage?: boolean;
-}>;
-
-export type EngineIsolatedOrderParams = WithoutNonce<EIP712IsolatedOrderParams>;
-
-export type EnginePlaceIsolatedOrderParams = WithBaseEngineExecuteParams<{
-  id?: number;
-  productId: number;
-  order: EngineIsolatedOrderParams;
-  // Whether the cross subaccount can borrow quote for the margin transfer into the isolated subaccount. If not given, engine defaults to true.
+  // For isolated orders, this specifies whether margin can be borrowed (i.e. whether the cross account can have a negative USDC balance)
   borrowMargin?: boolean;
 }>;
 
@@ -93,6 +84,8 @@ export type EngineMintVlpParams = WithBaseEngineExecuteParams<
 export type EngineBurnVlpParams =
   WithBaseEngineExecuteParams<EIP712BurnVlpParams>;
 
+export type EnginePlaceOrdersParams = EnginePlaceOrderParams[];
+
 export interface EngineExecuteRequestParamsByType {
   burn_vlp: EngineBurnVlpParams;
   cancel_and_place: EngineCancelAndPlaceParams;
@@ -101,8 +94,8 @@ export interface EngineExecuteRequestParamsByType {
   link_signer: EngineLinkSignerParams;
   liquidate_subaccount: EngineLiquidateSubaccountParams;
   mint_vlp: EngineMintVlpParams;
-  place_isolated_order: EnginePlaceIsolatedOrderParams;
   place_order: EnginePlaceOrderParams;
+  place_orders: EnginePlaceOrdersParams;
   transfer_quote: EngineTransferQuoteParams;
   withdraw_collateral: EngineWithdrawCollateralParams;
 }
@@ -110,9 +103,4 @@ export interface EngineExecuteRequestParamsByType {
 export type EnginePlaceOrderResult =
   EngineServerExecuteSuccessResult<'place_order'> & {
     orderParams: EIP712OrderParams;
-  };
-
-export type EnginePlaceIsolatedOrderResult =
-  EngineServerExecuteSuccessResult<'place_isolated_order'> & {
-    orderParams: EIP712IsolatedOrderParams;
   };

@@ -1,9 +1,7 @@
 import {
   EngineCancelOrdersParams,
   EngineCancelProductOrdersParams,
-  EngineIsolatedOrderParams,
   EngineOrderParams,
-  EnginePlaceIsolatedOrderParams,
   EnginePlaceOrderParams,
 } from '@nadohq/engine-client';
 import {
@@ -14,21 +12,17 @@ import {
 } from '@nadohq/trigger-client';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
-type ClientOrderParams<T> = Omit<OptionalSignatureParams<T>, 'order'> & {
+type ClientOrderParams<T extends { order: EngineOrderParams }> = Omit<
+  OptionalSignatureParams<T>,
+  // Order is overridden to make subaccount owner optional
+  | 'order'
+  // Verifying address can be derived from product ID
+  | 'verifyingAddr'
+> & {
   order: OptionalSubaccountOwner<EngineOrderParams>;
 };
 
 export type PlaceOrderParams = ClientOrderParams<EnginePlaceOrderParams>;
-
-/**
- * Same as PlaceOrderParams but with isolated fields for isolated margin trading
- */
-export type PlaceIsolatedOrderParams = Omit<
-  OptionalSignatureParams<EnginePlaceIsolatedOrderParams>,
-  'order'
-> & {
-  order: OptionalSubaccountOwner<EngineIsolatedOrderParams>;
-};
 
 export type CancelOrdersParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineCancelOrdersParams>

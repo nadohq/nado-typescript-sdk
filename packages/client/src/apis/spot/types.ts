@@ -42,3 +42,8 @@ export type MintVlpParams = OptionalSignatureParams<
 export type BurnVlpParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineBurnVlpParams>
 >;
+
+export interface MintMockERC20Params {
+  productId: number;
+  amount: BigDecimalish;
+}

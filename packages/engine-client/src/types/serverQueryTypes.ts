@@ -281,6 +281,7 @@ export interface EngineServerOrder {
   digest: string;
   placed_at: number;
   order_type: string;
+  appendix: string;
   margin: string | null;
 }
 

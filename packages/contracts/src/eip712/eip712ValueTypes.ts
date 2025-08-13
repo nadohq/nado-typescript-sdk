@@ -39,10 +39,6 @@ export type EIP712OrderValues = Omit<
   priceX18: BigDecimalish;
 };
 
-export type EIP712IsolatedOrderValues = EIP712OrderValues & {
-  margin: BigDecimalish;
-};
-
 export type EIP712ListTriggerOrdersValues =
   WithEIP712Sender<EIP712ListTriggerOrdersParams>;
 
@@ -81,7 +77,6 @@ export interface SignableRequestTypeToEIP712Values {
   liquidate_subaccount: EIP712LiquidateSubaccountValues;
   list_trigger_orders: EIP712ListTriggerOrdersValues;
   mint_vlp: EIP712MintVlpValues;
-  place_isolated_order: EIP712IsolatedOrderValues;
   place_order: EIP712OrderValues;
   transfer_quote: EIP712TransferQuoteValues;
   withdraw_collateral: EIP712WithdrawCollateralValues;

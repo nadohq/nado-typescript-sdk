@@ -4,29 +4,7 @@ import {
   EngineServerExecuteRequestByType,
   EngineServerExecuteSuccessResult,
 } from '@nadohq/engine-client';
-
-export type TriggerServerTriggerCriteria =
-  // These trigger on fast oracle price
-  | {
-      price_above: string;
-    }
-  | {
-      price_below: string;
-    }
-  // These trigger on last trade price
-  | {
-      last_price_above: string;
-    }
-  | {
-      last_price_below: string;
-    }
-  // These trigger on mid-book price
-  | {
-      mid_price_above: string;
-    }
-  | {
-      mid_price_below: string;
-    };
+import { TriggerServerTriggerCriteria } from './serverModelTypes';
 
 export interface TriggerServerPlaceOrderParams {
   id: number | null;

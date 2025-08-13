@@ -31,17 +31,7 @@ export function getNadoEIP712Types(
           { name: 'amount', type: 'int128' },
           { name: 'expiration', type: 'uint64' },
           { name: 'nonce', type: 'uint64' },
-        ],
-      };
-    case 'place_isolated_order':
-      return {
-        IsolatedOrder: [
-          { name: 'sender', type: 'bytes32' },
-          { name: 'priceX18', type: 'int128' },
-          { name: 'amount', type: 'int128' },
-          { name: 'expiration', type: 'uint64' },
-          { name: 'nonce', type: 'uint64' },
-          { name: 'margin', type: 'int128' },
+          { name: 'appendix', type: 'uint128' },
         ],
       };
     case 'list_trigger_orders':

@@ -39,11 +39,8 @@ export interface EIP712OrderParams extends Subaccount {
   amount: BigDecimalish;
   // A unique nonce to identify the order
   nonce: string;
-}
-
-export interface EIP712IsolatedOrderParams extends EIP712OrderParams {
-  // Amount of quote margin to transfer when the order fills
-  margin: BigDecimalish;
+  // Packed order appendix (uint128) to encode order details such as order expiration behavior, isolated, etc.
+  appendix: BigDecimalish;
 }
 
 export interface EIP712ListTriggerOrdersParams extends Subaccount {

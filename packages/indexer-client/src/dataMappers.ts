@@ -93,6 +93,7 @@ export function mapIndexerServerBalance(
 
 export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
   const expiration = toBigDecimal(order.expiration);
+  // TODO: Parse appendix instead
   const expirationEncodedData = parseRawExpirationTimestamp(order.expiration);
   return {
     amount: toBigDecimal(order.amount),
