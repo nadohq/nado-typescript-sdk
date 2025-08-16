@@ -299,19 +299,19 @@ export class EngineExecuteBuilder {
   }
 
   /**
-   * Builds server payload for the `mint_vlp` execute action.
-   * @param clientParams Client MintVlp params.
-   * @returns `mint_vlp` payload
+   * Builds server payload for the `mint_nlp` execute action.
+   * @param clientParams Client MintNlp params.
+   * @returns `mint_nlp` payload
    */
-  async buildMintVlpPayload(
-    clientParams: EngineExecuteRequestParamsByType['mint_vlp'],
-  ): Promise<EngineServerExecuteRequestByType['mint_vlp']> {
+  async buildMintNlpPayload(
+    clientParams: EngineExecuteRequestParamsByType['mint_nlp'],
+  ): Promise<EngineServerExecuteRequestByType['mint_nlp']> {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getNadoEIP712Values('mint_vlp', paramsWithNonce);
+    const tx = getNadoEIP712Values('mint_nlp', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
-      'mint_vlp',
+      'mint_nlp',
       paramsWithNonce,
     );
 
@@ -323,19 +323,19 @@ export class EngineExecuteBuilder {
   }
 
   /**
-   * Builds server payload for the `burn_vlp` execute action.
-   * @param clientParams Client BurnVlp params.
-   * @returns `burn_vlp` payload
+   * Builds server payload for the `burn_nlp` execute action.
+   * @param clientParams Client BurnNlp params.
+   * @returns `burn_nlp` payload
    */
-  async buildBurnVlpPayload(
-    clientParams: EngineExecuteRequestParamsByType['burn_vlp'],
-  ): Promise<EngineServerExecuteRequestByType['burn_vlp']> {
+  async buildBurnNlpPayload(
+    clientParams: EngineExecuteRequestParamsByType['burn_nlp'],
+  ): Promise<EngineServerExecuteRequestByType['burn_nlp']> {
     const nonce = await this.getTxNonceIfNeeded(clientParams);
     const paramsWithNonce = { ...clientParams, nonce };
 
-    const tx = getNadoEIP712Values('burn_vlp', paramsWithNonce);
+    const tx = getNadoEIP712Values('burn_nlp', paramsWithNonce);
     const signature = await this.getSignatureIfNeeded(
-      'burn_vlp',
+      'burn_nlp',
       paramsWithNonce,
     );
 

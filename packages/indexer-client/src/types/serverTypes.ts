@@ -21,7 +21,7 @@ import {
   IndexerServerProductSnapshot,
   IndexerServerSnapshotsInterval,
   IndexerServerTx,
-  IndexerServerVlpSnapshot,
+  IndexerServerNlpSnapshot,
 } from './serverModelTypes';
 
 /**
@@ -193,7 +193,7 @@ export interface IndexerServerFastWithdrawalSignatureParams {
   idx: number | string;
 }
 
-export interface IndexerServerVlpSnapshotsParams {
+export interface IndexerServerNlpSnapshotsParams {
   interval: IndexerServerSnapshotsInterval;
 }
 
@@ -226,7 +226,7 @@ export interface IndexerServerQueryRequestByType {
   referral_code: IndexerServerReferralCodeParams;
   subaccounts: IndexerServerListSubaccountsParams;
   usdc_price: Record<string, never>;
-  vlp_snapshots: IndexerServerVlpSnapshotsParams;
+  nlp_snapshots: IndexerServerNlpSnapshotsParams;
 }
 
 export type IndexerServerQueryRequestType =
@@ -375,8 +375,8 @@ export interface IndexerServerFastWithdrawalSignatureResponse {
   signatures: string[];
 }
 
-export interface IndexerServerVlpSnapshotsResponse {
-  snapshots: IndexerServerVlpSnapshot[];
+export interface IndexerServerNlpSnapshotsResponse {
+  snapshots: IndexerServerNlpSnapshot[];
 }
 
 export interface IndexerServerBacklogResponse {
@@ -423,5 +423,5 @@ export interface IndexerServerQueryResponseByType {
   referral_code: IndexerServerReferralCodeResponse;
   subaccounts: IndexerServerListSubaccountsResponse;
   usdc_price: IndexerServerUsdcPriceResponse;
-  vlp_snapshots: IndexerServerVlpSnapshotsResponse;
+  nlp_snapshots: IndexerServerNlpSnapshotsResponse;
 }

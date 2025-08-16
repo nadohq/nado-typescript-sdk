@@ -5,7 +5,7 @@ import { nowInSeconds, TimeInSeconds } from '@nadohq/utils';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 
-async function vlpQueriesTests(context: RunContext) {
+async function nlpQueriesTests(context: RunContext) {
   const walletClient = context.getWalletClient();
 
   const client = new IndexerClient({
@@ -13,14 +13,14 @@ async function vlpQueriesTests(context: RunContext) {
     walletClient,
   });
 
-  const vlpSnapshots = await client.getVlpSnapshots({
+  const nlpSnapshots = await client.getNlpSnapshots({
     maxTimeInclusive: nowInSeconds(),
     limit: 2,
     granularity: TimeInSeconds.DAY,
   });
 
-  debugPrint('VLP snapshots', vlpSnapshots);
+  debugPrint('NLP snapshots', nlpSnapshots);
 }
 
-void test('[indexer-client]: Running VLP queries tests', () =>
-  runWithContext(vlpQueriesTests));
+void test('[indexer-client]: Running NLP queries tests', () =>
+  runWithContext(nlpQueriesTests));

@@ -1,13 +1,13 @@
 import { addDecimals, toIntegerString } from '@nadohq/utils';
 import { subaccountToHex } from '../utils/bytes32';
 import {
-  EIP712BurnVlpValues,
+  EIP712BurnNlpValues,
   EIP712IsolatedOrderValues,
   EIP712LeaderboardAuthenticationValues,
   EIP712LinkSignerValues,
   EIP712LiquidateSubaccountValues,
   EIP712ListTriggerOrdersValues,
-  EIP712MintVlpValues,
+  EIP712MintNlpValues,
   EIP712OrderCancellationValues,
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
@@ -27,11 +27,11 @@ import {
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
-  EIP712MintVlpParams,
+  EIP712MintNlpParams,
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
-  EIP712BurnVlpParams,
+  EIP712BurnNlpParams,
 } from './signatureParamTypes';
 
 /**
@@ -89,11 +89,11 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
         params as EIP712LeaderboardAuthenticationParams,
       );
       break;
-    case 'mint_vlp':
-      values = getMintVlpValues(params as EIP712MintVlpParams);
+    case 'mint_nlp':
+      values = getMintNlpValues(params as EIP712MintNlpParams);
       break;
-    case 'burn_vlp':
-      values = getBurnVlpValues(params as EIP712BurnVlpParams);
+    case 'burn_nlp':
+      values = getBurnNlpValues(params as EIP712BurnNlpParams);
       break;
     default:
       throw new Error(`Unsupported request type: ${requestType}`);
@@ -238,7 +238,7 @@ function getLeaderboardAuthenticationValues(
   };
 }
 
-function getMintVlpValues(params: EIP712MintVlpParams): EIP712MintVlpValues {
+function getMintNlpValues(params: EIP712MintNlpParams): EIP712MintNlpValues {
   return {
     sender: subaccountToHex({
       subaccountOwner: params.subaccountOwner,
@@ -249,13 +249,13 @@ function getMintVlpValues(params: EIP712MintVlpParams): EIP712MintVlpValues {
   };
 }
 
-function getBurnVlpValues(params: EIP712BurnVlpParams): EIP712BurnVlpValues {
+function getBurnNlpValues(params: EIP712BurnNlpParams): EIP712BurnNlpValues {
   return {
     sender: subaccountToHex({
       subaccountOwner: params.subaccountOwner,
       subaccountName: params.subaccountName,
     }),
-    vlpAmount: toIntegerString(params.vlpAmount),
+    nlpAmount: toIntegerString(params.nlpAmount),
     nonce: params.nonce,
   };
 }

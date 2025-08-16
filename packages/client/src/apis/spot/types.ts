@@ -1,6 +1,6 @@
 import {
-  EngineBurnVlpParams,
-  EngineMintVlpParams,
+  EngineBurnNlpParams,
+  EngineMintNlpParams,
   EngineTransferQuoteParams,
   EngineWithdrawCollateralParams,
 } from '@nadohq/engine-client';
@@ -35,10 +35,10 @@ export type TransferQuoteParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineTransferQuoteParams>
 >;
 
-export type MintVlpParams = OptionalSignatureParams<
-  OptionalSubaccountOwner<EngineMintVlpParams>
+export type MintNlpParams = OptionalSignatureParams<
+  OptionalSubaccountOwner<EngineMintNlpParams>
 >;
 
-export type BurnVlpParams = OptionalSignatureParams<
-  OptionalSubaccountOwner<EngineBurnVlpParams>
+export type BurnNlpParams = OptionalSignatureParams<
+  OptionalSubaccountOwner<EngineBurnNlpParams>
 >;

@@ -95,7 +95,7 @@ export interface EngineServerLinkedSignerParams {
   subaccount: string;
 }
 
-export interface EngineServerMaxMintVlpQueryParams {
+export interface EngineServerMaxMintNlpQueryParams {
   sender: string;
   // If not given, engine defaults to true (leverage/borrow enabled)
   spot_leverage: string | null;
@@ -113,7 +113,7 @@ export interface EngineServerQueryRequestByType {
   market_liquidity: EngineServerMarketLiquidityQueryParams;
   market_price: EngineServerMarketPriceQueryParams;
   market_prices: EngineServerMarketPricesQueryParams;
-  max_vlp_mintable: EngineServerMaxMintVlpQueryParams;
+  max_nlp_mintable: EngineServerMaxMintNlpQueryParams;
   max_order_size: EngineServerMaxOrderSizeQueryParams;
   max_withdrawable: EngineServerMaxWithdrawableQueryParams;
   min_deposit_rates: Record<string, never>;
@@ -330,7 +330,7 @@ export interface EngineServerEdgeAllProductsResponse {
   edge_all_products: Record<number, EngineServerAllProductsResponse>;
 }
 
-export interface EngineServerMaxMintVlpResponse {
+export interface EngineServerMaxMintNlpResponse {
   max_quote_amount: string;
 }
 
@@ -346,7 +346,7 @@ export interface EngineServerQueryResponseByType {
   market_liquidity: EngineServerMarketLiquidityResponse;
   market_price: EngineServerMarketPriceResponse;
   market_prices: EngineServerMarketPricesResponse;
-  max_vlp_mintable: EngineServerMaxMintVlpResponse;
+  max_nlp_mintable: EngineServerMaxMintNlpResponse;
   max_order_size: EngineServerMaxOrderSizeResponse;
   max_withdrawable: EngineServerMaxWithdrawableResponse;
   min_deposit_rates: EngineServerMinDepositRatesResponse;

@@ -259,9 +259,9 @@ export interface GetEngineMinDepositRatesResponse {
  */
 export type GetEngineIpBlockStatusResponse = 'query_only' | 'blocked' | null;
 
-export interface GetEngineMaxMintVlpAmountParams extends Subaccount {
+export interface GetEngineMaxMintNlpAmountParams extends Subaccount {
   // If not given, engine defaults to true (leverage/borrow enabled)
   spotLeverage?: boolean;
 }
 
-export type GetEngineMaxMintVlpAmountResponse = BigDecimal;
+export type GetEngineMaxMintNlpAmountResponse = BigDecimal;

@@ -31,8 +31,8 @@ import {
   GetEngineMarketPriceResponse,
   GetEngineMarketPricesParams,
   GetEngineMarketPricesResponse,
-  GetEngineMaxMintVlpAmountParams,
-  GetEngineMaxMintVlpAmountResponse,
+  GetEngineMaxMintNlpAmountParams,
+  GetEngineMaxMintNlpAmountResponse,
   GetEngineMaxOrderSizeParams,
   GetEngineMaxOrderSizeResponse,
   GetEngineMaxWithdrawableParams,
@@ -492,14 +492,14 @@ export class EngineQueryClient extends EngineBaseClient {
   }
 
   /**
-   * Retrieves the estimated max quote amount for minting VLP.
+   * Retrieves the estimated max quote amount for minting NLP.
    *
    * @param params
    */
-  async getMaxMintVlpAmount(
-    params: GetEngineMaxMintVlpAmountParams,
-  ): Promise<GetEngineMaxMintVlpAmountResponse> {
-    const baseResponse = await this.query('max_vlp_mintable', {
+  async getMaxMintNlpAmount(
+    params: GetEngineMaxMintNlpAmountParams,
+  ): Promise<GetEngineMaxMintNlpAmountResponse> {
+    const baseResponse = await this.query('max_nlp_mintable', {
       sender: subaccountToHex({
         subaccountOwner: params.subaccountOwner,
         subaccountName: params.subaccountName,

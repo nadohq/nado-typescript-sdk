@@ -1,5 +1,5 @@
 import {
-  GetEngineMaxMintVlpAmountParams,
+  GetEngineMaxMintNlpAmountParams,
   GetEngineMaxWithdrawableParams,
 } from '@nadohq/engine-client';
 import { BigDecimal, getValidatedAddress, toBigDecimal } from '@nadohq/utils';
@@ -16,12 +16,12 @@ export class SpotQueryAPI extends BaseSpotAPI {
   }
 
   /**
-   * Queries engine to determine maximum quote amount for minting VLP.
+   * Queries engine to determine maximum quote amount for minting NLP.
    *
    * @param params
    */
-  async getMaxMintVlpAmount(params: GetEngineMaxMintVlpAmountParams) {
-    return this.context.engineClient.getMaxMintVlpAmount(params);
+  async getMaxMintNlpAmount(params: GetEngineMaxMintNlpAmountParams) {
+    return this.context.engineClient.getMaxMintNlpAmount(params);
   }
 
   /**

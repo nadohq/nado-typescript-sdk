@@ -37,7 +37,7 @@ import {
   mapIndexerPerpPrices,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
-  mapIndexerVlpSnapshot,
+  mapIndexerNlpSnapshot,
   mapSnapshotsIntervalToServerParams,
 } from './dataMappers';
 import {
@@ -91,8 +91,8 @@ import {
   GetIndexerQuotePriceResponse,
   GetIndexerReferralCodeParams,
   GetIndexerReferralCodeResponse,
-  GetIndexerVlpSnapshotsParams,
-  GetIndexerVlpSnapshotsResponse,
+  GetIndexerNlpSnapshotsParams,
+  GetIndexerNlpSnapshotsResponse,
   IndexerEventWithTx,
   IndexerMatchEvent,
   IndexerOraclePrice,
@@ -769,10 +769,10 @@ export class IndexerBaseClient {
     };
   }
 
-  async getVlpSnapshots(
-    params: GetIndexerVlpSnapshotsParams,
-  ): Promise<GetIndexerVlpSnapshotsResponse> {
-    const baseResponse = await this.query('vlp_snapshots', {
+  async getNlpSnapshots(
+    params: GetIndexerNlpSnapshotsParams,
+  ): Promise<GetIndexerNlpSnapshotsResponse> {
+    const baseResponse = await this.query('nlp_snapshots', {
       interval: {
         count: params.limit,
         max_time: params.maxTimeInclusive
@@ -783,7 +783,7 @@ export class IndexerBaseClient {
     });
 
     return {
-      snapshots: baseResponse.snapshots.map(mapIndexerVlpSnapshot),
+      snapshots: baseResponse.snapshots.map(mapIndexerNlpSnapshot),
     };
   }
 

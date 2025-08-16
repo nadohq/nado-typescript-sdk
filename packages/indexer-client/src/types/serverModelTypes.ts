@@ -254,10 +254,10 @@ export interface IndexerServerLeaderboardRegistration {
 }
 
 /**
- * VLP
+ * NLP
  */
 
-export interface IndexerServerVlpSnapshot {
+export interface IndexerServerNlpSnapshot {
   cumulative_burn_usdc: string;
   cumulative_mint_usdc: string;
   cumulative_pnl: string;
