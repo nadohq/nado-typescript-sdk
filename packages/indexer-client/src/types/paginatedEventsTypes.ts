@@ -75,18 +75,18 @@ export type GetIndexerSubaccountCollateralEventsResponse =
   PaginatedIndexerEventsResponse<IndexerCollateralEvent>;
 
 /**
- * VLP
+ * NLP
  */
-export type GetIndexerSubaccountVlpEventsParams =
+export type GetIndexerSubaccountNlpEventsParams =
   BaseSubaccountPaginationParams;
 
-export interface IndexerVlpEvent extends BaseIndexerPaginatedEvent {
-  vlpDelta: BigDecimal;
+export interface IndexerNlpEvent extends BaseIndexerPaginatedEvent {
+  nlpDelta: BigDecimal;
   primaryQuoteDelta: BigDecimal;
 }
 
-export type GetIndexerSubaccountVlpEventsResponse =
-  PaginatedIndexerEventsResponse<IndexerVlpEvent>;
+export type GetIndexerSubaccountNlpEventsResponse =
+  PaginatedIndexerEventsResponse<IndexerNlpEvent>;
 
 /**
  * Match events

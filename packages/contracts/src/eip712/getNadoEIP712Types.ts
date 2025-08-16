@@ -103,19 +103,19 @@ export function getNadoEIP712Types(
           { name: 'expiration', type: 'uint64' },
         ],
       };
-    case 'mint_vlp':
+    case 'mint_nlp':
       return {
-        MintVlp: [
+        MintNlp: [
           { name: 'sender', type: 'bytes32' },
           { name: 'quoteAmount', type: 'uint128' },
           { name: 'nonce', type: 'uint64' },
         ],
       };
-    case 'burn_vlp':
+    case 'burn_nlp':
       return {
-        BurnVlp: [
+        BurnNlp: [
           { name: 'sender', type: 'bytes32' },
-          { name: 'vlpAmount', type: 'uint128' },
+          { name: 'nlpAmount', type: 'uint128' },
           { name: 'nonce', type: 'uint64' },
         ],
       };

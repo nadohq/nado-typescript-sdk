@@ -10,8 +10,8 @@ import { toBigInt, WalletNotProvidedError } from '@nadohq/utils';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import {
   ApproveAllowanceParams,
-  BurnVlpParams,
-  MintVlpParams,
+  BurnNlpParams,
+  MintNlpParams,
   TransferQuoteParams,
   WithdrawCollateralParams,
 } from './types';
@@ -65,8 +65,8 @@ export class SpotExecuteAPI extends BaseSpotAPI {
     });
   }
 
-  async mintVlp(params: MintVlpParams) {
-    return this.context.engineClient.mintVlp({
+  async mintNlp(params: MintNlpParams) {
+    return this.context.engineClient.mintNlp({
       ...params,
       subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
       chainId: this.getWalletClientChainIdIfNeeded(params),
@@ -74,8 +74,8 @@ export class SpotExecuteAPI extends BaseSpotAPI {
     });
   }
 
-  async burnVlp(params: BurnVlpParams) {
-    return this.context.engineClient.burnVlp({
+  async burnNlp(params: BurnNlpParams) {
+    return this.context.engineClient.burnNlp({
       ...params,
       subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
       chainId: this.getWalletClientChainIdIfNeeded(params),

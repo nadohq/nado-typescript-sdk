@@ -76,12 +76,12 @@ export interface EIP712LeaderboardAuthenticationParams extends Subaccount {
   expiration: BigDecimalish;
 }
 
-export interface EIP712MintVlpParams extends Subaccount {
+export interface EIP712MintNlpParams extends Subaccount {
   quoteAmount: BigDecimalish;
   nonce: string;
 }
 
-export interface EIP712BurnVlpParams extends Subaccount {
-  vlpAmount: BigDecimalish;
+export interface EIP712BurnNlpParams extends Subaccount {
+  nlpAmount: BigDecimalish;
   nonce: string;
 }

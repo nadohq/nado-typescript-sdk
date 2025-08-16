@@ -2,7 +2,7 @@ import {
   ProductEngineType,
   QUOTE_PRODUCT_ID,
   subaccountFromHex,
-  VLP_PRODUCT_ID,
+  NLP_PRODUCT_ID,
 } from '@nadohq/contracts';
 import { toBigDecimal, toIntegerString } from '@nadohq/utils';
 
@@ -24,15 +24,15 @@ import {
   GetIndexerSubaccountMatchEventsResponse,
   GetIndexerSubaccountSettlementEventsParams,
   GetIndexerSubaccountSettlementEventsResponse,
-  GetIndexerSubaccountVlpEventsParams,
-  GetIndexerSubaccountVlpEventsResponse,
+  GetIndexerSubaccountNlpEventsParams,
+  GetIndexerSubaccountNlpEventsResponse,
   IndexerCollateralEvent,
   IndexerEventPerpStateSnapshot,
   IndexerEventSpotStateSnapshot,
   IndexerEventWithTx,
   IndexerLiquidationEvent,
   IndexerSettlementEvent,
-  IndexerVlpEvent,
+  IndexerNlpEvent,
   PaginatedIndexerEventsResponse,
 } from './types';
 
@@ -66,9 +66,9 @@ export class IndexerClient extends IndexerBaseClient {
     return this.getPaginationEventsResponse(events, requestedLimit);
   }
 
-  async getPaginatedSubaccountVlpEvents(
-    params: GetIndexerSubaccountVlpEventsParams,
-  ): Promise<GetIndexerSubaccountVlpEventsResponse> {
+  async getPaginatedSubaccountNlpEvents(
+    params: GetIndexerSubaccountNlpEventsParams,
+  ): Promise<GetIndexerSubaccountNlpEventsResponse> {
     const {
       startCursor,
       maxTimestampInclusive,
@@ -77,12 +77,12 @@ export class IndexerClient extends IndexerBaseClient {
       subaccountOwner,
     } = params;
 
-    // There are 2 events per mint/burn for spot - one associated with the VLP product & the other with the primary quote
+    // There are 2 events per mint/burn for spot - one associated with the NLP product & the other with the primary quote
     const limit = requestedLimit + 1;
     const baseResponse = await this.getEvents({
       startCursor,
       maxTimestampInclusive,
-      eventTypes: ['mint_vlp', 'burn_vlp'],
+      eventTypes: ['mint_nlp', 'burn_nlp'],
       limit: {
         type: 'txs',
         value: limit,
@@ -91,7 +91,7 @@ export class IndexerClient extends IndexerBaseClient {
     });
 
     // Now aggregate results by the submission index, use map to maintain insertion order
-    const eventsBySubmissionIdx = new Map<string, IndexerVlpEvent>();
+    const eventsBySubmissionIdx = new Map<string, IndexerNlpEvent>();
 
     baseResponse.forEach((event) => {
       const mappedEvent = (() => {
@@ -100,8 +100,8 @@ export class IndexerClient extends IndexerBaseClient {
           return existingEvent;
         }
 
-        const newEvent: IndexerVlpEvent = {
-          vlpDelta: toBigDecimal(0),
+        const newEvent: IndexerNlpEvent = {
+          nlpDelta: toBigDecimal(0),
           primaryQuoteDelta: toBigDecimal(0),
           timestamp: event.timestamp,
           submissionIndex: event.submissionIndex,
@@ -120,10 +120,10 @@ export class IndexerClient extends IndexerBaseClient {
       const productId = event.state.market.productId;
       if (productId === QUOTE_PRODUCT_ID) {
         mappedEvent.primaryQuoteDelta = balanceDelta;
-      } else if (productId === VLP_PRODUCT_ID) {
-        mappedEvent.vlpDelta = balanceDelta;
+      } else if (productId === NLP_PRODUCT_ID) {
+        mappedEvent.nlpDelta = balanceDelta;
       } else {
-        throw Error(`Invalid product ID for VLP event ${productId}`);
+        throw Error(`Invalid product ID for NLP event ${productId}`);
       }
     });
 

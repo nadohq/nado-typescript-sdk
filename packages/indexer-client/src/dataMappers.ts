@@ -48,10 +48,10 @@ import {
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
   IndexerServerTx,
-  IndexerServerVlpSnapshot,
+  IndexerServerNlpSnapshot,
   IndexerSnapshotsIntervalParams,
   IndexerSpotBalance,
-  IndexerVlpSnapshot,
+  IndexerNlpSnapshot,
 } from './types';
 
 export function mapSnapshotsIntervalToServerParams(
@@ -344,9 +344,9 @@ export function mapIndexerMarketSnapshot(
   };
 }
 
-export function mapIndexerVlpSnapshot(
-  snapshot: IndexerServerVlpSnapshot,
-): IndexerVlpSnapshot {
+export function mapIndexerNlpSnapshot(
+  snapshot: IndexerServerNlpSnapshot,
+): IndexerNlpSnapshot {
   return {
     submissionIndex: snapshot.submission_idx,
     timestamp: toBigDecimal(snapshot.timestamp),

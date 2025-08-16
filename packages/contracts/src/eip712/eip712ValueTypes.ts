@@ -1,14 +1,14 @@
 import { BigDecimalish } from '@nadohq/utils';
 import { Hex } from 'viem';
 import {
-  EIP712BurnVlpParams,
+  EIP712BurnNlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
   EIP712LeaderboardAuthenticationParams,
   EIP712LinkSignerParams,
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
-  EIP712MintVlpParams,
+  EIP712MintNlpParams,
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
@@ -65,22 +65,22 @@ export type EIP712TransferQuoteValues = Omit<
 export type EIP712LeaderboardAuthenticationValues =
   WithEIP712Sender<EIP712LeaderboardAuthenticationParams>;
 
-export type EIP712MintVlpValues = WithEIP712Sender<EIP712MintVlpParams>;
+export type EIP712MintNlpValues = WithEIP712Sender<EIP712MintNlpParams>;
 
-export type EIP712BurnVlpValues = WithEIP712Sender<EIP712BurnVlpParams>;
+export type EIP712BurnNlpValues = WithEIP712Sender<EIP712BurnNlpParams>;
 
 /**
  * All possible requests to be signed, to the EIP712 value interface
  */
 export interface SignableRequestTypeToEIP712Values {
-  burn_vlp: EIP712BurnVlpValues;
+  burn_nlp: EIP712BurnNlpValues;
   cancel_orders: EIP712OrderCancellationValues;
   cancel_product_orders: EIP712ProductOrdersCancellationValues;
   leaderboard_authentication: EIP712LeaderboardAuthenticationValues;
   link_signer: EIP712LinkSignerValues;
   liquidate_subaccount: EIP712LiquidateSubaccountValues;
   list_trigger_orders: EIP712ListTriggerOrdersValues;
-  mint_vlp: EIP712MintVlpValues;
+  mint_nlp: EIP712MintNlpValues;
   place_isolated_order: EIP712IsolatedOrderValues;
   place_order: EIP712OrderValues;
   transfer_quote: EIP712TransferQuoteValues;

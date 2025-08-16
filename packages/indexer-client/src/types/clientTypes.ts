@@ -640,15 +640,15 @@ export interface GetIndexerFastWithdrawalSignatureResponse {
 }
 
 /**
- * VLP
+ * NLP
  */
 
-export type GetIndexerVlpSnapshotsParams = IndexerSnapshotsIntervalParams;
+export type GetIndexerNlpSnapshotsParams = IndexerSnapshotsIntervalParams;
 
-export interface IndexerVlpSnapshot {
+export interface IndexerNlpSnapshot {
   submissionIndex: string;
   timestamp: BigDecimal;
-  // Total volume traded by the VLP, in terms of the primary quote
+  // Total volume traded by the NLP, in terms of the primary quote
   cumulativeVolume: BigDecimal;
   cumulativeTrades: BigDecimal;
   cumulativeMintAmountUsdc: BigDecimal;
@@ -659,8 +659,8 @@ export interface IndexerVlpSnapshot {
   depositors: BigDecimal;
 }
 
-export interface GetIndexerVlpSnapshotsResponse {
-  snapshots: IndexerVlpSnapshot[];
+export interface GetIndexerNlpSnapshotsResponse {
+  snapshots: IndexerNlpSnapshot[];
 }
 
 export interface GetIndexerBacklogResponse {

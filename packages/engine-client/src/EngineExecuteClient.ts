@@ -106,17 +106,17 @@ export class EngineExecuteClient extends EngineBaseClient {
     );
   }
 
-  async mintVlp(params: EngineExecuteRequestParamsByType['mint_vlp']) {
+  async mintNlp(params: EngineExecuteRequestParamsByType['mint_nlp']) {
     return this.execute(
-      'mint_vlp',
-      await this.payloadBuilder.buildMintVlpPayload(params),
+      'mint_nlp',
+      await this.payloadBuilder.buildMintNlpPayload(params),
     );
   }
 
-  async burnVlp(params: EngineExecuteRequestParamsByType['burn_vlp']) {
+  async burnNlp(params: EngineExecuteRequestParamsByType['burn_nlp']) {
     return this.execute(
-      'burn_vlp',
-      await this.payloadBuilder.buildBurnVlpPayload(params),
+      'burn_nlp',
+      await this.payloadBuilder.buildBurnNlpPayload(params),
     );
   }
 }
