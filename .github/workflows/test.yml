@@ -16,7 +16,7 @@ jobs:
           node-version: 'lts/*'
       - uses: borales/actions-yarn@v5
         with:
-            cmd: install
+            cmd: install --frozen-lockfile
       - run: yarn build
       - run: yarn test
       - run: yarn --cwd apps/node-compat-test test
