@@ -43,6 +43,7 @@
     "viem": "*"
   },
   "devDependencies": {
+    "@jest/globals": "*",
     "env-cmd": "^10.1.0",
     "viem": "*"
   },
