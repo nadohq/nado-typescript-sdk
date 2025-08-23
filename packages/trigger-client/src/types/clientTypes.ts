@@ -3,9 +3,9 @@ import {
   EIP712CancelProductOrdersParams,
   OrderAppendix,
   Subaccount,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { EngineOrderParams } from '@nadohq/engine-client';
-import { BigDecimal } from '@nadohq/utils';
+import { BigDecimal } from '@nadohq/shared';
 import { TriggerCriteria, TriggerOrderStatus } from './clientModelTypes';
 import {
   TriggerServerOrder,

@@ -5,18 +5,11 @@
     "sourceRoot": "./src",
     "outDir": "./dist"
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
+  "include": ["src"],
+  "exclude": ["node_modules"],
   "references": [
     {
-      "path": "../utils"
-    },
-    {
-      "path": "../contracts"
-    },
+      "path": "../shared"
+    }
   ]
 }

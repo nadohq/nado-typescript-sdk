@@ -4,7 +4,7 @@ import {
   EngineTransferQuoteParams,
   EngineWithdrawCollateralParams,
 } from '@nadohq/engine-client';
-import { BigDecimalish } from '@nadohq/utils';
+import { BigDecimalish } from '@nadohq/shared';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
 export type ProductIdOrTokenAddress =

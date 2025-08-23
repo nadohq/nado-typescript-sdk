@@ -4,7 +4,7 @@ import {
   getOrderNonce,
   SignableRequestType,
   SignableRequestTypeToParams,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineExecuteRequestParamsByType,

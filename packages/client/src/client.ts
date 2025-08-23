@@ -1,4 +1,4 @@
-import { WalletClientWithAccount } from '@nadohq/contracts';
+import { WalletClientWithAccount } from '@nadohq/shared';
 import { MarketAPI } from './apis/market';
 import { PerpAPI } from './apis/perp';
 import { SpotAPI } from './apis/spot';

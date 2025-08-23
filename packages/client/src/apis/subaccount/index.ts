@@ -1,5 +1,5 @@
-import { createDeterministicLinkedSignerPrivateKey } from '@nadohq/contracts';
-import { WalletNotProvidedError } from '@nadohq/utils';
+import { createDeterministicLinkedSignerPrivateKey } from '@nadohq/shared';
+import { WalletNotProvidedError } from '@nadohq/shared';
 import { Mixin } from 'ts-mixer';
 import { privateKeyToAccount } from 'viem/accounts';
 import { SubaccountExecuteAPI } from './SubaccountExecuteAPI';

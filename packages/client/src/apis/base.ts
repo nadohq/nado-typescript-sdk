@@ -1,5 +1,5 @@
-import { WithContracts } from '@nadohq/contracts';
-import { WalletNotProvidedError } from '@nadohq/utils';
+import { WithContracts } from '@nadohq/shared';
+import { WalletNotProvidedError } from '@nadohq/shared';
 
 import { NadoClientContext } from '../context';
 

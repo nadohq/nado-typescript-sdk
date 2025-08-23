@@ -1,7 +1,7 @@
 import {
   EIP712LeaderboardAuthenticationValues,
   SignedTx,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { IndexerEventType } from './IndexerEventType';
 import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
 import { NadoWithdrawCollateralTx } from './NadoTx';

@@ -1,4 +1,4 @@
-import { toPrintableObject } from '@nadohq/utils';
+import { toPrintableObject } from '@nadohq/shared';
 
 /**
  * Logs a labeled, pretty-printed version of an object to the console

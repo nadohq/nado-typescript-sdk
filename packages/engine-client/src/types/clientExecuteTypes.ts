@@ -8,7 +8,7 @@ import {
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { EngineServerExecuteSuccessResult } from './serverExecuteTypes';
 
 /**

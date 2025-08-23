@@ -3,8 +3,8 @@ import {
   QUOTE_PRODUCT_ID,
   subaccountFromHex,
   NLP_PRODUCT_ID,
-} from '@nadohq/contracts';
-import { toBigDecimal, toIntegerString } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { toBigDecimal, toIntegerString } from '@nadohq/shared';
 
 import { IndexerBaseClient } from './IndexerBaseClient';
 import {

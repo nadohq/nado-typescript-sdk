@@ -1,4 +1,4 @@
-import { EIP712OrderParams } from '@nadohq/contracts';
+import { EIP712OrderParams } from '@nadohq/shared';
 import {
   EngineExecuteRequestParamsByType,
   WithSignature,

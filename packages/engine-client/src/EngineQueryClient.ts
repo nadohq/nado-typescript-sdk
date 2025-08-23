@@ -3,7 +3,7 @@ import {
   getOrderVerifyingAddress,
   MarketWithProduct,
   subaccountToHex,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import {
   addDecimals,
   BigDecimal,
@@ -11,7 +11,7 @@ import {
   removeDecimals,
   toBigDecimal,
   toIntegerString,
-} from '@nadohq/utils';
+} from '@nadohq/shared';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineServerStatusResponse,

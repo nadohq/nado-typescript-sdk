@@ -1,4 +1,4 @@
-import { getOrderVerifyingAddress } from '@nadohq/contracts';
+import { getOrderVerifyingAddress } from '@nadohq/shared';
 import { BaseNadoAPI } from '../base';
 import {
   CancelAndPlaceOrderParams,

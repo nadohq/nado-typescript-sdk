@@ -2,7 +2,7 @@ import {
   GetEngineMaxMintNlpAmountParams,
   GetEngineMaxWithdrawableParams,
 } from '@nadohq/engine-client';
-import { BigDecimal, getValidatedAddress, toBigDecimal } from '@nadohq/utils';
+import { BigDecimal, getValidatedAddress, toBigDecimal } from '@nadohq/shared';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import { GetTokenAllowanceParams, GetTokenWalletBalanceParams } from './types';
 

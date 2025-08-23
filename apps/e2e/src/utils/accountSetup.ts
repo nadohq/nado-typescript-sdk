@@ -1,5 +1,5 @@
 import { createNadoClient, NadoClient, QUOTE_PRODUCT_ID } from '@nadohq/client';
-import { addDecimals } from '@nadohq/utils';
+import { addDecimals } from '@nadohq/shared';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';

@@ -6,7 +6,7 @@ import {
   SpotMarket,
   subaccountFromHex,
   unpackOrderAppendix,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import {
   mapEngineServerPerpProduct,
   mapEngineServerSpotProduct,
@@ -16,7 +16,7 @@ import {
   removeDecimals,
   toBigDecimal,
   toIntegerString,
-} from '@nadohq/utils';
+} from '@nadohq/shared';
 import {
   Candlestick,
   IndexerEvent,

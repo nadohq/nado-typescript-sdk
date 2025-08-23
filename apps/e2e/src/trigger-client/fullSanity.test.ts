@@ -6,10 +6,15 @@ import {
   MOCK_ERC20_ABI,
   NADO_ABIS,
   packOrderAppendix,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
 import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
-import { addDecimals, BigDecimal, toBigDecimal, toBigInt } from '@nadohq/utils';
+import {
+  addDecimals,
+  BigDecimal,
+  toBigDecimal,
+  toBigInt,
+} from '@nadohq/shared';
 import test from 'node:test';
 import { getContract } from 'viem';
 import { debugPrint } from '../utils/debugPrint';

@@ -6,8 +6,8 @@ import {
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
   subaccountToHex,
-} from '@nadohq/contracts';
-import { addDecimals, nowInSeconds } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { addDecimals, nowInSeconds } from '@nadohq/shared';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 import { runWithContext } from '../utils/runWithContext';

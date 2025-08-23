@@ -5,13 +5,12 @@
     "sourceRoot": "./src",
     "outDir": "./dist"
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
+  "include": ["src"],
+  "exclude": ["node_modules"],
   "references": [
+    {
+      "path": "../shared"
+    },
     {
       "path": "../engine-client"
     },
@@ -20,12 +19,6 @@
     },
     {
       "path": "../trigger-client"
-    },
-    {
-      "path": "../contracts"
-    },
-    {
-      "path": "../utils"
     }
   ]
 }

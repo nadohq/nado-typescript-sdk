@@ -1,4 +1,4 @@
-import { ProductEngineType } from '@nadohq/contracts';
+import { ProductEngineType } from '@nadohq/shared';
 import { EngineServerProductType } from '../types';
 
 export function mapProductEngineType(

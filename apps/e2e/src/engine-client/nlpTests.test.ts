@@ -1,6 +1,6 @@
 import { EngineClient } from '@nadohq/engine-client';
-import { NADO_ABIS, NLP_PRODUCT_ID } from '@nadohq/contracts';
-import { addDecimals, removeDecimals, BigDecimals } from '@nadohq/utils';
+import { NADO_ABIS, NLP_PRODUCT_ID } from '@nadohq/shared';
+import { addDecimals, removeDecimals, BigDecimals } from '@nadohq/shared';
 import { RunContext } from '../utils/types';
 import { getContract } from 'viem';
 import { runWithContext } from '../utils/runWithContext';

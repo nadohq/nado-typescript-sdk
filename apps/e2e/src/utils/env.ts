@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { ChainEnv } from '@nadohq/contracts';
-import { getValidatedHex } from '@nadohq/utils';
+import { ChainEnv } from '@nadohq/shared';
+import { getValidatedHex } from '@nadohq/shared';
 import { Env } from './types';
 
 const chainEnv: ChainEnv =

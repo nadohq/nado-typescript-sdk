@@ -7,8 +7,8 @@ import {
   SpotMarket,
   subaccountFromHex,
   unpackOrderAppendix,
-} from '@nadohq/contracts';
-import { mapValues, removeDecimals, toBigDecimal } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { mapValues, removeDecimals, toBigDecimal } from '@nadohq/shared';
 import {
   EngineMarketPrice,
   EngineOrder,

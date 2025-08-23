@@ -1,4 +1,4 @@
-import { Subaccount } from '@nadohq/contracts';
+import { Subaccount } from '@nadohq/shared';
 import { IndexerClient } from '@nadohq/indexer-client';
 import { getServerError } from '../utils/getServerError';
 import { RunContext } from '../utils/types';

@@ -1,4 +1,4 @@
-import { EIP712OrderValues } from '@nadohq/contracts';
+import { EIP712OrderValues } from '@nadohq/shared';
 import {
   EngineServerExecuteFailureResult,
   EngineServerExecuteRequestByType,

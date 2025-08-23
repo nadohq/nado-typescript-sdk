@@ -23,9 +23,10 @@ Exports queries that talk to the indexer.
 
 Exports queries and executes that talk to the trigger service (used for stop & TP/SL orders).
 
-### `@nadohq/utils`
+### `@nadohq/shared`
 
-Common utilities, including [`bignumber.js`](https://mikemcl.github.io/bignumber.js/), which is used for representing
+Base utilities, contract interfaces, and EIP712 signing logic. This also includes [
+`bignumber.js`](https://mikemcl.github.io/bignumber.js/), which is used for representing
 large numbers.
 
 ## Development

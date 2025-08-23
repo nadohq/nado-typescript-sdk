@@ -7,9 +7,9 @@ import {
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
   subaccountToHex,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
-import { addDecimals } from '@nadohq/utils';
+import { addDecimals } from '@nadohq/shared';
 import test from 'node:test';
 import { createWalletClient, getContract, http, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';

@@ -12,8 +12,8 @@ import {
   SignedEIP712OrderParams,
   SpotBalanceWithProduct,
   Subaccount,
-} from '@nadohq/contracts';
-import { BigDecimal } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { BigDecimal } from '@nadohq/shared';
 import {
   EngineServerNoncesParams,
   EngineServerTimeResponse,

@@ -1,4 +1,4 @@
-import { HealthStatus } from '@nadohq/contracts';
+import { HealthStatus } from '@nadohq/shared';
 import {
   EngineServerHealthBreakdown,
   EngineServerPerpBalance,

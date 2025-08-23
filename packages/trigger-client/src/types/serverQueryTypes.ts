@@ -1,4 +1,4 @@
-import { EIP712ListTriggerOrdersValues, SignedTx } from '@nadohq/contracts';
+import { EIP712ListTriggerOrdersValues, SignedTx } from '@nadohq/shared';
 import { EngineServerExecuteResult } from '@nadohq/engine-client';
 import { TriggerServerPlaceOrderParams } from './serverExecuteTypes';
 

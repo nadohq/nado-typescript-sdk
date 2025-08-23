@@ -1,4 +1,4 @@
-import { ChainEnv } from '@nadohq/contracts';
+import { ChainEnv } from '@nadohq/shared';
 
 export const TRIGGER_CLIENT_ENDPOINTS: Record<ChainEnv, string> = {
   local: 'http://localhost:80/trigger',

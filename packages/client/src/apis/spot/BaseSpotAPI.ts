@@ -1,5 +1,6 @@
-import { ContractInstance, ERC20_ABI } from '@nadohq/contracts';
-import { getValidatedAddress } from '@nadohq/utils';
+import { ERC20_ABI } from '@nadohq/shared';
+import { ContractInstance } from '@nadohq/shared';
+import { getValidatedAddress } from '@nadohq/shared';
 import { getContract } from 'viem';
 import { BaseNadoAPI } from '../base';
 import { ProductIdOrTokenAddress } from './types';

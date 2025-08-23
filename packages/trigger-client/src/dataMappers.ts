@@ -1,10 +1,10 @@
-import { unpackOrderAppendix } from '@nadohq/contracts';
+import { unpackOrderAppendix } from '@nadohq/shared';
 import {
   addDecimals,
   removeDecimals,
   toBigDecimal,
   toIntegerString,
-} from '@nadohq/utils';
+} from '@nadohq/shared';
 import {
   PriceTriggerCriteria,
   PriceTriggerRequirementType,

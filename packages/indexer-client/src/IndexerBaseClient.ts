@@ -10,7 +10,7 @@ import {
   subaccountFromHex,
   subaccountToHex,
   WalletClientWithAccount,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import {
   getValidatedHex,
   mapValues,
@@ -20,7 +20,7 @@ import {
   toBigInt,
   toIntegerString,
   WalletNotProvidedError,
-} from '@nadohq/utils';
+} from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapIndexerCandlesticks,

@@ -1,6 +1,6 @@
-import { QUOTE_PRODUCT_ID, Subaccount } from '@nadohq/contracts';
+import { QUOTE_PRODUCT_ID, Subaccount } from '@nadohq/shared';
 import { IndexerClient } from '@nadohq/indexer-client';
-import { nowInSeconds, TimeInSeconds, toBigDecimal } from '@nadohq/utils';
+import { nowInSeconds, TimeInSeconds, toBigDecimal } from '@nadohq/shared';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 import { runWithContext } from '../utils/runWithContext';

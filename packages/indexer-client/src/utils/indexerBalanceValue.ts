@@ -1,4 +1,4 @@
-import { BigDecimal } from '@nadohq/utils';
+import { BigDecimal } from '@nadohq/shared';
 import { IndexerPerpBalance, IndexerSpotBalance } from '../types';
 
 /**

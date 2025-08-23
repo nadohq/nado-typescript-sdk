@@ -1,4 +1,4 @@
-import { AccountWithPrivateKey } from '@nadohq/contracts';
+import { AccountWithPrivateKey } from '@nadohq/shared';
 import {
   EngineLinkSignerParams,
   EngineLiquidateSubaccountParams,

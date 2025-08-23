@@ -8,8 +8,7 @@ export * from './apis/spot';
 export * from './apis/subaccount';
 
 // Subpackage exports
-export * from '@nadohq/utils';
-export * from '@nadohq/contracts';
+export * from '@nadohq/shared';
 export * from '@nadohq/engine-client';
 export * from '@nadohq/indexer-client';
 export * from '@nadohq/trigger-client';

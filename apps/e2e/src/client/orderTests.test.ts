@@ -8,7 +8,7 @@ import {
   getOrderDigest,
   getOrderNonce,
   packOrderAppendix,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';

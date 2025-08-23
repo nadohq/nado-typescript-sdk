@@ -1,5 +1,5 @@
 import { EngineServerExecuteResult } from '@nadohq/engine-client';
-import { BigDecimalish } from '@nadohq/utils';
+import { BigDecimalish } from '@nadohq/shared';
 
 /*
 Price trigger

@@ -3,8 +3,8 @@ import {
   SignableRequestType,
   SignableRequestTypeToParams,
   WalletClientWithAccount,
-} from '@nadohq/contracts';
-import { WalletNotProvidedError } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { WalletNotProvidedError } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   EngineServerExecuteRequestByType,

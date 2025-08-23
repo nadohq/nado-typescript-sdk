@@ -10,7 +10,7 @@ import {
   EIP712TransferQuoteValues,
   EIP712WithdrawCollateralValues,
   SignedTx,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { EngineServerOrderResponse } from './serverQueryTypes';
 
 export interface EngineServerPlaceOrderResponse {

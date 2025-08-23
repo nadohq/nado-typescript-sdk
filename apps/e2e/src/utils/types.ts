@@ -2,7 +2,7 @@ import {
   ChainEnv,
   NadoDeploymentAddresses,
   WalletClientWithAccount,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { Hex, PublicClient } from 'viem';
 
 export interface Env {

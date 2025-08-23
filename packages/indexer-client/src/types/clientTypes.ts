@@ -8,8 +8,8 @@ import {
   SpotBalance,
   SpotMarket,
   Subaccount,
-} from '@nadohq/contracts';
-import { BigDecimal } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { BigDecimal } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { CandlestickPeriod } from './CandlestickPeriod';
 import { IndexerEventType } from './IndexerEventType';

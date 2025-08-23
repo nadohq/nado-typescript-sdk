@@ -6,7 +6,7 @@ import {
   NadoContracts,
   NadoDeploymentAddresses,
   WalletClientWithAccount,
-} from '@nadohq/contracts';
+} from '@nadohq/shared';
 import { ENGINE_CLIENT_ENDPOINTS, EngineClient } from '@nadohq/engine-client';
 import {
   INDEXER_CLIENT_ENDPOINTS,

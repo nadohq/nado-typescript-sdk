@@ -10,8 +10,8 @@ import {
   SignableRequestType,
   SignableRequestTypeToParams,
   WalletClientWithAccount,
-} from '@nadohq/contracts';
-import { toIntegerString, WalletNotProvidedError } from '@nadohq/utils';
+} from '@nadohq/shared';
+import { toIntegerString, WalletNotProvidedError } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { mapServerOrderInfo, mapTriggerCriteria } from './dataMappers';
 import {

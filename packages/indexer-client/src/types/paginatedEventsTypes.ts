@@ -1,5 +1,4 @@
-import { Subaccount } from '@nadohq/contracts';
-import { BigDecimal } from '@nadohq/utils';
+import { BigDecimal, Subaccount } from '@nadohq/shared';
 import {
   GetIndexerInterestFundingPaymentsParams,
   GetIndexerInterestFundingPaymentsResponse,

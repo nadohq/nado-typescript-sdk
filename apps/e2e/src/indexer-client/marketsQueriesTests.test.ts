@@ -1,6 +1,6 @@
-import { QUOTE_PRODUCT_ID } from '@nadohq/contracts';
+import { QUOTE_PRODUCT_ID } from '@nadohq/shared';
 import { CandlestickPeriod, IndexerClient } from '@nadohq/indexer-client';
-import { nowInSeconds, TimeInSeconds } from '@nadohq/utils';
+import { nowInSeconds, TimeInSeconds } from '@nadohq/shared';
 import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 import { runWithContext } from '../utils/runWithContext';
