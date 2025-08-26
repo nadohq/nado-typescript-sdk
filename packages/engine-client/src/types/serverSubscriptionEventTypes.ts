@@ -1,22 +1,24 @@
 import { EngineServerPriceTickLiquidity } from './serverQueryTypes';
 
-/**
- * Event from subscribing to a `order_update` stream.
- */
-export interface EngineServerSubscriptionOrderUpdateEvent {
-  timestamp: string;
+export interface EngineServerSubscriptionBaseEvent {
+  type:
+    | 'trade'
+    | 'best_bid_offer'
+    | 'book_depth'
+    | 'fill'
+    | 'position_change'
+    | 'order_update'
+    | 'latest_candlestick';
   product_id: number;
-  digest: string;
-  amount: string;
-  reason: string;
 }
 
 /**
  * Event from subscribing to a `trade` stream.
  */
-export interface EngineServerSubscriptionTradeEvent {
+export interface EngineServerSubscriptionTradeEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'trade';
   timestamp: string;
-  product_id: number;
   price: string;
   taker_qty: string;
   maker_qty: string;
@@ -26,9 +28,10 @@ export interface EngineServerSubscriptionTradeEvent {
 /**
  * Event from subscribing to a `best_bid_offer` stream.
  */
-export interface EngineServerSubscriptionBestBidOfferEvent {
+export interface EngineServerSubscriptionBestBidOfferEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'best_bid_offer';
   timestamp: string;
-  product_id: number;
   bid_price: string;
   bid_qty: string;
   ask_price: string;
@@ -36,39 +39,75 @@ export interface EngineServerSubscriptionBestBidOfferEvent {
 }
 
 /**
+ * Event from subscribing to a `book_depth` stream.
+ */
+export interface EngineServerSubscriptionBookDepthEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'book_depth';
+  last_max_timestamp: string;
+  min_timestamp: string;
+  max_timestamp: string;
+  bids: EngineServerPriceTickLiquidity[];
+  asks: EngineServerPriceTickLiquidity[];
+}
+
+/**
  * Event from subscribing to a `fill` stream.
  */
-export interface EngineServerSubscriptionFillEvent {
-  // NOTE: `id` is excluded from the response to avoid parsing issues.
-  // type of `id` on the backend is `u64` which can overflow until we introduce proper parsing on the SDK.
+export interface EngineServerSubscriptionFillEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'fill';
   timestamp: string;
-  product_id: number;
   subaccount: string;
   order_digest: string;
+  id?: string;
   filled_qty: string;
   remaining_qty: string;
+  original_qty: string;
   price: string;
   is_taker: boolean;
+  is_bid: boolean;
+  fee: string;
+  submission_idx: string;
 }
 
 /**
  * Event from subscribing to a `position_change` stream.
  */
-export interface EngineServerSubscriptionPositionChangeEvent {
+export interface EngineServerSubscriptionPositionChangeEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'position_change';
   timestamp: string;
-  product_id: number;
   subaccount: string;
   amount: string;
   v_quote_amount: string;
+  reason: string;
 }
 
 /**
- * Event from subscribing to a `book_depth` stream.
+ * Event from subscribing to an `order_update` stream.
  */
-export interface EngineServerSubscriptionBookDepthEvent {
-  min_timestamp: string;
-  max_timestamp: string;
-  product_id: number;
-  bids: EngineServerPriceTickLiquidity[];
-  asks: EngineServerPriceTickLiquidity[];
+export interface EngineServerSubscriptionOrderUpdateEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'order_update';
+  timestamp: string;
+  digest: string;
+  id?: string;
+  amount: string;
+  reason: string;
+}
+
+/**
+ * Event from subscribing to a `latest_candlestick` stream.
+ */
+export interface EngineServerSubscriptionLatestCandlestickEvent
+  extends EngineServerSubscriptionBaseEvent {
+  type: 'latest_candlestick';
+  timestamp: string;
+  granularity: number;
+  open_x18: string;
+  high_x18: string;
+  low_x18: string;
+  close_x18: string;
+  volume: string;
 }

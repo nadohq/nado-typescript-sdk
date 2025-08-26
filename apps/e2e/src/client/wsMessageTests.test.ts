@@ -96,9 +96,7 @@ async function wsMessageTests(context: RunContext) {
 
   const wsTradeStream = nadoClient.ws.subscription.buildSubscriptionParams(
     'trade',
-    {
-      product_id: QUOTE_PRODUCT_ID,
-    },
+    { product_id: QUOTE_PRODUCT_ID },
   );
   const wsTradeSubscriptionReq =
     nadoClient.ws.subscription.buildSubscriptionMessage(
@@ -122,12 +120,45 @@ async function wsMessageTests(context: RunContext) {
       'unsubscribe',
       wsFillStream,
     );
-
   debugPrint('Fill unsubscribe WS request', wsFillUnsubscribeReq);
 
-  const wsListSubscriptionsReq =
-    nadoClient.ws.subscription.buildSubscriptionMessage(1, 'list', {});
+  // position_change (all products by omitting product_id)
+  const wsPositionChangeAllStream =
+    nadoClient.ws.subscription.buildSubscriptionParams('position_change', {
+      subaccount: subaccountToHex({
+        subaccountOwner: walletClientAddress,
+        subaccountName: 'default',
+      }),
+    });
+  const wsPositionChangeAllSubscriptionReq =
+    nadoClient.ws.subscription.buildSubscriptionMessage(
+      5,
+      'subscribe',
+      wsPositionChangeAllStream,
+    );
+  debugPrint(
+    'Position Change (all products) subscription WS request',
+    wsPositionChangeAllSubscriptionReq,
+  );
 
+  const wsLatestCandleStream =
+    nadoClient.ws.subscription.buildSubscriptionParams('latest_candlestick', {
+      product_id: 1,
+      granularity: 60,
+    });
+  const wsLatestCandleSubscriptionReq =
+    nadoClient.ws.subscription.buildSubscriptionMessage(
+      6,
+      'subscribe',
+      wsLatestCandleStream,
+    );
+  debugPrint(
+    'Latest Candlestick subscription WS request',
+    wsLatestCandleSubscriptionReq,
+  );
+
+  const wsListSubscriptionsReq =
+    nadoClient.ws.subscription.buildSubscriptionMessage(7, 'list', {});
   debugPrint('List subscriptions WS request', wsListSubscriptionsReq);
 }
 
