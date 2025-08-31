@@ -1,11 +1,12 @@
 import { Chain } from 'viem';
-import { arbitrum, arbitrumSepolia, localhost } from 'viem/chains';
+import { arbitrum, arbitrumSepolia, inkSepolia, localhost } from 'viem/chains';
 import { ChainEnv } from '../types';
 
 export const CHAIN_ENV_TO_CHAIN = {
   local: localhost,
   arbitrumTestnet: arbitrumSepolia,
   arbitrum: arbitrum,
+  inkTestnet: inkSepolia,
 } as const satisfies Record<ChainEnv, Chain>;
 
 export const CHAIN_ID_TO_CHAIN_ENV = Object.fromEntries(
