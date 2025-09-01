@@ -3,8 +3,7 @@ import { ChainEnv } from '@nadohq/shared';
 import { getValidatedHex } from '@nadohq/shared';
 import { Env } from './types';
 
-const chainEnv: ChainEnv =
-  (process.env.CHAIN_ENV as ChainEnv) ?? 'arbitrumTestnet';
+const chainEnv: ChainEnv = (process.env.CHAIN_ENV as ChainEnv) ?? 'inkTestnet';
 const privateKey = getValidatedHex(process.env.PRIVATE_KEY ?? '');
 
 export const env: Env = {
