@@ -22,6 +22,19 @@ export const CLEARINGHOUSE_ABI = [
     anonymous: false,
     inputs: [
       {
+        indexed: false,
+        internalType: 'uint8',
+        name: 'version',
+        type: 'uint8',
+      },
+    ],
+    name: 'Initialized',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: true,
         internalType: 'bytes32',
         name: 'liquidatorSubaccount',
@@ -87,6 +100,25 @@ export const CLEARINGHOUSE_ABI = [
     type: 'event',
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'previousOwner',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'OwnershipTransferred',
+    type: 'event',
+  },
+  {
     inputs: [
       {
         internalType: 'address',
@@ -112,6 +144,19 @@ export const CLEARINGHOUSE_ABI = [
   {
     inputs: [
       {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+    ],
+    name: 'assertCode',
+    outputs: [],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
         components: [
           {
             internalType: 'bytes32',
@@ -119,13 +164,8 @@ export const CLEARINGHOUSE_ABI = [
             type: 'bytes32',
           },
           {
-            internalType: 'uint32',
-            name: 'productId',
-            type: 'uint32',
-          },
-          {
             internalType: 'uint128',
-            name: 'amount',
+            name: 'nlpAmount',
             type: 'uint128',
           },
           {
@@ -134,65 +174,55 @@ export const CLEARINGHOUSE_ABI = [
             type: 'uint64',
           },
         ],
-        internalType: 'struct IEndpoint.BurnLp',
-        name: 'tx',
-        type: 'tuple',
-      },
-    ],
-    name: 'burnLp',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        components: [
-          {
-            internalType: 'bytes32',
-            name: 'sender',
-            type: 'bytes32',
-          },
-          {
-            internalType: 'uint32',
-            name: 'productId',
-            type: 'uint32',
-          },
-          {
-            internalType: 'uint128',
-            name: 'amount',
-            type: 'uint128',
-          },
-          {
-            internalType: 'bytes32',
-            name: 'recipient',
-            type: 'bytes32',
-          },
-        ],
-        internalType: 'struct IEndpoint.BurnLpAndTransfer',
+        internalType: 'struct IEndpoint.BurnNlp',
         name: 'txn',
         type: 'tuple',
       },
-    ],
-    name: 'burnLpAndTransfer',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
+      {
+        internalType: 'int128',
+        name: 'oraclePriceX18',
+        type: 'int128',
+      },
       {
         components: [
+          {
+            internalType: 'uint64',
+            name: 'poolId',
+            type: 'uint64',
+          },
           {
             internalType: 'bytes32',
             name: 'subaccount',
             type: 'bytes32',
           },
+          {
+            internalType: 'address',
+            name: 'owner',
+            type: 'address',
+          },
+          {
+            internalType: 'uint128',
+            name: 'balanceWeightX18',
+            type: 'uint128',
+          },
         ],
-        internalType: 'struct IEndpoint.ClaimSequencerFees',
-        name: 'tx',
-        type: 'tuple',
+        internalType: 'struct IEndpoint.NlpPool[]',
+        name: 'nlpPools',
+        type: 'tuple[]',
       },
+      {
+        internalType: 'int128[]',
+        name: 'nlpPoolRebalanceX18',
+        type: 'int128[]',
+      },
+    ],
+    name: 'burnNlp',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
       {
         internalType: 'int128[]',
         name: 'fees',
@@ -200,6 +230,32 @@ export const CLEARINGHOUSE_ABI = [
       },
     ],
     name: 'claimSequencerFees',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+    ],
+    name: 'clearNlpPoolPosition',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+    ],
+    name: 'delistProduct',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -225,7 +281,7 @@ export const CLEARINGHOUSE_ABI = [
           },
         ],
         internalType: 'struct IEndpoint.DepositCollateral',
-        name: 'tx',
+        name: 'txn',
         type: 'tuple',
       },
     ],
@@ -237,16 +293,9 @@ export const CLEARINGHOUSE_ABI = [
   {
     inputs: [
       {
-        components: [
-          {
-            internalType: 'uint128',
-            name: 'amount',
-            type: 'uint128',
-          },
-        ],
-        internalType: 'struct IEndpoint.DepositInsurance',
-        name: 'tx',
-        type: 'tuple',
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
       },
     ],
     name: 'depositInsurance',
@@ -273,7 +322,7 @@ export const CLEARINGHOUSE_ABI = [
     outputs: [
       {
         internalType: 'address',
-        name: 'endpoint',
+        name: '',
         type: 'address',
       },
     ],
@@ -335,7 +384,7 @@ export const CLEARINGHOUSE_ABI = [
     outputs: [
       {
         internalType: 'int128',
-        name: '',
+        name: 'health',
         type: 'int128',
       },
     ],
@@ -370,6 +419,19 @@ export const CLEARINGHOUSE_ABI = [
   },
   {
     inputs: [],
+    name: 'getSlowModeFee',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'getSpreads',
     outputs: [
       {
@@ -383,15 +445,48 @@ export const CLEARINGHOUSE_ABI = [
   },
   {
     inputs: [],
-    name: 'getVersion',
+    name: 'getWithdrawPool',
     outputs: [
       {
-        internalType: 'uint64',
+        internalType: 'address',
         name: '',
-        type: 'uint64',
+        type: 'address',
       },
     ],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '_endpoint',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: '_quote',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: '_clearinghouseLiq',
+        type: 'address',
+      },
+      {
+        internalType: 'uint256',
+        name: '_spreads',
+        type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: '_withdrawPool',
+        type: 'address',
+      },
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
@@ -430,13 +525,26 @@ export const CLEARINGHOUSE_ABI = [
           },
         ],
         internalType: 'struct IEndpoint.LiquidateSubaccount',
-        name: 'tx',
+        name: 'txn',
         type: 'tuple',
       },
     ],
     name: 'liquidateSubaccount',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+    ],
+    name: 'manualAssert',
+    outputs: [],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -449,23 +557,8 @@ export const CLEARINGHOUSE_ABI = [
             type: 'bytes32',
           },
           {
-            internalType: 'uint32',
-            name: 'productId',
-            type: 'uint32',
-          },
-          {
             internalType: 'uint128',
-            name: 'amountBase',
-            type: 'uint128',
-          },
-          {
-            internalType: 'uint128',
-            name: 'quoteAmountLow',
-            type: 'uint128',
-          },
-          {
-            internalType: 'uint128',
-            name: 'quoteAmountHigh',
+            name: 'quoteAmount',
             type: 'uint128',
           },
           {
@@ -474,12 +567,80 @@ export const CLEARINGHOUSE_ABI = [
             type: 'uint64',
           },
         ],
-        internalType: 'struct IEndpoint.MintLp',
-        name: 'tx',
+        internalType: 'struct IEndpoint.MintNlp',
+        name: 'txn',
         type: 'tuple',
       },
+      {
+        internalType: 'int128',
+        name: 'oraclePriceX18',
+        type: 'int128',
+      },
+      {
+        components: [
+          {
+            internalType: 'uint64',
+            name: 'poolId',
+            type: 'uint64',
+          },
+          {
+            internalType: 'bytes32',
+            name: 'subaccount',
+            type: 'bytes32',
+          },
+          {
+            internalType: 'address',
+            name: 'owner',
+            type: 'address',
+          },
+          {
+            internalType: 'uint128',
+            name: 'balanceWeightX18',
+            type: 'uint128',
+          },
+        ],
+        internalType: 'struct IEndpoint.NlpPool[]',
+        name: 'nlpPools',
+        type: 'tuple[]',
+      },
+      {
+        internalType: 'int128[]',
+        name: 'nlpPoolRebalanceX18',
+        type: 'int128[]',
+      },
     ],
-    name: 'mintLp',
+    name: 'mintNlp',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'owner',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+      {
+        internalType: 'uint64',
+        name: 'nSubmissions',
+        type: 'uint64',
+      },
+    ],
+    name: 'rebalanceXWithdraw',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -498,26 +659,65 @@ export const CLEARINGHOUSE_ABI = [
     type: 'function',
   },
   {
+    inputs: [],
+    name: 'renounceOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
     inputs: [
       {
-        components: [
-          {
-            internalType: 'bytes32[]',
-            name: 'subaccounts',
-            type: 'bytes32[]',
-          },
-          {
-            internalType: 'uint256[]',
-            name: 'productIds',
-            type: 'uint256[]',
-          },
-        ],
-        internalType: 'struct IEndpoint.SettlePnl',
-        name: 'tx',
-        type: 'tuple',
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        internalType: 'uint128',
+        name: 'amount',
+        type: 'uint128',
+      },
+    ],
+    name: 'requireMinDeposit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '_withdrawPool',
+        type: 'address',
+      },
+    ],
+    name: 'setWithdrawPool',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
       },
     ],
     name: 'settlePnl',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'transferOwnership',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -548,12 +748,49 @@ export const CLEARINGHOUSE_ABI = [
           },
         ],
         internalType: 'struct IEndpoint.TransferQuote',
-        name: 'tx',
+        name: 'txn',
         type: 'tuple',
       },
     ],
     name: 'transferQuote',
     outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+    ],
+    name: 'updateFeeTier',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+    ],
+    name: 'updatePrice',
+    outputs: [
+      {
+        internalType: 'uint32',
+        name: '',
+        type: 'uint32',
+      },
+      {
+        internalType: 'int128',
+        name: '',
+        type: 'int128',
+      },
+    ],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -592,8 +829,31 @@ export const CLEARINGHOUSE_ABI = [
         name: 'sendTo',
         type: 'address',
       },
+      {
+        internalType: 'uint64',
+        name: 'idx',
+        type: 'uint64',
+      },
     ],
     name: 'withdrawCollateral',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'transaction',
+        type: 'bytes',
+      },
+      {
+        internalType: 'uint64',
+        name: 'idx',
+        type: 'uint64',
+      },
+    ],
+    name: 'withdrawInsurance',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

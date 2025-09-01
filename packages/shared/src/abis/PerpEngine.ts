@@ -13,39 +13,99 @@ export const PERP_ENGINE_ABI = [
     type: 'event',
   },
   {
+    anonymous: false,
     inputs: [
       {
-        components: [
-          {
-            internalType: 'uint32',
-            name: 'productId',
-            type: 'uint32',
-          },
-          {
-            internalType: 'bytes32',
-            name: 'subaccount',
-            type: 'bytes32',
-          },
-          {
-            internalType: 'int128',
-            name: 'amountDelta',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'vQuoteDelta',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IProductEngine.ProductDelta[]',
-        name: 'deltas',
-        type: 'tuple[]',
+        indexed: false,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
       },
     ],
-    name: 'applyDeltas',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    name: 'BalanceUpdate',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        indexed: false,
+        internalType: 'uint128',
+        name: 'dt',
+        type: 'uint128',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'openInterest',
+        type: 'int128',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'payment',
+        type: 'int128',
+      },
+    ],
+    name: 'FundingPayment',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint8',
+        name: 'version',
+        type: 'uint8',
+      },
+    ],
+    name: 'Initialized',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'previousOwner',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'OwnershipTransferred',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+    ],
+    name: 'ProductUpdate',
+    type: 'event',
   },
   {
     inputs: [
@@ -55,59 +115,85 @@ export const PERP_ENGINE_ABI = [
         type: 'uint32',
       },
       {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
+        internalType: 'int128',
+        name: 'sizeIncrement',
+        type: 'int128',
       },
       {
         internalType: 'int128',
-        name: 'amountLp',
+        name: 'minSize',
         type: 'int128',
+      },
+      {
+        components: [
+          {
+            internalType: 'int32',
+            name: 'longWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'longWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int128',
+            name: 'priceX18',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct RiskHelper.RiskStore',
+        name: 'riskStore',
+        type: 'tuple',
       },
     ],
-    name: 'burnLp',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
+    name: 'addProduct',
+    outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
   {
     inputs: [
       {
-        internalType: 'bytes32',
-        name: 'liquidatee',
-        type: 'bytes32',
+        internalType: 'uint32',
+        name: '',
+        type: 'uint32',
       },
       {
         internalType: 'bytes32',
-        name: 'liquidator',
+        name: '',
         type: 'bytes32',
-      },
-      {
-        internalType: 'address',
-        name: 'feeCalculator',
-        type: 'address',
       },
     ],
-    name: 'decomposeLps',
+    name: 'balances',
     outputs: [
       {
         internalType: 'int128',
-        name: '',
+        name: 'amount',
+        type: 'int128',
+      },
+      {
+        internalType: 'int128',
+        name: 'vQuoteBalance',
+        type: 'int128',
+      },
+      {
+        internalType: 'int128',
+        name: 'lastCumulativeFundingX18',
         type: 'int128',
       },
     ],
-    stateMutability: 'nonpayable',
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -152,24 +238,13 @@ export const PERP_ENGINE_ABI = [
     type: 'function',
   },
   {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'getBalanceAmount',
+    inputs: [],
+    name: 'getClearinghouse',
     outputs: [
       {
-        internalType: 'int128',
+        internalType: 'address',
         name: '',
-        type: 'int128',
+        type: 'address',
       },
     ],
     stateMutability: 'view',
@@ -178,17 +253,22 @@ export const PERP_ENGINE_ABI = [
   {
     inputs: [
       {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
         internalType: 'uint32',
         name: 'productId',
         type: 'uint32',
       },
       {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
+        internalType: 'enum IProductEngine.HealthType',
+        name: 'healthType',
+        type: 'uint8',
       },
     ],
-    name: 'getBalances',
+    name: 'getCoreRisk',
     outputs: [
       {
         components: [
@@ -199,33 +279,16 @@ export const PERP_ENGINE_ABI = [
           },
           {
             internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
+            name: 'price',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'longWeight',
             type: 'int128',
           },
         ],
-        internalType: 'struct IPerpEngine.LpBalance',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'vQuoteBalance',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.Balance',
+        internalType: 'struct IProductEngine.CoreRisk',
         name: '',
         type: 'tuple',
       },
@@ -235,7 +298,7 @@ export const PERP_ENGINE_ABI = [
   },
   {
     inputs: [],
-    name: 'getClearinghouse',
+    name: 'getEndpoint',
     outputs: [
       {
         internalType: 'address',
@@ -262,63 +325,22 @@ export const PERP_ENGINE_ABI = [
   {
     inputs: [
       {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'enum IProductEngine.HealthType',
+        name: 'healthType',
+        type: 'uint8',
       },
     ],
-    name: 'getLpState',
+    name: 'getHealthContribution',
     outputs: [
       {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'supply',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'cumulativeFundingPerLpX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'base',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'quote',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.LpState',
-        name: '',
-        type: 'tuple',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-    ],
-    name: 'getOrderbook',
-    outputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address',
+        internalType: 'int128',
+        name: 'health',
+        type: 'int128',
       },
     ],
     stateMutability: 'view',
@@ -368,6 +390,52 @@ export const PERP_ENGINE_ABI = [
         name: 'productId',
         type: 'uint32',
       },
+    ],
+    name: 'getRisk',
+    outputs: [
+      {
+        components: [
+          {
+            internalType: 'int128',
+            name: 'longWeightInitialX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'shortWeightInitialX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'longWeightMaintenanceX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'shortWeightMaintenanceX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'priceX18',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct RiskHelper.Risk',
+        name: '',
+        type: 'tuple',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
       {
         internalType: 'bytes32',
         name: 'subaccount',
@@ -380,55 +448,6 @@ export const PERP_ENGINE_ABI = [
         internalType: 'int128',
         name: 'availableSettle',
         type: 'int128',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'supply',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'cumulativeFundingPerLpX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'base',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'quote',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.LpState',
-        name: 'lpState',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.LpBalance',
-        name: 'lpBalance',
-        type: 'tuple',
       },
       {
         components: [
@@ -554,154 +573,18 @@ export const PERP_ENGINE_ABI = [
   {
     inputs: [
       {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'getStatesAndBalances',
-    outputs: [
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'supply',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'cumulativeFundingPerLpX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'base',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'quote',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.LpState',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.LpBalance',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'cumulativeFundingLongX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'cumulativeFundingShortX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'availableSettle',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'openInterest',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.State',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'vQuoteBalance',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeFundingX18',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct IPerpEngine.Balance',
-        name: '',
-        type: 'tuple',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'hasBalance',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
         internalType: 'address',
         name: '_clearinghouse',
         type: 'address',
       },
       {
         internalType: 'address',
-        name: '_quote',
+        name: '_offchainExchange',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: '',
         type: 'address',
       },
       {
@@ -712,11 +595,6 @@ export const PERP_ENGINE_ABI = [
       {
         internalType: 'address',
         name: '_admin',
-        type: 'address',
-      },
-      {
-        internalType: 'address',
-        name: '_fees',
         type: 'address',
       },
     ],
@@ -739,34 +617,21 @@ export const PERP_ENGINE_ABI = [
     type: 'function',
   },
   {
-    inputs: [
+    inputs: [],
+    name: 'owner',
+    outputs: [
       {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'int128',
-        name: 'amountBase',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'quoteAmountLow',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'quoteAmountHigh',
-        type: 'int128',
+        internalType: 'address',
+        name: '',
+        type: 'address',
       },
     ],
-    name: 'mintLp',
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'renounceOwnership',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -823,33 +688,74 @@ export const PERP_ENGINE_ABI = [
     inputs: [
       {
         internalType: 'uint32',
+        name: '',
+        type: 'uint32',
+      },
+    ],
+    name: 'states',
+    outputs: [
+      {
+        internalType: 'int128',
+        name: 'cumulativeFundingLongX18',
+        type: 'int128',
+      },
+      {
+        internalType: 'int128',
+        name: 'cumulativeFundingShortX18',
+        type: 'int128',
+      },
+      {
+        internalType: 'int128',
+        name: 'availableSettle',
+        type: 'int128',
+      },
+      {
+        internalType: 'int128',
+        name: 'openInterest',
+        type: 'int128',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'transferOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
         name: 'productId',
         type: 'uint32',
       },
       {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
         internalType: 'int128',
-        name: 'baseDelta',
+        name: 'amountDelta',
         type: 'int128',
       },
       {
         internalType: 'int128',
-        name: 'quoteDelta',
+        name: 'vQuoteDelta',
         type: 'int128',
       },
     ],
-    name: 'swapLp',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
+    name: 'updateBalance',
+    outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -862,38 +768,12 @@ export const PERP_ENGINE_ABI = [
       },
       {
         internalType: 'int128',
-        name: 'amount',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
         name: 'priceX18',
         type: 'int128',
       },
-      {
-        internalType: 'int128',
-        name: 'sizeIncrement',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'lpSpreadX18',
-        type: 'int128',
-      },
     ],
-    name: 'swapLp',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
+    name: 'updatePrice',
+    outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
   },
@@ -901,11 +781,56 @@ export const PERP_ENGINE_ABI = [
     inputs: [
       {
         internalType: 'bytes',
-        name: 'txn',
+        name: 'rawTxn',
         type: 'bytes',
       },
     ],
     name: 'updateProduct',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        components: [
+          {
+            internalType: 'int32',
+            name: 'longWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'longWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int128',
+            name: 'priceX18',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct RiskHelper.RiskStore',
+        name: 'riskStore',
+        type: 'tuple',
+      },
+    ],
+    name: 'updateRisk',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

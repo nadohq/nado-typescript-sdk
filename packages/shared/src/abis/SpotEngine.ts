@@ -13,36 +13,235 @@ export const SPOT_ENGINE_ABI = [
     type: 'event',
   },
   {
+    anonymous: false,
     inputs: [
+      {
+        indexed: false,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+    ],
+    name: 'BalanceUpdate',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint8',
+        name: 'version',
+        type: 'uint8',
+      },
+    ],
+    name: 'Initialized',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        indexed: false,
+        internalType: 'uint128',
+        name: 'dt',
+        type: 'uint128',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'depositRateMultiplierX18',
+        type: 'int128',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'borrowRateMultiplierX18',
+        type: 'int128',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'feeAmount',
+        type: 'int128',
+      },
+    ],
+    name: 'InterestPayment',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'previousOwner',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'OwnershipTransferred',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+    ],
+    name: 'ProductUpdate',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
+        indexed: true,
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'amount',
+        type: 'int128',
+      },
+      {
+        indexed: false,
+        internalType: 'int128',
+        name: 'lastCumulativeMultiplierX18',
+        type: 'int128',
+      },
+    ],
+    name: 'SpotBalance',
+    type: 'event',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        internalType: 'uint32',
+        name: 'quoteId',
+        type: 'uint32',
+      },
+      {
+        internalType: 'int128',
+        name: 'sizeIncrement',
+        type: 'int128',
+      },
+      {
+        internalType: 'int128',
+        name: 'minSize',
+        type: 'int128',
+      },
       {
         components: [
           {
-            internalType: 'uint32',
-            name: 'productId',
-            type: 'uint32',
-          },
-          {
-            internalType: 'bytes32',
-            name: 'subaccount',
-            type: 'bytes32',
+            internalType: 'address',
+            name: 'token',
+            type: 'address',
           },
           {
             internalType: 'int128',
-            name: 'amountDelta',
+            name: 'interestInflectionUtilX18',
             type: 'int128',
           },
           {
             internalType: 'int128',
-            name: 'vQuoteDelta',
+            name: 'interestFloorX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'interestSmallCapX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'interestLargeCapX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'withdrawFeeX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'minDepositRateX18',
             type: 'int128',
           },
         ],
-        internalType: 'struct IProductEngine.ProductDelta[]',
-        name: 'deltas',
-        type: 'tuple[]',
+        internalType: 'struct ISpotEngine.Config',
+        name: 'config',
+        type: 'tuple',
+      },
+      {
+        components: [
+          {
+            internalType: 'int32',
+            name: 'longWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'longWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int128',
+            name: 'priceX18',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct RiskHelper.RiskStore',
+        name: 'riskStore',
+        type: 'tuple',
       },
     ],
-    name: 'applyDeltas',
+    name: 'addProduct',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -54,60 +253,10 @@ export const SPOT_ENGINE_ABI = [
         name: 'productId',
         type: 'uint32',
       },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'int128',
-        name: 'amountLp',
-        type: 'int128',
-      },
     ],
-    name: 'burnLp',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'bytes32',
-        name: 'liquidatee',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'liquidator',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'address',
-        name: 'feeCalculator',
-        type: 'address',
-      },
-    ],
-    name: 'decomposeLps',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
-    stateMutability: 'nonpayable',
+    name: 'assertUtilization',
+    outputs: [],
+    stateMutability: 'view',
     type: 'function',
   },
   {
@@ -130,83 +279,6 @@ export const SPOT_ENGINE_ABI = [
           {
             internalType: 'int128',
             name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeMultiplierX18',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct ISpotEngine.Balance',
-        name: '',
-        type: 'tuple',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'getBalanceAmount',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'getBalances',
-    outputs: [
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct ISpotEngine.LpBalance',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeMultiplierX18',
             type: 'int128',
           },
         ],
@@ -268,10 +340,79 @@ export const SPOT_ENGINE_ABI = [
             name: 'interestLargeCapX18',
             type: 'int128',
           },
+          {
+            internalType: 'int128',
+            name: 'withdrawFeeX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'minDepositRateX18',
+            type: 'int128',
+          },
         ],
         internalType: 'struct ISpotEngine.Config',
         name: '',
         type: 'tuple',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        internalType: 'enum IProductEngine.HealthType',
+        name: 'healthType',
+        type: 'uint8',
+      },
+    ],
+    name: 'getCoreRisk',
+    outputs: [
+      {
+        components: [
+          {
+            internalType: 'int128',
+            name: 'amount',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'price',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'longWeight',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct IProductEngine.CoreRisk',
+        name: '',
+        type: 'tuple',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getEndpoint',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
       },
     ],
     stateMutability: 'view',
@@ -293,58 +434,61 @@ export const SPOT_ENGINE_ABI = [
   {
     inputs: [
       {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'enum IProductEngine.HealthType',
+        name: 'healthType',
+        type: 'uint8',
       },
     ],
-    name: 'getLpState',
+    name: 'getHealthContribution',
+    outputs: [
+      {
+        internalType: 'int128',
+        name: 'health',
+        type: 'int128',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+    ],
+    name: 'getNlpUnlockedBalance',
     outputs: [
       {
         components: [
           {
             internalType: 'int128',
-            name: 'supply',
+            name: 'amount',
             type: 'int128',
           },
-          {
-            components: [
-              {
-                internalType: 'int128',
-                name: 'amount',
-                type: 'int128',
-              },
-              {
-                internalType: 'int128',
-                name: 'lastCumulativeMultiplierX18',
-                type: 'int128',
-              },
-            ],
-            internalType: 'struct ISpotEngine.Balance',
-            name: 'quote',
-            type: 'tuple',
-          },
-          {
-            components: [
-              {
-                internalType: 'int128',
-                name: 'amount',
-                type: 'int128',
-              },
-              {
-                internalType: 'int128',
-                name: 'lastCumulativeMultiplierX18',
-                type: 'int128',
-              },
-            ],
-            internalType: 'struct ISpotEngine.Balance',
-            name: 'base',
-            type: 'tuple',
-          },
         ],
-        internalType: 'struct ISpotEngine.LpState',
+        internalType: 'struct ISpotEngine.Balance',
         name: '',
         type: 'tuple',
+      },
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getProductIds',
+    outputs: [
+      {
+        internalType: 'uint32[]',
+        name: '',
+        type: 'uint32[]',
       },
     ],
     stateMutability: 'view',
@@ -358,25 +502,39 @@ export const SPOT_ENGINE_ABI = [
         type: 'uint32',
       },
     ],
-    name: 'getOrderbook',
+    name: 'getRisk',
     outputs: [
       {
-        internalType: 'address',
+        components: [
+          {
+            internalType: 'int128',
+            name: 'longWeightInitialX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'shortWeightInitialX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'longWeightMaintenanceX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'shortWeightMaintenanceX18',
+            type: 'int128',
+          },
+          {
+            internalType: 'int128',
+            name: 'priceX18',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct RiskHelper.Risk',
         name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'getProductIds',
-    outputs: [
-      {
-        internalType: 'uint32[]',
-        name: '',
-        type: 'uint32[]',
+        type: 'tuple',
       },
     ],
     stateMutability: 'view',
@@ -431,132 +589,6 @@ export const SPOT_ENGINE_ABI = [
             name: 'amount',
             type: 'int128',
           },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeMultiplierX18',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct ISpotEngine.Balance',
-        name: '',
-        type: 'tuple',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'getStatesAndBalances',
-    outputs: [
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'supply',
-            type: 'int128',
-          },
-          {
-            components: [
-              {
-                internalType: 'int128',
-                name: 'amount',
-                type: 'int128',
-              },
-              {
-                internalType: 'int128',
-                name: 'lastCumulativeMultiplierX18',
-                type: 'int128',
-              },
-            ],
-            internalType: 'struct ISpotEngine.Balance',
-            name: 'quote',
-            type: 'tuple',
-          },
-          {
-            components: [
-              {
-                internalType: 'int128',
-                name: 'amount',
-                type: 'int128',
-              },
-              {
-                internalType: 'int128',
-                name: 'lastCumulativeMultiplierX18',
-                type: 'int128',
-              },
-            ],
-            internalType: 'struct ISpotEngine.Balance',
-            name: 'base',
-            type: 'tuple',
-          },
-        ],
-        internalType: 'struct ISpotEngine.LpState',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct ISpotEngine.LpBalance',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'cumulativeDepositsMultiplierX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'cumulativeBorrowsMultiplierX18',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'totalDepositsNormalized',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'totalBorrowsNormalized',
-            type: 'int128',
-          },
-        ],
-        internalType: 'struct ISpotEngine.State',
-        name: '',
-        type: 'tuple',
-      },
-      {
-        components: [
-          {
-            internalType: 'int128',
-            name: 'amount',
-            type: 'int128',
-          },
-          {
-            internalType: 'int128',
-            name: 'lastCumulativeMultiplierX18',
-            type: 'int128',
-          },
         ],
         internalType: 'struct ISpotEngine.Balance',
         name: '',
@@ -574,36 +606,12 @@ export const SPOT_ENGINE_ABI = [
         type: 'uint32',
       },
     ],
-    name: 'getWithdrawFee',
+    name: 'getToken',
     outputs: [
       {
-        internalType: 'int128',
+        internalType: 'address',
         name: '',
-        type: 'int128',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-    ],
-    name: 'hasBalance',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
+        type: 'address',
       },
     ],
     stateMutability: 'view',
@@ -614,6 +622,11 @@ export const SPOT_ENGINE_ABI = [
       {
         internalType: 'address',
         name: '_clearinghouse',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: '_offchainExchange',
         type: 'address',
       },
       {
@@ -629,11 +642,6 @@ export const SPOT_ENGINE_ABI = [
       {
         internalType: 'address',
         name: '_admin',
-        type: 'address',
-      },
-      {
-        internalType: 'address',
-        name: '_fees',
         type: 'address',
       },
     ],
@@ -661,34 +669,21 @@ export const SPOT_ENGINE_ABI = [
     type: 'function',
   },
   {
-    inputs: [
+    inputs: [],
+    name: 'owner',
+    outputs: [
       {
-        internalType: 'uint32',
-        name: 'productId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'bytes32',
-        name: 'subaccount',
-        type: 'bytes32',
-      },
-      {
-        internalType: 'int128',
-        name: 'amountBase',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'quoteAmountLow',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'quoteAmountHigh',
-        type: 'int128',
+        internalType: 'address',
+        name: '',
+        type: 'address',
       },
     ],
-    name: 'mintLp',
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'renounceOwnership',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -709,13 +704,80 @@ export const SPOT_ENGINE_ABI = [
   {
     inputs: [
       {
+        internalType: 'address',
+        name: 'newOwner',
+        type: 'address',
+      },
+    ],
+    name: 'transferOwnership',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+    ],
+    name: 'tryUnlockNlpBalance',
+    outputs: [
+      {
+        components: [
+          {
+            internalType: 'int128',
+            name: 'amount',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct ISpotEngine.Balance',
+        name: '',
+        type: 'tuple',
+      },
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
         internalType: 'uint32',
         name: 'productId',
         type: 'uint32',
       },
       {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
         internalType: 'int128',
-        name: 'baseDelta',
+        name: 'amountDelta',
+        type: 'int128',
+      },
+    ],
+    name: 'updateBalance',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
+      {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'int128',
+        name: 'amountDelta',
         type: 'int128',
       },
       {
@@ -724,13 +786,57 @@ export const SPOT_ENGINE_ABI = [
         type: 'int128',
       },
     ],
-    name: 'swapLp',
-    outputs: [
+    name: 'updateBalance',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
+        name: 'productId',
+        type: 'uint32',
+      },
       {
         internalType: 'int128',
-        name: '',
+        name: 'priceX18',
         type: 'int128',
       },
+    ],
+    name: 'updatePrice',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes',
+        name: 'rawTxn',
+        type: 'bytes',
+      },
+    ],
+    name: 'updateProduct',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'subaccount',
+        type: 'bytes32',
+      },
+      {
+        internalType: 'int128',
+        name: 'insurance',
+        type: 'int128',
+      },
+    ],
+    name: 'updateQuoteFromInsurance',
+    outputs: [
       {
         internalType: 'int128',
         name: '',
@@ -748,51 +854,39 @@ export const SPOT_ENGINE_ABI = [
         type: 'uint32',
       },
       {
-        internalType: 'int128',
-        name: 'amount',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'priceX18',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'sizeIncrement',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: 'lpSpreadX18',
-        type: 'int128',
-      },
-    ],
-    name: 'swapLp',
-    outputs: [
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-      {
-        internalType: 'int128',
-        name: '',
-        type: 'int128',
-      },
-    ],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      {
-        internalType: 'bytes',
-        name: 'txn',
-        type: 'bytes',
+        components: [
+          {
+            internalType: 'int32',
+            name: 'longWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightInitial',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'longWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int32',
+            name: 'shortWeightMaintenance',
+            type: 'int32',
+          },
+          {
+            internalType: 'int128',
+            name: 'priceX18',
+            type: 'int128',
+          },
+        ],
+        internalType: 'struct RiskHelper.RiskStore',
+        name: 'riskStore',
+        type: 'tuple',
       },
     ],
-    name: 'updateProduct',
+    name: 'updateRisk',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',

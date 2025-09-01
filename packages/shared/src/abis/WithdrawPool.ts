@@ -1,10 +1,5 @@
 export const WITHDRAW_POOL_ABI = [
   {
-    inputs: [],
-    stateMutability: 'nonpayable',
-    type: 'constructor',
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -154,6 +149,19 @@ export const WITHDRAW_POOL_ABI = [
         internalType: 'bool',
         name: '',
         type: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'minIdx',
+    outputs: [
+      {
+        internalType: 'uint64',
+        name: '',
+        type: 'uint64',
       },
     ],
     stateMutability: 'view',
