@@ -17,7 +17,7 @@ export interface EngineServerFillStreamParams {
 }
 
 export interface EngineServerPositionChangeStreamParams {
-  /** when not provided subscribes to all products */
+  /** when not provided, subscribes to all products */
   product_id?: number;
   subaccount: string;
 }
@@ -31,6 +31,15 @@ export interface EngineServerLatestCandlestickStreamParams {
   granularity: number;
 }
 
+export interface EngineServerLiquidationStreamParams {
+  /** when not provided, subscribes to all products */
+  product_id?: number;
+}
+
+export interface EngineServerFundingPaymentStreamParams {
+  product_id: number;
+}
+
 /**
  * Available subscription streams
  */
@@ -41,7 +50,9 @@ export interface EngineServerSubscriptionStreamParamsByType {
   fill: EngineServerFillStreamParams;
   position_change: EngineServerPositionChangeStreamParams;
   book_depth: EngineServerBookDepthStreamParams;
+  liquidation: EngineServerLiquidationStreamParams;
   latest_candlestick: EngineServerLatestCandlestickStreamParams;
+  funding_payment: EngineServerFundingPaymentStreamParams;
 }
 
 export type EngineServerSubscriptionStreamParamsType =

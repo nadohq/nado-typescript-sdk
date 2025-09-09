@@ -12,6 +12,7 @@ import test from 'node:test';
 import { debugPrint } from '../utils/debugPrint';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
+import { CandlestickPeriod } from '@nadohq/indexer-client';
 
 async function wsMessageTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -144,7 +145,7 @@ async function wsMessageTests(context: RunContext) {
   const wsLatestCandleStream =
     nadoClient.ws.subscription.buildSubscriptionParams('latest_candlestick', {
       product_id: 1,
-      granularity: 60,
+      granularity: CandlestickPeriod.HOUR,
     });
   const wsLatestCandleSubscriptionReq =
     nadoClient.ws.subscription.buildSubscriptionMessage(
@@ -157,8 +158,38 @@ async function wsMessageTests(context: RunContext) {
     wsLatestCandleSubscriptionReq,
   );
 
+  const wsLiquidationStream =
+    nadoClient.ws.subscription.buildSubscriptionParams('liquidation', {
+      product_id: 1,
+    });
+  const wsLiquidationSubscriptionReq =
+    nadoClient.ws.subscription.buildSubscriptionMessage(
+      7,
+      'subscribe',
+      wsLiquidationStream,
+    );
+  debugPrint(
+    'Liquidation subscription WS request',
+    wsLiquidationSubscriptionReq,
+  );
+
+  const wsFundingPaymentStream =
+    nadoClient.ws.subscription.buildSubscriptionParams('funding_payment', {
+      product_id: 1,
+    });
+  const wsFundingPaymentSubscriptionReq =
+    nadoClient.ws.subscription.buildSubscriptionMessage(
+      8,
+      'subscribe',
+      wsFundingPaymentStream,
+    );
+  debugPrint(
+    'Funding payment subscription WS request',
+    wsFundingPaymentSubscriptionReq,
+  );
+
   const wsListSubscriptionsReq =
-    nadoClient.ws.subscription.buildSubscriptionMessage(7, 'list', {});
+    nadoClient.ws.subscription.buildSubscriptionMessage(9, 'list', {});
   debugPrint('List subscriptions WS request', wsListSubscriptionsReq);
 }
 
