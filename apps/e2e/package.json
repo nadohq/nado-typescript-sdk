@@ -20,11 +20,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@nadohq/client": "0.1.0-alpha.6",
-    "@nadohq/shared": "0.1.0-alpha.6",
-    "@nadohq/engine-client": "0.1.0-alpha.6",
-    "@nadohq/indexer-client": "0.1.0-alpha.6",
-    "@nadohq/trigger-client": "0.1.0-alpha.6",
+    "@nadohq/client": "latest",
+    "@nadohq/shared": "latest",
+    "@nadohq/engine-client": "latest",
+    "@nadohq/indexer-client": "latest",
+    "@nadohq/trigger-client": "latest",
     "dotenv": "^17.0.1",
     "viem": "*"
   },
