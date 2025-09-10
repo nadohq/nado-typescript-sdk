@@ -37,7 +37,7 @@ async function subaccountQueriesTests(context: RunContext) {
 
   debugPrint('Linked Signer', linkedSigner);
 
-  const dda = await client.getSubaccountDDA(subaccount);
+  const dda = await client.getSubaccountDDA({ subaccount });
 
   debugPrint('DDA', dda);
 
