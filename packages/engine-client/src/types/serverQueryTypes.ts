@@ -253,6 +253,7 @@ export interface EngineServerFeeRatesResponse {
   withdraw_sequencer_fees: string[];
   taker_fee_rates_x18: string[];
   maker_fee_rates_x18: string[];
+  fee_tier: number;
 }
 
 export interface EngineServerMarketPrice {

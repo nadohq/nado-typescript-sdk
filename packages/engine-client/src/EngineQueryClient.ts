@@ -381,6 +381,7 @@ export class EngineQueryClient extends EngineBaseClient {
         },
         {} as Record<number, BigDecimal>,
       ),
+      feeTier: baseResponse.fee_tier,
     };
   }
 

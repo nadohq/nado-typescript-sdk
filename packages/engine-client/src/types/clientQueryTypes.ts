@@ -166,6 +166,7 @@ export interface GetEngineSubaccountFeeRatesResponse {
   liquidationSequencerFee: BigDecimal;
   healthCheckSequencerFee: BigDecimal;
   takerSequencerFee: BigDecimal;
+  feeTier: number;
 }
 
 export interface EnginePriceTickLiquidity {
