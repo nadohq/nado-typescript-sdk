@@ -1,4 +1,7 @@
-import { EngineServerPriceTickLiquidity } from './serverQueryTypes';
+import {
+  EngineServerOrder,
+  EngineServerPriceTickLiquidity,
+} from './serverQueryTypes';
 
 /**
  * Reasons that can trigger position change events.
@@ -91,6 +94,7 @@ export interface EngineServerSubscriptionFillEvent
   is_bid: boolean;
   fee: string;
   submission_idx: string;
+  appendix: string;
 }
 
 /**
@@ -113,7 +117,7 @@ export interface EngineServerSubscriptionOrderUpdateEvent
   extends EngineServerSubscriptionBaseEvent<'order_update'> {
   timestamp: string;
   digest: string;
-  amount: string;
+  order: EngineServerOrder;
   reason: OrderUpdateReason;
 }
 

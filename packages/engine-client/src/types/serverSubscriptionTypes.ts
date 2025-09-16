@@ -1,5 +1,6 @@
 export interface EngineServerOrderUpdateStreamParams {
-  product_id: number;
+  /** when not provided, subscribes to all products */
+  product_id?: number;
   subaccount: string;
 }
 
@@ -12,7 +13,8 @@ export interface EngineServerBestBidOfferStreamParams {
 }
 
 export interface EngineServerFillStreamParams {
-  product_id: number;
+  /** when not provided, subscribes to all products */
+  product_id?: number;
   subaccount: string;
 }
 
