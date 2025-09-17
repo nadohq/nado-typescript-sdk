@@ -309,6 +309,11 @@ async function fullSanity(context: RunContext) {
   const twapResult = await client.placeTriggerOrder(twapTriggerParams);
   debugPrint('TWAP order result', twapResult.data);
 
+  const twapExecutionsResult = await client.listTwapExecutions({
+    digest: twapResult.data.digest,
+  });
+  debugPrint('TWAP executions result', twapExecutionsResult);
+
   const reduceOnlyOrdersResult = await client.listOrders({
     chainId,
     pending: true,
@@ -325,7 +330,7 @@ async function fullSanity(context: RunContext) {
     subaccountName,
     subaccountOwner,
     verifyingAddr: endpointAddr,
-    triggerTypes: ['twap'],
+    triggerTypes: ['time_trigger'],
   });
   debugPrint('Pending TWAP orders result', twapOrdersResult);
 
