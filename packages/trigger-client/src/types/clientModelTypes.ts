@@ -63,9 +63,6 @@ export type TriggerCriteriaType = TriggerCriteria['type'];
 
 export type TriggerOrderStatus =
   | {
-      type: 'pending';
-    }
-  | {
       type: 'cancelled';
       reason: string;
     }
@@ -76,4 +73,23 @@ export type TriggerOrderStatus =
   | {
       type: 'internal_error';
       error: string;
+    }
+  | {
+      type: 'triggering';
+    }
+  | {
+      type: 'waiting_price';
+    }
+  | {
+      type: 'waiting_dependency';
+    }
+  | {
+      type: 'twap_executing';
+      currentExecution: number;
+      totalExecutions: number;
+    }
+  | {
+      type: 'twap_completed';
+      executed: number;
+      total: number;
     };

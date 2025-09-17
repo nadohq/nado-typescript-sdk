@@ -3,25 +3,36 @@ import { EngineServerExecuteResult } from '@nadohq/engine-client';
 import { TriggerServerPlaceOrderParams } from './serverExecuteTypes';
 
 export type TriggerServerOrderStatus =
-  | 'pending'
   | {
-      // Result from sending to engine
+      cancelled: TriggerServerCancelReason;
+    }
+  | {
       triggered: EngineServerExecuteResult;
     }
   | {
-      // Reason string
-      cancelled: string;
+      internal_error: string;
+    }
+  | 'triggering'
+  | 'waiting_price'
+  | 'waiting_dependency'
+  | {
+      twap_executing: {
+        current_execution: number;
+        total_executions: number;
+      };
     }
   | {
-      // Error message
-      internal_error: string;
+      twap_completed: {
+        executed: number;
+        total: number;
+      };
     };
 
 /**
  * Request types
  */
 
-export type TriggerServerTriggerTypeFilter = 'price_trigger' | 'twap';
+export type TriggerServerTriggerTypeFilter = 'price_trigger' | 'time_trigger';
 
 export interface TriggerServerListTriggerOrdersParams
   extends SignedTx<EIP712ListTriggerOrdersValues> {
@@ -35,8 +46,13 @@ export interface TriggerServerListTriggerOrdersParams
   reduce_only?: boolean;
 }
 
+export interface TriggerServerListTwapExecutionsParams {
+  digest: string;
+}
+
 export interface TriggerServerQueryRequestByType {
   list_trigger_orders: TriggerServerListTriggerOrdersParams;
+  list_twap_executions: TriggerServerListTwapExecutionsParams;
 }
 
 export type TriggerServerQueryRequestType =
@@ -61,8 +77,43 @@ export interface TriggerServerListTriggerOrdersResponse {
   orders: TriggerServerOrderInfo[];
 }
 
+export type TriggerServerCancelReason =
+  | 'user_requested'
+  | 'linked_signer_changed'
+  | 'expired'
+  | 'account_health'
+  | 'isolated_subaccount_closed'
+  | 'dependent_order_cancelled';
+
+export type TriggerServerTwapExecutionStatus =
+  | 'pending'
+  | {
+      executed: {
+        executed_time: number;
+        execute_response: EngineServerExecuteResult;
+      };
+    }
+  | {
+      failed: string;
+    }
+  | {
+      cancelled: TriggerServerCancelReason;
+    };
+
+export interface TriggerServerTwapExecutionInfo {
+  execution_id: number;
+  scheduled_time: number;
+  status: TriggerServerTwapExecutionStatus;
+  updated_at: number;
+}
+
+export interface TriggerServerTwapExecutionsResponse {
+  executions: TriggerServerTwapExecutionInfo[];
+}
+
 export interface TriggerServerQueryResponseByType {
   list_trigger_orders: TriggerServerListTriggerOrdersResponse;
+  list_twap_executions: TriggerServerTwapExecutionsResponse;
 }
 
 export interface TriggerServerQuerySuccessResponse<

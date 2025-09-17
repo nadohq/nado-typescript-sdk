@@ -19,6 +19,8 @@ import {
   TriggerServerPriceTriggerCriteria,
   TriggerServerTimeTriggerCriteria,
   TriggerServerTriggerCriteria,
+  TriggerServerTwapExecutionStatus,
+  TwapExecutionStatus,
 } from './types';
 
 /**
@@ -117,24 +119,44 @@ export function mapServerOrderInfo(
 function mapTriggerServerOrderStatus(
   status: TriggerServerOrderStatus,
 ): TriggerOrderStatus {
-  if (status === 'pending') {
+  if (status === 'triggering') {
     return {
-      type: 'pending',
+      type: 'triggering',
+    };
+  } else if (status === 'waiting_price') {
+    return {
+      type: 'waiting_price',
+    };
+  } else if (status === 'waiting_dependency') {
+    return {
+      type: 'waiting_dependency',
     };
   } else if ('cancelled' in status) {
     return {
       type: 'cancelled',
       reason: status.cancelled,
     };
+  } else if ('triggered' in status) {
+    return {
+      type: 'triggered',
+      result: status.triggered,
+    };
   } else if ('internal_error' in status) {
     return {
       type: 'internal_error',
       error: status.internal_error,
     };
-  } else if ('triggered' in status) {
+  } else if ('twap_executing' in status) {
     return {
-      type: 'triggered',
-      result: status.triggered,
+      type: 'twap_executing',
+      currentExecution: status.twap_executing.current_execution,
+      totalExecutions: status.twap_executing.total_executions,
+    };
+  } else if ('twap_completed' in status) {
+    return {
+      type: 'twap_completed',
+      executed: status.twap_completed.executed,
+      total: status.twap_completed.total,
     };
   }
   throw Error(`Unknown trigger order status: ${JSON.stringify(status)}`);
@@ -225,4 +247,28 @@ function mapServerTimeTriggerCriteria(
       toBigDecimal(amount),
     ),
   };
+}
+
+export function mapTwapExecutionStatus(
+  status: TriggerServerTwapExecutionStatus,
+): TwapExecutionStatus {
+  if (status === 'pending') {
+    return 'pending';
+  } else if ('executed' in status) {
+    return {
+      executed: {
+        executedTime: status.executed.executed_time,
+        executeResponse: status.executed.execute_response,
+      },
+    };
+  } else if ('failed' in status) {
+    return {
+      failed: status.failed,
+    };
+  } else if ('cancelled' in status) {
+    return {
+      cancelled: status.cancelled,
+    };
+  }
+  throw Error(`Unknown TWAP execution status: ${JSON.stringify(status)}`);
 }

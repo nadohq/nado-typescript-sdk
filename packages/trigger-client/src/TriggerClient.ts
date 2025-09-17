@@ -14,12 +14,18 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { mapServerOrderInfo, mapTriggerCriteria } from './dataMappers';
+import {
+  mapServerOrderInfo,
+  mapTriggerCriteria,
+  mapTwapExecutionStatus,
+} from './dataMappers';
 import {
   TriggerCancelOrdersParams,
   TriggerCancelProductOrdersParams,
   TriggerListOrdersParams,
   TriggerListOrdersResponse,
+  TriggerListTwapExecutionsParams,
+  TriggerListTwapExecutionsResponse,
   TriggerOrderInfo,
   TriggerPlaceOrderParams,
   TriggerServerExecuteRequestByType,
@@ -31,6 +37,7 @@ import {
   TriggerServerQueryResponse,
   TriggerServerQueryResponseByType,
   TriggerServerQuerySuccessResponse,
+  TwapExecutionInfo,
 } from './types';
 import { TriggerServerFailureError } from './types/TriggerServerFailureError';
 
@@ -195,6 +202,30 @@ export class TriggerClient {
 
     return {
       orders,
+    };
+  }
+
+  async listTwapExecutions(
+    params: TriggerListTwapExecutionsParams,
+  ): Promise<TriggerListTwapExecutionsResponse> {
+    const queryParams: TriggerServerQueryRequestByType['list_twap_executions'] =
+      {
+        digest: params.digest,
+      };
+
+    const baseResponse = await this.query('list_twap_executions', queryParams);
+
+    const executions: TwapExecutionInfo[] = baseResponse.executions.map(
+      (execution) => ({
+        executionId: execution.execution_id,
+        scheduledTime: execution.scheduled_time,
+        status: mapTwapExecutionStatus(execution.status),
+        updatedAt: execution.updated_at,
+      }),
+    );
+
+    return {
+      executions,
     };
   }
 
