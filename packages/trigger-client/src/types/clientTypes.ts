@@ -98,18 +98,21 @@ export interface TriggerListTwapExecutionsParams {
 }
 
 export type TwapExecutionStatus =
-  | 'pending'
   | {
-      executed: {
-        executedTime: number;
-        executeResponse: EngineServerExecuteResult;
-      };
+      type: 'pending';
     }
   | {
-      failed: string;
+      type: 'executed';
+      executedTime: number;
+      executeResponse: EngineServerExecuteResult;
     }
   | {
-      cancelled: string;
+      type: 'failed';
+      error: string;
+    }
+  | {
+      type: 'cancelled';
+      reason: string;
     };
 
 export interface TwapExecutionInfo {

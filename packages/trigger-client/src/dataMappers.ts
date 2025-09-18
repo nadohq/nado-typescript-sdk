@@ -253,21 +253,24 @@ export function mapTwapExecutionStatus(
   status: TriggerServerTwapExecutionStatus,
 ): TwapExecutionStatus {
   if (status === 'pending') {
-    return 'pending';
+    return {
+      type: 'pending',
+    };
   } else if ('executed' in status) {
     return {
-      executed: {
-        executedTime: status.executed.executed_time,
-        executeResponse: status.executed.execute_response,
-      },
+      type: 'executed',
+      executedTime: status.executed.executed_time,
+      executeResponse: status.executed.execute_response,
     };
   } else if ('failed' in status) {
     return {
-      failed: status.failed,
+      type: 'failed',
+      error: status.failed,
     };
   } else if ('cancelled' in status) {
     return {
-      cancelled: status.cancelled,
+      type: 'cancelled',
+      reason: status.cancelled,
     };
   }
   throw Error(`Unknown TWAP execution status: ${JSON.stringify(status)}`);
