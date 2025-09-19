@@ -116,7 +116,6 @@ export interface EngineServerSubscriptionPositionChangeEvent
 export interface EngineServerSubscriptionOrderUpdateEvent
   extends EngineServerSubscriptionBaseEvent<'order_update'> {
   timestamp: string;
-  digest: string;
   order: EngineServerOrder;
   reason: OrderUpdateReason;
 }
