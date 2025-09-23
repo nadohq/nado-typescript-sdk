@@ -58,7 +58,7 @@ export interface TriggerListOrdersParams extends Subaccount, SignatureParams {
   // In millis, defaults to 90s in the future
   recvTime?: BigDecimal;
   // If not given, defaults to all products
-  productId?: number;
+  productIds?: number[];
   // In seconds
   maxUpdateTimeInclusive?: number;
   // When provided, the associated trigger orders are returned regardless of other filters

@@ -47,7 +47,7 @@ export type TriggerServerStatusTypeFilter =
 export interface TriggerServerListTriggerOrdersParams
   extends SignedTx<EIP712ListTriggerOrdersValues> {
   // If not given, defaults to all products
-  product_id?: number;
+  product_ids?: number[];
   max_update_time?: number;
   digests?: string[];
   limit?: number;

@@ -187,7 +187,7 @@ export class TriggerClient {
         limit: params.limit,
         max_update_time: params.maxUpdateTimeInclusive,
         status_types: params.statusTypes,
-        product_id: params.productId,
+        product_ids: params.productIds,
         digests: params.digests,
         trigger_types: params.triggerTypes,
         reduce_only: params.reduceOnly,
