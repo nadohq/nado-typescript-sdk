@@ -97,7 +97,7 @@ function mapTimeTriggerCriteria(
 export function mapServerOrderInfo(
   info: TriggerServerOrderInfo,
 ): TriggerOrderInfo {
-  const { order: serverOrder, status, updated_at } = info;
+  const { order: serverOrder, status, updated_at, placed_at } = info;
   const order: TriggerOrder = {
     amount: toBigDecimal(serverOrder.order.amount),
     expiration: Number(serverOrder.order.expiration),
@@ -113,6 +113,7 @@ export function mapServerOrderInfo(
     order,
     status: mapTriggerServerOrderStatus(status),
     updatedAt: updated_at,
+    placementTime: placed_at,
   };
 }
 

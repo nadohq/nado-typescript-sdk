@@ -81,6 +81,7 @@ export interface TriggerServerOrderInfo {
   order: TriggerServerOrder;
   status: TriggerServerOrderStatus;
   updated_at: number;
+  placed_at: number;
 }
 
 export interface TriggerServerListTriggerOrdersResponse {
