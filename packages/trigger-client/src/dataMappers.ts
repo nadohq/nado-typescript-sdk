@@ -1,9 +1,9 @@
-import { unpackOrderAppendix } from '@nadohq/shared';
 import {
   addDecimals,
   removeDecimals,
   toBigDecimal,
   toIntegerString,
+  unpackOrderAppendix,
 } from '@nadohq/shared';
 import {
   PriceTriggerCriteria,

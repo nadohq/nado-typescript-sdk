@@ -1,3 +1,3 @@
-export * from './types';
-export * from './TriggerClient';
 export * from './endpoints';
+export * from './TriggerClient';
+export * from './types';

@@ -15,13 +15,13 @@ import {
   IndexerServerMarketSnapshot,
   IndexerServerMarketSnapshotInterval,
   IndexerServerMatchEvent,
+  IndexerServerNlpSnapshot,
   IndexerServerOraclePrice,
   IndexerServerOrder,
   IndexerServerProductPayment,
   IndexerServerProductSnapshot,
   IndexerServerSnapshotsInterval,
   IndexerServerTx,
-  IndexerServerNlpSnapshot,
 } from './serverModelTypes';
 
 /**

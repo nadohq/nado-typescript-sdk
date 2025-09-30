@@ -1,5 +1,5 @@
 export * from './appendixTwapValue';
-export * from './unpackOrderAppendix';
+export * from './bitMaskValue';
 export * from './packOrderAppendix';
 export * from './types';
-export * from './bitMaskValue';
+export * from './unpackOrderAppendix';

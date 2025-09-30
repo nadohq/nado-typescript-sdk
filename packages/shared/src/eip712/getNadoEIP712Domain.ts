@@ -1,5 +1,5 @@
-import { getValidatedAddress } from '../utils/getValidatedAddress';
 import { TypedDataDomain } from 'abitype';
+import { getValidatedAddress } from '../utils/getValidatedAddress';
 
 /**
  * Gives the EIP712 data domain for order signing

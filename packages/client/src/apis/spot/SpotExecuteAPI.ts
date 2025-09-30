@@ -4,8 +4,9 @@ import {
   DepositCollateralParams,
   isWriteableContract,
   MOCK_ERC20_ABI,
+  toBigInt,
+  WalletNotProvidedError,
 } from '@nadohq/shared';
-import { toBigInt, WalletNotProvidedError } from '@nadohq/shared';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import {
   ApproveAllowanceParams,

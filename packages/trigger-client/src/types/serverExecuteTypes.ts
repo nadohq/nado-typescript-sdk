@@ -1,9 +1,9 @@
-import { EIP712OrderValues } from '@nadohq/shared';
 import {
   EngineServerExecuteFailureResult,
   EngineServerExecuteRequestByType,
   EngineServerExecuteSuccessResult,
 } from '@nadohq/engine-client';
+import { EIP712OrderValues } from '@nadohq/shared';
 import { TriggerServerTriggerCriteria } from './serverModelTypes';
 
 export interface TriggerServerPlaceOrderParams {

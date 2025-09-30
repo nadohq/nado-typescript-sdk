@@ -1,7 +1,7 @@
 import { keccak256 } from 'viem';
+import { getNadoEIP712Domain } from '../eip712/getNadoEIP712Domain';
 import { Subaccount } from '../types/subaccountTypes';
 import { WalletClientWithAccount } from '../types/viemTypes';
-import { getNadoEIP712Domain } from '../eip712/getNadoEIP712Domain';
 import { subaccountToHex } from './bytes32';
 
 interface Params extends Subaccount {

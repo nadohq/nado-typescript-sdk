@@ -1,10 +1,11 @@
 import {
+  NLP_PRODUCT_ID,
   ProductEngineType,
   QUOTE_PRODUCT_ID,
   subaccountFromHex,
-  NLP_PRODUCT_ID,
+  toBigDecimal,
+  toIntegerString,
 } from '@nadohq/shared';
-import { toBigDecimal, toIntegerString } from '@nadohq/shared';
 
 import { IndexerBaseClient } from './IndexerBaseClient';
 import {
@@ -22,17 +23,17 @@ import {
   GetIndexerSubaccountLiquidationEventsResponse,
   GetIndexerSubaccountMatchEventParams,
   GetIndexerSubaccountMatchEventsResponse,
-  GetIndexerSubaccountSettlementEventsParams,
-  GetIndexerSubaccountSettlementEventsResponse,
   GetIndexerSubaccountNlpEventsParams,
   GetIndexerSubaccountNlpEventsResponse,
+  GetIndexerSubaccountSettlementEventsParams,
+  GetIndexerSubaccountSettlementEventsResponse,
   IndexerCollateralEvent,
   IndexerEventPerpStateSnapshot,
   IndexerEventSpotStateSnapshot,
   IndexerEventWithTx,
   IndexerLiquidationEvent,
-  IndexerSettlementEvent,
   IndexerNlpEvent,
+  IndexerSettlementEvent,
   PaginatedIndexerEventsResponse,
 } from './types';
 

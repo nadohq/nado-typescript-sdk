@@ -1,9 +1,9 @@
 import { Balance, PerpBalance, SpotBalance } from '../types/balanceTypes';
 import {
-  ProductEngineType,
   PerpProduct,
-  SpotProduct,
   Product,
+  ProductEngineType,
+  SpotProduct,
 } from '../types/productTypes';
 
 export function isSpotProduct(product: Product): product is SpotProduct {

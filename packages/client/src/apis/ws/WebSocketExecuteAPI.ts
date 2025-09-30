@@ -1,8 +1,8 @@
-import { EIP712OrderParams } from '@nadohq/shared';
 import {
   EngineExecuteRequestParamsByType,
   WithSignature,
 } from '@nadohq/engine-client';
+import { EIP712OrderParams } from '@nadohq/shared';
 import { BaseNadoAPI } from '../base';
 
 /**
