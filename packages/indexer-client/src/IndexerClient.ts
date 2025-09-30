@@ -195,6 +195,7 @@ export class IndexerClient extends IndexerBaseClient {
       subaccountName,
       subaccountOwner,
       productIds,
+      triggerTypes,
       isolated,
     } = params;
 
@@ -205,6 +206,7 @@ export class IndexerClient extends IndexerBaseClient {
       subaccount: { subaccountName, subaccountOwner },
       limit,
       productIds,
+      triggerTypes,
       isolated,
     });
 

@@ -18,6 +18,7 @@ import { NadoTx, NadoWithdrawCollateralTx } from './NadoTx';
 import {
   IndexerServerFastWithdrawalSignatureParams,
   IndexerServerListSubaccountsParams,
+  IndexerServerTriggerTypeFilter,
 } from './serverTypes';
 
 /**
@@ -341,6 +342,7 @@ export interface GetIndexerOrdersParams {
   maxTimestampInclusive?: number;
   limit?: number;
   productIds?: number[];
+  triggerTypes?: IndexerServerTriggerTypeFilter[];
   // If not given, will return both isolated & non-iso orders
   isolated?: boolean;
   digests?: string[];

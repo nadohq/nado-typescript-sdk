@@ -445,6 +445,7 @@ export class IndexerBaseClient {
           })
         : undefined,
       product_ids: params.productIds,
+      trigger_types: params.triggerTypes,
       isolated: params.isolated,
       digests: params.digests,
       max_time: params.maxTimestampInclusive,

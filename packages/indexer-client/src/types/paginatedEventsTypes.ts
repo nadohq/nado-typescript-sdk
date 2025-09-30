@@ -103,7 +103,7 @@ export type GetIndexerSubaccountMatchEventsResponse =
  */
 
 export type GetIndexerPaginatedOrdersParams = BaseSubaccountPaginationParams &
-  Pick<GetIndexerOrdersParams, 'productIds' | 'isolated'>;
+  Pick<GetIndexerOrdersParams, 'productIds' | 'triggerTypes' | 'isolated'>;
 
 export interface GetIndexerPaginatedOrdersResponse {
   orders: IndexerOrder[];

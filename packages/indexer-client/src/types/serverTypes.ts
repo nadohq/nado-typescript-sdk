@@ -112,9 +112,15 @@ export interface IndexerServerEventsParams {
       };
 }
 
+export type IndexerServerTriggerTypeFilter =
+  | 'none'
+  | 'price_trigger'
+  | 'time_trigger';
+
 export interface IndexerServerOrdersParams {
   subaccount?: string;
   product_ids?: number[];
+  trigger_types?: IndexerServerTriggerTypeFilter[];
   digests?: string[];
   max_time?: number;
   limit?: number;
