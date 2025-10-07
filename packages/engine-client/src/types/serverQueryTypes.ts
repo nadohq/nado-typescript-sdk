@@ -109,6 +109,10 @@ export interface EngineServerMaxBurnNlpQueryParams {
   sender: string;
 }
 
+export interface EngineServerNlpLockedBalancesQueryParams {
+  subaccount: string;
+}
+
 export interface EngineServerQueryRequestByType {
   all_products: Record<string, never>;
   contracts: Record<string, never>;
@@ -124,6 +128,7 @@ export interface EngineServerQueryRequestByType {
   max_nlp_burnable: EngineServerMaxBurnNlpQueryParams;
   max_nlp_mintable: EngineServerMaxMintNlpQueryParams;
   max_order_size: EngineServerMaxOrderSizeQueryParams;
+  nlp_locked_balances: EngineServerNlpLockedBalancesQueryParams;
   max_withdrawable: EngineServerMaxWithdrawableQueryParams;
   nonces: EngineServerNoncesParams;
   order: EngineServerGetOrderQueryParams;
@@ -335,6 +340,23 @@ export interface EngineServerMaxMintNlpResponse {
   max_quote_amount: string;
 }
 
+export interface EngineServerNlpBalance {
+  product_id: number;
+  balance: {
+    amount: string;
+  };
+}
+
+export interface EngineServerNlpLockedBalance extends EngineServerNlpBalance {
+  unlocked_at: number;
+}
+
+export interface EngineServerNlpLockedBalancesResponse {
+  balance_locked: EngineServerNlpBalance;
+  balance_unlocked: EngineServerNlpBalance;
+  locked_balances: EngineServerNlpLockedBalance[];
+}
+
 export interface EngineServerQueryResponseByType {
   all_products: EngineServerAllProductsResponse;
   contracts: EngineServerContractsResponse;
@@ -350,6 +372,7 @@ export interface EngineServerQueryResponseByType {
   max_nlp_burnable: EngineServerMaxBurnNlpResponse;
   max_nlp_mintable: EngineServerMaxMintNlpResponse;
   max_order_size: EngineServerMaxOrderSizeResponse;
+  nlp_locked_balances: EngineServerNlpLockedBalancesResponse;
   max_withdrawable: EngineServerMaxWithdrawableResponse;
   nonces: EngineServerNoncesResponse;
   order: EngineServerOrderResponse;

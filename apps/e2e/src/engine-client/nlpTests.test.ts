@@ -70,6 +70,13 @@ async function nlpTests(context: RunContext) {
     chainId,
   });
   debugPrint('Done burning NLP', burnNlpResult);
+
+  const nlpLockedBalances = await client.getNlpLockedBalances({
+    subaccountOwner: walletClientAddress,
+    subaccountName: 'default',
+  });
+
+  debugPrint('NLP Locked Balances', nlpLockedBalances);
 }
 
 void test('[engine-client]: Running NLP tests', () => runWithContext(nlpTests));

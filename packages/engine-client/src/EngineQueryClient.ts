@@ -38,6 +38,8 @@ import {
   GetEngineMaxOrderSizeResponse,
   GetEngineMaxWithdrawableParams,
   GetEngineMaxWithdrawableResponse,
+  GetEngineNlpLockedBalancesParams,
+  GetEngineNlpLockedBalancesResponse,
   GetEngineOrderParams,
   GetEngineOrderResponse,
   GetEngineSubaccountFeeRatesParams,
@@ -58,6 +60,7 @@ import { mapProductEngineType } from './utils/productEngineTypeMappers';
 import {
   mapEngineMarketPrice,
   mapEngineServerIsolatedPositions,
+  mapEngineServerNlpLockedBalances,
   mapEngineServerOrder,
   mapEngineServerPerpProduct,
   mapEngineServerSpotProduct,
@@ -548,5 +551,23 @@ export class EngineQueryClient extends EngineBaseClient {
     const baseResponse = await this.query('insurance', {});
 
     return toBigDecimal(baseResponse.insurance);
+  }
+
+  /**
+   * Retrieves the NLP locked and unlocked balances for a subaccount.
+   *
+   * @param params
+   */
+  async getNlpLockedBalances(
+    params: GetEngineNlpLockedBalancesParams,
+  ): Promise<GetEngineNlpLockedBalancesResponse> {
+    const baseResponse = await this.query('nlp_locked_balances', {
+      subaccount: subaccountToHex({
+        subaccountOwner: params.subaccountOwner,
+        subaccountName: params.subaccountName,
+      }),
+    });
+
+    return mapEngineServerNlpLockedBalances(baseResponse);
   }
 }

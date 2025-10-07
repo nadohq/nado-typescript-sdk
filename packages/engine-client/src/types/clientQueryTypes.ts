@@ -260,3 +260,20 @@ export type GetEngineMaxMintNlpAmountResponse = BigDecimal;
 export type GetEngineMaxBurnNlpAmountParams = Subaccount;
 
 export type GetEngineMaxBurnNlpAmountResponse = BigDecimal;
+
+export type GetEngineNlpLockedBalancesParams = Subaccount;
+
+export interface EngineNlpBalance {
+  productId: number;
+  balance: BigDecimal;
+}
+
+export interface EngineNlpLockedBalance extends EngineNlpBalance {
+  unlockedAt: number;
+}
+
+export interface GetEngineNlpLockedBalancesResponse {
+  lockedBalances: EngineNlpLockedBalance[];
+  balanceLocked: EngineNlpBalance;
+  balanceUnlocked: EngineNlpBalance;
+}

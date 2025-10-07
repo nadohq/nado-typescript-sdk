@@ -1495,6 +1495,51 @@
     yargs "17.7.2"
     yargs-parser "21.1.1"
 
+"@nadohq/client@latest":
+  version "0.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@nadohq/client/-/client-0.1.0-alpha.16.tgz#9e8515adcbc120bb51a5679f0315829ac64a318a"
+  integrity sha512-FVBfuYuyyd9PgWWtq1J3BDbnoLj8JCOLZVsXoZdn7e8zOqixnfPt+eNIvDfC3ZIwU7gt45WfUMcX5mYu/x2iJA==
+  dependencies:
+    "@nadohq/engine-client" "^0.1.0-alpha.16"
+    "@nadohq/indexer-client" "^0.1.0-alpha.16"
+    "@nadohq/shared" "^0.1.0-alpha.16"
+    "@nadohq/trigger-client" "^0.1.0-alpha.16"
+    ts-mixer "*"
+
+"@nadohq/engine-client@latest":
+  version "0.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@nadohq/engine-client/-/engine-client-0.1.0-alpha.16.tgz#0c8e8ccc01998de22f1f938839d37ad6e970e52e"
+  integrity sha512-XD3FKPKLstn83aGl/DUuGgRg8dG5D8apfFm1oBu2YYuTg0pfZ4uph3vd7fRYFHxPr9gvJfft8J2YUhlGayWT8Q==
+  dependencies:
+    "@nadohq/shared" "^0.1.0-alpha.16"
+    axios "*"
+    ts-mixer "*"
+
+"@nadohq/indexer-client@latest":
+  version "0.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@nadohq/indexer-client/-/indexer-client-0.1.0-alpha.16.tgz#ea6a59c7a5f6e50334237d6342439a1fd653c2aa"
+  integrity sha512-euhMXEOgoR5hchOWNBcgwS87MkMCCSvIqVfPsgvFlvDsUh1BhbJW+AUBNaOtE7ivglOf/e7VgcKg4GL2Xdv6WA==
+  dependencies:
+    "@nadohq/engine-client" "^0.1.0-alpha.16"
+    "@nadohq/shared" "^0.1.0-alpha.16"
+    axios "*"
+    ts-mixer "*"
+
+"@nadohq/shared@latest":
+  version "0.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@nadohq/shared/-/shared-0.1.0-alpha.16.tgz#8de347bc6f7d489bd16867cf6fddf589597d96db"
+  integrity sha512-Zpdt5VTWLOVrW6V3zRz7vqnJeEOOUoeKtB5EWFxS8sRTilsyFNRiqhKoIQJ2bTjHyA4ri750necRMOiKzjoi3g==
+
+"@nadohq/trigger-client@latest":
+  version "0.1.0-alpha.16"
+  resolved "https://registry.yarnpkg.com/@nadohq/trigger-client/-/trigger-client-0.1.0-alpha.16.tgz#459ca52ae6c829f86e482dc7372d16554d324bd1"
+  integrity sha512-cprxcug8BIDPzPHgsBA/R5R4mapg/qJW9TGSLmpexLMbrRL3iWFgbmwci/6/epW8yC2UxjAYpwVeQGWFAU27ag==
+  dependencies:
+    "@nadohq/engine-client" "^0.1.0-alpha.16"
+    "@nadohq/shared" "^0.1.0-alpha.16"
+    axios "*"
+    ts-mixer "*"
+
 "@napi-rs/wasm-runtime@0.2.4":
   version "0.2.4"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.4.tgz#d27788176f250d86e498081e3c5ff48a17606918"

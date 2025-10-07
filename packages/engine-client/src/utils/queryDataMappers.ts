@@ -13,10 +13,12 @@ import {
 } from '@nadohq/shared';
 import {
   EngineMarketPrice,
+  EngineNlpLockedBalance,
   EngineOrder,
   EnginePriceTickLiquidity,
   EngineServerIsolatedPositionsResponse,
   EngineServerMarketPrice,
+  EngineServerNlpLockedBalancesResponse,
   EngineServerOrderResponse,
   EngineServerPerpProduct,
   EngineServerPriceTickLiquidity,
@@ -27,6 +29,7 @@ import {
   EngineSymbol,
   EngineSymbolsResponse,
   GetEngineIsolatedPositionsResponse,
+  GetEngineNlpLockedBalancesResponse,
   GetEngineSubaccountSummaryResponse,
 } from '../types';
 import { mapEngineServerProductType } from './productEngineTypeMappers';
@@ -286,5 +289,28 @@ export function mapEngineMarketPrice(
     ask: removeDecimals(baseResponse.ask_x18),
     bid: removeDecimals(baseResponse.bid_x18),
     productId: baseResponse.product_id,
+  };
+}
+
+export function mapEngineServerNlpLockedBalances(
+  baseResponse: EngineServerNlpLockedBalancesResponse,
+): GetEngineNlpLockedBalancesResponse {
+  const lockedBalances: EngineNlpLockedBalance[] =
+    baseResponse.locked_balances.map((lockedBalance) => ({
+      productId: lockedBalance.product_id,
+      balance: toBigDecimal(lockedBalance.balance.amount),
+      unlockedAt: lockedBalance.unlocked_at,
+    }));
+
+  return {
+    lockedBalances,
+    balanceLocked: {
+      productId: baseResponse.balance_locked.product_id,
+      balance: toBigDecimal(baseResponse.balance_locked.balance.amount),
+    },
+    balanceUnlocked: {
+      productId: baseResponse.balance_unlocked.product_id,
+      balance: toBigDecimal(baseResponse.balance_unlocked.balance.amount),
+    },
   };
 }
