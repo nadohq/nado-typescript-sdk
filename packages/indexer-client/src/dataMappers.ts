@@ -47,9 +47,11 @@ import {
   IndexerServerProduct,
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
+  IndexerServerTickerResponse,
   IndexerServerTx,
   IndexerSnapshotsIntervalParams,
   IndexerSpotBalance,
+  IndexerTickerResponse,
 } from './types';
 
 export function mapSnapshotsIntervalToServerParams(
@@ -352,5 +354,19 @@ export function mapIndexerNlpSnapshot(
     depositors: toBigDecimal(snapshot.depositors),
     oraclePrice: removeDecimals(snapshot.oracle_price_x18),
     tvl: toBigDecimal(snapshot.tvl),
+  };
+}
+
+export function mapIndexerTicker(
+  ticker: IndexerServerTickerResponse,
+): IndexerTickerResponse {
+  return {
+    tickerId: ticker.ticker_id,
+    baseCurrency: ticker.base_currency,
+    quoteCurrency: ticker.quote_currency,
+    lastPrice: ticker.last_price,
+    baseVolume: ticker.base_volume,
+    quoteVolume: ticker.quote_volume,
+    priceChangePercent24h: ticker.price_change_percent_24h,
   };
 }

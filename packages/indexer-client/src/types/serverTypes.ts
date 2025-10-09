@@ -409,6 +409,25 @@ export interface IndexerServerBacklogResponse {
   txs_per_second: string | null;
 }
 
+/**
+ * V2 API Types
+ */
+
+export interface IndexerServerTickerResponse {
+  ticker_id: string;
+  base_currency: string;
+  quote_currency: string;
+  last_price: number;
+  base_volume: number;
+  quote_volume: number;
+  price_change_percent_24h: number;
+}
+
+export type IndexerServerTickersResponse = Record<
+  string,
+  IndexerServerTickerResponse
+>;
+
 // Response
 export interface IndexerServerQueryResponseByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsResponse;

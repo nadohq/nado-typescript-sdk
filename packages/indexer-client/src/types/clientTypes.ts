@@ -684,3 +684,24 @@ export interface GetIndexerSubaccountDDAParams {
 export interface GetIndexerSubaccountDDAResponse {
   address: Address;
 }
+
+/**
+ * V2 Tickers
+ */
+
+export interface GetIndexerTickersParams {
+  market?: string;
+  edge?: boolean;
+}
+
+export interface IndexerTickerResponse {
+  tickerId: string;
+  baseCurrency: string;
+  quoteCurrency: string;
+  lastPrice: number;
+  baseVolume: number;
+  quoteVolume: number;
+  priceChangePercent24h: number;
+}
+
+export type GetIndexerTickersResponse = Record<string, IndexerTickerResponse>;

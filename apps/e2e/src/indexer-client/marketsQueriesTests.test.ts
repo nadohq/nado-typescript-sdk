@@ -94,6 +94,10 @@ async function marketsQueriesTests(context: RunContext) {
     'Multi timestamp and multi product snapshots',
     multiTimestampProductSnapshots,
   );
+
+  const tickers = await client.getTickers({ market: 'perp', edge: false });
+
+  debugPrint('Tickers', tickers);
 }
 
 void test('[indexer-client]: Running markets queries tests', () =>
