@@ -47,11 +47,11 @@ import {
   IndexerServerProduct,
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
-  IndexerServerTickerResponse,
   IndexerServerTx,
+  IndexerServerV2TickerResponse,
   IndexerSnapshotsIntervalParams,
   IndexerSpotBalance,
-  IndexerTickerResponse,
+  IndexerV2TickerResponse,
 } from './types';
 
 export function mapSnapshotsIntervalToServerParams(
@@ -358,8 +358,8 @@ export function mapIndexerNlpSnapshot(
 }
 
 export function mapIndexerTicker(
-  ticker: IndexerServerTickerResponse,
-): IndexerTickerResponse {
+  ticker: IndexerServerV2TickerResponse,
+): IndexerV2TickerResponse {
   return {
     tickerId: ticker.ticker_id,
     baseCurrency: ticker.base_currency,

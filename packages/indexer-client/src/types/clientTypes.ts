@@ -689,19 +689,53 @@ export interface GetIndexerSubaccountDDAResponse {
  * V2 Tickers
  */
 
-export interface GetIndexerTickersParams {
-  market?: string;
+/**
+ * Market type for ticker filtering
+ */
+export type TickerMarketType = 'spot' | 'perp';
+
+/**
+ * Parameters for querying v2 tickers endpoint
+ */
+export interface GetIndexerV2TickersParams {
+  /**
+   * Filter tickers by market type (spot or perp)
+   * @example 'spot'
+   * @example 'perp'
+   */
+  market?: TickerMarketType;
+  /**
+   * Whether to include edge products
+   * @default false
+   */
   edge?: boolean;
 }
 
-export interface IndexerTickerResponse {
+/**
+ * Individual ticker data from v2 endpoint
+ */
+export interface IndexerV2TickerResponse {
+  /** Unique ticker identifier */
   tickerId: string;
+  /** Base currency symbol */
   baseCurrency: string;
+  /** Quote currency symbol */
   quoteCurrency: string;
+  /** Last traded price */
   lastPrice: number;
+  /** 24h trading volume in base currency */
   baseVolume: number;
+  /** 24h trading volume in quote currency */
   quoteVolume: number;
+  /** 24h price change percentage */
   priceChangePercent24h: number;
 }
 
-export type GetIndexerTickersResponse = Record<string, IndexerTickerResponse>;
+/**
+ * Response from v2 tickers endpoint
+ * Maps ticker IDs to their respective ticker data
+ */
+export type GetIndexerV2TickersResponse = Record<
+  string,
+  IndexerV2TickerResponse
+>;

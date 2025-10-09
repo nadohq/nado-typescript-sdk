@@ -409,25 +409,6 @@ export interface IndexerServerBacklogResponse {
   txs_per_second: string | null;
 }
 
-/**
- * V2 API Types
- */
-
-export interface IndexerServerTickerResponse {
-  ticker_id: string;
-  base_currency: string;
-  quote_currency: string;
-  last_price: number;
-  base_volume: number;
-  quote_volume: number;
-  price_change_percent_24h: number;
-}
-
-export type IndexerServerTickersResponse = Record<
-  string,
-  IndexerServerTickerResponse
->;
-
 // Response
 export interface IndexerServerQueryResponseByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsResponse;
@@ -460,3 +441,29 @@ export interface IndexerServerQueryResponseByType {
   usdc_price: IndexerServerUsdcPriceResponse;
   nlp_snapshots: IndexerServerNlpSnapshotsResponse;
 }
+
+/**
+ * V2 API Types
+ */
+
+/**
+ * Individual ticker data from v2 indexer endpoint (server format)
+ */
+export interface IndexerServerV2TickerResponse {
+  ticker_id: string;
+  base_currency: string;
+  quote_currency: string;
+  last_price: number;
+  base_volume: number;
+  quote_volume: number;
+  price_change_percent_24h: number;
+}
+
+/**
+ * Response from v2 tickers endpoint (server format)
+ * Maps ticker IDs to their respective ticker data
+ */
+export type IndexerServerV2TickersResponse = Record<
+  string,
+  IndexerServerV2TickerResponse
+>;

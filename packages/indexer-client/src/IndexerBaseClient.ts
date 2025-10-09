@@ -95,8 +95,8 @@ import {
   GetIndexerReferralCodeResponse,
   GetIndexerSubaccountDDAParams,
   GetIndexerSubaccountDDAResponse,
-  GetIndexerTickersParams,
-  GetIndexerTickersResponse,
+  GetIndexerV2TickersParams,
+  GetIndexerV2TickersResponse,
   IndexerEventWithTx,
   IndexerMatchEvent,
   IndexerOraclePrice,
@@ -104,7 +104,7 @@ import {
   IndexerServerQueryRequestByType,
   IndexerServerQueryRequestType,
   IndexerServerQueryResponseByType,
-  IndexerServerTickersResponse,
+  IndexerServerV2TickersResponse,
   IndexerSnapshotBalance,
   IndexerSubaccountSnapshot,
   ListIndexerSubaccountsParams,
@@ -833,12 +833,13 @@ export class IndexerBaseClient {
    * @param params
    */
   async getTickers(
-    params: GetIndexerTickersParams,
-  ): Promise<GetIndexerTickersResponse> {
-    const response = await this.axiosInstance.get<IndexerServerTickersResponse>(
-      `${this.v2Url}/tickers`,
-      { params },
-    );
+    params: GetIndexerV2TickersParams,
+  ): Promise<GetIndexerV2TickersResponse> {
+    const response =
+      await this.axiosInstance.get<IndexerServerV2TickersResponse>(
+        `${this.v2Url}/tickers`,
+        { params },
+      );
 
     this.checkResponseStatus(response);
 
