@@ -95,7 +95,7 @@ async function marketsQueriesTests(context: RunContext) {
     multiTimestampProductSnapshots,
   );
 
-  const tickers = await client.getTickers({ market: 'perp', edge: false });
+  const tickers = await client.getV2Tickers({ market: 'perp', edge: false });
 
   debugPrint('Tickers', tickers);
 }

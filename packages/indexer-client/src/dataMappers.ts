@@ -357,7 +357,7 @@ export function mapIndexerNlpSnapshot(
   };
 }
 
-export function mapIndexerTicker(
+export function mapIndexerV2Ticker(
   ticker: IndexerServerV2TickerResponse,
 ): IndexerV2TickerResponse {
   return {

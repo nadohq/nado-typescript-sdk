@@ -37,7 +37,7 @@ import {
   mapIndexerPerpPrices,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
-  mapIndexerTicker,
+  mapIndexerV2Ticker,
   mapSnapshotsIntervalToServerParams,
 } from './dataMappers';
 import {
@@ -832,7 +832,7 @@ export class IndexerBaseClient {
    * Get tickers from the v2 indexer endpoint
    * @param params
    */
-  async getTickers(
+  async getV2Tickers(
     params: GetIndexerV2TickersParams,
   ): Promise<GetIndexerV2TickersResponse> {
     const response =
@@ -843,7 +843,7 @@ export class IndexerBaseClient {
 
     this.checkResponseStatus(response);
 
-    return mapValues(response.data, mapIndexerTicker);
+    return mapValues(response.data, mapIndexerV2Ticker);
   }
 
   protected async query<TRequestType extends IndexerServerQueryRequestType>(
