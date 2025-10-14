@@ -362,6 +362,7 @@ export function mapIndexerV2Ticker(
   ticker: IndexerServerV2TickerResponse,
 ): IndexerV2TickerResponse {
   return {
+    productId: ticker.product_id,
     tickerId: ticker.ticker_id,
     baseCurrency: ticker.base_currency,
     quoteCurrency: ticker.quote_currency,

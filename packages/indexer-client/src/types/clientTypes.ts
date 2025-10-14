@@ -716,6 +716,8 @@ export interface GetIndexerV2TickersParams {
  * Individual ticker data from v2 endpoint
  */
 export interface IndexerV2TickerResponse {
+  /** Unique product identifier */
+  productId: number;
   /** Unique ticker identifier */
   tickerId: string;
   /** Base currency symbol */

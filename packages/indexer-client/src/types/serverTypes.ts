@@ -450,6 +450,7 @@ export interface IndexerServerQueryResponseByType {
  * Individual ticker data from v2 indexer endpoint (server format)
  */
 export interface IndexerServerV2TickerResponse {
+  product_id: number;
   ticker_id: string;
   base_currency: string;
   quote_currency: string;
