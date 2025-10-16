@@ -41,8 +41,8 @@ export class MarketExecuteAPI extends BaseNadoAPI {
   async placeOrders(
     params: PlaceOrdersParams,
   ): Promise<EngineServerExecuteSuccessResult<'place_orders'>> {
-    return this.context.engineClient.placeOrders(
-      params.map((orderParams) => {
+    return this.context.engineClient.placeOrders({
+      orders: params.orders.map((orderParams) => {
         const { id, productId, order, nonce, spotLeverage } = orderParams;
         return {
           id,
@@ -57,7 +57,8 @@ export class MarketExecuteAPI extends BaseNadoAPI {
           nonce,
         };
       }),
-    );
+      cancelOnFailure: params.cancelOnFailure,
+    });
   }
 
   /**

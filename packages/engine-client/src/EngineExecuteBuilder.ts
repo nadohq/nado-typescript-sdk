@@ -138,12 +138,15 @@ export class EngineExecuteBuilder {
   async buildPlaceOrdersPayload(
     clientParams: EngineExecuteRequestParamsByType['place_orders'],
   ): Promise<EngineServerExecuteRequestByType['place_orders']> {
-    return Promise.all(
-      clientParams.map(async (orderParams) => {
-        const payload = await this.buildPlaceOrderPayload(orderParams);
-        return payload.payload;
-      }),
-    );
+    return {
+      orders: await Promise.all(
+        clientParams.orders.map(async (orderParams) => {
+          const payload = await this.buildPlaceOrderPayload(orderParams);
+          return payload.payload;
+        }),
+      ),
+      cancel_on_failure: clientParams.cancelOnFailure ?? null,
+    };
   }
 
   /**

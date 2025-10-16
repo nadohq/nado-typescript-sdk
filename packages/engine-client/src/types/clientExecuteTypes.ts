@@ -84,7 +84,10 @@ export type EngineMintNlpParams = WithBaseEngineExecuteParams<
 export type EngineBurnNlpParams =
   WithBaseEngineExecuteParams<EIP712BurnNlpParams>;
 
-export type EnginePlaceOrdersParams = EnginePlaceOrderParams[];
+export type EnginePlaceOrdersParams = {
+  orders: EnginePlaceOrderParams[];
+  cancelOnFailure?: boolean;
+};
 
 export interface EngineExecuteRequestParamsByType {
   burn_nlp: EngineBurnNlpParams;

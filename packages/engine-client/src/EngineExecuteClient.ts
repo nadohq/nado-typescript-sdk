@@ -42,6 +42,13 @@ export class EngineExecuteClient extends EngineBaseClient {
     };
   }
 
+  async placeOrders(params: EngineExecuteRequestParamsByType['place_orders']) {
+    return this.execute(
+      'place_orders',
+      await this.payloadBuilder.buildPlaceOrdersPayload(params),
+    );
+  }
+
   async cancelOrders(
     params: EngineExecuteRequestParamsByType['cancel_orders'],
   ) {
@@ -102,13 +109,6 @@ export class EngineExecuteClient extends EngineBaseClient {
     return this.execute(
       'burn_nlp',
       await this.payloadBuilder.buildBurnNlpPayload(params),
-    );
-  }
-
-  async placeOrders(params: EngineExecuteRequestParamsByType['place_orders']) {
-    return this.execute(
-      'place_orders',
-      await this.payloadBuilder.buildPlaceOrdersPayload(params),
     );
   }
 }
