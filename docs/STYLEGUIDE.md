@@ -80,7 +80,7 @@ export function calculateNotional(size: BigDecimal, price: BigDecimal) {
  * Calculates the notional value of a position
  * @param size - Position size in base units (BigDecimal)
  * @param price - Current price per unit (BigDecimal, precision 18)
- * @returns Notional value in quote currency (USDC), rounded to 6 decimal places
+ * @returns Notional value in quote currency (USDT), rounded to 6 decimal places
  * @throws {InvalidPositionError} When size is zero or negative
  */
 export function calculateNotional(
@@ -157,7 +157,7 @@ export const BigDecimals = Object.freeze({
 });
 
 /**
- * Quote product ID for USDC
+ * Quote product ID for USDT
  */
 export const QUOTE_PRODUCT_ID = 0;
 ```

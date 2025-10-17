@@ -262,8 +262,8 @@ export interface IndexerServerLeaderboardRegistration {
  */
 
 export interface IndexerServerNlpSnapshot {
-  cumulative_burn_usdc: string;
-  cumulative_mint_usdc: string;
+  cumulative_burn_quote: string;
+  cumulative_mint_quote: string;
   cumulative_pnl: string;
   cumulative_trades: string;
   cumulative_volume: string;

@@ -347,8 +347,8 @@ export function mapIndexerNlpSnapshot(
   return {
     submissionIndex: snapshot.submission_idx,
     timestamp: toBigDecimal(snapshot.timestamp),
-    cumulativeBurnAmountUsdc: toBigDecimal(snapshot.cumulative_burn_usdc),
-    cumulativeMintAmountUsdc: toBigDecimal(snapshot.cumulative_mint_usdc),
+    cumulativeBurnAmountQuote: toBigDecimal(snapshot.cumulative_burn_quote),
+    cumulativeMintAmountQuote: toBigDecimal(snapshot.cumulative_mint_quote),
     cumulativePnl: toBigDecimal(snapshot.cumulative_pnl),
     cumulativeTrades: toBigDecimal(snapshot.cumulative_trades),
     cumulativeVolume: toBigDecimal(snapshot.cumulative_volume),

@@ -558,10 +558,10 @@ export class IndexerBaseClient {
   }
 
   /**
-   * Gets quote (USDC) price in terms of USD
+   * Gets quote (USDT) price in terms of USD
    */
   async getQuotePrice(): Promise<GetIndexerQuotePriceResponse> {
-    const baseResponse = await this.query('usdc_price', {});
+    const baseResponse = await this.query('quote_price', {});
     return {
       price: removeDecimals(baseResponse.price_x18),
     };

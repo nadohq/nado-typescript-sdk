@@ -651,8 +651,8 @@ export interface IndexerNlpSnapshot {
   // Total volume traded by the NLP, in terms of the primary quote
   cumulativeVolume: BigDecimal;
   cumulativeTrades: BigDecimal;
-  cumulativeMintAmountUsdc: BigDecimal;
-  cumulativeBurnAmountUsdc: BigDecimal;
+  cumulativeMintAmountQuote: BigDecimal;
+  cumulativeBurnAmountQuote: BigDecimal;
   cumulativePnl: BigDecimal;
   tvl: BigDecimal;
   oraclePrice: BigDecimal;

@@ -102,7 +102,7 @@ async function collateralTests(context: RunContext) {
   debugPrint('Withdrawal result', withdrawalResult);
 
   console.log('Slow mode withdrawal');
-  // 1. approve 1 USDC for submitting slow-mode tx
+  // 1. approve 1 USDT for submitting slow-mode tx
   await waitForTransaction(
     nadoClient.spot.approveAllowance({
       amount: slowModeFeeAmount,

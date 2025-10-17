@@ -236,7 +236,7 @@ export interface IndexerServerQueryRequestByType {
   products: IndexerServerProductsParams;
   referral_code: IndexerServerReferralCodeParams;
   subaccounts: IndexerServerListSubaccountsParams;
-  usdc_price: Record<string, never>;
+  quote_price: Record<string, never>;
   nlp_snapshots: IndexerServerNlpSnapshotsParams;
 }
 
@@ -329,7 +329,7 @@ export interface IndexerServerMatchEventsResponse {
   txs: IndexerServerTx[];
 }
 
-export interface IndexerServerUsdcPriceResponse {
+export interface IndexerServerQuotePriceResponse {
   price_x18: string;
 }
 
@@ -438,7 +438,7 @@ export interface IndexerServerQueryResponseByType {
   products: IndexerServerProductsResponse;
   referral_code: IndexerServerReferralCodeResponse;
   subaccounts: IndexerServerListSubaccountsResponse;
-  usdc_price: IndexerServerUsdcPriceResponse;
+  quote_price: IndexerServerQuotePriceResponse;
   nlp_snapshots: IndexerServerNlpSnapshotsResponse;
 }
 

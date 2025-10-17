@@ -544,7 +544,7 @@ export class EngineQueryClient extends EngineBaseClient {
   }
 
   /**
-   * Gets the insurance funds in USDC.
+   * Gets the insurance funds in USDT.
    * @returns
    */
   public async getInsurance(): Promise<GetEngineInsuranceResponse> {

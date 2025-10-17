@@ -73,7 +73,7 @@ export interface EngineServerPlaceOrderParams {
   signature: string;
   // Engine defaults this to true
   spot_leverage: boolean | null;
-  // For isolated orders, this specifies whether margin can be borrowed (i.e. whether the cross account can have a negative USDC balance)
+  // For isolated orders, this specifies whether margin can be borrowed (i.e. whether the cross account can have a negative USDT balance)
   borrow_margin: boolean | null;
 }
 

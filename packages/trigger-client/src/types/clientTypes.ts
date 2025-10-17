@@ -38,7 +38,7 @@ export interface TriggerPlaceOrderParams extends SignatureParams {
   triggerCriteria: TriggerCriteria;
   // If not given, engine defaults to true (leverage/borrow enabled)
   spotLeverage?: boolean;
-  // For isolated orders, this specifies whether margin can be borrowed (i.e. whether the cross account can have a negative USDC balance)
+  // For isolated orders, this specifies whether margin can be borrowed (i.e. whether the cross account can have a negative USDT balance)
   borrowMargin?: boolean;
   digest?: string;
   nonce?: string;
