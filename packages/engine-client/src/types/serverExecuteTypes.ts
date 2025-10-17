@@ -113,6 +113,10 @@ export interface EngineServerExecuteRequestByType {
   place_order: EngineServerPlaceOrderParams;
   place_orders: {
     orders: EngineServerPlaceOrderParams[];
+    /**
+     * If `true`, aborts the batch after the first failed order; if `false`, remaining orders continue to execute.
+     * If `null`, the default value is `false`.
+     */
     cancel_on_failure: boolean | null;
   };
   transfer_quote: SignedTx<EIP712TransferQuoteValues>;
