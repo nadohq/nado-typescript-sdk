@@ -43,9 +43,9 @@ async function marketsQueriesTests(context: RunContext) {
 
   debugPrint('Oracle Prices', oraclePrices);
 
-  const usdtPrice = await client.getQuotePrice();
+  const quotePrice = await client.getQuotePrice();
 
-  debugPrint('USDT Price', usdtPrice);
+  debugPrint('Quote Price (USDT)', quotePrice);
 
   const candlesticks = await client.getCandlesticks({
     limit: 2,
