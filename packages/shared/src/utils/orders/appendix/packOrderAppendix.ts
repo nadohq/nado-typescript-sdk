@@ -59,6 +59,7 @@ function mapOrderAppendixToBitValues(
 export function packOrderAppendix(appendix: OrderAppendix): bigint {
   const bits = mapOrderAppendixToBitValues(appendix);
 
+  // Ensure value is within 64 bits
   let packed = bitMaskValue(bits.value, 64);
   packed = (packed << 50n) | bitMaskValue(bits.reserved, 50);
   packed = (packed << 2n) | bitMaskValue(bits.trigger, 2);
