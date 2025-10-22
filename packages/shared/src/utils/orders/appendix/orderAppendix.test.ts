@@ -11,7 +11,7 @@ describe('OrderAppendix packing/unpacking', () => {
     };
     const packed = packOrderAppendix(appendix);
     const unpacked = unpackOrderAppendix(packed);
-    expect(packed).toBe(4096n);
+    expect(packed).toBe(4097n);
     expect(unpacked.orderExecutionType).toBe(appendix.orderExecutionType);
     expect(unpacked.triggerType).toBe(appendix.triggerType);
     expect(unpacked.reduceOnly).toBeFalsy();
@@ -25,7 +25,7 @@ describe('OrderAppendix packing/unpacking', () => {
     };
     const packed = packOrderAppendix(appendix);
     const unpacked = unpackOrderAppendix(packed);
-    expect(packed).toBe(6144n);
+    expect(packed).toBe(6145n);
     expect(unpacked.reduceOnly).toBe(true);
   });
 
@@ -60,12 +60,12 @@ describe('OrderAppendix packing/unpacking', () => {
       orderExecutionType: 'default',
       triggerType: 'price',
 
-      isolated: { margin: 123456789012345678901234n },
+      isolated: { margin: 1234567890123n },
     };
     const packed = packOrderAppendix(appendix);
     const unpacked = unpackOrderAppendix(packed);
-    expect(packed).toBe(530242871277196831127717244047616n);
-    expect(unpacked.isolated?.margin).toBe(123456789012345678901234n);
+    expect(packed).toBe(22773757910718555132477485093121n);
+    expect(unpacked.isolated?.margin).toBe(1234567890123n);
   });
 
   it('should handle TWAP fields', () => {
@@ -77,7 +77,7 @@ describe('OrderAppendix packing/unpacking', () => {
     };
     const packed = packOrderAppendix(appendix);
     const unpacked = unpackOrderAppendix(packed);
-    expect(packed).toBe(792281717376363744483197591552n);
+    expect(packed).toBe(792281717376363744483197591553n);
     expect(unpacked.twap).toMatchObject({ numOrders: 10, slippageFrac: 0.005 });
   });
 
@@ -86,16 +86,16 @@ describe('OrderAppendix packing/unpacking', () => {
       orderExecutionType: 'post_only',
       triggerType: undefined,
       reduceOnly: true,
-      isolated: { margin: 79228162514264337593543950335n }, // 2^96-1
+      isolated: { margin: 18446744073709551615n }, // 2^64-1
     };
     const packed = packOrderAppendix(appendix);
     const unpacked = unpackOrderAppendix(packed);
     expect(unpacked.orderExecutionType).toBe(appendix.orderExecutionType);
     expect(unpacked.triggerType).toBe(appendix.triggerType);
     expect(unpacked.reduceOnly).toBe(appendix.reduceOnly);
-    expect(unpacked.isolated?.margin).toBe(79228162514264337593543950335n);
+    expect(unpacked.isolated?.margin).toBe(18446744073709551615n);
     expect(unpacked.twap).toBe(undefined);
-    expect(packed).toBe(340282366920938463463374607427473248000n);
+    expect(packed).toBe(340282366920938463444927863358058663681n);
   });
 
   it('should handle max values for all fields for TWAP orders', () => {
@@ -104,7 +104,6 @@ describe('OrderAppendix packing/unpacking', () => {
       triggerType: 'twap_custom_amounts',
       reduceOnly: true,
       twap: {
-        // max 32-bit unsigned int
         numOrders: 4294967295,
         slippageFrac: 0.000001,
       },
@@ -116,6 +115,6 @@ describe('OrderAppendix packing/unpacking', () => {
     expect(unpacked.reduceOnly).toBe(appendix.reduceOnly);
     expect(unpacked.twap?.slippageFrac).toBe(0.000001);
     expect(unpacked.twap?.numOrders).toBe(4294967295);
-    expect(packed).toBe(340282366841710300967557013911933828608n);
+    expect(packed).toBe(340282366841710300967557013911933828609n);
   });
 });

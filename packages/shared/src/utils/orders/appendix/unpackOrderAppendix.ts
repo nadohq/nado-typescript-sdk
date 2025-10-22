@@ -73,10 +73,10 @@ export function unpackOrderAppendix(packed: BigDecimalish): OrderAppendix {
   temp >>= 1n;
   const trigger = Number(bitMaskValue(temp, 2));
   temp >>= 2n;
-  const reserved = Number(bitMaskValue(temp, 18));
-  temp >>= 18n;
-  // The remaining bits are the value, which should be 96 bits
-  const value = bitMaskValue(temp, 96);
+  const reserved = Number(bitMaskValue(temp, 50));
+  temp >>= 50n;
+  // The remaining bits are the value, which should be 64 bits
+  const value = bitMaskValue(temp, 64);
 
   return mapBitValuesToAppendix({
     value,

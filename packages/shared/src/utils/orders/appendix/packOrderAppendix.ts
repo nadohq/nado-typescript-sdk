@@ -48,7 +48,7 @@ function mapOrderAppendixToBitValues(
     reduceOnly: appendix.reduceOnly ? 1 : 0,
     orderType,
     isolated: appendix.isolated ? 1 : 0,
-    version: 0,
+    version: 1,
   };
 }
 
@@ -59,9 +59,8 @@ function mapOrderAppendixToBitValues(
 export function packOrderAppendix(appendix: OrderAppendix): bigint {
   const bits = mapOrderAppendixToBitValues(appendix);
 
-  // Ensure value is within 96 bits
-  let packed = bitMaskValue(bits.value, 96);
-  packed = (packed << 18n) | bitMaskValue(bits.reserved, 18);
+  let packed = bitMaskValue(bits.value, 64);
+  packed = (packed << 50n) | bitMaskValue(bits.reserved, 50);
   packed = (packed << 2n) | bitMaskValue(bits.trigger, 2);
   packed = (packed << 1n) | bitMaskValue(bits.reduceOnly, 1);
   packed = (packed << 2n) | bitMaskValue(bits.orderType, 2);
