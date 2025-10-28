@@ -44,6 +44,15 @@ export interface TriggerPlaceOrderParams extends SignatureParams {
   nonce?: string;
 }
 
+export interface TriggerPlaceOrdersParams {
+  orders: TriggerPlaceOrderParams[];
+  /**
+   * If `true`, aborts the batch after the first failed order; if `false`, remaining orders continue to execute.
+   * If not provided, the default value is `false`.
+   */
+  cancelOnFailure?: boolean;
+}
+
 export type TriggerCancelOrdersParams = SignatureParams &
   WithOptionalNonce<EIP712CancelOrdersParams>;
 

@@ -323,6 +323,67 @@ async function fullSanity(context: RunContext) {
   });
   debugPrint('TWAP executions result', twapExecutionsResult);
 
+  const batchOrder1: EngineOrderParams = {
+    amount: addDecimals(0.05),
+    expiration: getExpiration(),
+    price: 3100,
+    subaccountName,
+    subaccountOwner,
+    appendix: packOrderAppendix({
+      orderExecutionType: 'default',
+    }),
+  };
+
+  const batchOrder2: EngineOrderParams = {
+    amount: addDecimals(0.05),
+    expiration: getExpiration(),
+    price: 3200,
+    subaccountName,
+    subaccountOwner,
+    appendix: packOrderAppendix({
+      orderExecutionType: 'default',
+    }),
+  };
+
+  const batchTriggerParams: TriggerPlaceOrderParams[] = [
+    {
+      chainId,
+      order: batchOrder1,
+      productId: ethProductId,
+      spotLeverage: true,
+      triggerCriteria: {
+        type: 'price',
+        criteria: {
+          type: 'oracle_price_below',
+          triggerPrice: toBigDecimal(3100),
+        },
+      },
+      verifyingAddr: ethOrderVerifyingAddr,
+      id: 5000,
+    },
+    {
+      chainId,
+      order: batchOrder2,
+      productId: ethProductId,
+      spotLeverage: true,
+      triggerCriteria: {
+        type: 'price',
+        criteria: {
+          type: 'oracle_price_below',
+          triggerPrice: toBigDecimal(3200),
+        },
+      },
+      verifyingAddr: ethOrderVerifyingAddr,
+      id: 5001,
+    },
+  ];
+
+  const batchResult = await client.placeTriggerOrders({
+    orders: batchTriggerParams,
+    cancelOnFailure: false,
+  });
+  debugPrint('Batch place orders result', batchResult.data);
+
   const reduceOnlyOrdersResult = await client.listOrders({
     chainId,
     statusTypes: PENDING_TRIGGER_STATUS_TYPES,

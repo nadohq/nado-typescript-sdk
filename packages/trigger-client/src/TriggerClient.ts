@@ -28,6 +28,7 @@ import {
   TriggerListTwapExecutionsResponse,
   TriggerOrderInfo,
   TriggerPlaceOrderParams,
+  TriggerPlaceOrdersParams,
   TriggerServerExecuteRequestByType,
   TriggerServerExecuteRequestType,
   TriggerServerExecuteResult,
@@ -82,34 +83,23 @@ export class TriggerClient {
    */
 
   async placeTriggerOrder(params: TriggerPlaceOrderParams) {
-    const orderParams: EIP712OrderParams = {
-      amount: params.order.amount,
-      expiration: params.order.expiration,
-      price: params.order.price,
-      subaccountName: params.order.subaccountName,
-      subaccountOwner: params.order.subaccountOwner,
-      nonce: params.nonce ?? getOrderNonce(),
-      appendix: params.order.appendix,
-    };
-    const signature = await this.sign(
+    return this.execute(
       'place_order',
-      params.verifyingAddr,
-      params.chainId,
-      orderParams,
+      await this.buildPlaceOrderExecuteParams(params),
     );
+  }
 
-    const executeParams: TriggerServerExecuteRequestByType['place_order'] = {
-      id: params.id ?? null,
-      order: getNadoEIP712Values('place_order', orderParams),
-      trigger: mapTriggerCriteria(params.triggerCriteria),
-      signature,
-      product_id: params.productId,
-      spot_leverage: params.spotLeverage ?? null,
-      digest: params.digest ?? null,
-      borrow_margin: params.borrowMargin ?? null,
+  async placeTriggerOrders(params: TriggerPlaceOrdersParams) {
+    const executeParams: TriggerServerExecuteRequestByType['place_orders'] = {
+      orders: await Promise.all(
+        params.orders.map(async (orderParam) =>
+          this.buildPlaceOrderExecuteParams(orderParam),
+        ),
+      ),
+      cancel_on_failure: params.cancelOnFailure ?? null,
     };
 
-    return this.execute('place_order', executeParams);
+    return this.execute('place_orders', executeParams);
   }
 
   async cancelTriggerOrders(params: TriggerCancelOrdersParams) {
@@ -232,6 +222,38 @@ export class TriggerClient {
   /*
   Base Fns
    */
+
+  async buildPlaceOrderExecuteParams(
+    params: TriggerPlaceOrderParams,
+  ): Promise<TriggerServerExecuteRequestByType['place_order']> {
+    const orderParams: EIP712OrderParams = {
+      amount: params.order.amount,
+      expiration: params.order.expiration,
+      price: params.order.price,
+      subaccountName: params.order.subaccountName,
+      subaccountOwner: params.order.subaccountOwner,
+      nonce: params.nonce ?? getOrderNonce(),
+      appendix: params.order.appendix,
+    };
+    const signature = await this.sign(
+      'place_order',
+      params.verifyingAddr,
+      params.chainId,
+      orderParams,
+    );
+
+    return {
+      id: params.id ?? null,
+      order: getNadoEIP712Values('place_order', orderParams),
+      trigger: mapTriggerCriteria(params.triggerCriteria),
+      signature,
+      product_id: params.productId,
+      spot_leverage: params.spotLeverage ?? null,
+      digest: params.digest ?? null,
+      borrow_margin: params.borrowMargin ?? null,
+    };
+  }
+
   protected async sign<T extends SignableRequestType>(
     requestType: T,
     verifyingContract: string,
