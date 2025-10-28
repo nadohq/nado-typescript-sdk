@@ -10,6 +10,7 @@ import {
   PlaceOrderParams,
   PlaceOrdersParams,
   PlaceTriggerOrderParams,
+  PlaceTriggerOrdersParams,
 } from './types';
 
 export class MarketExecuteAPI extends BaseNadoAPI {
@@ -133,6 +134,28 @@ export class MarketExecuteAPI extends BaseNadoAPI {
         subaccountOwner: this.getSubaccountOwnerIfNeeded(params.order),
         ...params.order,
       },
+    });
+  }
+
+  /**
+   * Places multiple trigger orders through the trigger service
+   * @param params
+   */
+  async placeTriggerOrders(params: PlaceTriggerOrdersParams) {
+    return this.context.triggerClient.placeTriggerOrders({
+      orders: params.orders.map((orderParams) => {
+        const { productId, order } = orderParams;
+        return {
+          ...orderParams,
+          chainId: this.getWalletClientChainIdIfNeeded(orderParams),
+          verifyingAddr: getOrderVerifyingAddress(productId),
+          order: {
+            subaccountOwner: this.getSubaccountOwnerIfNeeded(order),
+            ...order,
+          },
+        };
+      }),
+      cancelOnFailure: params.cancelOnFailure,
     });
   }
 
