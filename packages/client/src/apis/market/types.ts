@@ -45,10 +45,10 @@ export interface CancelAndPlaceOrderParams {
 export type PlaceTriggerOrderParams =
   ClientOrderParams<TriggerPlaceOrderParams>;
 
-export type PlaceTriggerOrdersParams = {
+export interface PlaceTriggerOrdersParams {
   orders: PlaceTriggerOrderParams[];
   cancelOnFailure?: boolean;
-};
+}
 
 export type CancelTriggerOrdersParams = OptionalSignatureParams<
   OptionalSubaccountOwner<TriggerCancelOrdersParams>
