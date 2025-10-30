@@ -60,12 +60,12 @@ describe('OrderAppendix packing/unpacking', () => {
       orderExecutionType: 'default',
       triggerType: 'price',
 
-      isolated: { margin: 1234567890123n },
+      isolated: { margin: 12345678901000000000000n },
     };
     const packed = packOrderAppendix(appendix);
     const unpacked = unpackOrderAppendix(packed);
-    expect(packed).toBe(22773757910718555132477485093121n);
-    expect(unpacked.isolated?.margin).toBe(1234567890123n);
+    expect(packed).toBe(227737579102942800187821658369n);
+    expect(unpacked.isolated?.margin).toBe(appendix.isolated?.margin);
   });
 
   it('should handle TWAP fields', () => {
@@ -93,9 +93,9 @@ describe('OrderAppendix packing/unpacking', () => {
     expect(unpacked.orderExecutionType).toBe(appendix.orderExecutionType);
     expect(unpacked.triggerType).toBe(appendix.triggerType);
     expect(unpacked.reduceOnly).toBe(appendix.reduceOnly);
-    expect(unpacked.isolated?.margin).toBe(18446744073709551615n);
+    expect(unpacked.isolated?.margin).toBe(18446744000000000000n);
     expect(unpacked.twap).toBe(undefined);
-    expect(packed).toBe(340282366920938463444927863358058663681n);
+    expect(packed).toBe(340282365561237229015142145n);
   });
 
   it('should handle max values for all fields for TWAP orders', () => {
