@@ -1,5 +1,6 @@
 import { OrderAppendix } from '../../../types/orderAppendixTypes';
 import { BigDecimalish, toBigInt } from '../../math';
+import { unpackIsolatedOrderAppendixValue } from './appendixIsolatedValue';
 import { unpackTwapOrderAppendixValue } from './appendixTwapValue';
 import { bitMaskValue } from './bitMaskValue';
 import { PackedOrderAppendixBits } from './types';
@@ -35,7 +36,7 @@ function mapBitValuesToAppendix(bits: PackedOrderAppendixBits): OrderAppendix {
   })();
   const isolatedFields = (() => {
     if (bits.isolated) {
-      return { margin: bits.value };
+      return unpackIsolatedOrderAppendixValue(bits.value);
     }
     return undefined;
   })();
