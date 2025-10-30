@@ -16,8 +16,12 @@ jobs:
           node-version: 'lts/*'
       - uses: borales/actions-yarn@v5
         with:
-            cmd: install --frozen-lockfile
+            cmd: install
+
+      - name: Check git workspace isn't dirty
+        run: git diff --exit-code --quiet
+
       - run: yarn build
+      - run: yarn typecheck
       - run: yarn test
       - run: yarn --cwd apps/node-compat-test test
-
