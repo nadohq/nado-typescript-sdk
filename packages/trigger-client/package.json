@@ -36,6 +36,10 @@
       }
     }
   },
+  "react-native": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@nadohq/engine-client": "^0.1.0-alpha.31",
     "@nadohq/shared": "^0.1.0-alpha.31",
