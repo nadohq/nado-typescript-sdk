@@ -315,7 +315,7 @@ export type GetIndexerEventsLimitType = 'events' | 'txs';
 export interface GetIndexerEventsParams {
   // Max submission index, inclusive
   startCursor?: string;
-  subaccount?: Subaccount;
+  subaccounts?: Subaccount[];
   productIds?: number[];
   // If not given, will return both isolated & non-iso events
   isolated?: boolean;
@@ -338,7 +338,7 @@ export type GetIndexerEventsResponse = IndexerEventWithTx[];
 export interface GetIndexerOrdersParams {
   // Max submission index, inclusive
   startCursor?: string;
-  subaccount?: Subaccount;
+  subaccounts?: Subaccount[];
   minTimestampInclusive?: number;
   maxTimestampInclusive?: number;
   limit?: number;
@@ -378,7 +378,7 @@ export type GetIndexerOrdersResponse = IndexerOrder[];
 
 export interface GetIndexerMatchEventsParams {
   // When not given, will return all maker events
-  subaccount?: Subaccount;
+  subaccounts?: Subaccount[];
   productIds?: number[];
   // If not given, will return both isolated & non-iso events
   isolated?: boolean;

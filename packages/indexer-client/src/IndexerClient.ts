@@ -59,7 +59,7 @@ export class IndexerClient extends IndexerBaseClient {
       startCursor,
       maxTimestampInclusive,
       limit,
-      subaccount: { subaccountName, subaccountOwner },
+      subaccounts: [{ subaccountName, subaccountOwner }],
       productIds,
       isolated,
     });
@@ -88,7 +88,7 @@ export class IndexerClient extends IndexerBaseClient {
         type: 'txs',
         value: limit,
       },
-      subaccount: { subaccountName, subaccountOwner },
+      subaccounts: [{ subaccountName, subaccountOwner }],
     });
 
     // Now aggregate results by the submission index, use map to maintain insertion order
@@ -159,7 +159,7 @@ export class IndexerClient extends IndexerBaseClient {
         type: 'txs',
         value: limit,
       },
-      subaccount: { subaccountName, subaccountOwner },
+      subaccounts: [{ subaccountName, subaccountOwner }],
       isolated,
     });
 
@@ -204,7 +204,7 @@ export class IndexerClient extends IndexerBaseClient {
     const baseResponse = await this.getOrders({
       startCursor,
       maxTimestampInclusive,
-      subaccount: { subaccountName, subaccountOwner },
+      subaccounts: [{ subaccountName, subaccountOwner }],
       limit,
       productIds,
       triggerTypes,
@@ -244,7 +244,7 @@ export class IndexerClient extends IndexerBaseClient {
         type: 'txs',
         value: limit,
       },
-      subaccount: { subaccountName, subaccountOwner },
+      subaccounts: [{ subaccountName, subaccountOwner }],
     });
 
     const events = baseResponse
@@ -298,7 +298,7 @@ export class IndexerClient extends IndexerBaseClient {
         type: 'txs',
         value: limit,
       },
-      subaccount: { subaccountName, subaccountOwner },
+      subaccounts: [{ subaccountName, subaccountOwner }],
     });
 
     // Now aggregate results by the submission index, use map to maintain insertion order

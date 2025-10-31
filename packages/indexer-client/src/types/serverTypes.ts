@@ -93,7 +93,7 @@ export interface IndexerServerMultiProductsParams {
 }
 
 export interface IndexerServerEventsParams {
-  subaccount?: string;
+  subaccounts?: string[];
   product_ids?: number[];
   // If not given, will return both isolated & non-iso events
   isolated?: boolean;
@@ -118,7 +118,7 @@ export type IndexerServerTriggerTypeFilter =
   | 'time_trigger';
 
 export interface IndexerServerOrdersParams {
-  subaccount?: string;
+  subaccounts?: string[];
   product_ids?: number[];
   trigger_types?: IndexerServerTriggerTypeFilter[];
   digests?: string[];
@@ -131,7 +131,7 @@ export interface IndexerServerOrdersParams {
 }
 
 export interface IndexerServerMatchEventsParams {
-  subaccount?: string;
+  subaccounts?: string[];
   product_ids?: number[];
   // If not given, will return both isolated & non-iso events
   isolated?: boolean;

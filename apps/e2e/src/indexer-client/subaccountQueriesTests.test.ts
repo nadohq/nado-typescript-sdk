@@ -63,7 +63,7 @@ async function subaccountQueriesTests(context: RunContext) {
       value: 1,
     },
     maxTimestampInclusive: nowInSeconds(),
-    subaccount,
+    subaccounts: [subaccount],
   });
 
   debugPrint('Raw Events', events);
@@ -75,7 +75,7 @@ async function subaccountQueriesTests(context: RunContext) {
       value: 1,
     },
     desc: false,
-    subaccount,
+    subaccounts: [subaccount],
   });
 
   debugPrint('Raw Events Asc', eventsAsc);

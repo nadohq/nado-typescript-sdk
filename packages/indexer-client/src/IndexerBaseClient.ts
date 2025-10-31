@@ -407,12 +407,12 @@ export class IndexerBaseClient {
     })();
 
     const baseResponse = await this.query('events', {
-      subaccount: params.subaccount
-        ? subaccountToHex({
-            subaccountOwner: params.subaccount.subaccountOwner,
-            subaccountName: params.subaccount.subaccountName,
-          })
-        : undefined,
+      subaccounts: params.subaccounts?.map((subaccount) =>
+        subaccountToHex({
+          subaccountOwner: subaccount.subaccountOwner,
+          subaccountName: subaccount.subaccountName,
+        }),
+      ),
       product_ids: params.productIds,
       isolated: params.isolated,
       event_types: params.eventTypes,
@@ -442,12 +442,12 @@ export class IndexerBaseClient {
     params: GetIndexerOrdersParams,
   ): Promise<GetIndexerOrdersResponse> {
     const baseResponse = await this.query('orders', {
-      subaccount: params.subaccount
-        ? subaccountToHex({
-            subaccountOwner: params.subaccount.subaccountOwner,
-            subaccountName: params.subaccount.subaccountName,
-          })
-        : undefined,
+      subaccounts: params?.subaccounts?.map((subaccount) =>
+        subaccountToHex({
+          subaccountOwner: subaccount.subaccountOwner,
+          subaccountName: subaccount.subaccountName,
+        }),
+      ),
       product_ids: params.productIds,
       trigger_types: params.triggerTypes,
       isolated: params.isolated,
@@ -470,12 +470,12 @@ export class IndexerBaseClient {
     params: GetIndexerMatchEventsParams,
   ): Promise<GetIndexerMatchEventsResponse> {
     const baseResponse = await this.query('matches', {
-      subaccount: params.subaccount
-        ? subaccountToHex({
-            subaccountOwner: params.subaccount.subaccountOwner,
-            subaccountName: params.subaccount.subaccountName,
-          })
-        : undefined,
+      subaccounts: params?.subaccounts?.map((subaccount) =>
+        subaccountToHex({
+          subaccountOwner: subaccount.subaccountOwner,
+          subaccountName: subaccount.subaccountName,
+        }),
+      ),
       product_ids: params.productIds,
       isolated: params.isolated,
       max_time: params.maxTimestampInclusive,
