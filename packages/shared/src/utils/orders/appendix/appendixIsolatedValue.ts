@@ -1,11 +1,17 @@
 import { OrderAppendixIsolatedFields } from '../../../types';
-import { toBigInt } from '../../math';
+import {
+  addDecimals,
+  NADO_PRODUCT_DECIMALS,
+  removeDecimals,
+  toBigInt,
+} from '../../math';
 import { bitMaskValue } from './bitMaskValue';
 
-/**
- * Appendix uses margin_x6, so we div/mul to align to our SDK's usual x18.
- */
-const marginDecimalAdjustmentMultiplier = 10n ** 12n;
+const APPENDIX_V1_ISO_MARGIN_DECIMALS = 6;
+
+/* Appendix v1 uses x6 precision, so we need to adjust precision to/from SDK's usual precision */
+const MARGIN_DECIMAL_ADJUSTMENT =
+  NADO_PRODUCT_DECIMALS - APPENDIX_V1_ISO_MARGIN_DECIMALS;
 
 /**
  * Packs the provided margin into a single 64-bit bigint.
@@ -20,7 +26,10 @@ const marginDecimalAdjustmentMultiplier = 10n ** 12n;
 export function packIsolatedOrderAppendixValue({
   margin,
 }: OrderAppendixIsolatedFields): bigint {
-  return bitMaskValue(toBigInt(margin) / marginDecimalAdjustmentMultiplier, 64);
+  return bitMaskValue(
+    toBigInt(removeDecimals(margin, MARGIN_DECIMAL_ADJUSTMENT)),
+    64,
+  );
 }
 
 /**
@@ -35,6 +44,6 @@ export function unpackIsolatedOrderAppendixValue(
 ): OrderAppendixIsolatedFields {
   const margin = bitMaskValue(value, 64);
   return {
-    margin: margin * marginDecimalAdjustmentMultiplier,
+    margin: toBigInt(addDecimals(margin, MARGIN_DECIMAL_ADJUSTMENT)),
   };
 }

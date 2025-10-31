@@ -31,6 +31,10 @@ export interface OrderAppendixTwapFields {
 export interface OrderAppendixIsolatedFields {
   /**
    * Amount of margin to transfer into the isolated position.
+   *
+   * Implementation Note:
+   * Packed appendix uses precision of 6 decimals on backend.
+   * SDK automatically converts to/from x18 during packing/unpacking.
    */
   margin: BigDecimalish;
 }
