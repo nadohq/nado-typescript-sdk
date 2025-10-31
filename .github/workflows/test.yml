@@ -25,3 +25,5 @@ jobs:
       - run: yarn typecheck
       - run: yarn test
       - run: yarn --cwd apps/node-compat-test test
+      - run: yarn --cwd tests/metro-bundler-test install
+      - run: yarn --cwd tests/metro-bundler-test test
