@@ -53,6 +53,7 @@ to enable other local repos to consume Nado packages without having to publish a
 We're using [Tsup](https://tsup.egoist.dev/) for building the packages in CJS and ESM formats.
 Each package has its own `tsup.config.ts` file importing `tsup.base.config.ts` at the root of the monorepo.
 `apps/node-compat-test` tests the compatibility of the SDK in a pure, bundler-less, Node.js environment.
+Note our packages should have legacy 'main', 'module', and 'types', 'react-native' fields in their `package.json` to ensure support of older pre-`exports` environments.
 
 ## Agent Instructions
 
