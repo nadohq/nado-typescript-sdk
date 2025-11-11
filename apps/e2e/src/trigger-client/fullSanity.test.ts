@@ -380,7 +380,7 @@ async function fullSanity(context: RunContext) {
 
   const batchResult = await client.placeTriggerOrders({
     orders: batchTriggerParams,
-    cancelOnFailure: false,
+    stopOnFailure: false,
   });
   debugPrint('Batch place orders result', batchResult.data);
 

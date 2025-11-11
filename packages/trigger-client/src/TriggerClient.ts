@@ -96,7 +96,7 @@ export class TriggerClient {
           this.buildPlaceOrderExecuteParams(orderParam),
         ),
       ),
-      cancel_on_failure: params.cancelOnFailure ?? null,
+      stop_on_failure: params.stopOnFailure ?? null,
     };
 
     return this.execute('place_orders', executeParams);

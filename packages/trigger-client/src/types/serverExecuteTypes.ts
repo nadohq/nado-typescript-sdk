@@ -26,7 +26,7 @@ export type TriggerServerCancelProductOrdersParams =
 
 export interface TriggerServerPlaceOrdersParams {
   orders: TriggerServerPlaceOrderParams[];
-  cancel_on_failure: boolean | null;
+  stop_on_failure: boolean | null;
 }
 
 export interface TriggerServerExecuteRequestByType {

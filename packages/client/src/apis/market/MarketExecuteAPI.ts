@@ -58,7 +58,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
           nonce,
         };
       }),
-      cancelOnFailure: params.cancelOnFailure,
+      stopOnFailure: params.stopOnFailure,
     });
   }
 
@@ -155,7 +155,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
           },
         };
       }),
-      cancelOnFailure: params.cancelOnFailure,
+      stopOnFailure: params.stopOnFailure,
     });
   }
 

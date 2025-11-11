@@ -26,7 +26,7 @@ export type PlaceOrderParams = ClientOrderParams<EnginePlaceOrderParams>;
 
 export type PlaceOrdersParams = {
   orders: PlaceOrderParams[];
-  cancelOnFailure?: boolean;
+  stopOnFailure?: boolean;
 };
 
 export type CancelOrdersParams = OptionalSignatureParams<
@@ -47,7 +47,7 @@ export type PlaceTriggerOrderParams =
 
 export interface PlaceTriggerOrdersParams {
   orders: PlaceTriggerOrderParams[];
-  cancelOnFailure?: boolean;
+  stopOnFailure?: boolean;
 }
 
 export type CancelTriggerOrdersParams = OptionalSignatureParams<

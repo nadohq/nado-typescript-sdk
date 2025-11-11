@@ -134,7 +134,7 @@ async function orderTests(context: RunContext) {
   // Place multiple orders
   console.log('Placing multiple orders');
   const placeOrdersResult = await nadoClient.market.placeOrders({
-    cancelOnFailure: true,
+    stopOnFailure: true,
     orders: [
       {
         order: {

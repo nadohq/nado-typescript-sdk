@@ -145,7 +145,7 @@ export class EngineExecuteBuilder {
           return payload.payload;
         }),
       ),
-      cancel_on_failure: clientParams.cancelOnFailure ?? null,
+      stop_on_failure: clientParams.stopOnFailure ?? null,
     };
   }
 

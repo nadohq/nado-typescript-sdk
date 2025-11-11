@@ -90,7 +90,7 @@ export type EnginePlaceOrdersParams = {
    * If `true`, aborts the batch after the first failed order; if `false`, remaining orders continue to execute.
    * If not provided, the default value is `false`.
    */
-  cancelOnFailure?: boolean;
+  stopOnFailure?: boolean;
 };
 
 export interface EngineExecuteRequestParamsByType {
