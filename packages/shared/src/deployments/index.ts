@@ -3,8 +3,8 @@ import { NadoContractName } from '../abis/nadoAbis';
 
 import { ChainEnv } from '../types';
 import { getValidatedAddress } from '../utils/getValidatedAddress';
-import ArbitrumOneCoreDeployment from './core/deployment.arbitrumOne.json' with { type: 'json' };
-import InkSepoliaCoreDeployment from './core/deployment.InkSepolia.json' with { type: 'json' };
+import InkSepoliaCoreDeployment from './core/deployment.inkSepolia.json' with { type: 'json' };
+import InkMainnetCoreDeployment from './core/deployment.inkMainnet.json' with { type: 'json' };
 import LocalCoreDeployment from './core/deployment.localhost.json' with { type: 'json' };
 
 export type NadoDeploymentAddresses = {
@@ -15,11 +15,11 @@ export type NadoDeploymentAddresses = {
  * Known deployment addresses for the Nado contracts
  */
 export const NADO_DEPLOYMENTS: Record<ChainEnv, NadoDeploymentAddresses> = {
-  arbitrum: validateDeployment({
-    ...ArbitrumOneCoreDeployment,
-  }),
   inkTestnet: validateDeployment({
     ...InkSepoliaCoreDeployment,
+  }),
+  inkMainnet: validateDeployment({
+    ...InkMainnetCoreDeployment,
   }),
   local: validateDeployment({
     ...LocalCoreDeployment,
