@@ -82,12 +82,11 @@ export interface EngineSymbol {
   priceIncrement: BigDecimal;
   sizeIncrement: BigDecimal;
   minSize: BigDecimal;
-  minDepth: BigDecimal;
-  maxSpreadRate: BigDecimal;
   makerFeeRate: BigDecimal;
   takerFeeRate: BigDecimal;
   longWeightInitial: BigDecimal;
   longWeightMaintenance: BigDecimal;
+  maxOpenInterest: BigDecimal | null;
 }
 
 export type GetEngineAllMarketsResponse = MarketWithProduct[];

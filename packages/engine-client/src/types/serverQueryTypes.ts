@@ -218,12 +218,11 @@ export interface EngineServerSymbol {
   price_increment_x18: string;
   size_increment: string;
   min_size: string;
-  min_depth_x18: string;
-  max_spread_rate_x18: string;
   maker_fee_rate_x18: string;
   taker_fee_rate_x18: string;
   long_weight_initial_x18: string;
   long_weight_maintenance_x18: string;
+  max_open_interest_x18: string | null;
 }
 
 export interface EngineServerSymbolsResponse {

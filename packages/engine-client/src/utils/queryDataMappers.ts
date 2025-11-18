@@ -271,8 +271,6 @@ export function mapEngineServerSymbol(
     priceIncrement: removeDecimals(engineServerSymbol.price_increment_x18),
     sizeIncrement: toBigDecimal(engineServerSymbol.size_increment),
     minSize: toBigDecimal(engineServerSymbol.min_size),
-    minDepth: removeDecimals(engineServerSymbol.min_depth_x18),
-    maxSpreadRate: removeDecimals(engineServerSymbol.max_spread_rate_x18),
     makerFeeRate: removeDecimals(engineServerSymbol.maker_fee_rate_x18),
     takerFeeRate: removeDecimals(engineServerSymbol.taker_fee_rate_x18),
     longWeightInitial: removeDecimals(
@@ -281,6 +279,9 @@ export function mapEngineServerSymbol(
     longWeightMaintenance: removeDecimals(
       engineServerSymbol.long_weight_maintenance_x18,
     ),
+    maxOpenInterest: engineServerSymbol.max_open_interest_x18
+      ? removeDecimals(engineServerSymbol.max_open_interest_x18)
+      : null,
   };
 }
 
