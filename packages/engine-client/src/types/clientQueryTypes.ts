@@ -86,7 +86,8 @@ export interface EngineSymbol {
   takerFeeRate: BigDecimal;
   longWeightInitial: BigDecimal;
   longWeightMaintenance: BigDecimal;
-  maxOpenInterest?: BigDecimal;
+  // undefined when there is no max open interest limit (always undefined for spot products)
+  maxOpenInterest: BigDecimal | undefined;
 }
 
 export type GetEngineAllMarketsResponse = MarketWithProduct[];
