@@ -222,7 +222,7 @@ export interface EngineServerSymbol {
   taker_fee_rate_x18: string;
   long_weight_initial_x18: string;
   long_weight_maintenance_x18: string;
-  max_open_interest_x18: string | null;
+  max_open_interest_x18?: string;
 }
 
 export interface EngineServerSymbolsResponse {

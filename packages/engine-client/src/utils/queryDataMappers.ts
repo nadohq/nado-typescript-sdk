@@ -279,9 +279,7 @@ export function mapEngineServerSymbol(
     longWeightMaintenance: removeDecimals(
       engineServerSymbol.long_weight_maintenance_x18,
     ),
-    maxOpenInterest: engineServerSymbol.max_open_interest_x18
-      ? removeDecimals(engineServerSymbol.max_open_interest_x18)
-      : null,
+    maxOpenInterest: removeDecimals(engineServerSymbol.max_open_interest_x18),
   };
 }
 

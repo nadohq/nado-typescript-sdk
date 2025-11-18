@@ -86,7 +86,7 @@ export interface EngineSymbol {
   takerFeeRate: BigDecimal;
   longWeightInitial: BigDecimal;
   longWeightMaintenance: BigDecimal;
-  maxOpenInterest: BigDecimal | null;
+  maxOpenInterest?: BigDecimal;
 }
 
 export type GetEngineAllMarketsResponse = MarketWithProduct[];
