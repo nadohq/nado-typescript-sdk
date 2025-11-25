@@ -48,6 +48,81 @@ to enable other local repos to consume Nado packages without having to publish a
 
 **depcruise:all**: Run dependency-cruiser on all packages to check for dependency issues (incl. circular dependencies).
 
+## Security
+
+### Package Age Check
+
+This repository includes automated security checks to protect against supply chain attacks, particularly the risk of malicious packages being published to npm shortly after legitimate package releases (as detailed in the [SHA1HULUD attack](https://helixguard.ai/blog/malicious-sha1hulud-2025-11-24)).
+
+#### How It Works
+
+The Package Age Guard workflow (`.github/workflows/package-age-check.yml`) runs on every pull request and:
+
+1. **Scans dependencies** - Checks all packages in `package.json` (both `dependencies` and `devDependencies`)
+2. **Resolves versions** - Uses `yarn.lock` to determine the exact version being installed
+3. **Queries npm registry** - Fetches the publish date for each package version
+4. **Enforces age window** - Flags packages that are too recent (default: less than 14 days old)
+5. **Reports violations** - Adds a warning comment to the PR and applies a `package-age-warning` label
+
+#### Configuration
+
+The check is configured via GitHub repository variables:
+
+- `MAX_PACKAGE_AGE_DAYS` (default: `14`) - Minimum age required for packages
+- `PACKAGE_AGE_ALLOWLIST` - Comma or newline-separated list of packages to exempt from checks
+- `NPM_REGISTRY_URL` (default: `https://registry.npmjs.org`) - Registry to query for package metadata
+
+#### Allowlist Format
+
+You can allowlist packages in two ways:
+
+```
+# Allowlist all versions of a package
+lodash
+
+# Allowlist a specific version
+@aws-sdk/client-secrets-manager@3.306.0
+```
+
+The allowlist can be set as a GitHub repository variable with comma or newline separation:
+
+```
+PACKAGE_AGE_ALLOWLIST: |
+  lodash
+  @aws-sdk/client-secrets-manager@3.306.0
+  @trusted-partner/preview-package
+```
+
+#### When to Use the Allowlist
+
+Use the allowlist when:
+
+- **Trusted partner packages** - Preview versions from trusted partners that you need to test immediately
+- **Critical security patches** - Urgent security updates that can't wait for the age window
+- **Internal packages** - Packages from your organization that you control and trust
+- **Well-established packages** - Mature packages with strong security track records where the risk is minimal
+
+⚠️ **Important**: Always document the justification when allowlisting a package, especially in security-sensitive contexts.
+
+#### What Happens When a Package is Too Recent
+
+When the check detects packages that are too recent:
+
+1. A warning comment is posted to the PR with details about the flagged packages
+2. The PR is labeled with `package-age-warning`
+3. The CI check **does not fail** - it's informational to allow for informed decisions
+
+#### Example Workflow Output
+
+```
+⚠️ Package age warning
+
+Packages should be at least 14 days old.
+
+- lodash@4.17.22 published 3.45 days ago on 2025-11-20
+- axios@1.6.0 published 7.12 days ago on 2025-11-17
+```
+
 ### Production Build Setup
 
 We're using [Tsup](https://tsup.egoist.dev/) for building the packages in CJS and ESM formats.
