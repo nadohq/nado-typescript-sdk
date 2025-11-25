@@ -1,0 +1,273 @@
+name: Package Age Guard
+
+on:
+  pull_request:
+
+jobs:
+  package-age-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Enforce package age window
+        id: age-check
+        uses: actions/github-script@v7
+        env:
+          # Example allowlist formats (comma or newline separated):
+          # PACKAGE_AGE_ALLOWLIST: |
+          #   lodash
+          #   @aws-sdk/client-secrets-manager@3.306.0
+          PACKAGE_AGE_ALLOWLIST: ${{ vars.PACKAGE_AGE_ALLOWLIST }}
+          MAX_PACKAGE_AGE_DAYS: ${{ vars.MAX_PACKAGE_AGE_DAYS }}
+          NPM_REGISTRY_URL: ${{ vars.NPM_REGISTRY_URL }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const MAX_PACKAGE_AGE_DAYS = Number(process.env.MAX_PACKAGE_AGE_DAYS || '14');
+            const REGISTRY_URL = (process.env.NPM_REGISTRY_URL || 'https://registry.npmjs.org').replace(/\/$/, '');
+            const PACKAGE_JSON_PATH = path.join(process.cwd(), 'package.json');
+            const YARN_LOCK_PATH = path.join(process.cwd(), 'yarn.lock');
+
+            if (typeof fetch !== 'function') {
+              throw new Error('Global fetch is required. Please run this check with Node.js 18 or newer.');
+            }
+
+            function parseAllowlist() {
+              return (process.env.PACKAGE_AGE_ALLOWLIST || '')
+                .split(/[,\n]/)
+                .map((item) => item.trim())
+                .filter(Boolean);
+            }
+
+            function isExactVersion(spec) {
+              return /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(spec);
+            }
+
+            function parseYarnLock(filePath) {
+              if (!fs.existsSync(filePath)) return {};
+
+              const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+              const result = {};
+              let currentKeys = [];
+
+              for (const rawLine of lines) {
+                const line = rawLine.trimEnd();
+                const isKeyLine = line && !line.startsWith(' ');
+
+                if (isKeyLine) {
+                  const cleaned = line.replace(/:$/, '');
+                  currentKeys = cleaned
+                    .split(',')
+                    .map((k) => k.trim().replace(/^"|"$/g, ''))
+                    .filter(Boolean);
+                  continue;
+                }
+
+                if (!currentKeys.length) continue;
+
+                const versionMatch = line.trim().match(/^version\s+"([^"]+)"/);
+                if (versionMatch) {
+                  for (const key of currentKeys) {
+                    result[key] = versionMatch[1];
+                  }
+                }
+
+                if (!line) currentKeys = [];
+              }
+
+              return result;
+            }
+
+            function resolveVersionFromLock(name, spec, lockMap) {
+              const directKeys = [`${name}@${spec}`, `${name}@npm:${spec}`];
+              for (const key of directKeys) {
+                if (lockMap[key]) return lockMap[key];
+              }
+              const partialMatch = Object.entries(lockMap).find(([key]) => key.startsWith(`${name}@`) && key.includes(spec));
+              return partialMatch ? partialMatch[1] : null;
+            }
+
+            async function fetchPublishDate(name, version) {
+              const encoded = encodeURIComponent(name);
+              const url = `${REGISTRY_URL}/${encoded}`;
+              const controller = new AbortController();
+              const timer = setTimeout(() => controller.abort(), 10000);
+              try {
+                const response = await fetch(url, { signal: controller.signal, headers: { accept: 'application/json' } });
+                if (!response.ok) throw new Error(`registry request failed with status ${response.status}`);
+                const data = await response.json();
+                if (!data.time || !data.time[version]) {
+                  core.warning(`No publish time found for ${name}@${version}; skipping age check for this entry.`);
+                  return null;
+                }
+                return new Date(data.time[version]);
+              } finally {
+                clearTimeout(timer);
+              }
+            }
+
+            async function main() {
+              if (!fs.existsSync(PACKAGE_JSON_PATH)) {
+                throw new Error(`package.json not found at ${PACKAGE_JSON_PATH}`);
+              }
+
+              const pkg = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
+              const dependencies = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+              const lockMap = parseYarnLock(YARN_LOCK_PATH);
+              const allowlist = new Set(parseAllowlist());
+
+              if (!Object.keys(dependencies).length) {
+                core.info('No dependencies found in package.json; skipping package age check.');
+                return;
+              }
+
+              const violations = [];
+              const cache = new Map();
+
+              for (const [name, spec] of Object.entries(dependencies)) {
+                const resolvedVersion = (isExactVersion(spec) && spec) || resolveVersionFromLock(name, spec, lockMap);
+                if (!resolvedVersion) {
+                  core.warning(`Could not determine resolved version for ${name}@${spec}; skipping age check for this entry.`);
+                  continue;
+                }
+
+                if (allowlist.has(name) || allowlist.has(`${name}@${resolvedVersion}`)) continue;
+
+                const cacheKey = `${name}@${resolvedVersion}`;
+                let publishedAt = cache.get(cacheKey);
+                if (!publishedAt) {
+                  publishedAt = await fetchPublishDate(name, resolvedVersion);
+                  cache.set(cacheKey, publishedAt);
+                }
+
+                if (!publishedAt) continue;
+
+                const ageDays = (Date.now() - publishedAt.getTime()) / (1000 * 60 * 60 * 24);
+                if (ageDays <= MAX_PACKAGE_AGE_DAYS) {
+                  violations.push({ name, version: resolvedVersion, ageDays, publishedAt: publishedAt.toISOString() });
+                }
+              }
+
+            if (violations.length) {
+                const lines = violations
+                  .map((v) => `- ${v.name}@${v.version} published ${Number(v.ageDays).toFixed(2)} days ago on ${new Date(v.publishedAt).toISOString().slice(0, 10)}`)
+                  .join('\n');
+                const message = `Package age warning: packages should be at least ${MAX_PACKAGE_AGE_DAYS} days old. Add to PACKAGE_AGE_ALLOWLIST to override when justified.\n${lines}`;
+                core.warning(message);
+                core.setOutput('has_violations', 'true');
+                core.setOutput('violations', JSON.stringify(violations));
+                core.setOutput('message', message);
+                core.setOutput('lines', lines);
+                return;
+            }
+
+              core.setOutput('has_violations', 'false');
+              core.setOutput('violations', '[]');
+              core.setOutput('message', '');
+              core.setOutput('lines', '');
+              core.info(`Package age check passed. All dependencies are older than ${MAX_PACKAGE_AGE_DAYS} days or allowlisted.`);
+            }
+
+            await main();
+
+      - name: Comment and label on package age warnings
+        if: steps.age-check.outputs.has_violations == 'true'
+        uses: actions/github-script@v7
+        env:
+          AGE_MESSAGE: ${{ steps.age-check.outputs.message }}
+          AGE_VIOLATIONS: ${{ steps.age-check.outputs.violations }}
+          AGE_LINES: ${{ steps.age-check.outputs.lines }}
+          MAX_PACKAGE_AGE_DAYS: ${{ vars.MAX_PACKAGE_AGE_DAYS }}
+        with:
+          script: |
+            const marker = '<!-- package-age-guard -->';
+            const lines = process.env.AGE_LINES || '';
+            const body = [
+              marker,
+              '⚠️ Package age warning',
+              '',
+              `Packages should be at least ${process.env.MAX_PACKAGE_AGE_DAYS || '14'} days old.`,
+              '',
+              lines
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+            const label = 'package-age-warning';
+            try {
+              await github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: [label],
+              });
+            } catch (error) {
+              core.warning(`Could not add label ${label}: ${error.message}`);
+            }
+
+      - name: Clean up comment/label when no warnings
+        if: steps.age-check.outputs.has_violations == 'false'
+        uses: actions/github-script@v7
+        env:
+          MARKER: '<!-- package-age-guard -->'
+        with:
+          script: |
+            const marker = process.env.MARKER;
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.deleteComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+            }
+
+            const label = 'package-age-warning';
+            try {
+              await github.rest.issues.removeLabel({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+              });
+            } catch (error) {
+              core.warning(`Label ${label} was not removed (may not exist): ${error.message}`);
+            }
