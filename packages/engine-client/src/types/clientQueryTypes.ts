@@ -19,8 +19,13 @@ import {
   EngineServerTimeResponse,
 } from './serverQueryTypes';
 
-export interface GetEngineSubaccountSummaryResponse {
+export interface GetEngineSubaccountSummaryResponse
+  extends SubaccountSummaryState {
   exists: boolean;
+  preState?: SubaccountSummaryState;
+}
+
+export interface SubaccountSummaryState {
   balances: BalanceWithProduct[];
   health: HealthStatusByType;
 }
@@ -56,6 +61,7 @@ export interface GetEngineContractsResponse {
 
 export type GetEngineEstimatedSubaccountSummaryParams = Subaccount & {
   txs: SubaccountTx[];
+  preState?: boolean;
 };
 
 export type GetEngineNoncesParams = EngineServerNoncesParams;

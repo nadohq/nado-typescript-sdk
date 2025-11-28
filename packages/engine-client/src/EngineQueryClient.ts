@@ -166,6 +166,9 @@ export class EngineQueryClient extends EngineBaseClient {
     const baseResponse = await this.query('subaccount_info', {
       subaccount: queryParams.subaccount,
       txns: JSON.stringify(queryParams.txns),
+      // Backend expects string variants of booleans
+      pre_state:
+        params.preState !== undefined ? String(params.preState) : undefined,
     });
 
     return mapSubaccountSummary(baseResponse);

@@ -25,6 +25,8 @@ export interface EngineServerSubaccountInfoQueryParams {
       v_quote_delta: string;
     };
   }>;
+  // If not given, engine defaults to 'false'
+  pre_state?: string;
 }
 
 export interface EngineServerIsolatedPositionsQueryParams {
@@ -174,9 +176,20 @@ export interface EngineServerNoncesResponse {
   tx_nonce: string;
 }
 
-export interface EngineServerSubaccountInfoResponse {
+export interface EngineServerSubaccountInfoResponse
+  extends EngineServerSubaccountInfoState {
   exists: boolean;
   subaccount: string;
+  spot_count: number;
+  perp_count: number;
+  spot_products: EngineServerSpotProduct[];
+  perp_products: EngineServerPerpProduct[];
+
+  /** This is set if request has `pre_state` flag set to 'true' */
+  pre_state: EngineServerSubaccountInfoState | undefined;
+}
+
+export interface EngineServerSubaccountInfoState {
   healths: [
     initial: EngineServerHealthBreakdown,
     maintenance: EngineServerHealthBreakdown,
@@ -184,12 +197,8 @@ export interface EngineServerSubaccountInfoResponse {
   ];
   // First index is product ID, each subarray is of length 3 [initial, maintenance, unweighted]
   health_contributions: string[][];
-  spot_count: number;
-  perp_count: number;
   spot_balances: EngineServerSpotBalance[];
   perp_balances: EngineServerPerpBalance[];
-  spot_products: EngineServerSpotProduct[];
-  perp_products: EngineServerPerpProduct[];
 }
 
 export interface EngineServerIsolatedPosition {
