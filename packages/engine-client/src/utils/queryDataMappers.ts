@@ -154,24 +154,30 @@ export function mapSubaccountSummary(
 ): GetEngineSubaccountSummaryResponse {
   return {
     exists: baseResponse.exists,
-    ...mapSubaccountSummaryState(baseResponse, baseResponse),
+    ...mapSubaccountSummaryState(
+      baseResponse,
+      baseResponse.spot_products,
+      baseResponse.perp_products,
+    ),
     preState: baseResponse.pre_state
-      ? mapSubaccountSummaryState(baseResponse, baseResponse.pre_state)
+      ? mapSubaccountSummaryState(
+          baseResponse.pre_state,
+          baseResponse.spot_products,
+          baseResponse.perp_products,
+        )
       : undefined,
   };
 }
 
 function mapSubaccountSummaryState(
-  baseResponse: Pick<
-    EngineServerSubaccountInfoResponse,
-    'spot_products' | 'perp_products'
-  >,
   state: EngineServerSubaccountInfoState,
+  spotProducts: EngineServerSubaccountInfoResponse['spot_products'],
+  perpProducts: EngineServerSubaccountInfoResponse['perp_products'],
 ): SubaccountSummaryState {
   const balances: SubaccountSummaryState['balances'] = [];
 
   state.spot_balances.forEach((spotBalance) => {
-    const product = baseResponse.spot_products.find(
+    const product = spotProducts.find(
       (product) => product.product_id === spotBalance.product_id,
     );
     if (!product) {
@@ -188,7 +194,7 @@ function mapSubaccountSummaryState(
   });
 
   state.perp_balances.forEach((perpBalance) => {
-    const product = baseResponse.perp_products.find(
+    const product = perpProducts.find(
       (product) => product.product_id === perpBalance.product_id,
     );
     if (!product) {
