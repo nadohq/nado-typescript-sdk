@@ -1,9 +1,10 @@
 import { BigDecimal } from './math/bigDecimal';
 
 /**
- * Util for converting any BigDecimal types into a string so that it can be logged nicely
+ * Util for converting any BigDecimal types into a string so that it can be logged nicely.
+ * Handles cyclic references by returning '[Circular]' for already-visited objects.
  */
-export function toPrintableObject(obj: unknown): unknown {
+export function toPrintableObject(obj: unknown, seen = new WeakSet()): unknown {
   if (obj == null) {
     return null;
   }
@@ -11,15 +12,25 @@ export function toPrintableObject(obj: unknown): unknown {
     return obj.toString();
   }
   if (Array.isArray(obj)) {
-    return obj.map(toPrintableObject);
+    return obj.map((item) => toPrintableObject(item, seen));
   }
   if (typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [
-        key,
-        toPrintableObject(value),
-      ]),
-    );
+    // Detect cyclic references
+    if (seen.has(obj)) {
+      return '[Circular]';
+    }
+    seen.add(obj);
+
+    try {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [
+          key,
+          toPrintableObject(value, seen),
+        ]),
+      );
+    } catch {
+      return '[Unserializable Object]';
+    }
   }
   return obj;
 }
