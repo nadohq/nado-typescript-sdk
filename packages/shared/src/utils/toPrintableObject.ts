@@ -35,7 +35,7 @@ export function toPrintableObject(obj: unknown, seen = new WeakSet()): unknown {
         ]),
       );
     } catch {
-      return '[Unserializable Object]';
+      return { error: '[Unserializable Object]' };
     }
   }
   return obj;
