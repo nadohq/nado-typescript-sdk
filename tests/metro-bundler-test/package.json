@@ -1,0 +1,24 @@
+{
+  "name": "metro-bundler-test",
+  "version": "0.1.0",
+  "description": "Tests loading @nadohq/client in a React Native/metro bundler environment",
+  "type": "module",
+  "private": true,
+  "author": "Frank Jia <frank@inkfnd.com>",
+  "homepage": "",
+  "license": "ISC",
+  "repository": "https://github.com/nadohq/nado-typescript-sdk",
+  "scripts": {
+    "test": "yarn test:cjs",
+    "test:cjs": "rm -f build-cjs.js && metro build tests/metro-bundler-test/App.cjs --out build-cjs"
+  },
+  "dependencies": {
+    "@nadohq/client": "../../packages/client"
+  },
+  "devDependencies": {
+    "metro": "0.76.9",
+    "metro-config": "0.76.9",
+    "metro-core": "0.76.9",
+    "metro-resolver": "0.76.9"
+  }
+}
