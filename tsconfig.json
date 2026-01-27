@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["esnext"],
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "noImplicitAny": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
