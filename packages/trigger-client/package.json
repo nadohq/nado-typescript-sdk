@@ -41,8 +41,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "^0.1.0-alpha.44",
-    "@nadohq/shared": "^0.1.0-alpha.44",
+    "@nadohq/engine-client": "workspace:^",
+    "@nadohq/shared": "workspace:^",
     "axios": "*",
     "ts-mixer": "*"
   },

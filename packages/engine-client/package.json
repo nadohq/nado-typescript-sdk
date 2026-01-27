@@ -41,7 +41,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.1.0-alpha.44",
+    "@nadohq/shared": "workspace:^",
     "axios": "*",
     "ts-mixer": "*"
   },

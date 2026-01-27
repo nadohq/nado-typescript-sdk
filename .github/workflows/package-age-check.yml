@@ -34,7 +34,7 @@ jobs:
             const MAX_PACKAGE_AGE_DAYS = Number(process.env.MAX_PACKAGE_AGE_DAYS || '14');
             const REGISTRY_URL = (process.env.NPM_REGISTRY_URL || 'https://registry.npmjs.org').replace(/\/$/, '');
             const PACKAGE_JSON_PATH = path.join(process.cwd(), 'package.json');
-            const YARN_LOCK_PATH = path.join(process.cwd(), 'yarn.lock');
+            const BUN_LOCK_PATH = path.join(process.cwd(), 'bun.lockb');
 
             if (typeof fetch !== 'function') {
               throw new Error('Global fetch is required. Please run this check with Node.js 18 or newer.');
@@ -51,39 +51,15 @@ jobs:
               return /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(spec);
             }
 
-            function parseYarnLock(filePath) {
+            function parseBunLock(filePath) {
+              // Note: bun.lockb is a binary file format, so we can't parse it directly like yarn.lock
+              // For now, we'll return an empty object and rely on exact versions from package.json
+              // In the future, this could be enhanced to use bun's API or parse the binary format
               if (!fs.existsSync(filePath)) return {};
-
-              const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
-              const result = {};
-              let currentKeys = [];
-
-              for (const rawLine of lines) {
-                const line = rawLine.trimEnd();
-                const isKeyLine = line && !line.startsWith(' ');
-
-                if (isKeyLine) {
-                  const cleaned = line.replace(/:$/, '');
-                  currentKeys = cleaned
-                    .split(',')
-                    .map((k) => k.trim().replace(/^"|"$/g, ''))
-                    .filter(Boolean);
-                  continue;
-                }
-
-                if (!currentKeys.length) continue;
-
-                const versionMatch = line.trim().match(/^version\s+"([^"]+)"/);
-                if (versionMatch) {
-                  for (const key of currentKeys) {
-                    result[key] = versionMatch[1];
-                  }
-                }
-
-                if (!line) currentKeys = [];
-              }
-
-              return result;
+              
+              // bun.lockb is binary, so we can't parse it with simple text parsing
+              // Return empty object - the script will fall back to using exact versions from package.json
+              return {};
             }
 
             function resolveVersionFromLock(name, spec, lockMap) {
@@ -121,7 +97,7 @@ jobs:
 
               const pkg = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
               const dependencies = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
-              const lockMap = parseYarnLock(YARN_LOCK_PATH);
+              const lockMap = parseBunLock(BUN_LOCK_PATH);
               const allowlist = new Set(parseAllowlist());
 
               if (!Object.keys(dependencies).length) {

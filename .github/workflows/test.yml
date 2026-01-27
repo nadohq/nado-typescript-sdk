@@ -14,14 +14,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-      - uses: borales/actions-yarn@v5
+      - uses: oven-sh/setup-bun@v2
         with:
-            cmd: install
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
 
       - name: Check git workspace isn't dirty
         run: git diff --exit-code --quiet
 
-      - run: yarn build
-      - run: yarn typecheck
-      - run: yarn test
-      - run: yarn --cwd apps/node-compat-test test
+      - run: bun build
+      - run: bun typecheck
+      - run: bun test
+      - run: bun --cwd apps/node-compat-test test

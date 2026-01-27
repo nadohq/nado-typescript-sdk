@@ -48,6 +48,14 @@ to enable other local repos to consume Nado packages without having to publish a
 
 **depcruise:all**: Run dependency-cruiser on all packages to check for dependency issues (incl. circular dependencies).
 
+## Semantic commits
+
+Lerna will auto bump versions on publish based on what is prepended to a commit message:
+
+fix:	patch
+feat:	minor
+feat!: or BREAKING CHANGE:	major
+
 ## Security
 
 ### Package Age Check

@@ -11,39 +11,38 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
 
 ### Development
 
-- `yarn build` - Build all packages in the monorepo using Lerna
-- `yarn clean` - Clean all packages
-- `yarn dev` - Run development mode for all packages
-- `yarn test` - Run Jest tests across the entire codebase
-- `yarn lint` - Run ESLint with auto-fix and Prettier formatting
-- `yarn typecheck` - Run TypeScript type checking for all packages
-- `yarn gen-typedoc` - Generate TypeDoc documentation for all packages
+- `bun build` - Build all packages in the monorepo using Lerna
+- `bun clean` - Clean all packages
+- `bun dev` - Run development mode for all packages
+- `bun test` - Run Jest tests across the entire codebase
+- `bun lint` - Run ESLint with auto-fix and Prettier formatting
+- `bun typecheck` - Run TypeScript type checking for all packages
+- `bun gen-typedoc` - Generate TypeDoc documentation for all packages
 
 ### Testing
 
-- **IMPORTANT**: Run `yarn build` before running any E2E tests to ensure all packages are built
-- `yarn --cwd apps/e2e e2e` - Run all E2E tests
-- `yarn --cwd apps/e2e e2e:client` - Run client-specific E2E tests
-- `yarn --cwd apps/e2e e2e:engine` - Run engine-client E2E tests
-- `yarn --cwd apps/e2e e2e:indexer` - Run indexer-client E2E tests
-- `yarn --cwd apps/e2e e2e:trigger` - Run trigger-client E2E tests
+- **IMPORTANT**: Run `bun build` before running any E2E tests to ensure all packages are built
+- `bun --cwd apps/e2e e2e` - Run all E2E tests
+- `bun --cwd apps/e2e e2e:client` - Run client-specific E2E tests
+- `bun --cwd apps/e2e e2e:engine` - Run engine-client E2E tests
+- `bun --cwd apps/e2e e2e:indexer` - Run indexer-client E2E tests
+- `bun --cwd apps/e2e e2e:trigger` - Run trigger-client E2E tests
 
 ### Package Management
 
-- `yarn link-local` / `yarn unlink-local` - Link/unlink packages for local development
-- `yarn publish-all` - Clean, build, and publish all packages via Lerna
-- `yarn depcruise:all` - Analyze package dependencies and detect circular dependencies
+- `bun publish-all` - Clean, build, and publish all packages via Lerna
+- `bun depcruise:all` - Analyze package dependencies and detect circular dependencies
 
 ### Individual Package Scripts
 
 Each package in `packages/` has these common scripts:
 
-- `yarn build` - Build the specific package
-- `yarn clean` - Clean build artifacts
-- `yarn dev` - Watch mode for development
-- `yarn lint` - Check linting rules only
-- `yarn lint:fix` - Fix linting issues automatically
-- `yarn typecheck` - Type check without emitting files
+- `bun build` - Build the specific package
+- `bun clean` - Clean build artifacts
+- `bun dev` - Watch mode for development
+- `bun lint` - Check linting rules only
+- `bun lint:fix` - Fix linting issues automatically
+- `bun typecheck` - Type check without emitting files
 
 ## Architecture
 
@@ -79,19 +78,19 @@ The project follows a monorepo pattern with these core packages:
 After making edits, **ALWAYS** run the following verification sequence:
 
 1. **Type Check**
-    - Run `yarn typecheck` to verify all TypeScript types are correct across all packages
+    - Run `bun typecheck` to verify all TypeScript types are correct across all packages
 2. **Lint Check**
-    - Run `yarn lint` to run ESLint with auto-fix and Prettier formatting
+    - Run `bun lint` to run ESLint with auto-fix and Prettier formatting
 3. **Build**
-    - Run `yarn build` to build all packages before running any tests
+    - Run `bun build` to build all packages before running any tests
 4. **Tests**
-    - Run `yarn test` to run all tests across the codebase
+    - Run `bun test` to run all tests across the codebase
 
 ### Requirements
 
 - **All commands must pass** before considering a task complete
 - **Fix errors immediately** - If any command fails, address issues and re-run the full sequence
-- **Build before adding E2E tests** - Always run `yarn build` before E2E testing to ensure packages are properly built
+- **Build before adding E2E tests** - Always run `bun build` before E2E testing to ensure packages are properly built
 - **Add basic sanity E2E tests** - Never skip writing E2E tests for new features, client APIs, or user flows
 - **Do NOT write unit tests** - any unit tests should be written manually
 

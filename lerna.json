@@ -1,5 +1,13 @@
 {
   "$schema": "node_modules/lerna/schemas/lerna-schema.json",
-  "npmClient": "yarn",
-  "version": "0.1.0-alpha.44"
+  "npmClient": "bun",
+  "version": "0.1.0-alpha.44",
+  "command": {
+    "version": {
+      "conventionalCommits": true
+    },
+    "publish": {
+      "conventionalCommits": true
+    }
+  }
 }
