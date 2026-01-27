@@ -50,6 +50,9 @@
     "apps/node-compat-test": {
       "name": "node-compat-test",
       "version": "0.1.0",
+      "dependencies": {
+        "@nadohq/client": "*",
+      },
     },
     "packages/client": {
       "name": "@nadohq/client",
