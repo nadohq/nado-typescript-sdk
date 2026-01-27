@@ -1,0 +1,5 @@
+# Package age guard: only install versions published at least 14 days ago.
+# Add packages to minimumReleaseAgeExcludes when a newer version is required.
+[install]
+minimumReleaseAge = 1209600  # 14 days, in seconds
+minimumReleaseAgeExcludes = []
