@@ -1,3 +1,4 @@
-import config from '../../tsup.base.config';
+import baseConfig from '../../tsup.base.config';
+import { withPeerDepsExternal } from '../../tsup.utils';
 
-export default config;
+export default withPeerDepsExternal(import.meta.url, baseConfig);
