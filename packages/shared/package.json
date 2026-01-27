@@ -44,6 +44,9 @@
     "bignumber.js": "^9.3.0",
     "viem": "*"
   },
+  "dependencies": {
+    "abitype": "^1.2.3"
+  },
   "devDependencies": {
     "@jest/globals": "*",
     "bignumber.js": "^9.3.0",
