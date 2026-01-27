@@ -18,7 +18,7 @@
     "dev": "tsc -w",
     "lint": "eslint --cache './**/*.{ts,tsx}'",
     "lint:fix": "eslint --cache --fix './**/*.{ts,tsx}'",
-    "typecheck": "tsc --build"
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "dist",
