@@ -19,4 +19,4 @@ for DIR in "${DIRECTORIES[@]}"; do
 done
 
 # Now link monorepo packages
-npx lerna exec -- $YARN_CMD
+bunx lerna exec -- $YARN_CMD

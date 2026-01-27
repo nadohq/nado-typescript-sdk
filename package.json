@@ -15,8 +15,8 @@
     "lint": "eslint --cache --fix './**/*.{ts,tsx}' && prettier --write './**/*.{ts,tsx}'",
     "format": "prettier --write './packages/**/*.{js,jsx,ts,tsx,css,md}' --log-level warn",
     "prepare": "husky",
-    "publish-all": "bun clean && bun build && npx lerna publish --force-publish --no-private",
-    "publish-dry-run": "bun clean && bun build && npx lerna publish --dry-run --force-publish --no-private",
+    "publish-all": "bun clean && bun run build && bunx lerna publish --force-publish --no-private",
+    "publish-dry-run": "bun clean && bun run build && bunx lerna publish --dry-run --force-publish --no-private",
     "test": "jest",
     "typecheck": "lerna run typecheck",
     "depcruise:all": "depcruise packages/* apps/*"
