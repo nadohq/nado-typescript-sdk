@@ -7,16 +7,16 @@ DIRECTORIES=(
 )
 
 # Check UNLINK env var as a quick way to use a "flag"
-if [ "$UNLINK" ]; then YARN_CMD="yarn unlink"; else YARN_CMD="yarn link"; fi
+if [ "$UNLINK" ]; then BUN_CMD="bun unlink"; else BUN_CMD="bun link"; fi
 
 for DIR in "${DIRECTORIES[@]}"; do
   # Change to the directory
   cd "$DIR"
-  # Run yarn link/unlink
-  $YARN_CMD
+  # Run bun link/unlink
+  $BUN_CMD
   # Go back to the original directory
   cd -
 done
 
 # Now link monorepo packages
-bunx lerna exec -- $YARN_CMD
+bunx lerna exec -- $BUN_CMD

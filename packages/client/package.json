@@ -41,10 +41,10 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "workspace:^",
-    "@nadohq/indexer-client": "workspace:^",
-    "@nadohq/shared": "workspace:^",
-    "@nadohq/trigger-client": "workspace:^",
+    "@nadohq/engine-client": "workspace:*",
+    "@nadohq/indexer-client": "workspace:*",
+    "@nadohq/shared": "workspace:*",
+    "@nadohq/trigger-client": "workspace:*",
     "ts-mixer": "*"
   },
   "peerDependencies": {
