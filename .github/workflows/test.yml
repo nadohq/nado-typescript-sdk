@@ -24,7 +24,7 @@ jobs:
       - name: Check git workspace isn't dirty
         run: git diff --exit-code --quiet
 
-      - run: bun build
-      - run: bun typecheck
-      - run: bun test
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run test
       - run: bun --cwd apps/node-compat-test test
