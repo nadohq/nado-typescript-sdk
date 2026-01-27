@@ -6,5 +6,3 @@ export * from './encoding';
 export * from './execute';
 export * from './types';
 export * from './utils';
-
-console.log('Hello from @nadohq/shared');
