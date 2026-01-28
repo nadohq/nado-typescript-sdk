@@ -17,10 +17,12 @@ export type BigDecimalish = BigDecimal | BigDecimal.Value | bigint;
  * @param val
  */
 export function toBigDecimal(val: BigDecimalish): BigDecimal {
+  if (BigDecimal.isBigNumber(val)) {
+    return val;
+  }
+
   const bnConstructorVal = (() => {
-    if (val instanceof BigDecimal) {
-      return val;
-    } else if (typeof val === 'string' || typeof val === 'number') {
+    if (typeof val === 'string' || typeof val === 'number') {
       return val;
     } else if (typeof val === 'bigint') {
       return val.toString();
