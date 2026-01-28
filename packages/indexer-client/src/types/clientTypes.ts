@@ -711,6 +711,38 @@ export interface GetIndexerPrivateAlphaChoiceResponse {
 }
 
 /**
+ * Nado Points
+ */
+
+export interface GetIndexerPointsParams {
+  address: Address;
+}
+
+export interface IndexerPointsEpoch {
+  epoch: number;
+  description: string;
+  /** Unix timestamp in seconds */
+  startTime: BigDecimal;
+  /** Unix timestamp in seconds */
+  endTime: BigDecimal;
+  totalPoints: BigDecimal;
+  points: BigDecimal;
+  rank: number;
+  tier: number;
+}
+
+export interface IndexerAllTimePoints {
+  points: BigDecimal;
+  rank: number;
+  tier: number;
+}
+
+export interface GetIndexerPointsResponse {
+  pointsPerEpoch: IndexerPointsEpoch[];
+  allTimePoints: IndexerAllTimePoints;
+}
+
+/**
  * V2 Tickers
  */
 
