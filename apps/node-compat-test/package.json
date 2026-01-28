@@ -12,6 +12,6 @@
     "test": "node main.js && node main.cjs"
   },
   "dependencies": {
-    "@nadohq/client": "*"
+    "@nadohq/client": "workspace:*"
   }
 }
