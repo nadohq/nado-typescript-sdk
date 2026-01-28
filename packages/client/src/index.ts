@@ -12,3 +12,5 @@ export * from '@nadohq/engine-client';
 export * from '@nadohq/indexer-client';
 export * from '@nadohq/shared';
 export * from '@nadohq/trigger-client';
+
+console.log('Hello from @nadohq/client');
