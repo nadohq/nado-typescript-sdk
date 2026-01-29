@@ -13,7 +13,7 @@ for DIR in "${DIRECTORIES[@]}"; do
   # Change to the directory
   cd "$DIR"
   # Run yarn link/unlink
-  $YARN_CMD
+  $BUN_CMD
   # Go back to the original directory
   cd -
 done
