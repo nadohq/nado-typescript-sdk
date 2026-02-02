@@ -211,6 +211,10 @@ export interface IndexerServerPrivateAlphaChoiceParams {
   address: string;
 }
 
+export interface IndexerServerPointsParams {
+  address: string;
+}
+
 // Request
 export interface IndexerServerQueryRequestByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsParams;
@@ -243,6 +247,7 @@ export interface IndexerServerQueryRequestByType {
   quote_price: Record<string, never>;
   nlp_snapshots: IndexerServerNlpSnapshotsParams;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceParams;
+  nado_points: IndexerServerPointsParams;
 }
 
 export type IndexerServerQueryRequestType =
@@ -423,6 +428,28 @@ export interface IndexerServerPrivateAlphaChoiceResponse {
   nft_eligibility: boolean;
 }
 
+export interface IndexerServerPointsEpoch {
+  epoch: number;
+  description: string;
+  start_time: string;
+  end_time: string;
+  total_points: string;
+  points: string;
+  rank: number;
+  tier: number;
+}
+
+export interface IndexerServerAllTimePoints {
+  points: string;
+  rank: number;
+  tier: number;
+}
+
+export interface IndexerServerPointsResponse {
+  points_per_epoch: IndexerServerPointsEpoch[];
+  all_time_points: IndexerServerAllTimePoints;
+}
+
 // Response
 export interface IndexerServerQueryResponseByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsResponse;
@@ -455,6 +482,7 @@ export interface IndexerServerQueryResponseByType {
   quote_price: IndexerServerQuotePriceResponse;
   nlp_snapshots: IndexerServerNlpSnapshotsResponse;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceResponse;
+  nado_points: IndexerServerPointsResponse;
 }
 
 /**

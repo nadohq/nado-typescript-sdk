@@ -88,6 +88,8 @@ import {
   GetIndexerOrdersResponse,
   GetIndexerPerpPricesParams,
   GetIndexerPerpPricesResponse,
+  GetIndexerPointsParams,
+  GetIndexerPointsResponse,
   GetIndexerPrivateAlphaChoiceParams,
   GetIndexerPrivateAlphaChoiceResponse,
   GetIndexerProductSnapshotsParams,
@@ -850,6 +852,36 @@ export class IndexerBaseClient {
       points: toBigDecimal(baseResponse.points),
       feeRefund: toBigDecimal(baseResponse.fee_refund),
       nftEligibility: baseResponse.nft_eligibility,
+    };
+  }
+
+  /**
+   * Retrieves points information for a given address, including points per epoch and all-time points
+   * @param params
+   */
+  async getPoints(
+    params: GetIndexerPointsParams,
+  ): Promise<GetIndexerPointsResponse> {
+    const baseResponse = await this.query('nado_points', {
+      address: params.address,
+    });
+
+    return {
+      pointsPerEpoch: baseResponse.points_per_epoch.map((epoch) => ({
+        epoch: epoch.epoch,
+        description: epoch.description,
+        startTime: toBigDecimal(epoch.start_time),
+        endTime: toBigDecimal(epoch.end_time),
+        totalPoints: toBigDecimal(epoch.total_points),
+        points: toBigDecimal(epoch.points),
+        rank: epoch.rank,
+        tier: epoch.tier,
+      })),
+      allTimePoints: {
+        points: toBigDecimal(baseResponse.all_time_points.points),
+        rank: baseResponse.all_time_points.rank,
+        tier: baseResponse.all_time_points.tier,
+      },
     };
   }
 

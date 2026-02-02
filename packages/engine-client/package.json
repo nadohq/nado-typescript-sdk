@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/engine-client",
-  "version": "0.1.0-alpha.44",
+  "version": "0.1.0-alpha.45",
   "type": "module",
   "sideEffects": false,
   "description": "> TODO: description",

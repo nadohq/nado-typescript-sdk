@@ -186,6 +186,12 @@ async function subaccountQueriesTests(context: RunContext) {
   });
 
   debugPrint('Fast Withdrawal Signature', fastWithdrawalSignature);
+
+  const points = await client.getPoints({
+    address: walletClient.account.address,
+  });
+
+  debugPrint('Points', points);
 }
 
 void test('[indexer-client]: Running subaccount queries tests', () =>
