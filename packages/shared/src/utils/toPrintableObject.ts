@@ -4,8 +4,17 @@ import { BigDecimal } from './math/bigDecimal';
  * Util for converting any BigDecimal types into a string so that it can be logged nicely.
  * Handles cyclic references by returning '[Circular]' for already-visited objects.
  */
+export function toPrintableObject(
+  obj: null | undefined,
+  seen?: WeakSet<object>,
+): null;
+export function toPrintableObject(
+  obj: BigDecimal | bigint,
+  seen?: WeakSet<object>,
+): string;
+export function toPrintableObject(obj: unknown, seen?: WeakSet<object>): object;
 export function toPrintableObject(obj: unknown, seen = new WeakSet()): unknown {
-  if (obj == null) {
+  if (obj === null || obj === undefined) {
     return null;
   }
   if (obj instanceof BigDecimal || typeof obj === 'bigint') {
@@ -29,7 +38,7 @@ export function toPrintableObject(obj: unknown, seen = new WeakSet()): unknown {
         ]),
       );
     } catch {
-      return '[Unserializable Object]';
+      return { error: '[Unserializable Object]' };
     }
   }
   return obj;
