@@ -10,5 +10,8 @@
   "repository": "https://github.com/nadohq/nado-typescript-sdk",
   "scripts": {
     "test": "node main.js && node main.cjs"
+  },
+  "dependencies": {
+    "@nadohq/client": "workspace:*"
   }
 }

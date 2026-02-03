@@ -20,8 +20,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@nadohq/client": "workspace:*",
+    "@nadohq/engine-client": "workspace:*",
+    "@nadohq/indexer-client": "workspace:*",
+    "@nadohq/shared": "workspace:*",
+    "@nadohq/trigger-client": "workspace:*",
     "dotenv": "^17.0.1",
-    "viem": "*"
+    "viem": "workspace:*"
   },
   "gitHead": "6d0f498829ddaf01a11d2f46f960811428b370f5"
 }

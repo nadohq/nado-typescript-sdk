@@ -41,7 +41,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.1.0-alpha.45",
+    "@nadohq/shared": "workspace:*",
     "axios": "*",
     "ts-mixer": "*"
   },
@@ -49,7 +49,7 @@
     "viem": "*"
   },
   "devDependencies": {
-    "viem": "*"
+    "viem": "workspace:*"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }

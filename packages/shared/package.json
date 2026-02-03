@@ -44,10 +44,13 @@
     "bignumber.js": "^9.3.0",
     "viem": "*"
   },
+  "dependencies": {
+    "abitype": "^1.2.3"
+  },
   "devDependencies": {
     "@jest/globals": "*",
     "bignumber.js": "^9.3.0",
-    "viem": "*"
+    "viem": "workspace:*"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }

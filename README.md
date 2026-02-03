@@ -40,10 +40,10 @@ This is a Lerna monorepo. See `package.json` for common tasks, some of which are
 **gen-typedoc**: Generates documentation using [TypeDoc](https://typedoc.org/)
 
 **link/unlink-local**: Used for local package development.
-Uses `yarn link/unlink` ([docs](https://classic.yarnpkg.com/en/docs/cli/link))
+Uses `bun link/unlink` ([docs](https://bun.com/docs/pm/cli/link))
 to enable other local repos to consume Nado packages without having to publish a new version.
 
-> When making a change to the SDK, you will need to build the SDK, then run `yarn install --force` on the consuming
+> When making a change to the SDK, you will need to build the SDK, then run `bun install` on the consuming
 > repo for the changes to be picked up.
 
 **depcruise:all**: Run dependency-cruiser on all packages to check for dependency issues (incl. circular dependencies).
@@ -54,12 +54,14 @@ to enable other local repos to consume Nado packages without having to publish a
 
 This repository includes automated security checks to protect against supply chain attacks, particularly the risk of malicious packages being published to npm shortly after legitimate package releases (as detailed in the [SHA1HULUD attack](https://helixguard.ai/blog/malicious-sha1hulud-2025-11-24)).
 
+You can add exceptions to `./bunfig.toml`.
+
 #### How It Works
 
 The Package Age Guard workflow (`.github/workflows/package-age-check.yml`) runs on every pull request and:
 
 1. **Scans dependencies** - Checks all packages in `package.json` (both `dependencies` and `devDependencies`)
-2. **Resolves versions** - Uses `yarn.lock` to determine the exact version being installed
+2. **Resolves versions** - Uses `bun.lock` to determine the exact version being installed
 3. **Queries npm registry** - Fetches the publish date for each package version
 4. **Enforces age window** - Flags packages that are too recent (default: less than 14 days old)
 5. **Reports violations** - Adds a warning comment to the PR and applies a `package-age-warning` label
