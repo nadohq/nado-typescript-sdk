@@ -45,6 +45,15 @@ function mapBitValuesToAppendix(bits: PackedOrderAppendixBits): OrderAppendix {
       return unpackTwapOrderAppendixValue(bits.value);
     }
   })();
+  const builderFields = (() => {
+    if (bits.builderId || bits.builderFeeRate) {
+      return {
+        builderId: bits.builderId,
+        builderFeeRate: bits.builderFeeRate,
+      };
+    }
+    return undefined;
+  })();
 
   return {
     reduceOnly: !!bits.reduceOnly,
@@ -52,6 +61,7 @@ function mapBitValuesToAppendix(bits: PackedOrderAppendixBits): OrderAppendix {
     triggerType,
     isolated: isolatedFields,
     twap: twapFields,
+    builder: builderFields,
   };
 }
 
@@ -74,13 +84,19 @@ export function unpackOrderAppendix(packed: BigDecimalish): OrderAppendix {
   temp >>= 1n;
   const trigger = Number(bitMaskValue(temp, 2));
   temp >>= 2n;
-  const reserved = Number(bitMaskValue(temp, 50));
-  temp >>= 50n;
+  const reserved = Number(bitMaskValue(temp, 24));
+  temp >>= 24n;
+  const builderFeeRate = Number(bitMaskValue(temp, 10));
+  temp >>= 10n;
+  const builderId = Number(bitMaskValue(temp, 16));
+  temp >>= 16n;
   // The remaining bits are the value, which should be 64 bits
   const value = bitMaskValue(temp, 64);
 
   return mapBitValuesToAppendix({
     value,
+    builderId,
+    builderFeeRate,
     reserved,
     trigger,
     reduceOnly,

@@ -370,6 +370,7 @@ export interface IndexerOrder {
   quoteFilled: BigDecimal;
   // Includes sequencer fee
   totalFee: BigDecimal;
+  builderFee: BigDecimal;
   realizedPnl: BigDecimal;
   // Always positive
   closedSize: BigDecimal;
@@ -409,6 +410,7 @@ export interface IndexerMatchEvent extends Subaccount {
   // Includes sequencer fee
   totalFee: BigDecimal;
   sequencerFee: BigDecimal;
+  builderFee: BigDecimal;
   cumulativeBaseFilled: BigDecimal;
   cumulativeQuoteFilled: BigDecimal;
   cumulativeFee: BigDecimal;

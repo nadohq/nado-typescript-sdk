@@ -43,6 +43,8 @@ function mapOrderAppendixToBitValues(
 
   return {
     value,
+    builderId: appendix.builder?.builderId ?? 0,
+    builderFeeRate: appendix.builder?.builderFeeRate ?? 0,
     reserved: 0,
     trigger,
     reduceOnly: appendix.reduceOnly ? 1 : 0,
@@ -61,7 +63,9 @@ export function packOrderAppendix(appendix: OrderAppendix): bigint {
 
   // Ensure value is within 64 bits
   let packed = bitMaskValue(bits.value, 64);
-  packed = (packed << 50n) | bitMaskValue(bits.reserved, 50);
+  packed = (packed << 16n) | bitMaskValue(bits.builderId, 16);
+  packed = (packed << 10n) | bitMaskValue(bits.builderFeeRate, 10);
+  packed = (packed << 24n) | bitMaskValue(bits.reserved, 24);
   packed = (packed << 2n) | bitMaskValue(bits.trigger, 2);
   packed = (packed << 1n) | bitMaskValue(bits.reduceOnly, 1);
   packed = (packed << 2n) | bitMaskValue(bits.orderType, 2);

@@ -40,6 +40,21 @@ export interface OrderAppendixIsolatedFields {
 }
 
 /**
+ * Fields for specifying a builder (fee recipient) for the order
+ */
+export interface OrderAppendixBuilderFields {
+  /**
+   * The builder ID (registered builder identifier)
+   */
+  builderId: number;
+  /**
+   * The builder fee rate. This is a raw integer value (not X18).
+   * The actual fee calculation is: builder_fee = order_amount * builder_fee_rate / 1e18
+   */
+  builderFeeRate: number;
+}
+
+/**
  * All the fields encoded by the order appendix
  */
 export interface OrderAppendix {
@@ -59,4 +74,10 @@ export interface OrderAppendix {
    * An order CANNOT be both a TWAP order and an isolated order.
    */
   twap?: OrderAppendixTwapFields;
+  /**
+   * Specify the builder for fee sharing.
+   * Builder ID is encoded in bits 48-63 (16 bits).
+   * Builder fee rate is encoded in bits 38-47 (10 bits).
+   */
+  builder?: OrderAppendixBuilderFields;
 }

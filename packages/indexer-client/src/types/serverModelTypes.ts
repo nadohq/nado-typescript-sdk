@@ -109,6 +109,7 @@ export interface IndexerServerOrder {
   quote_filled: string;
   // Includes sequencer fee
   fee: string;
+  builder_fee: string;
   realized_pnl: string;
   closed_amount: string;
 }
@@ -127,6 +128,7 @@ export interface IndexerServerMatchEvent {
   // Includes sequencer fee
   fee: string;
   sequencer_fee: string;
+  builder_fee: string;
   cumulative_fee: string;
   cumulative_base_filled: string;
   cumulative_quote_filled: string;

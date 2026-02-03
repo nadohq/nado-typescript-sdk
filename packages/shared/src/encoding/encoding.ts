@@ -1,4 +1,9 @@
-import { encodeAbiParameters, parseAbiParameters } from 'viem';
+import {
+  encodeAbiParameters,
+  encodePacked,
+  parseAbiParameters,
+  type Hex,
+} from 'viem';
 import {
   EIP712WithdrawCollateralParams,
   SignedEIP712OrderParams,
@@ -47,4 +52,33 @@ export function encodeSignedOrder(signed: SignedEIP712OrderParams) {
       ],
     ],
   );
+}
+
+/**
+ * Tx type for ClaimBuilderFee slow mode transaction.
+ */
+const CLAIM_BUILDER_FEE_TX_TYPE = 31;
+
+export interface ClaimBuilderFeeParams {
+  /** The sender subaccount as bytes32 */
+  sender: Hex;
+  /** The builder ID to claim fees for */
+  builderId: number;
+}
+
+/**
+ * Encodes a ClaimBuilderFee slow mode transaction.
+ *
+ * Format: [tx_type_byte] + [abi_encoded_params]
+ *
+ * @param params - The claim builder fee parameters
+ * @returns The encoded transaction bytes ready to submit via endpoint.submitSlowModeTransaction
+ */
+export function encodeClaimBuilderFeeTx(params: ClaimBuilderFeeParams): Hex {
+  const txBytes = encodeAbiParameters(
+    parseAbiParameters('bytes32 sender, uint32 builderId'),
+    [params.sender, params.builderId],
+  );
+
+  return encodePacked(['uint8', 'bytes'], [CLAIM_BUILDER_FEE_TX_TYPE, txBytes]);
 }
