@@ -48,8 +48,8 @@ export interface OrderAppendixBuilderFields {
    */
   builderId: number;
   /**
-   * The builder fee rate. This is a raw integer value (not X18).
-   * The actual fee calculation is: builder_fee = order_amount * builder_fee_rate / 1e18
+   * The builder fee rate. This is a raw 10-bit integer (0-1023) where each unit = 0.1 bps.
+   * The actual fee is calculated on notional value: builder_fee = price * amount * rate
    */
   builderFeeRate: number;
 }

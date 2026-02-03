@@ -46,7 +46,7 @@ function mapBitValuesToAppendix(bits: PackedOrderAppendixBits): OrderAppendix {
     }
   })();
   const builderFields = (() => {
-    if (bits.builderId || bits.builderFeeRate) {
+    if (bits.builderId) {
       return {
         builderId: bits.builderId,
         builderFeeRate: bits.builderFeeRate,

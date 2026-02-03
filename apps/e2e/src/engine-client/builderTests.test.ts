@@ -13,13 +13,10 @@ import {
 import test from 'node:test';
 import { getContract } from 'viem';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
-
-async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function builderTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -151,7 +148,7 @@ async function builderTests(context: RunContext) {
 
   // Wait for order to process
   console.log('Waiting for order to process...');
-  await sleep(2000);
+  await delay(2000);
 
   // Test 4: Query historical order and check for builder fee
   console.log('Test 4: Querying historical order for builder fee');
@@ -247,7 +244,7 @@ async function builderTests(context: RunContext) {
     let found = false;
 
     for (let attempt = 1; attempt <= maxAttempts && !found; attempt++) {
-      await sleep(pollInterval);
+      await delay(pollInterval);
       const events = await indexerClient.getEvents({
         subaccounts: [
           {

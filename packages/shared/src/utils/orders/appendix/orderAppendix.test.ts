@@ -117,4 +117,62 @@ describe('OrderAppendix packing/unpacking', () => {
     expect(unpacked.twap?.numOrders).toBe(4294967295);
     expect(packed).toBe(340282366841710300967557013911933828609n);
   });
+
+  it('should handle builder fields', () => {
+    const appendix: OrderAppendix = {
+      orderExecutionType: 'default',
+      builder: { builderId: 123, builderFeeRate: 500 },
+    };
+    const packed = packOrderAppendix(appendix);
+    const unpacked = unpackOrderAppendix(packed);
+    expect(unpacked.builder?.builderId).toBe(123);
+    expect(unpacked.builder?.builderFeeRate).toBe(500);
+  });
+
+  it('should handle builder with zero fee rate', () => {
+    const appendix: OrderAppendix = {
+      orderExecutionType: 'default',
+      builder: { builderId: 42, builderFeeRate: 0 },
+    };
+    const packed = packOrderAppendix(appendix);
+    const unpacked = unpackOrderAppendix(packed);
+    expect(unpacked.builder?.builderId).toBe(42);
+    expect(unpacked.builder?.builderFeeRate).toBe(0);
+  });
+
+  it('should handle builder with max values', () => {
+    const appendix: OrderAppendix = {
+      orderExecutionType: 'default',
+      builder: { builderId: 65535, builderFeeRate: 1023 }, // 16 bits, 10 bits max
+    };
+    const packed = packOrderAppendix(appendix);
+    const unpacked = unpackOrderAppendix(packed);
+    expect(unpacked.builder?.builderId).toBe(65535);
+    expect(unpacked.builder?.builderFeeRate).toBe(1023);
+  });
+
+  it('should handle builder combined with other flags', () => {
+    const appendix: OrderAppendix = {
+      orderExecutionType: 'ioc',
+      reduceOnly: true,
+      triggerType: 'price',
+      builder: { builderId: 5, builderFeeRate: 100 },
+    };
+    const packed = packOrderAppendix(appendix);
+    const unpacked = unpackOrderAppendix(packed);
+    expect(unpacked.orderExecutionType).toBe('ioc');
+    expect(unpacked.reduceOnly).toBe(true);
+    expect(unpacked.triggerType).toBe('price');
+    expect(unpacked.builder?.builderId).toBe(5);
+    expect(unpacked.builder?.builderFeeRate).toBe(100);
+  });
+
+  it('should not return builder fields when builderId is 0', () => {
+    const appendix: OrderAppendix = {
+      orderExecutionType: 'default',
+    };
+    const packed = packOrderAppendix(appendix);
+    const unpacked = unpackOrderAppendix(packed);
+    expect(unpacked.builder).toBeUndefined();
+  });
 });
