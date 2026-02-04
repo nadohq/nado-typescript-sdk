@@ -1,3 +1,4 @@
+import { createNadoClient, NadoClient } from '@nadohq/client';
 import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
 import { IndexerClient } from '@nadohq/indexer-client';
 import {
@@ -7,6 +8,7 @@ import {
   getOrderVerifyingAddress,
   NADO_ABIS,
   packOrderAppendix,
+  QUOTE_PRODUCT_ID,
   subaccountToHex,
   unpackOrderAppendix,
 } from '@nadohq/shared';
@@ -17,6 +19,7 @@ import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { runWithContext } from '../utils/runWithContext';
 import { RunContext } from '../utils/types';
+import { waitForTransaction } from '../utils/waitForTransaction';
 
 async function builderTests(context: RunContext) {
   const walletClient = context.getWalletClient();
@@ -40,7 +43,7 @@ async function builderTests(context: RunContext) {
   });
 
   const testBuilderId = 2;
-  const testBuilderFeeRate = 500; // 50 bps
+  const testBuilderFeeRate = 50; // 5 bps
 
   // Test 1: Appendix encoding with builder fields
   console.log('Test 1: Testing appendix encoding with builder fields');
@@ -152,14 +155,9 @@ async function builderTests(context: RunContext) {
 
   // Test 4: Query historical order and check for builder fee
   console.log('Test 4: Querying historical order for builder fee');
+
+  // Query by digest only (can't combine with subaccounts/product_ids)
   const orders = await indexerClient.getOrders({
-    subaccounts: [
-      {
-        subaccountOwner: walletClientAddress,
-        subaccountName: 'default',
-      },
-    ],
-    productIds: [perpProductId],
     digests: [orderDigest],
     limit: 1,
   });
@@ -224,6 +222,25 @@ async function builderTests(context: RunContext) {
 
   // Test 6: Submit ClaimBuilderFee slow mode transaction
   console.log('Test 6: Submitting ClaimBuilderFee slow mode transaction');
+
+  // Create NadoClient for approval
+  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
+    walletClient,
+    publicClient,
+  });
+
+  // Approve 1 USDT for slow mode fee
+  const slowModeFeeAmount = addDecimals(1, 6);
+  console.log('Approving slow mode fee (1 USDT)...');
+  await waitForTransaction(
+    nadoClient.spot.approveAllowance({
+      amount: slowModeFeeAmount,
+      productId: QUOTE_PRODUCT_ID,
+    }),
+    publicClient,
+  );
+  console.log('✓ Slow mode fee approved');
+
   const claimBuilderFeeTx = encodeClaimBuilderFeeTx({
     sender: senderSubaccount,
     builderId: testBuilderId,
@@ -277,8 +294,14 @@ async function builderTests(context: RunContext) {
     }
   } catch (e: unknown) {
     const errorMessage = e instanceof Error ? e.message : String(e);
-    console.log(`ClaimBuilderFee note: ${errorMessage}`);
-    // Not fatal - might not be builder owner or no fees accumulated
+    if (errorMessage.includes('TF')) {
+      console.log(
+        '⚠ ClaimBuilderFee skipped: Slow mode requires 1 USDT0 fee (account may not have approved/funded)',
+      );
+    } else {
+      console.log(`⚠ ClaimBuilderFee skipped: ${errorMessage}`);
+    }
+    // Not fatal - might not be builder owner, no fees, or insufficient USDT0
   }
 
   // Cleanup: Cancel the order if it wasn't filled
@@ -300,5 +323,6 @@ async function builderTests(context: RunContext) {
   console.log('\n=== Builder E2E Tests Complete ===');
 }
 
-void test('[engine-client]: Running builder tests', () =>
-  runWithContext(builderTests));
+void test('[engine-client]: Running builder tests', { timeout: 60000 }, () =>
+  runWithContext(builderTests),
+);
