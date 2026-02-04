@@ -44,8 +44,7 @@ export type TriggerServerStatusTypeFilter =
   | 'twap_executing'
   | 'twap_completed';
 
-export interface TriggerServerListTriggerOrdersParams
-  extends SignedTx<EIP712ListTriggerOrdersValues> {
+export interface TriggerServerListTriggerOrdersParams extends SignedTx<EIP712ListTriggerOrdersValues> {
   // If not given, defaults to all products
   product_ids?: number[];
   max_update_time?: number;
@@ -128,8 +127,8 @@ export interface TriggerServerQueryResponseByType {
 }
 
 export interface TriggerServerQuerySuccessResponse<
-  TQueryType extends
-    keyof TriggerServerQueryResponseByType = TriggerServerQueryRequestType,
+  TQueryType extends keyof TriggerServerQueryResponseByType =
+    TriggerServerQueryRequestType,
 > {
   status: 'success';
   data: TriggerServerQueryResponseByType[TQueryType];
@@ -142,8 +141,8 @@ export interface TriggerServerQueryFailureResponse {
 }
 
 export type TriggerServerQueryResponse<
-  TQueryType extends
-    keyof TriggerServerQueryResponseByType = TriggerServerQueryRequestType,
+  TQueryType extends keyof TriggerServerQueryResponseByType =
+    TriggerServerQueryRequestType,
 > =
   | TriggerServerQuerySuccessResponse<TQueryType>
   | TriggerServerQueryFailureResponse;

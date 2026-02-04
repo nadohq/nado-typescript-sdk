@@ -6,4 +6,5 @@ export type IndexerEventType =
   | 'match_orders'
   | 'transfer_quote'
   | 'mint_nlp'
-  | 'burn_nlp';
+  | 'burn_nlp'
+  | 'claim_builder_fee';

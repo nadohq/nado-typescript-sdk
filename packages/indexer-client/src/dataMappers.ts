@@ -107,6 +107,7 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     baseFilled: toBigDecimal(order.base_filled),
     quoteFilled: toBigDecimal(order.quote_filled),
     totalFee: toBigDecimal(order.fee),
+    builderFee: toBigDecimal(order.builder_fee),
     realizedPnl: toBigDecimal(order.realized_pnl),
     closedSize: toBigDecimal(order.closed_amount),
   };

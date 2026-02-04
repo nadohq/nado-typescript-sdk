@@ -19,8 +19,7 @@ import {
   EngineServerTimeResponse,
 } from './serverQueryTypes';
 
-export interface GetEngineSubaccountSummaryResponse
-  extends SubaccountSummaryState {
+export interface GetEngineSubaccountSummaryResponse extends SubaccountSummaryState {
   exists: boolean;
   preState?: SubaccountSummaryState;
 }

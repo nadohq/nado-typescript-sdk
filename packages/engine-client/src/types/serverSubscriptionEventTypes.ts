@@ -30,8 +30,8 @@ export type EngineServerSubscriptionEventType =
   | 'funding_payment';
 
 export interface EngineServerSubscriptionBaseEvent<
-  T extends
-    EngineServerSubscriptionEventType = EngineServerSubscriptionEventType,
+  T extends EngineServerSubscriptionEventType =
+    EngineServerSubscriptionEventType,
 > {
   type: T;
   product_id: number;
@@ -40,8 +40,7 @@ export interface EngineServerSubscriptionBaseEvent<
 /**
  * Event from subscribing to a `trade` stream.
  */
-export interface EngineServerSubscriptionTradeEvent
-  extends EngineServerSubscriptionBaseEvent<'trade'> {
+export interface EngineServerSubscriptionTradeEvent extends EngineServerSubscriptionBaseEvent<'trade'> {
   timestamp: string;
   price: string;
   taker_qty: string;
@@ -52,8 +51,7 @@ export interface EngineServerSubscriptionTradeEvent
 /**
  * Event from subscribing to a `best_bid_offer` stream.
  */
-export interface EngineServerSubscriptionBestBidOfferEvent
-  extends EngineServerSubscriptionBaseEvent<'best_bid_offer'> {
+export interface EngineServerSubscriptionBestBidOfferEvent extends EngineServerSubscriptionBaseEvent<'best_bid_offer'> {
   timestamp: string;
   bid_price: string;
   bid_qty: string;
@@ -64,8 +62,7 @@ export interface EngineServerSubscriptionBestBidOfferEvent
 /**
  * Event from subscribing to a `book_depth` stream.
  */
-export interface EngineServerSubscriptionBookDepthEvent
-  extends EngineServerSubscriptionBaseEvent<'book_depth'> {
+export interface EngineServerSubscriptionBookDepthEvent extends EngineServerSubscriptionBaseEvent<'book_depth'> {
   last_max_timestamp: string;
   min_timestamp: string;
   max_timestamp: string;
@@ -76,8 +73,7 @@ export interface EngineServerSubscriptionBookDepthEvent
 /**
  * Event from subscribing to a `fill` stream.
  */
-export interface EngineServerSubscriptionFillEvent
-  extends EngineServerSubscriptionBaseEvent<'fill'> {
+export interface EngineServerSubscriptionFillEvent extends EngineServerSubscriptionBaseEvent<'fill'> {
   // NOTE: `id` is excluded from the response to avoid parsing issues.
   // type of `id` on the backend is `u64` which can overflow until we introduce proper parsing on the SDK.
   timestamp: string;
@@ -97,8 +93,7 @@ export interface EngineServerSubscriptionFillEvent
 /**
  * Event from subscribing to a `position_change` stream.
  */
-export interface EngineServerSubscriptionPositionChangeEvent
-  extends EngineServerSubscriptionBaseEvent<'position_change'> {
+export interface EngineServerSubscriptionPositionChangeEvent extends EngineServerSubscriptionBaseEvent<'position_change'> {
   timestamp: string;
   subaccount: string;
   amount: string;
@@ -114,8 +109,7 @@ export interface EngineServerSubscriptionPositionChangeEvent
 /**
  * Event from subscribing to an `order_update` stream.
  */
-export interface EngineServerSubscriptionOrderUpdateEvent
-  extends EngineServerSubscriptionBaseEvent<'order_update'> {
+export interface EngineServerSubscriptionOrderUpdateEvent extends EngineServerSubscriptionBaseEvent<'order_update'> {
   timestamp: string;
   digest: string;
   amount: string;
@@ -125,8 +119,7 @@ export interface EngineServerSubscriptionOrderUpdateEvent
 /**
  * Event from subscribing to a `liquidation` stream.
  */
-export interface EngineServerSubscriptionLiquidationEvent
-  extends EngineServerSubscriptionBaseEvent<'liquidation'> {
+export interface EngineServerSubscriptionLiquidationEvent extends EngineServerSubscriptionBaseEvent<'liquidation'> {
   timestamp: string;
   /** Single element for regular liquidations, two elements for spread liquidations [spotId, perpId] */
   product_ids: number[];
@@ -141,8 +134,7 @@ export interface EngineServerSubscriptionLiquidationEvent
 /**
  * Event from subscribing to a `latest_candlestick` stream.
  */
-export interface EngineServerSubscriptionLatestCandlestickEvent
-  extends EngineServerSubscriptionBaseEvent<'latest_candlestick'> {
+export interface EngineServerSubscriptionLatestCandlestickEvent extends EngineServerSubscriptionBaseEvent<'latest_candlestick'> {
   timestamp: string;
   granularity: number;
   open_x18: string;
@@ -155,8 +147,7 @@ export interface EngineServerSubscriptionLatestCandlestickEvent
 /**
  * Event from subscribing to a `funding_payment` stream.
  */
-export interface EngineServerSubscriptionFundingPaymentEvent
-  extends EngineServerSubscriptionBaseEvent<'funding_payment'> {
+export interface EngineServerSubscriptionFundingPaymentEvent extends EngineServerSubscriptionBaseEvent<'funding_payment'> {
   timestamp: string;
   /** Funding payment amount (positive = receive, negative = pay) */
   payment_amount: string;

@@ -176,8 +176,7 @@ export interface EngineServerNoncesResponse {
   tx_nonce: string;
 }
 
-export interface EngineServerSubaccountInfoResponse
-  extends EngineServerSubaccountInfoState {
+export interface EngineServerSubaccountInfoResponse extends EngineServerSubaccountInfoState {
   exists: boolean;
   subaccount: string;
   spot_count: number;
@@ -387,8 +386,8 @@ export interface EngineServerQueryResponseByType {
 }
 
 export interface EngineServerQuerySuccessResponse<
-  TQueryType extends
-    keyof EngineServerQueryResponseByType = EngineServerQueryRequestType,
+  TQueryType extends keyof EngineServerQueryResponseByType =
+    EngineServerQueryRequestType,
 > {
   status: 'success';
   data: EngineServerQueryResponseByType[TQueryType];
@@ -401,8 +400,8 @@ export interface EngineServerQueryFailureResponse {
 }
 
 export type EngineServerQueryResponse<
-  TQueryType extends
-    keyof EngineServerQueryResponseByType = EngineServerQueryRequestType,
+  TQueryType extends keyof EngineServerQueryResponseByType =
+    EngineServerQueryRequestType,
 > =
   | EngineServerQuerySuccessResponse<TQueryType>
   | EngineServerQueryFailureResponse;

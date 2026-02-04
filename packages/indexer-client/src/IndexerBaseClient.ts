@@ -509,6 +509,7 @@ export class IndexerBaseClient {
         isolated: matchEvent.isolated,
         totalFee: toBigDecimal(matchEvent.fee),
         sequencerFee: toBigDecimal(matchEvent.sequencer_fee),
+        builderFee: toBigDecimal(matchEvent.builder_fee),
         baseFilled: toBigDecimal(matchEvent.base_filled),
         quoteFilled: toBigDecimal(matchEvent.quote_filled),
         cumulativeFee: toBigDecimal(matchEvent.cumulative_fee),
