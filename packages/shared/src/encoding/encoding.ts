@@ -11,6 +11,16 @@ import {
 } from '../eip712';
 import { addDecimals, toBigInt } from '../utils';
 
+/**
+ * Transaction type identifiers for slow mode transactions.
+ */
+export enum SlowModeTxType {
+  DepositCollateral = 1,
+  WithdrawCollateral = 2,
+  LinkSigner = 13,
+  ClaimBuilderFee = 31,
+}
+
 export function encodeSignedWithdrawCollateralTx(
   signed: SignedTx<EIP712WithdrawCollateralParams>,
 ) {
@@ -54,11 +64,6 @@ export function encodeSignedOrder(signed: SignedEIP712OrderParams) {
   );
 }
 
-/**
- * Tx type for ClaimBuilderFee slow mode transaction.
- */
-const CLAIM_BUILDER_FEE_TX_TYPE = 31;
-
 export interface ClaimBuilderFeeParams {
   /** The sender subaccount as bytes32 */
   sender: Hex;
@@ -80,5 +85,8 @@ export function encodeClaimBuilderFeeTx(params: ClaimBuilderFeeParams): Hex {
     [params.sender, params.builderId],
   );
 
-  return encodePacked(['uint8', 'bytes'], [CLAIM_BUILDER_FEE_TX_TYPE, txBytes]);
+  return encodePacked(
+    ['uint8', 'bytes'],
+    [SlowModeTxType.ClaimBuilderFee, txBytes],
+  );
 }
