@@ -283,6 +283,7 @@ export class IndexerClient extends IndexerBaseClient {
       limit: requestedLimit,
       subaccountName,
       subaccountOwner,
+      productIds,
     } = params;
 
     // There is 1 event emitted per product, including quote
@@ -299,6 +300,7 @@ export class IndexerClient extends IndexerBaseClient {
         value: limit,
       },
       subaccounts: [{ subaccountName, subaccountOwner }],
+      productIds,
     });
 
     // Now aggregate results by the submission index, use map to maintain insertion order
