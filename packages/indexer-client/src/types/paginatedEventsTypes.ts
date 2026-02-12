@@ -54,7 +54,8 @@ export interface PaginatedIndexerEventsResponse<
  * Collateral
  */
 
-export interface GetIndexerSubaccountCollateralEventsParams extends BaseSubaccountPaginationParams {
+export interface GetIndexerSubaccountCollateralEventsParams
+  extends BaseSubaccountPaginationParams {
   eventTypes?: CollateralEventType[];
   // If not given, will return both isolated & non-iso events
   isolated?: boolean;
@@ -114,7 +115,7 @@ export interface GetIndexerPaginatedOrdersResponse {
  */
 
 export type GetIndexerSubaccountLiquidationEventsParams =
-  BaseSubaccountPaginationParams;
+  BaseSubaccountPaginationParams & Pick<GetIndexerOrdersParams, 'productIds'>;
 
 type WithIndexerEvent<
   TData,
@@ -180,7 +181,8 @@ export type GetIndexerSubaccountInterestFundingPaymentsParams =
   BaseSubaccountPaginationParams &
     Pick<GetIndexerInterestFundingPaymentsParams, 'productIds' | 'startCursor'>;
 
-export interface GetIndexerPaginatedInterestFundingPaymentsResponse extends GetIndexerInterestFundingPaymentsResponse {
+export interface GetIndexerPaginatedInterestFundingPaymentsResponse
+  extends GetIndexerInterestFundingPaymentsResponse {
   meta: IndexerPaginationMeta;
 }
 

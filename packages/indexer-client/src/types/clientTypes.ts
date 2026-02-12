@@ -58,8 +58,8 @@ export interface IndexerBalanceTrackedVars {
 }
 
 export interface IndexerEvent<
-  TStateType extends IndexerEventBalanceStateSnapshot =
-    IndexerEventBalanceStateSnapshot,
+  TStateType extends
+    IndexerEventBalanceStateSnapshot = IndexerEventBalanceStateSnapshot,
 > {
   subaccount: string;
   isolated: boolean;
@@ -73,8 +73,8 @@ export interface IndexerEvent<
 }
 
 export interface IndexerEventWithTx<
-  TStateType extends IndexerEventBalanceStateSnapshot =
-    IndexerEventBalanceStateSnapshot,
+  TStateType extends
+    IndexerEventBalanceStateSnapshot = IndexerEventBalanceStateSnapshot,
 > extends IndexerEvent<TStateType> {
   timestamp: BigDecimal;
   tx: NadoTx;
@@ -106,8 +106,8 @@ export interface GetIndexerMultiSubaccountSnapshotsParams {
 }
 
 export type IndexerSnapshotBalance<
-  TStateType extends IndexerEventBalanceStateSnapshot =
-    IndexerEventBalanceStateSnapshot,
+  TStateType extends
+    IndexerEventBalanceStateSnapshot = IndexerEventBalanceStateSnapshot,
 > = IndexerEvent<TStateType>;
 
 export interface IndexerSubaccountSnapshot {
@@ -268,7 +268,8 @@ export interface IndexerSnapshotsIntervalParams {
  * Market snapshots
  */
 
-export interface GetIndexerMarketSnapshotsParams extends IndexerSnapshotsIntervalParams {
+export interface GetIndexerMarketSnapshotsParams
+  extends IndexerSnapshotsIntervalParams {
   // Defaults to all
   productIds?: number[];
 }
@@ -587,7 +588,8 @@ export interface GetIndexerLeaderboardRegistrationParams extends Subaccount {
   contestId: number;
 }
 
-export interface UpdateIndexerLeaderboardRegistrationParams extends GetIndexerLeaderboardRegistrationParams {
+export interface UpdateIndexerLeaderboardRegistrationParams
+  extends GetIndexerLeaderboardRegistrationParams {
   updateRegistration: LeaderboardSignatureParams;
   // In millis, defaults to 90s in the future
   recvTime?: BigDecimal;
