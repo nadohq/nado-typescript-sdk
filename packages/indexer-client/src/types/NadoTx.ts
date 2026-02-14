@@ -15,10 +15,8 @@ export interface NadoLiquidateSubaccountTx {
     sender: string;
     liquidatee: string;
     mode: number;
-    // On V2 - should encode health group
-    product_id: number | undefined;
-    // On V1
-    health_group: number | undefined;
+    // Also encodes health group for spread liquidation: (perp_id << 16) | spot_id
+    product_id: number;
     amount: string;
     nonce: number;
   };

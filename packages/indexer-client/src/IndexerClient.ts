@@ -34,6 +34,7 @@ import {
   IndexerLiquidationEvent,
   IndexerNlpEvent,
   IndexerSettlementEvent,
+  NadoLiquidateSubaccountTx,
   PaginatedIndexerEventsResponse,
 } from './types';
 
@@ -309,7 +310,24 @@ export class IndexerClient extends IndexerBaseClient {
       Partial<IndexerLiquidationEvent>
     >();
 
+    const productIdsSet = productIds ? new Set(productIds) : undefined;
     baseResponse.forEach((event) => {
+      // even though we're querying for a specific set of product IDs
+      // backend will have events that are associated with every product
+      // because they generate a single event per product for each liquidation
+      // as a result, we need to filter out events that are not relevant to the requested product IDs
+      if (
+        productIdsSet &&
+        !productIdsSet.has(
+          // product_id can also encode a health group for spread liquidation, but we ignore
+          // this case for now
+          (event.tx as NadoLiquidateSubaccountTx).liquidate_subaccount
+            .product_id,
+        )
+      ) {
+        return;
+      }
+
       const mappedEvent = (() => {
         const existingEvent = eventsBySubmissionIdx.get(event.submissionIndex);
         if (existingEvent) {
