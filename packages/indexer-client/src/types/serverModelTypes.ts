@@ -112,6 +112,14 @@ export interface IndexerServerOrder {
   builder_fee: string;
   realized_pnl: string;
   closed_amount: string;
+  // Cumulative realized entry price for the closed amount (x18)
+  closed_net_entry: string;
+  // Weighted average margin for the closed amount (x18). Only present for isolated margin orders; null for cross-margin orders
+  closed_margin: string | null;
+  // Unix timestamp (seconds) of the first fill on the order
+  first_fill_timestamp: string;
+  // Unix timestamp (seconds) of the last fill on the order
+  last_fill_timestamp: string;
 }
 
 /**
