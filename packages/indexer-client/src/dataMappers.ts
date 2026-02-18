@@ -110,6 +110,12 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     builderFee: toBigDecimal(order.builder_fee),
     realizedPnl: toBigDecimal(order.realized_pnl),
     closedSize: toBigDecimal(order.closed_amount),
+    closedNetEntry: toBigDecimal(order.closed_net_entry),
+    closedMargin: order.closed_margin
+      ? toBigDecimal(order.closed_margin)
+      : null,
+    firstFillTimestamp: toBigDecimal(order.first_fill_timestamp),
+    lastFillTimestamp: toBigDecimal(order.last_fill_timestamp),
   };
 }
 
