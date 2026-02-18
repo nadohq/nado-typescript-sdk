@@ -1,4 +1,6 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
+import { CandlestickPeriod } from '@nadohq/indexer-client';
+import { nowInSeconds, QUOTE_PRODUCT_ID, TimeInSeconds } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
@@ -65,6 +67,35 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
       Object.keys(edgeMarkets).length > 0,
       'edgeMarkets should have at least one edge entry',
     );
+  });
+
+  void test('getEdgeCandlesticks returns edge candlestick data', async () => {
+    const candlesticks = await nadoClient.market.getEdgeCandlesticks({
+      productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      maxTimeInclusive: nowInSeconds(),
+      limit: 2,
+      period: CandlestickPeriod.DAY,
+    });
+
+    debugPrint('Edge candlesticks', candlesticks);
+    assertArray(candlesticks, 'candlesticks');
+  });
+
+  void test('getEdgeMarketSnapshots returns edge market snapshots', async () => {
+    const snapshots = await nadoClient.market.getEdgeMarketSnapshots({
+      granularity: TimeInSeconds.HOUR,
+      limit: 2,
+      maxTimeInclusive: nowInSeconds(),
+    });
+
+    debugPrint('Edge market snapshots', snapshots);
+    assertDefined(snapshots, 'edgeMarketSnapshots');
+    assert.ok(
+      typeof snapshots === 'object' && !Array.isArray(snapshots),
+      'edgeMarketSnapshots should be record of chain id to snapshots',
+    );
+    const firstChainSnapshots = Object.values(snapshots)[0];
+    assertArray(firstChainSnapshots ?? [], 'first chain snapshots');
   });
 
   void test('getLatestMarketPrices returns prices for requested products', async () => {
@@ -183,5 +214,33 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     debugPrint('Open subaccount multi-product orders', orders);
     assertDefined(orders, 'multiProductOrders');
     assertArray(orders.productOrders, 'multiProductOrders.productOrders');
+  });
+
+  void describe('spot token queries', () => {
+    void test('getTokenWalletBalance returns wallet token balance', async () => {
+      const balance = await nadoClient.spot.getTokenWalletBalance({
+        address: walletClientAddress,
+        productId: QUOTE_PRODUCT_ID,
+      });
+
+      debugPrint('Token wallet balance', balance);
+      assertDefined(balance, 'tokenWalletBalance');
+      assert.equal(typeof balance, 'bigint', 'balance should be bigint');
+      assert.ok(balance >= 0n, 'balance should be non-negative');
+    });
+
+    void test('getTokenAllowance returns allowance for endpoint', async () => {
+      const allowance = await nadoClient.spot.getTokenAllowance({
+        address: walletClientAddress,
+        productId: QUOTE_PRODUCT_ID,
+      });
+
+      debugPrint('Token allowance', allowance);
+      assertDefined(allowance, 'tokenAllowance');
+      assert.ok(
+        allowance.isFinite() && allowance.gte(0),
+        'allowance should be finite and non-negative',
+      );
+    });
   });
 });
