@@ -1,6 +1,14 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
 import { CandlestickPeriod } from '@nadohq/indexer-client';
-import { nowInSeconds, QUOTE_PRODUCT_ID, TimeInSeconds } from '@nadohq/shared';
+import {
+  addDecimals,
+  BigDecimal,
+  getOrderNonce,
+  nowInSeconds,
+  packOrderAppendix,
+  QUOTE_PRODUCT_ID,
+  TimeInSeconds,
+} from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
@@ -9,6 +17,7 @@ import {
   assertNonEmptyArray,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_PRODUCT_IDS,
@@ -19,12 +28,14 @@ import {
 void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   let nadoClient: NadoClient;
   let walletClientAddress: string;
+  let chainId: number;
 
   before(() => {
     const context = createTestContext();
     const walletClient = context.getWalletClient();
     const publicClient = context.publicClient;
     walletClientAddress = walletClient.account.address;
+    chainId = walletClient.chain.id;
 
     nadoClient = createNadoClient(context.env.chainEnv, {
       walletClient,
@@ -242,5 +253,249 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
         'allowance should be finite and non-negative',
       );
     });
+  });
+
+  // ---------------------------------------------------------------
+  // MarketAPI queries
+  // ---------------------------------------------------------------
+
+  void test('getHealthGroups returns health group definitions', async () => {
+    const result = await nadoClient.market.getHealthGroups();
+
+    debugPrint('Health groups', result);
+    assertDefined(result, 'healthGroupsResult');
+    assertArray(result.healthGroups, 'healthGroupsResult.healthGroups');
+  });
+
+  void test('validateOrderParams validates a buy order', async () => {
+    const allMarkets = await nadoClient.market.getAllMarkets();
+    const spotBtc = allMarkets.find(
+      (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
+    );
+    assert.ok(spotBtc, 'SPOT_BTC market should exist');
+
+    const price = spotBtc.product.oraclePrice
+      .multipliedBy(0.95)
+      .decimalPlaces(0);
+
+    const result = await nadoClient.market.validateOrderParams({
+      productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      chainId,
+      order: {
+        subaccountOwner: walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        price,
+        amount: addDecimals(0.001),
+        expiration: getExpiration(),
+        nonce: getOrderNonce(),
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      },
+    });
+
+    debugPrint('Validate order params result', result);
+    assertDefined(result, 'validateResult');
+    assert.equal(
+      result.productId,
+      TEST_PRODUCT_IDS.SPOT_BTC,
+      'productId should match',
+    );
+    assert.equal(typeof result.valid, 'boolean', 'valid should be boolean');
+  });
+
+  void test('getLatestMarketPrice returns bid and ask', async () => {
+    const result = await nadoClient.market.getLatestMarketPrice({
+      productId: TEST_PRODUCT_IDS.SPOT_BTC,
+    });
+
+    debugPrint('Latest market price', result);
+    assertDefined(result, 'latestMarketPrice');
+    assert.ok(result.bid.isFinite(), 'bid should be finite');
+    assert.ok(result.ask.isFinite(), 'ask should be finite');
+  });
+
+  void test('getCandlesticks returns candlestick data', async () => {
+    const candlesticks = await nadoClient.market.getCandlesticks({
+      productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      period: CandlestickPeriod.DAY,
+      maxTimeInclusive: nowInSeconds(),
+      limit: 2,
+    });
+
+    debugPrint('Candlesticks', candlesticks);
+    assertArray(candlesticks, 'candlesticks');
+  });
+
+  void test('getMaxOrderSize returns a finite max order size', async () => {
+    const marketPrice = await nadoClient.market.getLatestMarketPrice({
+      productId: TEST_PRODUCT_IDS.SPOT_BTC,
+    });
+
+    const result = await nadoClient.market.getMaxOrderSize({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      price: marketPrice.bid,
+      side: 'long',
+      spotLeverage: false,
+    });
+
+    debugPrint('Max order size', result);
+    assertDefined(result, 'maxOrderSize');
+    assert.ok(
+      result instanceof BigDecimal && result.isFinite(),
+      'maxOrderSize should be a finite BigDecimal',
+    );
+  });
+
+  void test('getFundingRate returns a valid funding rate', async () => {
+    const result = await nadoClient.market.getFundingRate({
+      productId: TEST_PRODUCT_IDS.PERP_BTC,
+    });
+
+    debugPrint('Funding rate', result);
+    assertDefined(result, 'fundingRate');
+    assert.ok(result.fundingRate.isFinite(), 'fundingRate should be finite');
+  });
+
+  void test('getMultiProductFundingRates returns rates for multiple products', async () => {
+    const result = await nadoClient.market.getMultiProductFundingRates({
+      productIds: [TEST_PRODUCT_IDS.PERP_BTC, TEST_PRODUCT_IDS.PERP_ETH],
+    });
+
+    debugPrint('Multi-product funding rates', result);
+    assertDefined(result, 'fundingRates');
+    assertNonEmptyArray(Object.values(result), 'fundingRates entries');
+  });
+
+  void test('getProductSnapshots returns snapshots for a product', async () => {
+    const result = await nadoClient.market.getProductSnapshots({
+      productId: TEST_PRODUCT_IDS.PERP_BTC,
+      limit: 2,
+      maxTimestampInclusive: nowInSeconds(),
+    });
+
+    debugPrint('Product snapshots', result);
+    assertArray(result, 'productSnapshots');
+  });
+
+  void test('getMarketSnapshots returns snapshots for requested products', async () => {
+    const result = await nadoClient.market.getMarketSnapshots({
+      granularity: TimeInSeconds.HOUR,
+      limit: 1,
+      productIds: [TEST_PRODUCT_IDS.PERP_BTC, TEST_PRODUCT_IDS.SPOT_ETH],
+    });
+
+    debugPrint('Market snapshots', result);
+    assertDefined(result, 'marketSnapshots');
+  });
+
+  void test('getMultiProductSnapshots returns snapshots for multiple products', async () => {
+    const result = await nadoClient.market.getMultiProductSnapshots({
+      productIds: [TEST_PRODUCT_IDS.PERP_BTC, TEST_PRODUCT_IDS.SPOT_ETH],
+    });
+
+    debugPrint('Multi-product snapshots', result);
+    assertDefined(result, 'multiProductSnapshots');
+  });
+
+  void test('getHistoricalOrders returns historical order data', async () => {
+    const result = await nadoClient.market.getHistoricalOrders({
+      subaccounts: [
+        {
+          subaccountOwner: walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+        },
+      ],
+      limit: 5,
+    });
+
+    debugPrint('Historical orders', result);
+    assertArray(result, 'historicalOrders');
+  });
+
+  // ---------------------------------------------------------------
+  // PerpAPI queries
+  // ---------------------------------------------------------------
+
+  void test('getPerpPrices returns index and mark prices', async () => {
+    const result = await nadoClient.perp.getPerpPrices({
+      productId: TEST_PRODUCT_IDS.PERP_BTC,
+    });
+
+    debugPrint('Perp prices', result);
+    assertDefined(result, 'perpPrices');
+    assert.ok(result.indexPrice.isFinite(), 'indexPrice should be finite');
+    assert.ok(result.markPrice.isFinite(), 'markPrice should be finite');
+  });
+
+  void test('getMultiProductPerpPrices returns prices for multiple products', async () => {
+    const result = await nadoClient.perp.getMultiProductPerpPrices({
+      productIds: [TEST_PRODUCT_IDS.PERP_BTC, TEST_PRODUCT_IDS.PERP_ETH],
+    });
+
+    debugPrint('Multi-product perp prices', result);
+    assertDefined(result, 'perpPrices');
+    assertNonEmptyArray(Object.values(result), 'perpPrices entries');
+  });
+
+  // ---------------------------------------------------------------
+  // SpotAPI queries
+  // ---------------------------------------------------------------
+
+  void test('getMaxWithdrawable returns a finite amount', async () => {
+    const result = await nadoClient.spot.getMaxWithdrawable({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      productId: QUOTE_PRODUCT_ID,
+    });
+
+    debugPrint('Max withdrawable', result);
+    assertDefined(result, 'maxWithdrawable');
+    assert.ok(
+      result instanceof BigDecimal && result.isFinite(),
+      'maxWithdrawable should be a finite BigDecimal',
+    );
+  });
+
+  void test('getMaxMintNlpAmount returns a finite amount', async () => {
+    const result = await nadoClient.spot.getMaxMintNlpAmount({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      spotLeverage: true,
+    });
+
+    debugPrint('Max mint NLP amount', result);
+    assertDefined(result, 'maxMintNlpAmount');
+    assert.ok(
+      result instanceof BigDecimal && result.isFinite(),
+      'maxMintNlpAmount should be a finite BigDecimal',
+    );
+  });
+
+  // ---------------------------------------------------------------
+  // SubaccountAPI query
+  // ---------------------------------------------------------------
+
+  void test('getEngineEstimatedSubaccountSummary returns estimated state', async () => {
+    const result =
+      await nadoClient.subaccount.getEngineEstimatedSubaccountSummary({
+        subaccountOwner: walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        txs: [
+          {
+            type: 'apply_delta',
+            tx: {
+              productId: QUOTE_PRODUCT_ID,
+              amountDelta: new BigDecimal(1000000000000000000n),
+              vQuoteDelta: new BigDecimal(0),
+            },
+          },
+        ],
+      });
+
+    debugPrint('Estimated subaccount summary', result);
+    assertDefined(result, 'estimatedSummary');
+    assertDefined(result.health, 'estimatedSummary.health');
+    assertArray(result.balances, 'estimatedSummary.balances');
   });
 });

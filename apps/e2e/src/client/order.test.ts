@@ -237,4 +237,46 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------
+  // Cancel product orders
+  // ---------------------------------------------------------------
+  void describe('cancelProductOrders', () => {
+    void test('places orders then cancels all via product IDs', async () => {
+      await nadoClient.market.placeOrder({
+        order: {
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          amount: addDecimals(-1),
+          appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
+        },
+        productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      });
+
+      await nadoClient.market.placeOrder({
+        order: {
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          amount: addDecimals(-1),
+          appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
+        },
+        productId: TEST_PRODUCT_IDS.PERP_ETH,
+      });
+
+      const result = await nadoClient.market.cancelProductOrders({
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_ETH],
+      });
+
+      debugPrint('Cancel product orders result', result);
+      assertDefined(result, 'cancelProductOrdersResult');
+      assert.equal(
+        result.status,
+        'success',
+        'cancelProductOrders should succeed',
+      );
+    });
+  });
 });

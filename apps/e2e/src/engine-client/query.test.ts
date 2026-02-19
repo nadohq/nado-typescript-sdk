@@ -1,9 +1,11 @@
 import { EngineClient } from '@nadohq/engine-client';
 import {
   addDecimals,
+  BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  QUOTE_PRODUCT_ID,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
@@ -194,6 +196,128 @@ void describe(
         'productId should match',
       );
       assert.equal(typeof result.valid, 'boolean', 'valid should be boolean');
+    });
+
+    void test('getEdgeAllMarkets returns markets grouped by chain id', async () => {
+      const edgeMarkets = await client.getEdgeAllMarkets();
+
+      debugPrint('Edge all markets', edgeMarkets);
+      assertDefined(edgeMarkets, 'edgeMarkets');
+      assert.ok(
+        typeof edgeMarkets === 'object' && !Array.isArray(edgeMarkets),
+        'edgeMarkets should be a record keyed by chain id',
+      );
+      assert.ok(
+        Object.keys(edgeMarkets).length > 0,
+        'edgeMarkets should have at least one chain entry',
+      );
+      for (const [chainIdKey, markets] of Object.entries(edgeMarkets)) {
+        assert.ok(Number(chainIdKey) > 0, 'chain id should be positive');
+        assertNonEmptyArray(markets, `edgeMarkets[${chainIdKey}]`);
+      }
+    });
+
+    void test('getEstimatedSubaccountSummary returns estimated state after txs', async () => {
+      const result = await client.getEstimatedSubaccountSummary({
+        subaccountOwner: walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        txs: [
+          {
+            type: 'apply_delta',
+            tx: {
+              productId: QUOTE_PRODUCT_ID,
+              amountDelta: new BigDecimal(1000000000000000000n),
+              vQuoteDelta: new BigDecimal(0),
+            },
+          },
+        ],
+      });
+
+      debugPrint('Estimated subaccount summary', result);
+      assertDefined(result, 'estimatedSummary');
+      assertDefined(result.health, 'estimatedSummary.health');
+      assertArray(result.balances, 'estimatedSummary.balances');
+    });
+
+    void test('getEstimatedSubaccountSummary returns pre-state when requested', async () => {
+      const result = await client.getEstimatedSubaccountSummary({
+        subaccountOwner: walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        preState: true,
+        txs: [
+          {
+            type: 'apply_delta',
+            tx: {
+              productId: QUOTE_PRODUCT_ID,
+              amountDelta: new BigDecimal(1000000000000000000n),
+              vQuoteDelta: new BigDecimal(0),
+            },
+          },
+        ],
+      });
+
+      debugPrint('Estimated subaccount summary with pre-state', result);
+      assertDefined(result, 'estimatedSummaryWithPreState');
+      assertDefined(result.health, 'estimatedSummaryWithPreState.health');
+      assertArray(result.balances, 'estimatedSummaryWithPreState.balances');
+    });
+
+    void test('validateOrderParams validates a buy order', async () => {
+      const products = await client.getAllMarkets();
+      const spotBtc = products.find(
+        (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
+      );
+      assert.ok(spotBtc, 'SPOT_BTC market should exist');
+
+      const price = spotBtc.product.oraclePrice
+        .multipliedBy(0.95)
+        .decimalPlaces(0);
+
+      const result = await client.validateOrderParams({
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+        chainId,
+        order: {
+          subaccountOwner: walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          price,
+          amount: addDecimals(0.001),
+          expiration: getExpiration(),
+          nonce: getOrderNonce(),
+          appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+        },
+      });
+
+      debugPrint('Validate order params result', result);
+      assertDefined(result, 'validateResult');
+      assert.equal(
+        result.productId,
+        TEST_PRODUCT_IDS.SPOT_BTC,
+        'productId should match',
+      );
+      assert.equal(typeof result.valid, 'boolean', 'valid should be boolean');
+    });
+
+    void test('getMarketPrices returns prices for multiple products', async () => {
+      const result = await client.getMarketPrices({
+        productIds: [
+          TEST_PRODUCT_IDS.SPOT_BTC,
+          TEST_PRODUCT_IDS.PERP_BTC,
+          TEST_PRODUCT_IDS.SPOT_ETH,
+        ],
+      });
+
+      debugPrint('Market prices', result);
+      assertDefined(result, 'marketPrices');
+      assertNonEmptyArray(result.marketPrices, 'marketPrices.marketPrices');
+      assert.equal(
+        result.marketPrices.length,
+        3,
+        'should return prices for all 3 requested products',
+      );
+      for (const mp of result.marketPrices) {
+        assert.ok(mp.bid.isFinite(), 'bid should be finite');
+        assert.ok(mp.ask.isFinite(), 'ask should be finite');
+      }
     });
   },
 );

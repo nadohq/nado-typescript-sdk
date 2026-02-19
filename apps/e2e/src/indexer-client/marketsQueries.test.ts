@@ -174,6 +174,35 @@ void describe(
       );
     });
 
+    void test('getEdgeCandlesticks returns edge candlestick data', async () => {
+      const edgeCandlesticks = await client.getEdgeCandlesticks({
+        limit: 2,
+        maxTimeInclusive: nowInSeconds(),
+        period: CandlestickPeriod.DAY,
+        productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      });
+
+      debugPrint('Edge candlesticks', edgeCandlesticks);
+      assertArray(edgeCandlesticks, 'edgeCandlesticks');
+    });
+
+    void test('getEdgeMarketSnapshots returns snapshots grouped by chain id', async () => {
+      const edgeSnapshots = await client.getEdgeMarketSnapshots({
+        granularity: TimeInSeconds.HOUR,
+        limit: 2,
+        maxTimeInclusive: nowInSeconds(),
+      });
+
+      debugPrint('Edge market snapshots', edgeSnapshots);
+      assertDefined(edgeSnapshots, 'edgeMarketSnapshots');
+      assert.ok(
+        typeof edgeSnapshots === 'object' && !Array.isArray(edgeSnapshots),
+        'edgeMarketSnapshots should be a record keyed by chain id',
+      );
+      const firstChainSnapshots = Object.values(edgeSnapshots)[0];
+      assertArray(firstChainSnapshots ?? [], 'first chain edge snapshots');
+    });
+
     void test('getV2Tickers returns ticker data', async () => {
       const tickers = await client.getV2Tickers({
         market: 'perp',
