@@ -6,7 +6,6 @@ import { QUOTE_PRODUCT_ID } from '@nadohq/shared';
  */
 export const TEST_PRODUCT_IDS = {
   QUOTE: QUOTE_PRODUCT_ID,
-  // TODO: Change
   SPOT_BTC: 1,
   PERP_BTC: 2,
   SPOT_ETH: 3,

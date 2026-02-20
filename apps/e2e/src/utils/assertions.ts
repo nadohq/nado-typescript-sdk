@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isHex } from 'viem';
 
 /**
  * Asserts that a value is neither null nor undefined.
@@ -52,9 +53,8 @@ export function assertNonEmptyArray(
  */
 export function assertHexString(value: unknown, label: string): void {
   assert.equal(typeof value, 'string', `${label} should be a string`);
-  assert.match(
-    value as string,
-    /^0x[0-9a-f]+$/i,
+  assert.ok(
+    isHex(value as string),
     `${label} should be a hex string (0x-prefixed)`,
   );
 }
