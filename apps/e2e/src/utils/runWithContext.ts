@@ -7,7 +7,13 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
 import { RunContext, RunFn } from './types';
 
-export async function runWithContext(runFn: RunFn) {
+/**
+ * Creates a test context with wallet clients, public client, and endpoint configuration.
+ * Intended for use in `before()` hooks when tests use `describe()` blocks.
+ *
+ * @returns A fully-initialized RunContext for the current chain environment.
+ */
+export function createTestContext(): RunContext {
   const getWalletClient = () => {
     if (!env.privateKey) {
       throw new Error('No private key found. Please check .env');
@@ -27,7 +33,7 @@ export async function runWithContext(runFn: RunFn) {
     // The cast below is needed for some reason
   }) as RunContext['publicClient'];
 
-  const context: RunContext = {
+  return {
     env,
     getWalletClient,
     publicClient,
@@ -38,6 +44,15 @@ export async function runWithContext(runFn: RunFn) {
     },
     contracts: NADO_DEPLOYMENTS[env.chainEnv],
   };
+}
 
+/**
+ * Creates a test context and invokes the given function with it.
+ * Kept for backwards compatibility with existing single-function test files.
+ *
+ * @param runFn - The test function to execute with the context.
+ */
+export async function runWithContext(runFn: RunFn) {
+  const context = createTestContext();
   await runFn(context);
 }

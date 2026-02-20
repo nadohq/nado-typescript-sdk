@@ -12,11 +12,12 @@
   "repository": "https://github.com/nadohq/nado-typescript-sdk",
   "scripts": {
     "account-setup": "tsx ./src/utils/accountSetup.ts",
-    "e2e": "tsx --test --test-concurrency=1 ./src/**/*.test.ts",
-    "e2e:client": "tsx --test --test-concurrency=1 ./src/client/*.test.ts",
-    "e2e:engine": "tsx --test --test-concurrency=1 ./src/engine-client/*.test.ts",
-    "e2e:indexer": "tsx --test --test-concurrency=1 ./src/indexer-client/*.test.ts",
-    "e2e:trigger": "tsx --test --test-concurrency=1 ./src/trigger-client/*.test.ts",
+    "e2e": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/**/*.test.ts",
+    "e2e:client": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/client/*.test.ts",
+    "e2e:engine": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/engine-client/*.test.ts",
+    "e2e:indexer": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/indexer-client/*.test.ts",
+    "e2e:trigger": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/trigger-client/*.test.ts",
+    "e2e:one": "tsx --test --test-reporter=spec --test-concurrency=1",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -28,5 +29,8 @@
     "dotenv": "^17.0.1",
     "viem": "workspace:*"
   },
-  "gitHead": "6d0f498829ddaf01a11d2f46f960811428b370f5"
+  "gitHead": "6d0f498829ddaf01a11d2f46f960811428b370f5",
+  "devDependencies": {
+    "@types/node": "^25.2.3"
+  }
 }
