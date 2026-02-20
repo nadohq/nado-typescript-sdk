@@ -374,6 +374,14 @@ export interface IndexerOrder {
   realizedPnl: BigDecimal;
   // Always positive
   closedSize: BigDecimal;
+  // Cumulative realized entry price for the closed amount on an order
+  closedNetEntry: BigDecimal;
+  // Weighted average margin allocated to the closed amount. Only present for isolated margin orders; null for cross-margin orders
+  closedMargin: BigDecimal | null;
+  // Unix timestamp (seconds) of the first fill on the order
+  firstFillTimestamp: BigDecimal;
+  // Unix timestamp (seconds) of the last fill on the order
+  lastFillTimestamp: BigDecimal;
 }
 
 export type GetIndexerOrdersResponse = IndexerOrder[];

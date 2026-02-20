@@ -53,10 +53,7 @@ export function assertNonEmptyArray(
  */
 export function assertHexString(value: unknown, label: string): void {
   assert.equal(typeof value, 'string', `${label} should be a string`);
-  assert.ok(
-    isHex(value as string),
-    `${label} should be a hex string (0x-prefixed)`,
-  );
+  assert.ok(isHex(value as string), `${label} should be a hex string`);
 }
 
 /**
