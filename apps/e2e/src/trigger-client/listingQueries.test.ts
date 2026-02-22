@@ -1,9 +1,14 @@
 import { TriggerClient } from '@nadohq/trigger-client';
 import { before, describe, test } from 'node:test';
 import { Address } from 'viem';
-import { assertArray, assertDefined } from '../utils/assertions';
+import {
+  assertArray,
+  assertArrayElements,
+  assertDefined,
+} from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
+import { assertTriggerOrderInfoShape } from '../utils/shapeAssertions';
 import {
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -46,6 +51,13 @@ void describe(
 
       assertDefined(result, 'reduceOnlyOrdersResult');
       assertArray(result.orders, 'reduceOnlyOrdersResult.orders');
+      if (result.orders.length > 0) {
+        assertArrayElements(
+          result.orders,
+          assertTriggerOrderInfoShape,
+          'reduceOnlyOrdersResult.orders',
+        );
+      }
     });
 
     void test('lists pending TWAP orders', async () => {
@@ -61,6 +73,13 @@ void describe(
 
       assertDefined(result, 'twapOrdersResult');
       assertArray(result.orders, 'twapOrdersResult.orders');
+      if (result.orders.length > 0) {
+        assertArrayElements(
+          result.orders,
+          assertTriggerOrderInfoShape,
+          'twapOrdersResult.orders',
+        );
+      }
     });
 
     void test('lists all pending trigger orders', async () => {
@@ -75,6 +94,13 @@ void describe(
 
       assertDefined(result, 'pendingListOrdersResult');
       assertArray(result.orders, 'pendingListOrdersResult.orders');
+      if (result.orders.length > 0) {
+        assertArrayElements(
+          result.orders,
+          assertTriggerOrderInfoShape,
+          'pendingListOrdersResult.orders',
+        );
+      }
     });
 
     void test('lists pending orders filtered by product', async () => {
@@ -90,6 +116,13 @@ void describe(
 
       assertDefined(result, 'pendingListOrdersForProductResult');
       assertArray(result.orders, 'pendingListOrdersForProductResult.orders');
+      if (result.orders.length > 0) {
+        assertArrayElements(
+          result.orders,
+          assertTriggerOrderInfoShape,
+          'pendingListOrdersForProductResult.orders',
+        );
+      }
     });
   },
 );

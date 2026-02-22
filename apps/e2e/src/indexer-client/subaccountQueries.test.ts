@@ -10,11 +10,23 @@ import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
   assertArray,
+  assertArrayElements,
+  assertBigDecimalFinite,
+  assertBigDecimalNonNegative,
   assertDefined,
+  assertHexString,
+  assertNumber,
   assertPaginatedResponse,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
+import {
+  assertIndexerEventShape,
+  assertIndexerOrderShape,
+  assertLinkedSignerShape,
+  assertMatchEventShape,
+} from '../utils/shapeAssertions';
 import {
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -49,6 +61,20 @@ void describe(
 
       debugPrint('Summary', summary);
       assertDefined(summary, 'summary');
+      assertDefined(summary.subaccountHexIds, 'summary.subaccountHexIds');
+      assertArray(summary.subaccountHexIds, 'summary.subaccountHexIds');
+      assertDefined(summary.snapshots, 'summary.snapshots');
+      for (const [hexId, timestampMap] of Object.entries(summary.snapshots)) {
+        assertString(hexId, 'snapshot hex id');
+        for (const [ts, snapshot] of Object.entries(timestampMap)) {
+          assertDefined(snapshot, `snapshots[${hexId}][${ts}]`);
+          assertBigDecimalFinite(
+            snapshot.timestamp,
+            `snapshots[${hexId}][${ts}].timestamp`,
+          );
+          assertArray(snapshot.balances, `snapshots[${hexId}][${ts}].balances`);
+        }
+      }
     });
 
     void test('getLinkedSignerWithRateLimit returns signer info', async () => {
@@ -58,6 +84,7 @@ void describe(
 
       debugPrint('Linked Signer', linkedSigner);
       assertDefined(linkedSigner, 'linkedSigner');
+      assertLinkedSignerShape(linkedSigner, 'linkedSigner');
     });
 
     void test('getSubaccountDDA returns DDA info', async () => {
@@ -65,6 +92,7 @@ void describe(
 
       debugPrint('DDA', dda);
       assertDefined(dda, 'dda');
+      assertHexString(dda.address, 'dda.address');
     });
 
     void test('getPaginatedSubaccountOrders returns paginated orders', async () => {
@@ -76,14 +104,15 @@ void describe(
       });
 
       debugPrint('Paginated Orders', orders);
-      assertDefined(orders, 'orders');
-      assertDefined(orders.meta, 'orders.meta');
-      assert.equal(
-        typeof orders.meta.hasMore,
-        'boolean',
-        'orders.meta.hasMore should be boolean',
-      );
+      assertPaginatedResponse(orders, 'orders');
       assertArray(orders.orders, 'orders.orders');
+      if (orders.orders.length > 0) {
+        assertArrayElements(
+          orders.orders,
+          assertIndexerOrderShape,
+          'orders.orders',
+        );
+      }
     });
 
     void test('getEvents returns deposit/withdraw collateral events', async () => {
@@ -99,6 +128,9 @@ void describe(
 
       debugPrint('Raw Events', events);
       assertArray(events, 'events');
+      if (events.length > 0) {
+        assertArrayElements(events, assertIndexerEventShape, 'events');
+      }
     });
 
     void test('getEvents supports ascending order', async () => {
@@ -114,6 +146,9 @@ void describe(
 
       debugPrint('Raw Events Asc', eventsAsc);
       assertArray(eventsAsc, 'eventsAsc');
+      if (eventsAsc.length > 0) {
+        assertArrayElements(eventsAsc, assertIndexerEventShape, 'eventsAsc');
+      }
     });
 
     void test('getPaginatedSubaccountMatchEvents returns match events', async () => {
@@ -131,6 +166,13 @@ void describe(
       debugPrint('Match events', matchEvents);
       assertPaginatedResponse(matchEvents, 'matchEvents');
       assertArray(matchEvents.events, 'matchEvents.events');
+      if (matchEvents.events.length > 0) {
+        assertArrayElements(
+          matchEvents.events,
+          assertMatchEventShape,
+          'matchEvents.events',
+        );
+      }
     });
 
     void test('getPaginatedSubaccountInterestFundingPayments returns payments', async () => {
@@ -152,6 +194,33 @@ void describe(
         interestFundingPayments,
         'interestFundingPayments',
       );
+      assertArray(
+        interestFundingPayments.interestPayments,
+        'interestFundingPayments.interestPayments',
+      );
+      assertArray(
+        interestFundingPayments.fundingPayments,
+        'interestFundingPayments.fundingPayments',
+      );
+      for (const payments of [
+        interestFundingPayments.interestPayments,
+        interestFundingPayments.fundingPayments,
+      ]) {
+        assertArrayElements(
+          payments,
+          (payment, label) => {
+            assertNumber(payment.productId, `${label}.productId`);
+            assertString(payment.submissionIndex, `${label}.submissionIndex`);
+            assertBigDecimalFinite(payment.timestamp, `${label}.timestamp`);
+            assertBigDecimalFinite(
+              payment.paymentAmount,
+              `${label}.paymentAmount`,
+            );
+            assertBigDecimalFinite(payment.oraclePrice, `${label}.oraclePrice`);
+          },
+          'payment',
+        );
+      }
     });
 
     void test('getPaginatedSubaccountSettlementEvents returns settlement events', async () => {
@@ -166,6 +235,18 @@ void describe(
       debugPrint('Paginated settlement events', settlementEvents);
       assertPaginatedResponse(settlementEvents, 'settlementEvents');
       assertArray(settlementEvents.events, 'settlementEvents.events');
+      if (settlementEvents.events.length > 0) {
+        assertArrayElements(
+          settlementEvents.events,
+          (event, label) => {
+            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+            assertString(event.submissionIndex, `${label}.submissionIndex`);
+            assertBigDecimalFinite(event.quoteDelta, `${label}.quoteDelta`);
+            assertDefined(event.snapshot, `${label}.snapshot`);
+          },
+          'settlementEvents.events',
+        );
+      }
     });
 
     void test('getPaginatedSubaccountCollateralEvents returns all collateral events', async () => {
@@ -180,6 +261,19 @@ void describe(
       debugPrint('Paginated all collateral events', allCollateralEvents);
       assertPaginatedResponse(allCollateralEvents, 'allCollateralEvents');
       assertArray(allCollateralEvents.events, 'allCollateralEvents.events');
+      if (allCollateralEvents.events.length > 0) {
+        assertArrayElements(
+          allCollateralEvents.events,
+          (event, label) => {
+            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+            assertString(event.submissionIndex, `${label}.submissionIndex`);
+            assertDefined(event.eventType, `${label}.eventType`);
+            assertBigDecimalFinite(event.amount, `${label}.amount`);
+            assertBigDecimalFinite(event.newAmount, `${label}.newAmount`);
+          },
+          'allCollateralEvents.events',
+        );
+      }
     });
 
     void test('getPaginatedSubaccountCollateralEvents filters by deposit events', async () => {
@@ -218,9 +312,21 @@ void describe(
 
       debugPrint('Sequencer backlog', sequencerBacklog);
       assertDefined(sequencerBacklog, 'sequencerBacklog');
-      assertDefined(
+      assertBigDecimalFinite(
+        sequencerBacklog.totalTxs,
+        'sequencerBacklog.totalTxs',
+      );
+      assertBigDecimalFinite(
         sequencerBacklog.totalSubmissions,
         'sequencerBacklog.totalSubmissions',
+      );
+      assertBigDecimalNonNegative(
+        sequencerBacklog.backlogSize,
+        'sequencerBacklog.backlogSize',
+      );
+      assertBigDecimalFinite(
+        sequencerBacklog.updatedAt,
+        'sequencerBacklog.updatedAt',
       );
     });
 
@@ -323,6 +429,22 @@ void describe(
 
       debugPrint('Points', points);
       assertDefined(points, 'points');
+      assertDefined(points.allTimePoints, 'points.allTimePoints');
+      assertBigDecimalFinite(
+        points.allTimePoints.points,
+        'points.allTimePoints.points',
+      );
+      assertNumber(points.allTimePoints.rank, 'points.allTimePoints.rank');
+      assertArray(points.pointsPerEpoch, 'points.pointsPerEpoch');
+      assertArrayElements(
+        points.pointsPerEpoch,
+        (epoch, label) => {
+          assertNumber(epoch.epoch, `${label}.epoch`);
+          assertBigDecimalFinite(epoch.points, `${label}.points`);
+          assertNumber(epoch.rank, `${label}.rank`);
+        },
+        'points.pointsPerEpoch',
+      );
     });
 
     void test('getReferralCode returns referral info or 422 when unset', async () => {

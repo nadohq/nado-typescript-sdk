@@ -10,13 +10,25 @@ import {
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
-  assertArray,
+  assertArrayElements,
+  assertBigDecimalFinite,
   assertDefined,
+  assertEnumMember,
+  assertHexString,
   assertNonEmptyArray,
+  assertNumber,
+  assertRecord,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
+import {
+  assertEngineMarketPriceShape,
+  assertEngineOrderShape,
+  assertMarketWithProductShape,
+  assertSubaccountSummaryShape,
+} from '../utils/shapeAssertions';
 import {
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -57,18 +69,31 @@ void describe(
       debugPrint('Symbols', result);
       assertDefined(result, 'symbolsResult');
       assertDefined(result.symbols, 'symbolsResult.symbols');
-      assert.ok(
-        Object.keys(result.symbols).length > 0,
-        'should have at least one symbol',
-      );
+      assertRecord(result.symbols, 'symbolsResult.symbols');
+      for (const [symbolName, symbol] of Object.entries(result.symbols)) {
+        assertString(symbolName, 'symbol key');
+        assertNumber(symbol.productId, `symbols[${symbolName}].productId`);
+        assertString(symbol.symbol, `symbols[${symbolName}].symbol`);
+        assertBigDecimalFinite(
+          symbol.priceIncrement,
+          `symbols[${symbolName}].priceIncrement`,
+        );
+        assertBigDecimalFinite(
+          symbol.sizeIncrement,
+          `symbols[${symbolName}].sizeIncrement`,
+        );
+        assertBigDecimalFinite(
+          symbol.minSize,
+          `symbols[${symbolName}].minSize`,
+        );
+      }
     });
 
     void test('getInsurance returns a finite insurance balance', async () => {
       const insurance = await client.getInsurance();
 
       debugPrint('Insurance', insurance);
-      assertDefined(insurance, 'insurance');
-      assert.ok(insurance.isFinite(), 'insurance should be a finite number');
+      assertBigDecimalFinite(insurance, 'insurance');
     });
 
     void test('getContracts returns chain and endpoint', async () => {
@@ -76,17 +101,8 @@ void describe(
 
       debugPrint('Contracts', contracts);
       assertDefined(contracts, 'contracts');
-      assert.equal(
-        typeof contracts.chainId,
-        'number',
-        'contracts.chainId should be number',
-      );
-      assertDefined(contracts.endpointAddr, 'contracts.endpointAddr');
-      assert.match(
-        contracts.endpointAddr,
-        /^0x[0-9a-fA-F]+$/,
-        'endpointAddr should be hex address',
-      );
+      assertNumber(contracts.chainId, 'contracts.chainId');
+      assertHexString(contracts.endpointAddr, 'contracts.endpointAddr');
     });
 
     void test('getStatus returns engine status', async () => {
@@ -94,10 +110,7 @@ void describe(
 
       debugPrint('Engine status', status);
       assertDefined(status, 'status');
-      assert.ok(
-        ENGINE_STATUS_VALUES.includes(status),
-        `status should be one of ${ENGINE_STATUS_VALUES.join(', ')}`,
-      );
+      assertEnumMember(status, ENGINE_STATUS_VALUES, 'status');
     });
 
     void test('getOrder returns order when digest exists', async () => {
@@ -108,7 +121,6 @@ void describe(
       });
 
       if (openOrders.orders.length === 0) {
-        // No open orders — getOrder with invalid digest would error; skip happy path
         return;
       }
 
@@ -120,6 +132,7 @@ void describe(
 
       debugPrint('Order by digest', order);
       assertDefined(order, 'order');
+      assertEngineOrderShape(order, 'order');
       assert.equal(order.digest, firstOrder.digest, 'digest should match');
       assert.equal(
         order.productId,
@@ -176,17 +189,15 @@ void describe(
 
       debugPrint('Edge all markets', edgeMarkets);
       assertDefined(edgeMarkets, 'edgeMarkets');
-      assert.ok(
-        typeof edgeMarkets === 'object' && !Array.isArray(edgeMarkets),
-        'edgeMarkets should be a record keyed by chain id',
-      );
-      assert.ok(
-        Object.keys(edgeMarkets).length > 0,
-        'edgeMarkets should have at least one chain entry',
-      );
+      assertRecord(edgeMarkets, 'edgeMarkets');
       for (const [chainIdKey, markets] of Object.entries(edgeMarkets)) {
         assert.ok(Number(chainIdKey) > 0, 'chain id should be positive');
         assertNonEmptyArray(markets, `edgeMarkets[${chainIdKey}]`);
+        assertArrayElements(
+          markets,
+          assertMarketWithProductShape,
+          `edgeMarkets[${chainIdKey}]`,
+        );
       }
     });
 
@@ -209,8 +220,7 @@ void describe(
 
       debugPrint('Estimated subaccount summary with pre-state', result);
       assertDefined(result, 'estimatedSummaryWithPreState');
-      assertDefined(result.health, 'estimatedSummaryWithPreState.health');
-      assertArray(result.balances, 'estimatedSummaryWithPreState.balances');
+      assertSubaccountSummaryShape(result, 'estimatedSummaryWithPreState');
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
@@ -230,10 +240,11 @@ void describe(
         3,
         'should return prices for all 3 requested products',
       );
-      for (const mp of result.marketPrices) {
-        assert.ok(mp.bid.isFinite(), 'bid should be finite');
-        assert.ok(mp.ask.isFinite(), 'ask should be finite');
-      }
+      assertArrayElements(
+        result.marketPrices,
+        assertEngineMarketPriceShape,
+        'marketPrices.marketPrices',
+      );
     });
   },
 );

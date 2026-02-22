@@ -24,14 +24,23 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   assertArray,
+  assertArrayElements,
+  assertBigDecimalFinite,
+  assertBigDecimalNonNegative,
   assertDefined,
   assertHexString,
   assertNonEmptyArray,
+  assertNumber,
+  assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
+import {
+  assertEngineMarketPriceShape,
+  assertEngineOrderShape,
+} from '../utils/shapeAssertions';
 import {
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -173,7 +182,15 @@ void describe(
 
         debugPrint('Subaccount orders', result);
         assertDefined(result, 'subaccountOrders');
+        assertNumber(result.productId, 'subaccountOrders.productId');
         assertArray(result.orders, 'subaccountOrders.orders');
+        if (result.orders.length > 0) {
+          assertArrayElements(
+            result.orders,
+            assertEngineOrderShape,
+            'subaccountOrders.orders',
+          );
+        }
       });
 
       void test('getMarketLiquidity returns bid and ask ticks', async () => {
@@ -186,6 +203,16 @@ void describe(
         assertDefined(result, 'marketLiquidity');
         assertArray(result.bids, 'marketLiquidity.bids');
         assertArray(result.asks, 'marketLiquidity.asks');
+        for (const side of ['bids', 'asks'] as const) {
+          assertArrayElements(
+            result[side],
+            (tick, label) => {
+              assertBigDecimalFinite(tick.price, `${label}.price`);
+              assertBigDecimalFinite(tick.liquidity, `${label}.liquidity`);
+            },
+            `marketLiquidity.${side}`,
+          );
+        }
       });
 
       void test('getMarketPrice returns bid and ask prices', async () => {
@@ -195,8 +222,7 @@ void describe(
 
         debugPrint('Market price', result);
         assertDefined(result, 'marketPrice');
-        assert.ok(result.bid.isFinite(), 'bid should be finite');
-        assert.ok(result.ask.isFinite(), 'ask should be finite');
+        assertEngineMarketPriceShape(result, 'marketPrice');
 
         marketPrice = result;
       });
@@ -213,6 +239,11 @@ void describe(
         debugPrint('Market prices', result);
         assertDefined(result, 'marketPrices');
         assertNonEmptyArray(result.marketPrices, 'marketPrices.marketPrices');
+        assertArrayElements(
+          result.marketPrices,
+          assertEngineMarketPriceShape,
+          'marketPrices.marketPrices',
+        );
       });
 
       void test('getSubaccountFeeRates returns fee information', async () => {
@@ -223,7 +254,12 @@ void describe(
 
         debugPrint('Fee rates', result);
         assertDefined(result, 'feeRates');
-        assertDefined(result.orders, 'feeRates.orders');
+        assertRecord(result.orders, 'feeRates.orders');
+        assertBigDecimalFinite(
+          result.takerSequencerFee,
+          'feeRates.takerSequencerFee',
+        );
+        assertNumber(result.feeTier, 'feeRates.feeTier');
       });
 
       void test('getMaxOrderSize returns a valid order size', async () => {
@@ -239,8 +275,7 @@ void describe(
         });
 
         debugPrint('Max order size', result);
-        assertDefined(result, 'maxOrderSize');
-        assert.ok(result.isFinite(), 'maxOrderSize should be finite');
+        assertBigDecimalNonNegative(result, 'maxOrderSize');
       });
 
       void test('getMaxOrderSize supports reduce-only mode', async () => {
@@ -257,8 +292,7 @@ void describe(
         });
 
         debugPrint('Reduce-only max order size', result);
-        assertDefined(result, 'reduceOnlyMaxOrderSize');
-        assert.ok(result.isFinite(), 'reduceOnlyMaxOrderSize should be finite');
+        assertBigDecimalNonNegative(result, 'reduceOnlyMaxOrderSize');
       });
 
       void test('getMaxWithdrawable returns a valid amount', async () => {
@@ -269,8 +303,7 @@ void describe(
         });
 
         debugPrint('Max withdrawable', result);
-        assertDefined(result, 'maxWithdrawable');
-        assert.ok(result.isFinite(), 'maxWithdrawable should be finite');
+        assertBigDecimalNonNegative(result, 'maxWithdrawable');
       });
 
       void test('getMaxWithdrawable supports no-spot-leverage mode', async () => {
@@ -282,11 +315,7 @@ void describe(
         });
 
         debugPrint('Max withdrawable (no spot leverage)', result);
-        assertDefined(result, 'maxWithdrawableNoSpotLeverage');
-        assert.ok(
-          result.isFinite(),
-          'maxWithdrawableNoSpotLeverage should be finite',
-        );
+        assertBigDecimalNonNegative(result, 'maxWithdrawableNoSpotLeverage');
       });
 
       void test('getOrder retrieves the placed spot order by digest', async () => {
@@ -299,6 +328,7 @@ void describe(
 
         debugPrint('Queried spot order', result);
         assertDefined(result, 'queriedSpotOrder');
+        assertEngineOrderShape(result, 'queriedSpotOrder');
         assert.equal(result.digest, spotOrderDigest, 'digest should match');
       });
 
@@ -315,6 +345,7 @@ void describe(
 
         debugPrint('Queried perp isolated order', result);
         assertDefined(result, 'queriedIsolatedOrder');
+        assertEngineOrderShape(result, 'queriedIsolatedOrder');
         assert.equal(
           result.digest,
           perpIsolatedOrderDigest,

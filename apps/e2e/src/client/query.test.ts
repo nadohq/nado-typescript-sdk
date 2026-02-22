@@ -10,11 +10,28 @@ import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
   assertArray,
+  assertArrayElements,
+  assertBigDecimalFinite,
+  assertBigDecimalNonNegative,
   assertDefined,
   assertNonEmptyArray,
+  assertNumber,
+  assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
+import {
+  assertCandlestickShape,
+  assertEngineMarketPriceShape,
+  assertEngineOrderShape,
+  assertFundingRateShape,
+  assertIndexerOrderShape,
+  assertLinkedSignerShape,
+  assertMarketSnapshotShape,
+  assertMarketWithProductShape,
+  assertProductSnapshotShape,
+  assertSubaccountSummaryShape,
+} from '../utils/shapeAssertions';
 import {
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -49,6 +66,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('All Markets', allMarkets);
     assertNonEmptyArray(allMarkets, 'allMarkets');
+    assertArrayElements(allMarkets, assertMarketWithProductShape, 'allMarkets');
   });
 
   void test('getEdgeAllMarkets returns edge market data', async () => {
@@ -56,10 +74,16 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Edge all markets', edgeMarkets);
     assertDefined(edgeMarkets, 'edgeMarkets');
-    assert.ok(
-      Object.keys(edgeMarkets).length > 0,
-      'edgeMarkets should have at least one edge entry',
-    );
+    assertRecord(edgeMarkets, 'edgeMarkets');
+    for (const [chainId, markets] of Object.entries(edgeMarkets)) {
+      assertNumber(Number(chainId), `edgeMarkets key ${chainId}`);
+      assertNonEmptyArray(markets, `edgeMarkets[${chainId}]`);
+      assertArrayElements(
+        markets,
+        assertMarketWithProductShape,
+        `edgeMarkets[${chainId}]`,
+      );
+    }
   });
 
   void test('getEdgeCandlesticks returns edge candlestick data', async () => {
@@ -72,6 +96,9 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Edge candlesticks', candlesticks);
     assertArray(candlesticks, 'candlesticks');
+    if (candlesticks.length > 0) {
+      assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
+    }
   });
 
   void test('getEdgeMarketSnapshots returns edge market snapshots', async () => {
@@ -83,12 +110,17 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Edge market snapshots', snapshots);
     assertDefined(snapshots, 'edgeMarketSnapshots');
-    assert.ok(
-      typeof snapshots === 'object' && !Array.isArray(snapshots),
-      'edgeMarketSnapshots should be record of chain id to snapshots',
-    );
-    const firstChainSnapshots = Object.values(snapshots)[0];
-    assertArray(firstChainSnapshots ?? [], 'first chain snapshots');
+    assertRecord(snapshots, 'edgeMarketSnapshots');
+    for (const [chainId, chainSnapshots] of Object.entries(snapshots)) {
+      assertArray(chainSnapshots, `edgeMarketSnapshots[${chainId}]`);
+      if (chainSnapshots.length > 0) {
+        assertArrayElements(
+          chainSnapshots,
+          assertMarketSnapshotShape,
+          `edgeMarketSnapshots[${chainId}]`,
+        );
+      }
+    }
   });
 
   void test('getLatestMarketPrices returns prices for requested products', async () => {
@@ -102,6 +134,17 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Latest market prices', prices);
     assertDefined(prices, 'latestMarketPrices');
+    assertNonEmptyArray(prices.marketPrices, 'latestMarketPrices.marketPrices');
+    assert.equal(
+      prices.marketPrices.length,
+      3,
+      'should return prices for all 3 requested products',
+    );
+    assertArrayElements(
+      prices.marketPrices,
+      assertEngineMarketPriceShape,
+      'latestMarketPrices.marketPrices',
+    );
   });
 
   void test('getMarketLiquidity returns order book depth', async () => {
@@ -114,6 +157,16 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertDefined(liquidity, 'marketLiquidity');
     assertArray(liquidity.bids, 'marketLiquidity.bids');
     assertArray(liquidity.asks, 'marketLiquidity.asks');
+    for (const side of ['bids', 'asks'] as const) {
+      assertArrayElements(
+        liquidity[side],
+        (tick, label) => {
+          assertBigDecimalFinite(tick.price, `${label}.price`);
+          assertBigDecimalFinite(tick.liquidity, `${label}.liquidity`);
+        },
+        `marketLiquidity.${side}`,
+      );
+    }
   });
 
   void test('getSubaccountSummary returns subaccount state', async () => {
@@ -124,8 +177,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Subaccount state', summary);
     assertDefined(summary, 'subaccountSummary');
-    assertDefined(summary.health, 'subaccountSummary.health');
-    assertArray(summary.balances, 'subaccountSummary.balances');
+    assertSubaccountSummaryShape(summary, 'subaccountSummary');
   });
 
   void test('getIsolatedPositions returns isolated positions', async () => {
@@ -146,6 +198,22 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Subaccount fee rates', feeRates);
     assertDefined(feeRates, 'feeRates');
+    assertRecord(feeRates.orders, 'feeRates.orders');
+    for (const [productId, rates] of Object.entries(feeRates.orders)) {
+      assertBigDecimalFinite(
+        rates.maker,
+        `feeRates.orders[${productId}].maker`,
+      );
+      assertBigDecimalFinite(
+        rates.taker,
+        `feeRates.orders[${productId}].taker`,
+      );
+    }
+    assertBigDecimalFinite(
+      feeRates.takerSequencerFee,
+      'feeRates.takerSequencerFee',
+    );
+    assertNumber(feeRates.feeTier, 'feeRates.feeTier');
   });
 
   void test('getSubaccountLinkedSignerWithRateLimit returns signer info', async () => {
@@ -159,6 +227,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Linked signer with rate limit', linkedSigner);
     assertDefined(linkedSigner, 'linkedSigner');
+    assertLinkedSignerShape(linkedSigner, 'linkedSigner');
   });
 
   void test('getReferralCode returns referral info or 422 when unset', async () => {
@@ -190,7 +259,15 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Open subaccount orders', orders);
     assertDefined(orders, 'openOrders');
+    assertNumber(orders.productId, 'openOrders.productId');
     assertArray(orders.orders, 'openOrders.orders');
+    if (orders.orders.length > 0) {
+      assertArrayElements(
+        orders.orders,
+        assertEngineOrderShape,
+        'openOrders.orders',
+      );
+    }
   });
 
   void test('getOpenSubaccountMultiProductOrders returns orders across products', async () => {
@@ -207,6 +284,21 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     debugPrint('Open subaccount multi-product orders', orders);
     assertDefined(orders, 'multiProductOrders');
     assertArray(orders.productOrders, 'multiProductOrders.productOrders');
+    assertArrayElements(
+      orders.productOrders,
+      (po, label) => {
+        assertNumber(po.productId, `${label}.productId`);
+        assertArray(po.orders, `${label}.orders`);
+        if (po.orders.length > 0) {
+          assertArrayElements(
+            po.orders,
+            assertEngineOrderShape,
+            `${label}.orders`,
+          );
+        }
+      },
+      'multiProductOrders.productOrders',
+    );
   });
 
   void describe('spot token queries', () => {
@@ -247,6 +339,14 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     debugPrint('Health groups', result);
     assertDefined(result, 'healthGroupsResult');
     assertArray(result.healthGroups, 'healthGroupsResult.healthGroups');
+    assertArrayElements(
+      result.healthGroups,
+      (group, label) => {
+        assertNumber(group.spotProductId, `${label}.spotProductId`);
+        assertNumber(group.perpProductId, `${label}.perpProductId`);
+      },
+      'healthGroupsResult.healthGroups',
+    );
   });
 
   void test('getLatestMarketPrice returns bid and ask', async () => {
@@ -256,8 +356,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Latest market price', result);
     assertDefined(result, 'latestMarketPrice');
-    assert.ok(result.bid.isFinite(), 'bid should be finite');
-    assert.ok(result.ask.isFinite(), 'ask should be finite');
+    assertEngineMarketPriceShape(result, 'latestMarketPrice');
   });
 
   void test('getCandlesticks returns candlestick data', async () => {
@@ -270,6 +369,9 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Candlesticks', candlesticks);
     assertArray(candlesticks, 'candlesticks');
+    if (candlesticks.length > 0) {
+      assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
+    }
   });
 
   void test('getMaxOrderSize returns a finite max order size', async () => {
@@ -287,11 +389,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max order size', result);
-    assertDefined(result, 'maxOrderSize');
-    assert.ok(
-      result instanceof BigDecimal && result.isFinite(),
-      'maxOrderSize should be a finite BigDecimal',
-    );
+    assertBigDecimalNonNegative(result, 'maxOrderSize');
   });
 
   void test('getFundingRate returns a valid funding rate', async () => {
@@ -301,7 +399,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Funding rate', result);
     assertDefined(result, 'fundingRate');
-    assert.ok(result.fundingRate.isFinite(), 'fundingRate should be finite');
+    assertFundingRateShape(result, 'fundingRate');
   });
 
   void test('getMultiProductFundingRates returns rates for multiple products', async () => {
@@ -311,7 +409,10 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Multi-product funding rates', result);
     assertDefined(result, 'fundingRates');
-    assertNonEmptyArray(Object.values(result), 'fundingRates entries');
+    assertRecord(result, 'fundingRates');
+    for (const rate of Object.values(result)) {
+      assertFundingRateShape(rate, 'fundingRates entry');
+    }
   });
 
   void test('getProductSnapshots returns snapshots for a product', async () => {
@@ -323,6 +424,13 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Product snapshots', result);
     assertArray(result, 'productSnapshots');
+    if (result.length > 0) {
+      assertArrayElements(
+        result,
+        assertProductSnapshotShape,
+        'productSnapshots',
+      );
+    }
   });
 
   void test('getMarketSnapshots returns snapshots for requested products', async () => {
@@ -333,7 +441,10 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Market snapshots', result);
-    assertDefined(result, 'marketSnapshots');
+    assertArray(result, 'marketSnapshots');
+    if (result.length > 0) {
+      assertArrayElements(result, assertMarketSnapshotShape, 'marketSnapshots');
+    }
   });
 
   void test('getMultiProductSnapshots returns snapshots for multiple products', async () => {
@@ -343,6 +454,16 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Multi-product snapshots', result);
     assertDefined(result, 'multiProductSnapshots');
+    assertRecord(result, 'multiProductSnapshots');
+    for (const [timestamp, productMap] of Object.entries(result)) {
+      assertDefined(productMap, `multiProductSnapshots[${timestamp}]`);
+      for (const snapshot of Object.values(productMap)) {
+        assertProductSnapshotShape(
+          snapshot,
+          `multiProductSnapshots[${timestamp}] entry`,
+        );
+      }
+    }
   });
 
   void test('getHistoricalOrders returns historical order data', async () => {
@@ -358,6 +479,9 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Historical orders', result);
     assertArray(result, 'historicalOrders');
+    if (result.length > 0) {
+      assertArrayElements(result, assertIndexerOrderShape, 'historicalOrders');
+    }
   });
 
   // ---------------------------------------------------------------
@@ -371,8 +495,10 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Perp prices', result);
     assertDefined(result, 'perpPrices');
-    assert.ok(result.indexPrice.isFinite(), 'indexPrice should be finite');
-    assert.ok(result.markPrice.isFinite(), 'markPrice should be finite');
+    assertBigDecimalFinite(result.indexPrice, 'perpPrices.indexPrice');
+    assertBigDecimalFinite(result.markPrice, 'perpPrices.markPrice');
+    assertBigDecimalFinite(result.updateTime, 'perpPrices.updateTime');
+    assertNumber(result.productId, 'perpPrices.productId');
   });
 
   void test('getMultiProductPerpPrices returns prices for multiple products', async () => {
@@ -382,7 +508,12 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Multi-product perp prices', result);
     assertDefined(result, 'perpPrices');
-    assertNonEmptyArray(Object.values(result), 'perpPrices entries');
+    assertRecord(result, 'perpPrices');
+    for (const prices of Object.values(result)) {
+      assertBigDecimalFinite(prices.indexPrice, 'perpPrices entry.indexPrice');
+      assertBigDecimalFinite(prices.markPrice, 'perpPrices entry.markPrice');
+      assertNumber(prices.productId, 'perpPrices entry.productId');
+    }
   });
 
   // ---------------------------------------------------------------
@@ -397,11 +528,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max withdrawable', result);
-    assertDefined(result, 'maxWithdrawable');
-    assert.ok(
-      result instanceof BigDecimal && result.isFinite(),
-      'maxWithdrawable should be a finite BigDecimal',
-    );
+    assertBigDecimalNonNegative(result, 'maxWithdrawable');
   });
 
   void test('getMaxMintNlpAmount returns a finite amount', async () => {
@@ -412,11 +539,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max mint NLP amount', result);
-    assertDefined(result, 'maxMintNlpAmount');
-    assert.ok(
-      result instanceof BigDecimal && result.isFinite(),
-      'maxMintNlpAmount should be a finite BigDecimal',
-    );
+    assertBigDecimalNonNegative(result, 'maxMintNlpAmount');
   });
 
   // ---------------------------------------------------------------
@@ -442,7 +565,6 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Estimated subaccount summary', result);
     assertDefined(result, 'estimatedSummary');
-    assertDefined(result.health, 'estimatedSummary.health');
-    assertArray(result.balances, 'estimatedSummary.balances');
+    assertSubaccountSummaryShape(result, 'estimatedSummary');
   });
 });

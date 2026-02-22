@@ -2,10 +2,17 @@ import { IndexerClient } from '@nadohq/indexer-client';
 import { Subaccount } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
-import { assertArray, assertDefined } from '../utils/assertions';
+import {
+  assertArray,
+  assertArrayElements,
+  assertDefined,
+  assertNumber,
+  assertPaginatedResponse,
+} from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getServerError } from '../utils/getServerError';
 import { createTestContext } from '../utils/runWithContext';
+import { assertLeaderboardParticipantShape } from '../utils/shapeAssertions';
 import {
   TEST_CONTEST_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -43,6 +50,13 @@ void describe(
       debugPrint('Leaderboard', leaderboard);
       assertDefined(leaderboard, 'leaderboard');
       assertArray(leaderboard.participants, 'leaderboard.participants');
+      if (leaderboard.participants.length > 0) {
+        assertArrayElements(
+          leaderboard.participants,
+          assertLeaderboardParticipantShape,
+          'leaderboard.participants',
+        );
+      }
     });
 
     void test('getLeaderboardParticipant returns participant info', async () => {
@@ -56,6 +70,19 @@ void describe(
 
       debugPrint('Leaderboard Participant', leaderboardParticipant);
       assertDefined(leaderboardParticipant, 'leaderboardParticipant');
+      assertDefined(
+        leaderboardParticipant.participant,
+        'leaderboardParticipant.participant',
+      );
+      for (const [contestId, p] of Object.entries(
+        leaderboardParticipant.participant,
+      )) {
+        assertNumber(Number(contestId), `participant key ${contestId}`);
+        assertLeaderboardParticipantShape(
+          p,
+          `leaderboardParticipant.participant[${contestId}]`,
+        );
+      }
     });
 
     void test('getLeaderboardContests returns contest details', async () => {
@@ -66,6 +93,14 @@ void describe(
       debugPrint('Leaderboard Contests', leaderboardContests);
       assertDefined(leaderboardContests, 'leaderboardContests');
       assertArray(leaderboardContests.contests, 'leaderboardContests.contests');
+      assertArrayElements(
+        leaderboardContests.contests,
+        (contest, label) => {
+          assertNumber(contest.contestId, `${label}.contestId`);
+          assertDefined(contest.active, `${label}.active`);
+        },
+        'leaderboardContests.contests',
+      );
     });
 
     void describe('paginated leaderboard', () => {
@@ -79,16 +114,18 @@ void describe(
 
         debugPrint('Leaderboard First Page', leaderboardFirstPage);
         assertDefined(leaderboardFirstPage, 'leaderboardFirstPage');
-        assertDefined(leaderboardFirstPage.meta, 'leaderboardFirstPage.meta');
-        assert.equal(
-          typeof leaderboardFirstPage.meta.hasMore,
-          'boolean',
-          'meta.hasMore should be boolean',
-        );
+        assertPaginatedResponse(leaderboardFirstPage, 'leaderboardFirstPage');
         assertArray(
           leaderboardFirstPage.participants,
           'leaderboardFirstPage.participants',
         );
+        if (leaderboardFirstPage.participants.length > 0) {
+          assertArrayElements(
+            leaderboardFirstPage.participants,
+            assertLeaderboardParticipantShape,
+            'leaderboardFirstPage.participants',
+          );
+        }
       });
 
       void test('second page is reachable when first page has more results', async () => {
@@ -100,7 +137,6 @@ void describe(
         });
 
         if (!firstPage.meta.hasMore) {
-          // Not enough data to paginate — test is trivially passing
           return;
         }
 
@@ -117,6 +153,13 @@ void describe(
           secondPage.participants,
           'leaderboardSecondPage.participants',
         );
+        if (secondPage.participants.length > 0) {
+          assertArrayElements(
+            secondPage.participants,
+            assertLeaderboardParticipantShape,
+            'leaderboardSecondPage.participants',
+          );
+        }
       });
     });
 

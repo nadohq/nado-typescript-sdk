@@ -12,8 +12,11 @@ import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
   assertArray,
+  assertArrayElements,
   assertDefined,
   assertHexString,
+  assertNumber,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
@@ -314,6 +317,19 @@ void describe(
 
       assertDefined(result, 'twapExecutionsResult');
       assertArray(result.executions, 'twapExecutionsResult.executions');
+      if (result.executions.length > 0) {
+        assertArrayElements(
+          result.executions,
+          (exec, label) => {
+            assertNumber(exec.executionId, `${label}.executionId`);
+            assertNumber(exec.scheduledTime, `${label}.scheduledTime`);
+            assertDefined(exec.status, `${label}.status`);
+            assertString(exec.status.type, `${label}.status.type`);
+            assertNumber(exec.updatedAt, `${label}.updatedAt`);
+          },
+          'twapExecutionsResult.executions',
+        );
+      }
     });
 
     void test('places batch trigger orders', async () => {
@@ -378,6 +394,13 @@ void describe(
         result.data.length,
         2,
         'should return results for both orders',
+      );
+      assertArrayElements(
+        result.data,
+        (entry, label) => {
+          assertHexString(entry.digest, `${label}.digest`);
+        },
+        'batchResult.data',
       );
     });
   },

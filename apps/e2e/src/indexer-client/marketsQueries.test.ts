@@ -1,14 +1,26 @@
 import { CandlestickPeriod, IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, QUOTE_PRODUCT_ID, TimeInSeconds } from '@nadohq/shared';
-import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
   assertArray,
+  assertArrayElements,
+  assertBigDecimalFinite,
+  assertBigDecimalPositive,
   assertDefined,
   assertNonEmptyArray,
+  assertNumber,
+  assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
+import {
+  assertCandlestickShape,
+  assertFundingRateShape,
+  assertMarketSnapshotShape,
+  assertPerpPricesShape,
+  assertProductSnapshotShape,
+  assertV2TickerShape,
+} from '../utils/shapeAssertions';
 import { TEST_PRODUCT_IDS, TEST_TIMEOUTS } from '../utils/testConstants';
 
 void describe(
@@ -33,10 +45,7 @@ void describe(
 
       debugPrint('Funding rate', fundingRate.fundingRate.toString());
       assertDefined(fundingRate, 'fundingRate');
-      assert.ok(
-        fundingRate.fundingRate.isFinite(),
-        'fundingRate should be finite',
-      );
+      assertFundingRateShape(fundingRate, 'fundingRate');
     });
 
     void test('getMultiProductFundingRates returns rates for multiple products', async () => {
@@ -46,7 +55,10 @@ void describe(
 
       debugPrint('Multiple products funding rate', fundingRates);
       assertDefined(fundingRates, 'fundingRates');
-      assertNonEmptyArray(Object.values(fundingRates), 'fundingRates entries');
+      assertRecord(fundingRates, 'fundingRates');
+      for (const rate of Object.values(fundingRates)) {
+        assertFundingRateShape(rate, 'fundingRates entry');
+      }
     });
 
     void test('getPerpPrices returns valid prices', async () => {
@@ -56,8 +68,7 @@ void describe(
 
       debugPrint('Perp prices', price);
       assertDefined(price, 'perpPrices');
-      assert.ok(price.indexPrice.isFinite(), 'indexPrice should be finite');
-      assert.ok(price.markPrice.isFinite(), 'markPrice should be finite');
+      assertPerpPricesShape(price, 'perpPrices');
     });
 
     void test('getMultiProductPerpPrices returns prices for multiple products', async () => {
@@ -67,7 +78,10 @@ void describe(
 
       debugPrint('Multiple products perp prices', perpPrices);
       assertDefined(perpPrices, 'perpPrices');
-      assertNonEmptyArray(Object.values(perpPrices), 'perpPrices entries');
+      assertRecord(perpPrices, 'perpPrices');
+      for (const prices of Object.values(perpPrices)) {
+        assertPerpPricesShape(prices, 'perpPrices entry');
+      }
     });
 
     void test('getOraclePrices returns prices for requested products', async () => {
@@ -81,21 +95,22 @@ void describe(
       const oraclePrices = await client.getOraclePrices({ productIds });
 
       debugPrint('Oracle Prices', oraclePrices);
-      assertDefined(oraclePrices, 'oraclePrices');
-      assertNonEmptyArray(Object.values(oraclePrices), 'oraclePrices entries');
+      assertNonEmptyArray(oraclePrices, 'oraclePrices');
+      for (let i = 0; i < oraclePrices.length; i++) {
+        const price = oraclePrices[i];
+        const label = `oraclePrices[${i}]`;
+        assertNumber(price.productId, `${label}.productId`);
+        assertBigDecimalFinite(price.oraclePrice, `${label}.oraclePrice`);
+        assertBigDecimalFinite(price.updateTime, `${label}.updateTime`);
+      }
     });
 
-    // TODO: What means valid USDT price?
     void test('getQuotePrice returns a valid USDT price', async () => {
       const quotePrice = await client.getQuotePrice();
 
       debugPrint('Quote Price (USDT)', quotePrice);
       assertDefined(quotePrice, 'quotePrice');
-      assert.ok(
-        quotePrice.price.isFinite(),
-        'quotePrice.price should be finite',
-      );
-      assert.ok(quotePrice.price.gt(0), 'quotePrice.price should be positive');
+      assertBigDecimalPositive(quotePrice.price, 'quotePrice.price');
     });
 
     void test('getCandlesticks returns candlestick data', async () => {
@@ -108,6 +123,13 @@ void describe(
 
       debugPrint('Candlesticks', candlesticks);
       assertArray(candlesticks, 'candlesticks');
+      if (candlesticks.length > 0) {
+        assertArrayElements(
+          candlesticks,
+          assertCandlestickShape,
+          'candlesticks',
+        );
+      }
     });
 
     void test('getMarketSnapshots returns snapshots for requested products', async () => {
@@ -122,7 +144,14 @@ void describe(
       });
 
       debugPrint('Market snapshots', marketSnapshots);
-      assertDefined(marketSnapshots, 'marketSnapshots');
+      assertArray(marketSnapshots, 'marketSnapshots');
+      if (marketSnapshots.length > 0) {
+        assertArrayElements(
+          marketSnapshots,
+          assertMarketSnapshotShape,
+          'marketSnapshots',
+        );
+      }
     });
 
     void test('getProductSnapshots returns snapshots for a single product', async () => {
@@ -134,6 +163,13 @@ void describe(
 
       debugPrint('Product snapshots', productSnapshots);
       assertArray(productSnapshots, 'productSnapshots');
+      if (productSnapshots.length > 0) {
+        assertArrayElements(
+          productSnapshots,
+          assertProductSnapshotShape,
+          'productSnapshots',
+        );
+      }
     });
 
     void test('getMultiProductSnapshots returns snapshots for multiple products', async () => {
@@ -146,6 +182,18 @@ void describe(
         Object.values(multiProductSnapshots).pop(),
       );
       assertDefined(multiProductSnapshots, 'multiProductSnapshots');
+      assertRecord(multiProductSnapshots, 'multiProductSnapshots');
+      for (const [timestamp, productMap] of Object.entries(
+        multiProductSnapshots,
+      )) {
+        assertDefined(productMap, `multiProductSnapshots[${timestamp}]`);
+        for (const snapshot of Object.values(productMap)) {
+          assertProductSnapshotShape(
+            snapshot,
+            `multiProductSnapshots[${timestamp}] entry`,
+          );
+        }
+      }
     });
 
     void test('getMultiProductSnapshots supports multiple timestamps', async () => {
@@ -172,6 +220,10 @@ void describe(
         multiTimestampProductSnapshots,
         'multiTimestampProductSnapshots',
       );
+      assertRecord(
+        multiTimestampProductSnapshots,
+        'multiTimestampProductSnapshots',
+      );
     });
 
     void test('getEdgeCandlesticks returns edge candlestick data', async () => {
@@ -184,6 +236,13 @@ void describe(
 
       debugPrint('Edge candlesticks', edgeCandlesticks);
       assertArray(edgeCandlesticks, 'edgeCandlesticks');
+      if (edgeCandlesticks.length > 0) {
+        assertArrayElements(
+          edgeCandlesticks,
+          assertCandlestickShape,
+          'edgeCandlesticks',
+        );
+      }
     });
 
     void test('getEdgeMarketSnapshots returns snapshots grouped by chain id', async () => {
@@ -195,12 +254,17 @@ void describe(
 
       debugPrint('Edge market snapshots', edgeSnapshots);
       assertDefined(edgeSnapshots, 'edgeMarketSnapshots');
-      assert.ok(
-        typeof edgeSnapshots === 'object' && !Array.isArray(edgeSnapshots),
-        'edgeMarketSnapshots should be a record keyed by chain id',
-      );
-      const firstChainSnapshots = Object.values(edgeSnapshots)[0];
-      assertArray(firstChainSnapshots ?? [], 'first chain edge snapshots');
+      assertRecord(edgeSnapshots, 'edgeMarketSnapshots');
+      for (const [chainId, chainSnapshots] of Object.entries(edgeSnapshots)) {
+        assertArray(chainSnapshots, `edgeMarketSnapshots[${chainId}]`);
+        if (chainSnapshots.length > 0) {
+          assertArrayElements(
+            chainSnapshots,
+            assertMarketSnapshotShape,
+            `edgeMarketSnapshots[${chainId}]`,
+          );
+        }
+      }
     });
 
     void test('getV2Tickers returns ticker data', async () => {
@@ -211,7 +275,10 @@ void describe(
 
       debugPrint('Tickers', tickers);
       assertDefined(tickers, 'tickers');
-      assertNonEmptyArray(Object.values(tickers), 'tickers entries');
+      assertRecord(tickers, 'tickers');
+      for (const ticker of Object.values(tickers)) {
+        assertV2TickerShape(ticker, 'tickers entry');
+      }
     });
   },
 );

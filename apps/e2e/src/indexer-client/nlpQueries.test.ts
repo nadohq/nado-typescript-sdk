@@ -1,9 +1,14 @@
 import { IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, TimeInSeconds } from '@nadohq/shared';
 import { before, describe, test } from 'node:test';
-import { assertArray, assertDefined } from '../utils/assertions';
+import {
+  assertArray,
+  assertArrayElements,
+  assertDefined,
+} from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
+import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
 
 void describe(
@@ -29,25 +34,11 @@ void describe(
       });
       assertDefined(nlpSnapshots, 'nlpSnapshots');
       assertArray(nlpSnapshots.snapshots, 'nlpSnapshots.snapshots');
-
-      for (const snapshot of nlpSnapshots.snapshots) {
-        assertDefined(snapshot.submissionIndex, 'snapshot.submissionIndex');
-        assertDefined(snapshot.timestamp, 'snapshot.timestamp');
-        assertDefined(
-          snapshot.cumulativeBurnAmountQuote,
-          'snapshot.cumulativeBurnAmountQuote',
-        );
-        assertDefined(
-          snapshot.cumulativeMintAmountQuote,
-          'snapshot.cumulativeMintAmountQuote',
-        );
-        assertDefined(snapshot.cumulativePnl, 'snapshot.cumulativePnl');
-        assertDefined(snapshot.cumulativeTrades, 'snapshot.cumulativeTrades');
-        assertDefined(snapshot.cumulativeVolume, 'snapshot.cumulativeVolume');
-        assertDefined(snapshot.depositors, 'snapshot.depositors');
-        assertDefined(snapshot.oraclePrice, 'snapshot.oraclePrice');
-        assertDefined(snapshot.tvl, 'snapshot.tvl');
-      }
+      assertArrayElements(
+        nlpSnapshots.snapshots,
+        assertNlpSnapshotShape,
+        'nlpSnapshots.snapshots',
+      );
 
       debugPrint('NLP snapshots', nlpSnapshots);
     });

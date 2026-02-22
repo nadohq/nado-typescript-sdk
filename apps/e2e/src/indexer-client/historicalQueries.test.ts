@@ -3,10 +3,20 @@ import { nowInSeconds, QUOTE_PRODUCT_ID, Subaccount } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import type { Address } from 'viem';
-import { assertArray, assertDefined } from '../utils/assertions';
+import {
+  assertArray,
+  assertArrayElements,
+  assertBigDecimalFinite,
+  assertBoolean,
+  assertDefined,
+  assertNumber,
+  assertPaginatedResponse,
+  assertString,
+} from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getServerError } from '../utils/getServerError';
 import { createTestContext } from '../utils/runWithContext';
+import { assertSubaccountListingShape } from '../utils/shapeAssertions';
 import {
   TEST_CONTEST_IDS,
   TEST_PRODUCT_IDS,
@@ -46,20 +56,13 @@ void describe(
 
       debugPrint('List subaccounts', subaccounts);
       assertArray(subaccounts, 'subaccounts');
-      subaccounts.forEach((s) => {
-        assertDefined(s.subaccountName, 'subaccountName');
-        assertDefined(s.subaccountOwner, 'subaccountOwner');
-        assert.equal(
-          typeof s.createdAt,
-          'number',
-          'createdAt should be number',
+      if (subaccounts.length > 0) {
+        assertArrayElements(
+          subaccounts,
+          assertSubaccountListingShape,
+          'subaccounts',
         );
-        assert.equal(
-          typeof s.isolated,
-          'boolean',
-          'isolated should be boolean',
-        );
-      });
+      }
     });
 
     void test('listSubaccounts supports pagination params', async () => {
@@ -84,8 +87,19 @@ void describe(
 
         debugPrint('Maker statistics', result);
         assertDefined(result, 'makerStatistics');
-        assertDefined(result.rewardCoefficient, 'rewardCoefficient');
+        assertBigDecimalFinite(
+          result.rewardCoefficient,
+          'makerStatistics.rewardCoefficient',
+        );
         assertArray(result.makers, 'makers');
+        assertArrayElements(
+          result.makers,
+          (maker, label) => {
+            assertDefined(maker.address, `${label}.address`);
+            assertArray(maker.snapshots, `${label}.snapshots`);
+          },
+          'makers',
+        );
       } catch (e: unknown) {
         const serverError = getServerError(e);
         debugPrint('getMakerStatistics error (acceptable)', serverError);
@@ -99,13 +113,9 @@ void describe(
 
       debugPrint('Private alpha choice', result);
       assertDefined(result, 'privateAlphaChoice');
-      assertDefined(result.points, 'points');
-      assertDefined(result.feeRefund, 'feeRefund');
-      assert.equal(
-        typeof result.nftEligibility,
-        'boolean',
-        'nftEligibility should be boolean',
-      );
+      assertBigDecimalFinite(result.points, 'privateAlphaChoice.points');
+      assertBigDecimalFinite(result.feeRefund, 'privateAlphaChoice.feeRefund');
+      assertBoolean(result.nftEligibility, 'privateAlphaChoice.nftEligibility');
     });
 
     void test('updateLeaderboardRegistration succeeds or returns registration', async () => {
@@ -122,16 +132,20 @@ void describe(
 
         debugPrint('Update leaderboard registration', result);
         assertDefined(result, 'updateLeaderboardRegistration result');
-        // registration can be null if not registered
         if (result.registration != null) {
           assertDefined(
             result.registration.subaccount,
             'registration.subaccount',
           );
+          assertNumber(result.registration.contestId, 'registration.contestId');
           assert.equal(
             result.registration.contestId,
             TEST_CONTEST_IDS.REGISTRATION,
             'contestId should match',
+          );
+          assertBigDecimalFinite(
+            result.registration.updateTime,
+            'registration.updateTime',
           );
         }
       } catch (e: unknown) {
@@ -155,13 +169,19 @@ void describe(
 
       debugPrint('Paginated liquidation events', result);
       assertDefined(result, 'liquidationEvents');
-      assertDefined(result.meta, 'result.meta');
-      assert.equal(
-        typeof result.meta.hasMore,
-        'boolean',
-        'meta.hasMore should be boolean',
-      );
+      assertPaginatedResponse(result, 'liquidationEvents');
       assertArray(result.events, 'result.events');
+      if (result.events.length > 0) {
+        assertArrayElements(
+          result.events,
+          (event, label) => {
+            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+            assertString(event.submissionIndex, `${label}.submissionIndex`);
+            assertDefined(event.quote, `${label}.quote`);
+          },
+          'result.events',
+        );
+      }
     });
 
     void test('getPaginatedSubaccountLiquidationEvents with productIds filter', async () => {
@@ -174,8 +194,19 @@ void describe(
 
       debugPrint('Paginated liquidation events with productIds', result);
       assertDefined(result, 'liquidationEvents');
-      assertDefined(result.meta, 'result.meta');
+      assertPaginatedResponse(result, 'liquidationEvents');
       assertArray(result.events, 'result.events');
+      if (result.events.length > 0) {
+        assertArrayElements(
+          result.events,
+          (event, label) => {
+            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+            assertString(event.submissionIndex, `${label}.submissionIndex`);
+            assertDefined(event.quote, `${label}.quote`);
+          },
+          'result.events',
+        );
+      }
     });
   },
 );
