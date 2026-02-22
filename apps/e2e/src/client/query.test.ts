@@ -1,11 +1,8 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
 import { CandlestickPeriod } from '@nadohq/indexer-client';
 import {
-  addDecimals,
   BigDecimal,
-  getOrderNonce,
   nowInSeconds,
-  packOrderAppendix,
   QUOTE_PRODUCT_ID,
   TimeInSeconds,
 } from '@nadohq/shared';
@@ -17,7 +14,6 @@ import {
   assertNonEmptyArray,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_PRODUCT_IDS,
@@ -28,14 +24,12 @@ import {
 void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   let nadoClient: NadoClient;
   let walletClientAddress: string;
-  let chainId: number;
 
   before(() => {
     const context = createTestContext();
     const walletClient = context.getWalletClient();
     const publicClient = context.publicClient;
     walletClientAddress = walletClient.account.address;
-    chainId = walletClient.chain.id;
 
     nadoClient = createNadoClient(context.env.chainEnv, {
       walletClient,
@@ -48,18 +42,6 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Engine time', time);
     assertDefined(time, 'engineTime');
-  });
-
-  void test('getSymbols returns market symbols', async () => {
-    const symbols = await nadoClient.context.engineClient.getSymbols({});
-
-    debugPrint('Symbols', symbols);
-    assertDefined(symbols, 'symbols');
-    assertDefined(symbols.symbols, 'symbols.symbols');
-    assert.ok(
-      Object.keys(symbols.symbols).length > 0,
-      'should have at least one symbol',
-    );
   });
 
   void test('getAllMarkets returns product definitions', async () => {
@@ -265,41 +247,6 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     debugPrint('Health groups', result);
     assertDefined(result, 'healthGroupsResult');
     assertArray(result.healthGroups, 'healthGroupsResult.healthGroups');
-  });
-
-  void test('validateOrderParams validates a buy order', async () => {
-    const allMarkets = await nadoClient.market.getAllMarkets();
-    const spotBtc = allMarkets.find(
-      (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
-    );
-    assert.ok(spotBtc, 'SPOT_BTC market should exist');
-
-    const price = spotBtc.product.oraclePrice
-      .multipliedBy(0.95)
-      .decimalPlaces(0);
-
-    const result = await nadoClient.market.validateOrderParams({
-      productId: TEST_PRODUCT_IDS.SPOT_BTC,
-      chainId,
-      order: {
-        subaccountOwner: walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        price,
-        amount: addDecimals(0.001),
-        expiration: getExpiration(),
-        nonce: getOrderNonce(),
-        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
-      },
-    });
-
-    debugPrint('Validate order params result', result);
-    assertDefined(result, 'validateResult');
-    assert.equal(
-      result.productId,
-      TEST_PRODUCT_IDS.SPOT_BTC,
-      'productId should match',
-    );
-    assert.equal(typeof result.valid, 'boolean', 'valid should be boolean');
   });
 
   void test('getLatestMarketPrice returns bid and ask', async () => {

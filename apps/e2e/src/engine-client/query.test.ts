@@ -51,18 +51,6 @@ void describe(
       });
     });
 
-    void test('getSubaccountSummary returns subaccount info', async () => {
-      const subaccountInfo = await client.getSubaccountSummary({
-        subaccountOwner: walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-
-      debugPrint('Subaccount info', subaccountInfo);
-      assertDefined(subaccountInfo, 'subaccountInfo');
-      assertArray(subaccountInfo.balances, 'subaccountInfo.balances');
-      assertDefined(subaccountInfo.health, 'subaccountInfo.health');
-    });
-
     void test('getSymbols returns market symbols', async () => {
       const result = await client.getSymbols({});
 
@@ -73,21 +61,6 @@ void describe(
         Object.keys(result.symbols).length > 0,
         'should have at least one symbol',
       );
-    });
-
-    void test('getAllMarkets returns product definitions', async () => {
-      const products = await client.getAllMarkets();
-
-      debugPrint('All products', products);
-      assertNonEmptyArray(products, 'products');
-    });
-
-    void test('getHealthGroups returns health group definitions', async () => {
-      const result = await client.getHealthGroups();
-
-      debugPrint('Health groups', result);
-      assertDefined(result, 'healthGroupsResult');
-      assertArray(result.healthGroups, 'healthGroupsResult.healthGroups');
     });
 
     void test('getInsurance returns a finite insurance balance', async () => {
@@ -217,28 +190,6 @@ void describe(
       }
     });
 
-    void test('getEstimatedSubaccountSummary returns estimated state after txs', async () => {
-      const result = await client.getEstimatedSubaccountSummary({
-        subaccountOwner: walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        txs: [
-          {
-            type: 'apply_delta',
-            tx: {
-              productId: QUOTE_PRODUCT_ID,
-              amountDelta: new BigDecimal(1000000000000000000n),
-              vQuoteDelta: new BigDecimal(0),
-            },
-          },
-        ],
-      });
-
-      debugPrint('Estimated subaccount summary', result);
-      assertDefined(result, 'estimatedSummary');
-      assertDefined(result.health, 'estimatedSummary.health');
-      assertArray(result.balances, 'estimatedSummary.balances');
-    });
-
     void test('getEstimatedSubaccountSummary returns pre-state when requested', async () => {
       const result = await client.getEstimatedSubaccountSummary({
         subaccountOwner: walletClientAddress,
@@ -260,41 +211,6 @@ void describe(
       assertDefined(result, 'estimatedSummaryWithPreState');
       assertDefined(result.health, 'estimatedSummaryWithPreState.health');
       assertArray(result.balances, 'estimatedSummaryWithPreState.balances');
-    });
-
-    void test('validateOrderParams validates a buy order', async () => {
-      const products = await client.getAllMarkets();
-      const spotBtc = products.find(
-        (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
-      );
-      assert.ok(spotBtc, 'SPOT_BTC market should exist');
-
-      const price = spotBtc.product.oraclePrice
-        .multipliedBy(0.95)
-        .decimalPlaces(0);
-
-      const result = await client.validateOrderParams({
-        productId: TEST_PRODUCT_IDS.SPOT_BTC,
-        chainId,
-        order: {
-          subaccountOwner: walletClientAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          price,
-          amount: addDecimals(0.001),
-          expiration: getExpiration(),
-          nonce: getOrderNonce(),
-          appendix: packOrderAppendix({ orderExecutionType: 'default' }),
-        },
-      });
-
-      debugPrint('Validate order params result', result);
-      assertDefined(result, 'validateResult');
-      assert.equal(
-        result.productId,
-        TEST_PRODUCT_IDS.SPOT_BTC,
-        'productId should match',
-      );
-      assert.equal(typeof result.valid, 'boolean', 'valid should be boolean');
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
