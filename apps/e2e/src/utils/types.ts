@@ -23,5 +23,3 @@ export interface RunContext {
   // Throws on invalid / non-existent private key
   getWalletClient(): WalletClientWithAccount;
 }
-
-export type RunFn = (ctx: RunContext) => Promise<void> | void;

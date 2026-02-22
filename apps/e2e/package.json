@@ -11,7 +11,7 @@
   "source": "./src/index.ts",
   "repository": "https://github.com/nadohq/nado-typescript-sdk",
   "scripts": {
-    "account-setup": "tsx ./src/utils/accountSetup.ts",
+    "account-setup": "tsx ./src/utils/ensureSubaccountFunded.ts",
     "e2e": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/**/*.test.ts",
     "e2e:client": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/client/*.test.ts",
     "e2e:engine": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/engine-client/*.test.ts",

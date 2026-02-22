@@ -5,7 +5,7 @@ import { TRIGGER_CLIENT_ENDPOINTS } from '@nadohq/trigger-client';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
-import { RunContext, RunFn } from './types';
+import { RunContext } from './types';
 
 /**
  * Creates a test context with wallet clients, public client, and endpoint configuration.
@@ -44,15 +44,4 @@ export function createTestContext(): RunContext {
     },
     contracts: NADO_DEPLOYMENTS[env.chainEnv],
   };
-}
-
-/**
- * Creates a test context and invokes the given function with it.
- * Kept for backwards compatibility with existing single-function test files.
- *
- * @param runFn - The test function to execute with the context.
- */
-export async function runWithContext(runFn: RunFn) {
-  const context = createTestContext();
-  await runFn(context);
 }

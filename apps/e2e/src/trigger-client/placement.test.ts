@@ -9,7 +9,8 @@ import {
 } from '@nadohq/shared';
 import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
+import { Address } from 'viem';
 import {
   assertArray,
   assertArrayElements,
@@ -18,7 +19,9 @@ import {
   assertNumber,
   assertString,
 } from '../utils/assertions';
+import { cancelAllTriggerOrders } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { ensureSubaccountFunded } from '../utils/ensureSubaccountFunded';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
@@ -26,7 +29,6 @@ import {
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
-import { depositTestCollateral } from './setupTriggerAccount';
 
 void describe(
   '[trigger-client]: placement',
@@ -35,6 +37,7 @@ void describe(
     let client: TriggerClient;
     let chainId: number;
     let subaccountOwner: string;
+    let endpointAddr: Address;
     let midPrice: BigDecimal;
 
     // Stored across tests: TWAP placement -> TWAP executions query
@@ -45,13 +48,16 @@ void describe(
       const walletClient = context.getWalletClient();
       chainId = walletClient.chain.id;
       subaccountOwner = walletClient.account.address;
+      endpointAddr = context.contracts.endpoint;
 
       client = new TriggerClient({
         url: context.endpoints.trigger,
         walletClient,
       });
 
-      await depositTestCollateral(context);
+      await ensureSubaccountFunded(context, {
+        depositAmount: addDecimals(10000, 6),
+      });
 
       const engineClient = new EngineClient({
         url: context.endpoints.engine,
@@ -61,6 +67,15 @@ void describe(
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
       midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
+    });
+
+    after(async () => {
+      if (!client) return;
+      await cancelAllTriggerOrders(client, {
+        subaccountOwner,
+        verifyingAddr: endpointAddr,
+        chainId,
+      });
     });
 
     void test('places a short stop order via oracle price above', async () => {

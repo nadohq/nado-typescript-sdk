@@ -11,12 +11,13 @@ import {
   packOrderAppendix,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 import {
   assertDefined,
   assertHexString,
   assertNonEmptyArray,
 } from '../utils/assertions';
+import { ALL_TRADEABLE_PRODUCT_IDS } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
@@ -54,6 +55,18 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
 
     shortLimitPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
     shortMarketPrice = oraclePrice.multipliedBy(0.9).decimalPlaces(0);
+  });
+
+  after(async () => {
+    if (!nadoClient) return;
+    try {
+      await nadoClient.market.cancelProductOrders({
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productIds: ALL_TRADEABLE_PRODUCT_IDS,
+      });
+    } catch {
+      // No open orders or already cancelled
+    }
   });
 
   // ---------------------------------------------------------------

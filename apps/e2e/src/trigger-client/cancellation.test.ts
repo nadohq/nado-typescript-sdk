@@ -8,21 +8,20 @@ import {
 } from '@nadohq/shared';
 import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 import { Address } from 'viem';
 import { assertArray, assertDefined } from '../utils/assertions';
+import { cancelAllTriggerOrders } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { ensureSubaccountFunded } from '../utils/ensureSubaccountFunded';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  PENDING_TRIGGER_STATUS_TYPES,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
-import {
-  depositTestCollateral,
-  PENDING_TRIGGER_STATUS_TYPES,
-} from './setupTriggerAccount';
 
 void describe(
   '[trigger-client]: cancellation',
@@ -50,7 +49,9 @@ void describe(
         walletClient,
       });
 
-      await depositTestCollateral(context);
+      await ensureSubaccountFunded(context, {
+        depositAmount: addDecimals(10000, 6),
+      });
 
       // Place 3 orders across 2 products so we can test cancel-by-digest
       // and cancel-by-product independently.
@@ -120,6 +121,15 @@ void describe(
       ethDigest = r1.data.digest;
       btcDigest = r2.data.digest;
       ethDigest2 = r3.data.digest;
+    });
+
+    after(async () => {
+      if (!client) return;
+      await cancelAllTriggerOrders(client, {
+        subaccountOwner,
+        verifyingAddr: endpointAddr,
+        chainId,
+      });
     });
 
     void describe('cancel operations', () => {

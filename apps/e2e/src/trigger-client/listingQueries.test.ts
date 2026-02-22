@@ -10,11 +10,11 @@ import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
 import { assertTriggerOrderInfoShape } from '../utils/shapeAssertions';
 import {
+  PENDING_TRIGGER_STATUS_TYPES,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
-import { PENDING_TRIGGER_STATUS_TYPES } from './setupTriggerAccount';
 
 void describe(
   '[trigger-client]: listing queries',

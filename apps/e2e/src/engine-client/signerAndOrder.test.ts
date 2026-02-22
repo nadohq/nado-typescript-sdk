@@ -13,7 +13,7 @@ import {
   WalletClientWithAccount,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 import {
   Address,
   createWalletClient,
@@ -33,6 +33,7 @@ import {
   assertNumber,
   assertRecord,
 } from '../utils/assertions';
+import { cancelAllOpenOrders } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
@@ -84,6 +85,15 @@ void describe(
       shortLimitPrice = spotMarket.product.oraclePrice
         .multipliedBy(1.1)
         .decimalPlaces(0);
+    });
+
+    after(async () => {
+      if (!client) return;
+      await cancelAllOpenOrders(client, {
+        subaccountOwner: walletClientAddress,
+        verifyingAddr: endpointAddr,
+        chainId,
+      });
     });
 
     // ---------------------------------------------------------------
