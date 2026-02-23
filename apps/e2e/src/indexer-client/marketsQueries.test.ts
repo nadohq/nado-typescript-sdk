@@ -123,13 +123,7 @@ void describe(
 
       debugPrint('Candlesticks', candlesticks);
       assertArray(candlesticks, 'candlesticks');
-      if (candlesticks.length > 0) {
-        assertArrayElements(
-          candlesticks,
-          assertCandlestickShape,
-          'candlesticks',
-        );
-      }
+      assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
     });
 
     void test('getMarketSnapshots returns snapshots for requested products', async () => {

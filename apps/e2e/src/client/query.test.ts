@@ -96,9 +96,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Edge candlesticks', candlesticks);
     assertArray(candlesticks, 'candlesticks');
-    if (candlesticks.length > 0) {
-      assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
-    }
+    assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
   });
 
   void test('getEdgeMarketSnapshots returns edge market snapshots', async () => {
