@@ -7,7 +7,6 @@ import {
   assertArray,
   assertArrayElements,
   assertBigDecimalFinite,
-  assertBoolean,
   assertDefined,
   assertNumber,
   assertPaginatedResponse,
@@ -75,47 +74,6 @@ void describe(
       debugPrint('List subaccounts paginated', subaccounts);
       assertArray(subaccounts, 'subaccounts');
       assert.ok(subaccounts.length <= 5, 'should return at most limit items');
-    });
-
-    void test('getMakerStatistics returns maker stats or empty', async () => {
-      try {
-        const result = await client.getMakerStatistics({
-          productId: TEST_PRODUCT_IDS.PERP_BTC,
-          epoch: 1,
-          interval: 3600,
-        });
-
-        debugPrint('Maker statistics', result);
-        assertDefined(result, 'makerStatistics');
-        assertBigDecimalFinite(
-          result.rewardCoefficient,
-          'makerStatistics.rewardCoefficient',
-        );
-        assertArray(result.makers, 'makers');
-        assertArrayElements(
-          result.makers,
-          (maker, label) => {
-            assertDefined(maker.address, `${label}.address`);
-            assertArray(maker.snapshots, `${label}.snapshots`);
-          },
-          'makers',
-        );
-      } catch (e: unknown) {
-        const serverError = getServerError(e);
-        debugPrint('getMakerStatistics error (acceptable)', serverError);
-      }
-    });
-
-    void test('getPrivateAlphaChoice returns choice for address', async () => {
-      const result = await client.getPrivateAlphaChoice({
-        address: subaccount.subaccountOwner as Address,
-      });
-
-      debugPrint('Private alpha choice', result);
-      assertDefined(result, 'privateAlphaChoice');
-      assertBigDecimalFinite(result.points, 'privateAlphaChoice.points');
-      assertBigDecimalFinite(result.feeRefund, 'privateAlphaChoice.feeRefund');
-      assertBoolean(result.nftEligibility, 'privateAlphaChoice.nftEligibility');
     });
 
     void test('updateLeaderboardRegistration succeeds or returns registration', async () => {

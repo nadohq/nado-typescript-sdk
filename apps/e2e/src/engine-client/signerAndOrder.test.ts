@@ -33,7 +33,7 @@ import {
   assertNumber,
   assertRecord,
 } from '../utils/assertions';
-import { cancelAllOpenOrders } from '../utils/cleanup';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
@@ -89,11 +89,14 @@ void describe(
 
     after(async () => {
       if (!client) return;
-      await cancelAllOpenOrders(client, {
-        subaccountOwner: walletClientAddress,
-        verifyingAddr: endpointAddr,
-        chainId,
-      });
+      await cleanupTestState(
+        { engine: client },
+        {
+          subaccountOwner: walletClientAddress,
+          verifyingAddr: endpointAddr,
+          chainId,
+        },
+      );
     });
 
     // ---------------------------------------------------------------

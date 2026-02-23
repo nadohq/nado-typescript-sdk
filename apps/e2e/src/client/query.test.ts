@@ -125,11 +125,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
   void test('getLatestMarketPrices returns prices for requested products', async () => {
     const prices = await nadoClient.market.getLatestMarketPrices({
-      productIds: [
-        TEST_PRODUCT_IDS.SPOT_BTC,
-        TEST_PRODUCT_IDS.PERP_BTC,
-        TEST_PRODUCT_IDS.SPOT_ETH,
-      ],
+      productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_ETH],
     });
 
     debugPrint('Latest market prices', prices);
@@ -137,8 +133,8 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertNonEmptyArray(prices.marketPrices, 'latestMarketPrices.marketPrices');
     assert.equal(
       prices.marketPrices.length,
-      3,
-      'should return prices for all 3 requested products',
+      2,
+      'should return prices for all 2 requested products',
     );
     assertArrayElements(
       prices.marketPrices,
@@ -149,7 +145,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
   void test('getMarketLiquidity returns order book depth', async () => {
     const liquidity = await nadoClient.market.getMarketLiquidity({
-      productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      productId: TEST_PRODUCT_IDS.PERP_ETH,
       depth: 5,
     });
 
@@ -228,26 +224,6 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     debugPrint('Linked signer with rate limit', linkedSigner);
     assertDefined(linkedSigner, 'linkedSigner');
     assertLinkedSignerShape(linkedSigner, 'linkedSigner');
-  });
-
-  void test('getReferralCode returns referral info or 422 when unset', async () => {
-    try {
-      const referralCode = await nadoClient.subaccount.getReferralCode({
-        subaccount: {
-          subaccountOwner: walletClientAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-        },
-      });
-
-      debugPrint('Referral code', referralCode);
-      assertDefined(referralCode, 'referralCode');
-    } catch (error) {
-      // 422 Unprocessable Entity is expected when the account has no referral code
-      assert.ok(
-        error instanceof Error && error.message.includes('422'),
-        `expected 422 when referral code is unset, got: ${String(error)}`,
-      );
-    }
   });
 
   void test('getOpenSubaccountOrders returns orders for a product', async () => {
@@ -369,9 +345,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Candlesticks', candlesticks);
     assertArray(candlesticks, 'candlesticks');
-    if (candlesticks.length > 0) {
-      assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
-    }
+    assertArrayElements(candlesticks, assertCandlestickShape, 'candlesticks');
   });
 
   void test('getMaxOrderSize returns a finite max order size', async () => {

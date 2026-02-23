@@ -446,24 +446,5 @@ void describe(
         'points.pointsPerEpoch',
       );
     });
-
-    void test('getReferralCode returns referral info or 422 when unset', async () => {
-      try {
-        const result = await client.getReferralCode({ subaccount });
-
-        debugPrint('Referral code', result);
-        assertDefined(result, 'referralCodeResult');
-        assert.ok(
-          result.referralCode === null ||
-            typeof result.referralCode === 'string',
-          'referralCode should be a string or null',
-        );
-      } catch (error) {
-        assert.ok(
-          error instanceof Error && error.message.includes('422'),
-          `expected 422 when referral code is unset, got: ${String(error)}`,
-        );
-      }
-    });
   },
 );

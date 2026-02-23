@@ -11,9 +11,8 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { Address } from 'viem';
 import { assertArray, assertDefined } from '../utils/assertions';
-import { cancelAllTriggerOrders } from '../utils/cleanup';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
-import { ensureSubaccountFunded } from '../utils/ensureSubaccountFunded';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
@@ -47,10 +46,6 @@ void describe(
       client = new TriggerClient({
         url: context.endpoints.trigger,
         walletClient,
-      });
-
-      await ensureSubaccountFunded(context, {
-        depositAmount: addDecimals(10000, 6),
       });
 
       // Place 3 orders across 2 products so we can test cancel-by-digest
@@ -125,11 +120,10 @@ void describe(
 
     after(async () => {
       if (!client) return;
-      await cancelAllTriggerOrders(client, {
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
-        chainId,
-      });
+      await cleanupTestState(
+        { trigger: client },
+        { subaccountOwner, verifyingAddr: endpointAddr, chainId },
+      );
     });
 
     void describe('cancel operations', () => {

@@ -6,14 +6,9 @@
  * @returns The server response data or the original error.
  */
 export function getServerError(error: unknown): unknown {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as Record<string, unknown>).response === 'object'
-  ) {
-    const response = (error as { response: Record<string, unknown> }).response;
-    return response.data ?? error;
-  }
-  return error;
+  const response = (error as Record<string, unknown>)?.response as
+    | Record<string, unknown>
+    | undefined;
+
+  return response?.data ?? error;
 }

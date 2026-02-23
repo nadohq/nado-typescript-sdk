@@ -10,9 +10,6 @@ export const ALL_TRADEABLE_PRODUCT_IDS: number[] = [
   TEST_PRODUCT_IDS.PERP_ETH,
 ];
 
-/**
- * Options for cleanup utilities that cancel open orders.
- */
 export interface CleanupOptions {
   subaccountOwner: string;
   subaccountName?: string;
@@ -21,49 +18,43 @@ export interface CleanupOptions {
 }
 
 /**
- * Cancels all open engine orders across all tradeable products.
- * Silently ignores errors (e.g. no open orders).
+ * Cancels all open orders (engine and/or trigger) as a test teardown safety net.
+ * Provide whichever clients the test has available — missing clients are skipped.
  *
- * @param client - The engine client instance.
+ * @param clients - Engine and/or trigger client instances.
  * @param opts - Subaccount and chain identification.
  */
-export async function cancelAllOpenOrders(
-  client: EngineClient,
+export async function cleanupTestState(
+  clients: { engine?: EngineClient; trigger?: TriggerClient },
   opts: CleanupOptions,
 ): Promise<void> {
-  try {
-    await client.cancelProductOrders({
-      subaccountName: opts.subaccountName ?? TEST_SUBACCOUNT_NAME,
-      subaccountOwner: opts.subaccountOwner,
-      productIds: ALL_TRADEABLE_PRODUCT_IDS,
-      verifyingAddr: opts.verifyingAddr,
-      chainId: opts.chainId,
-    });
-  } catch {
-    // No open orders or already cancelled
-  }
-}
+  const subaccountName = opts.subaccountName ?? TEST_SUBACCOUNT_NAME;
 
-/**
- * Cancels all open trigger orders across all tradeable products.
- * Silently ignores errors (e.g. no open orders).
- *
- * @param client - The trigger client instance.
- * @param opts - Subaccount and chain identification.
- */
-export async function cancelAllTriggerOrders(
-  client: TriggerClient,
-  opts: CleanupOptions,
-): Promise<void> {
-  try {
-    await client.cancelProductOrders({
-      productIds: ALL_TRADEABLE_PRODUCT_IDS,
-      subaccountName: opts.subaccountName ?? TEST_SUBACCOUNT_NAME,
-      subaccountOwner: opts.subaccountOwner,
-      verifyingAddr: opts.verifyingAddr,
-      chainId: opts.chainId,
-    });
-  } catch {
-    // No open orders or already cancelled
+  if (clients.engine) {
+    try {
+      await clients.engine.cancelProductOrders({
+        subaccountName,
+        subaccountOwner: opts.subaccountOwner,
+        productIds: ALL_TRADEABLE_PRODUCT_IDS,
+        verifyingAddr: opts.verifyingAddr,
+        chainId: opts.chainId,
+      });
+    } catch {
+      // No open orders or already cancelled
+    }
+  }
+
+  if (clients.trigger) {
+    try {
+      await clients.trigger.cancelProductOrders({
+        productIds: ALL_TRADEABLE_PRODUCT_IDS,
+        subaccountName,
+        subaccountOwner: opts.subaccountOwner,
+        verifyingAddr: opts.verifyingAddr,
+        chainId: opts.chainId,
+      });
+    } catch {
+      // No open orders or already cancelled
+    }
   }
 }

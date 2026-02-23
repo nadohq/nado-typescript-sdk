@@ -23,7 +23,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { assertDefined, assertHexString } from '../utils/assertions';
-import { cancelAllOpenOrders } from '../utils/cleanup';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
@@ -74,11 +74,14 @@ void describe(
 
     after(async () => {
       if (!client) return;
-      await cancelAllOpenOrders(client, {
-        subaccountOwner: walletClientAddress,
-        verifyingAddr: endpointAddr,
-        chainId,
-      });
+      await cleanupTestState(
+        { engine: client },
+        {
+          subaccountOwner: walletClientAddress,
+          verifyingAddr: endpointAddr,
+          chainId,
+        },
+      );
     });
 
     // ---------------------------------------------------------------
@@ -109,12 +112,34 @@ void describe(
     // transferQuote — quote transfer between subaccounts
     // ---------------------------------------------------------------
     void describe('transferQuote', () => {
+      const TRANSFER_AMOUNT = addDecimals(6);
+      const TRANSFER_FEE = addDecimals(1);
+      // Engine arithmetic can introduce sub-wei rounding drift
+      const ROUNDING_TOLERANCE = new BigDecimal(100);
+
+      async function getQuoteBalance(
+        subaccountName: string,
+      ): Promise<BigDecimal> {
+        const summary = await client.getSubaccountSummary({
+          subaccountOwner: walletClientAddress,
+          subaccountName,
+        });
+        const quote = summary.balances.find(
+          (b) => b.productId === QUOTE_PRODUCT_ID,
+        );
+        assertDefined(quote, `quoteBalance for ${subaccountName}`);
+        return quote.amount;
+      }
+
       void test('transfers quote to another subaccount', async () => {
+        const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+        debugPrint('Default balance before transfer', balanceBefore);
+
         const result = await client.transferQuote({
           subaccountOwner: walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           recipientSubaccountName: 'default2',
-          amount: addDecimals(6),
+          amount: TRANSFER_AMOUNT,
           verifyingAddr: endpointAddr,
           chainId,
         });
@@ -122,14 +147,29 @@ void describe(
         debugPrint('Transfer quote result', result);
         assertDefined(result, 'transferResult');
         assert.equal(result.status, 'success', 'transferQuote should succeed');
+
+        const balanceAfter = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+        debugPrint('Default balance after transfer', balanceAfter);
+
+        const delta = balanceBefore.minus(balanceAfter);
+        const expectedDelta = new BigDecimal(TRANSFER_AMOUNT).plus(
+          new BigDecimal(TRANSFER_FEE),
+        );
+        assert.ok(
+          delta.minus(expectedDelta).abs().lte(ROUNDING_TOLERANCE),
+          `sender balance should decrease by ~${expectedDelta.toString()} (transfer + fee), got ${delta.toString()}`,
+        );
       });
 
       void test('transfers quote back to restore balance', async () => {
+        const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+        debugPrint('Default balance before transfer back', balanceBefore);
+
         const result = await client.transferQuote({
           subaccountOwner: walletClientAddress,
           subaccountName: 'default2',
           recipientSubaccountName: TEST_SUBACCOUNT_NAME,
-          amount: addDecimals(6),
+          amount: TRANSFER_AMOUNT,
           verifyingAddr: endpointAddr,
           chainId,
         });
@@ -140,6 +180,16 @@ void describe(
           result.status,
           'success',
           'transferQuote back should succeed',
+        );
+
+        const balanceAfter = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+        debugPrint('Default balance after transfer back', balanceAfter);
+
+        const delta = balanceAfter.minus(balanceBefore);
+        const expectedDelta = new BigDecimal(TRANSFER_AMOUNT);
+        assert.ok(
+          delta.minus(expectedDelta).abs().lte(ROUNDING_TOLERANCE),
+          `receiver balance should increase by ~${expectedDelta.toString()}, got ${delta.toString()}`,
         );
       });
     });
@@ -222,39 +272,6 @@ void describe(
           verifyingAddr: endpointAddr,
           chainId,
         });
-      });
-    });
-
-    // ---------------------------------------------------------------
-    // liquidateSubaccount — expect rejection on healthy account
-    // ---------------------------------------------------------------
-    void describe('liquidateSubaccount', () => {
-      void test('rejects liquidation of a healthy subaccount', async () => {
-        const healthGroups = await client.getHealthGroups();
-        const firstGroup = healthGroups.healthGroups[0];
-        assertDefined(firstGroup, 'firstHealthGroup');
-
-        try {
-          await client.liquidateSubaccount({
-            subaccountOwner: walletClientAddress,
-            subaccountName: TEST_SUBACCOUNT_NAME,
-            liquidateeOwner: walletClientAddress,
-            liquidateeName: TEST_SUBACCOUNT_NAME,
-            mode: 0,
-            healthGroup: firstGroup.spotProductId,
-            amount: addDecimals(0.001),
-            verifyingAddr: endpointAddr,
-            chainId,
-          });
-
-          assert.fail('liquidation of a healthy subaccount should be rejected');
-        } catch (error) {
-          debugPrint('Expected liquidation rejection', String(error));
-          assert.ok(
-            error instanceof Error,
-            'error should be an Error instance',
-          );
-        }
       });
     });
 

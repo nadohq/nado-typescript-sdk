@@ -19,9 +19,8 @@ import {
   assertNumber,
   assertString,
 } from '../utils/assertions';
-import { cancelAllTriggerOrders } from '../utils/cleanup';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
-import { ensureSubaccountFunded } from '../utils/ensureSubaccountFunded';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
@@ -55,10 +54,6 @@ void describe(
         walletClient,
       });
 
-      await ensureSubaccountFunded(context, {
-        depositAmount: addDecimals(10000, 6),
-      });
-
       const engineClient = new EngineClient({
         url: context.endpoints.engine,
         walletClient,
@@ -71,11 +66,10 @@ void describe(
 
     after(async () => {
       if (!client) return;
-      await cancelAllTriggerOrders(client, {
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
-        chainId,
-      });
+      await cleanupTestState(
+        { trigger: client },
+        { subaccountOwner, verifyingAddr: endpointAddr, chainId },
+      );
     });
 
     void test('places a short stop order via oracle price above', async () => {
