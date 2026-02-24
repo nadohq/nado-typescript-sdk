@@ -12,6 +12,7 @@ import { before, describe, test } from 'node:test';
 import { Address, getContract } from 'viem';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
 
@@ -37,6 +38,8 @@ void describe(
         url: context.endpoints.engine,
         walletClient,
       });
+
+      attachRetryInterceptor(client.axiosInstance);
 
       const clearinghouse = getContract({
         abi: NADO_ABIS.clearinghouse,

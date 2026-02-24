@@ -7,6 +7,7 @@ import {
   assertDefined,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
@@ -24,6 +25,8 @@ void describe(
         url: context.endpoints.indexer,
         walletClient,
       });
+
+      attachRetryInterceptor(client.axiosInstance);
     });
 
     void test('getNlpSnapshots returns snapshot data', async () => {

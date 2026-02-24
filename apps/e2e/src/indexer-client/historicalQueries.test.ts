@@ -14,6 +14,7 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getServerError } from '../utils/getServerError';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
 import {
@@ -45,6 +46,8 @@ void describe(
       };
       chainId = walletClient.chain.id;
       endpointAddr = context.contracts.endpoint;
+
+      attachRetryInterceptor(client.axiosInstance);
     });
 
     void test('listSubaccounts returns subaccounts for address', async () => {

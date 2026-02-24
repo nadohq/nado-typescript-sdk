@@ -22,6 +22,7 @@ import {
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
 
@@ -52,6 +53,9 @@ void describe('[trigger-client]: placement', () => {
       url: context.endpoints.engine,
       walletClient,
     });
+
+    attachRetryInterceptor(client.axiosInstance);
+    attachRetryInterceptor(engineClient.axiosInstance);
 
     const marketPrice = await engineClient.getMarketPrice({
       productId: TEST_PRODUCT_IDS.SPOT_ETH,

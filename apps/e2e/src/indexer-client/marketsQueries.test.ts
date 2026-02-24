@@ -12,6 +12,7 @@ import {
   assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
@@ -36,6 +37,8 @@ void describe(
         url: context.endpoints.indexer,
         walletClient,
       });
+
+      attachRetryInterceptor(client.axiosInstance);
     });
 
     void test('getFundingRate returns a valid funding rate', async () => {

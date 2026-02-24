@@ -22,6 +22,7 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
@@ -55,6 +56,10 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
       walletClient,
       publicClient,
     });
+
+    attachRetryInterceptor(nadoClient.context.engineClient.axiosInstance);
+    attachRetryInterceptor(nadoClient.context.indexerClient.axiosInstance);
+    attachRetryInterceptor(nadoClient.context.triggerClient.axiosInstance);
   });
 
   void test('getTime returns engine server time', async () => {

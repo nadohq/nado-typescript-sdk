@@ -38,6 +38,7 @@ import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertEngineMarketPriceShape,
@@ -69,6 +70,9 @@ void describe('[engine-client]: signer and orders', () => {
       url: context.endpoints.trigger,
       walletClient,
     });
+
+    attachRetryInterceptor(client.axiosInstance);
+    attachRetryInterceptor(triggerClient.axiosInstance);
 
     const clearinghouse = getContract({
       abi: NADO_ABIS.clearinghouse,

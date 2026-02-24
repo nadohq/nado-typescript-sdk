@@ -22,6 +22,7 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertEngineMarketPriceShape,
@@ -61,6 +62,8 @@ void describe(
         url: context.endpoints.engine,
         walletClient,
       });
+
+      attachRetryInterceptor(client.axiosInstance);
     });
 
     void test('getSymbols returns market symbols', async () => {

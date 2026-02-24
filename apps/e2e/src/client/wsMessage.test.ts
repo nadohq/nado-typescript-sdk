@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_PRODUCT_IDS,
@@ -40,6 +41,10 @@ void describe(
         walletClient,
         publicClient,
       });
+
+      attachRetryInterceptor(nadoClient.context.engineClient.axiosInstance);
+      attachRetryInterceptor(nadoClient.context.indexerClient.axiosInstance);
+      attachRetryInterceptor(nadoClient.context.triggerClient.axiosInstance);
     });
 
     // ---------------------------------------------------------------

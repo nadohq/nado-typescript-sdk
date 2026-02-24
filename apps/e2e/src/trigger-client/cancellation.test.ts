@@ -14,6 +14,7 @@ import { assertArray, assertDefined } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
@@ -49,6 +50,9 @@ void describe('[trigger-client]: cancellation', () => {
       url: context.endpoints.engine,
       walletClient,
     });
+
+    attachRetryInterceptor(client.axiosInstance);
+    attachRetryInterceptor(engineClient.axiosInstance);
 
     // Place 3 orders across 2 products so we can test cancel-by-digest
     // and cancel-by-product independently.

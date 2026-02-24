@@ -27,6 +27,7 @@ import { assertDefined, assertHexString } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
 
@@ -54,6 +55,9 @@ void describe('[engine-client]: execute operations', () => {
       url: context.endpoints.trigger,
       walletClient,
     });
+
+    attachRetryInterceptor(client.axiosInstance);
+    attachRetryInterceptor(triggerClient.axiosInstance);
 
     const clearinghouse = getContract({
       abi: NADO_ABIS.clearinghouse,

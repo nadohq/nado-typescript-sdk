@@ -11,6 +11,7 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getServerError } from '../utils/getServerError';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { assertLeaderboardParticipantShape } from '../utils/shapeAssertions';
 import {
@@ -37,6 +38,8 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: walletClient.account.address,
       };
+
+      attachRetryInterceptor(client.axiosInstance);
     });
 
     void test('getLeaderboard returns ranked participants', async () => {

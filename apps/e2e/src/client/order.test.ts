@@ -19,6 +19,7 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_PRODUCT_IDS,
@@ -44,6 +45,10 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       walletClient,
       publicClient,
     });
+
+    attachRetryInterceptor(nadoClient.context.engineClient.axiosInstance);
+    attachRetryInterceptor(nadoClient.context.indexerClient.axiosInstance);
+    attachRetryInterceptor(nadoClient.context.triggerClient.axiosInstance);
 
     const allMarkets = await nadoClient.market.getAllMarkets();
     const spotMarket = allMarkets.find(

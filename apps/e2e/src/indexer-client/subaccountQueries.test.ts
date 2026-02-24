@@ -20,6 +20,7 @@ import {
   assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertIndexerEventShape,
@@ -51,6 +52,8 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: walletClient.account.address,
       };
+
+      attachRetryInterceptor(client.axiosInstance);
     });
 
     void test('getMultiSubaccountSnapshots returns valid snapshots', async () => {

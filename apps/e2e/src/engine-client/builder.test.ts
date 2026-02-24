@@ -22,6 +22,7 @@ import { assertDefined, assertHexString } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
 import { waitForTransaction } from '../utils/waitForTransaction';
@@ -118,6 +119,9 @@ void describe('[engine-client]: builder', () => {
       indexerClient = new IndexerClient({
         url: context.endpoints.indexer,
       });
+
+      attachRetryInterceptor(client.axiosInstance);
+      attachRetryInterceptor(indexerClient.axiosInstance);
 
       const products = await client.getAllMarkets();
       const market = products.find(
