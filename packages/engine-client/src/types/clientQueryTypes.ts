@@ -93,6 +93,7 @@ export interface EngineSymbol {
   longWeightMaintenance: BigDecimal;
   // undefined when there is no max open interest limit (always undefined for spot products)
   maxOpenInterest: BigDecimal | undefined;
+  isolatedOnly: boolean;
 }
 
 export type GetEngineAllMarketsResponse = MarketWithProduct[];
