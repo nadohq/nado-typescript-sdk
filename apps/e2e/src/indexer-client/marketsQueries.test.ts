@@ -139,13 +139,11 @@ void describe(
 
       debugPrint('Market snapshots', marketSnapshots);
       assertArray(marketSnapshots, 'marketSnapshots');
-      if (marketSnapshots.length > 0) {
-        assertArrayElements(
-          marketSnapshots,
-          assertMarketSnapshotShape,
-          'marketSnapshots',
-        );
-      }
+      assertArrayElements(
+        marketSnapshots,
+        assertMarketSnapshotShape,
+        'marketSnapshots',
+      );
     });
 
     void test('getProductSnapshots returns snapshots for a single product', async () => {
@@ -157,13 +155,11 @@ void describe(
 
       debugPrint('Product snapshots', productSnapshots);
       assertArray(productSnapshots, 'productSnapshots');
-      if (productSnapshots.length > 0) {
-        assertArrayElements(
-          productSnapshots,
-          assertProductSnapshotShape,
-          'productSnapshots',
-        );
-      }
+      assertArrayElements(
+        productSnapshots,
+        assertProductSnapshotShape,
+        'productSnapshots',
+      );
     });
 
     void test('getMultiProductSnapshots returns snapshots for multiple products', async () => {
@@ -230,13 +226,11 @@ void describe(
 
       debugPrint('Edge candlesticks', edgeCandlesticks);
       assertArray(edgeCandlesticks, 'edgeCandlesticks');
-      if (edgeCandlesticks.length > 0) {
-        assertArrayElements(
-          edgeCandlesticks,
-          assertCandlestickShape,
-          'edgeCandlesticks',
-        );
-      }
+      assertArrayElements(
+        edgeCandlesticks,
+        assertCandlestickShape,
+        'edgeCandlesticks',
+      );
     });
 
     void test('getEdgeMarketSnapshots returns snapshots grouped by chain id', async () => {
@@ -251,13 +245,11 @@ void describe(
       assertRecord(edgeSnapshots, 'edgeMarketSnapshots');
       for (const [chainId, chainSnapshots] of Object.entries(edgeSnapshots)) {
         assertArray(chainSnapshots, `edgeMarketSnapshots[${chainId}]`);
-        if (chainSnapshots.length > 0) {
-          assertArrayElements(
-            chainSnapshots,
-            assertMarketSnapshotShape,
-            `edgeMarketSnapshots[${chainId}]`,
-          );
-        }
+        assertArrayElements(
+          chainSnapshots,
+          assertMarketSnapshotShape,
+          `edgeMarketSnapshots[${chainId}]`,
+        );
       }
     });
 

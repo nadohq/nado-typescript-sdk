@@ -202,6 +202,7 @@ export function assertArrayElements<T>(
   label: string,
 ): void {
   assert.ok(arr.length > 0, `${label} must not be empty`);
+
   for (let i = 0; i < arr.length; i++) {
     assertFn(arr[i], `${label}[${i}]`);
   }

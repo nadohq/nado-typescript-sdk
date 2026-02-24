@@ -1,13 +1,15 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
 import { CandlestickPeriod } from '@nadohq/indexer-client';
 import {
+  addDecimals,
   BigDecimal,
   nowInSeconds,
+  packOrderAppendix,
   QUOTE_PRODUCT_ID,
   TimeInSeconds,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
@@ -19,6 +21,7 @@ import {
   assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
@@ -111,13 +114,11 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertRecord(snapshots, 'edgeMarketSnapshots');
     for (const [chainId, chainSnapshots] of Object.entries(snapshots)) {
       assertArray(chainSnapshots, `edgeMarketSnapshots[${chainId}]`);
-      if (chainSnapshots.length > 0) {
-        assertArrayElements(
-          chainSnapshots,
-          assertMarketSnapshotShape,
-          `edgeMarketSnapshots[${chainId}]`,
-        );
-      }
+      assertArrayElements(
+        chainSnapshots,
+        assertMarketSnapshotShape,
+        `edgeMarketSnapshots[${chainId}]`,
+      );
     }
   });
 
@@ -224,55 +225,84 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertLinkedSignerShape(linkedSigner, 'linkedSigner');
   });
 
-  void test('getOpenSubaccountOrders returns orders for a product', async () => {
-    const orders = await nadoClient.market.getOpenSubaccountOrders({
-      subaccountOwner: walletClientAddress,
-      subaccountName: TEST_SUBACCOUNT_NAME,
-      productId: TEST_PRODUCT_IDS.SPOT_BTC,
+  void describe('open order queries', () => {
+    before(async () => {
+      const marketPrice = await nadoClient.market.getLatestMarketPrice({
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      });
+      const farPrice = marketPrice.ask.multipliedBy(1.15).decimalPlaces(0);
+
+      await nadoClient.market.placeOrder({
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+        order: {
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          expiration: getExpiration(),
+          price: farPrice,
+          amount: addDecimals(-0.01),
+          appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
+        },
+        spotLeverage: false,
+      });
     });
 
-    debugPrint('Open subaccount orders', orders);
-    assertDefined(orders, 'openOrders');
-    assertNumber(orders.productId, 'openOrders.productId');
-    assertArray(orders.orders, 'openOrders.orders');
-    if (orders.orders.length > 0) {
+    after(async () => {
+      try {
+        await nadoClient.market.cancelProductOrders({
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
+        });
+      } catch {
+        // No open orders to cancel
+      }
+    });
+
+    void test('getOpenSubaccountOrders returns orders for a product', async () => {
+      const orders = await nadoClient.market.getOpenSubaccountOrders({
+        subaccountOwner: walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      });
+
+      debugPrint('Open subaccount orders', orders);
+      assertDefined(orders, 'openOrders');
+      assertNumber(orders.productId, 'openOrders.productId');
+      assertArray(orders.orders, 'openOrders.orders');
       assertArrayElements(
         orders.orders,
         assertEngineOrderShape,
         'openOrders.orders',
       );
-    }
-  });
-
-  void test('getOpenSubaccountMultiProductOrders returns orders across products', async () => {
-    const orders = await nadoClient.market.getOpenSubaccountMultiProductOrders({
-      subaccountOwner: walletClientAddress,
-      subaccountName: TEST_SUBACCOUNT_NAME,
-      productIds: [
-        TEST_PRODUCT_IDS.SPOT_BTC,
-        TEST_PRODUCT_IDS.PERP_BTC,
-        TEST_PRODUCT_IDS.SPOT_ETH,
-      ],
     });
 
-    debugPrint('Open subaccount multi-product orders', orders);
-    assertDefined(orders, 'multiProductOrders');
-    assertArray(orders.productOrders, 'multiProductOrders.productOrders');
-    assertArrayElements(
-      orders.productOrders,
-      (po, label) => {
-        assertNumber(po.productId, `${label}.productId`);
-        assertArray(po.orders, `${label}.orders`);
-        if (po.orders.length > 0) {
+    void test('getOpenSubaccountMultiProductOrders returns orders across products', async () => {
+      const orders =
+        await nadoClient.market.getOpenSubaccountMultiProductOrders({
+          subaccountOwner: walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          productIds: [
+            TEST_PRODUCT_IDS.SPOT_BTC,
+            TEST_PRODUCT_IDS.PERP_BTC,
+            TEST_PRODUCT_IDS.SPOT_ETH,
+          ],
+        });
+
+      debugPrint('Open subaccount multi-product orders', orders);
+      assertDefined(orders, 'multiProductOrders');
+      assertArray(orders.productOrders, 'multiProductOrders.productOrders');
+      assertArrayElements(
+        orders.productOrders,
+        (po, label) => {
+          assertNumber(po.productId, `${label}.productId`);
+          assertArray(po.orders, `${label}.orders`);
           assertArrayElements(
             po.orders,
             assertEngineOrderShape,
             `${label}.orders`,
           );
-        }
-      },
-      'multiProductOrders.productOrders',
-    );
+        },
+        'multiProductOrders.productOrders',
+      );
+    });
   });
 
   void describe('spot token queries', () => {
@@ -396,13 +426,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Product snapshots', result);
     assertArray(result, 'productSnapshots');
-    if (result.length > 0) {
-      assertArrayElements(
-        result,
-        assertProductSnapshotShape,
-        'productSnapshots',
-      );
-    }
+    assertArrayElements(result, assertProductSnapshotShape, 'productSnapshots');
   });
 
   void test('getMarketSnapshots returns snapshots for requested products', async () => {
@@ -414,9 +438,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Market snapshots', result);
     assertArray(result, 'marketSnapshots');
-    if (result.length > 0) {
-      assertArrayElements(result, assertMarketSnapshotShape, 'marketSnapshots');
-    }
+    assertArrayElements(result, assertMarketSnapshotShape, 'marketSnapshots');
   });
 
   void test('getMultiProductSnapshots returns snapshots for multiple products', async () => {
@@ -451,9 +473,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Historical orders', result);
     assertArray(result, 'historicalOrders');
-    if (result.length > 0) {
-      assertArrayElements(result, assertIndexerOrderShape, 'historicalOrders');
-    }
+    assertArrayElements(result, assertIndexerOrderShape, 'historicalOrders');
   });
 
   // ---------------------------------------------------------------

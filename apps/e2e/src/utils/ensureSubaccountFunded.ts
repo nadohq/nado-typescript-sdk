@@ -1,7 +1,5 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
 import { addDecimals, BigDecimal, QUOTE_PRODUCT_ID } from '@nadohq/shared';
-import { fileURLToPath } from 'node:url';
-import { createTestContext } from './runWithContext';
 import { TEST_SUBACCOUNT_NAME } from './testConstants';
 import { RunContext } from './types';
 import { waitForTransaction } from './waitForTransaction';
@@ -64,10 +62,4 @@ export async function ensureSubaccountFunded(
     }),
     publicClient,
   );
-}
-
-// Script entry point — `bun run account-setup`
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log('[utils]: Running account setup');
-  void ensureSubaccountFunded(createTestContext());
 }

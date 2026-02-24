@@ -17,7 +17,7 @@ import { waitForTransaction } from '../utils/waitForTransaction';
 
 void describe(
   '[client]: collateral operations',
-  { timeout: TEST_TIMEOUTS.ON_CHAIN },
+  { timeout: TEST_TIMEOUTS.LONG },
   () => {
     let nadoClient: NadoClient;
     let publicClient: RunContext['publicClient'];

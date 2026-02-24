@@ -154,13 +154,11 @@ void describe(
           secondPage.participants,
           'leaderboardSecondPage.participants',
         );
-        if (secondPage.participants.length > 0) {
-          assertArrayElements(
-            secondPage.participants,
-            assertLeaderboardParticipantShape,
-            'leaderboardSecondPage.participants',
-          );
-        }
+        assertArrayElements(
+          secondPage.participants,
+          assertLeaderboardParticipantShape,
+          'leaderboardSecondPage.participants',
+        );
       });
     });
 

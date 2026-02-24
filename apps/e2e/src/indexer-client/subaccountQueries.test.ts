@@ -106,13 +106,11 @@ void describe(
       debugPrint('Paginated Orders', orders);
       assertPaginatedResponse(orders, 'orders');
       assertArray(orders.orders, 'orders.orders');
-      if (orders.orders.length > 0) {
-        assertArrayElements(
-          orders.orders,
-          assertIndexerOrderShape,
-          'orders.orders',
-        );
-      }
+      assertArrayElements(
+        orders.orders,
+        assertIndexerOrderShape,
+        'orders.orders',
+      );
     });
 
     void test('getEvents returns deposit/withdraw collateral events', async () => {
@@ -128,9 +126,7 @@ void describe(
 
       debugPrint('Raw Events', events);
       assertArray(events, 'events');
-      if (events.length > 0) {
-        assertArrayElements(events, assertIndexerEventShape, 'events');
-      }
+      assertArrayElements(events, assertIndexerEventShape, 'events');
     });
 
     void test('getEvents supports ascending order', async () => {
@@ -146,9 +142,7 @@ void describe(
 
       debugPrint('Raw Events Asc', eventsAsc);
       assertArray(eventsAsc, 'eventsAsc');
-      if (eventsAsc.length > 0) {
-        assertArrayElements(eventsAsc, assertIndexerEventShape, 'eventsAsc');
-      }
+      assertArrayElements(eventsAsc, assertIndexerEventShape, 'eventsAsc');
     });
 
     void test('getPaginatedSubaccountMatchEvents returns match events', async () => {
@@ -166,13 +160,11 @@ void describe(
       debugPrint('Match events', matchEvents);
       assertPaginatedResponse(matchEvents, 'matchEvents');
       assertArray(matchEvents.events, 'matchEvents.events');
-      if (matchEvents.events.length > 0) {
-        assertArrayElements(
-          matchEvents.events,
-          assertMatchEventShape,
-          'matchEvents.events',
-        );
-      }
+      assertArrayElements(
+        matchEvents.events,
+        assertMatchEventShape,
+        'matchEvents.events',
+      );
     });
 
     void test('getPaginatedSubaccountInterestFundingPayments returns payments', async () => {
@@ -235,18 +227,16 @@ void describe(
       debugPrint('Paginated settlement events', settlementEvents);
       assertPaginatedResponse(settlementEvents, 'settlementEvents');
       assertArray(settlementEvents.events, 'settlementEvents.events');
-      if (settlementEvents.events.length > 0) {
-        assertArrayElements(
-          settlementEvents.events,
-          (event, label) => {
-            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
-            assertString(event.submissionIndex, `${label}.submissionIndex`);
-            assertBigDecimalFinite(event.quoteDelta, `${label}.quoteDelta`);
-            assertDefined(event.snapshot, `${label}.snapshot`);
-          },
-          'settlementEvents.events',
-        );
-      }
+      assertArrayElements(
+        settlementEvents.events,
+        (event, label) => {
+          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertString(event.submissionIndex, `${label}.submissionIndex`);
+          assertBigDecimalFinite(event.quoteDelta, `${label}.quoteDelta`);
+          assertDefined(event.snapshot, `${label}.snapshot`);
+        },
+        'settlementEvents.events',
+      );
     });
 
     void test('getPaginatedSubaccountCollateralEvents returns all collateral events', async () => {
@@ -261,19 +251,17 @@ void describe(
       debugPrint('Paginated all collateral events', allCollateralEvents);
       assertPaginatedResponse(allCollateralEvents, 'allCollateralEvents');
       assertArray(allCollateralEvents.events, 'allCollateralEvents.events');
-      if (allCollateralEvents.events.length > 0) {
-        assertArrayElements(
-          allCollateralEvents.events,
-          (event, label) => {
-            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
-            assertString(event.submissionIndex, `${label}.submissionIndex`);
-            assertDefined(event.eventType, `${label}.eventType`);
-            assertBigDecimalFinite(event.amount, `${label}.amount`);
-            assertBigDecimalFinite(event.newAmount, `${label}.newAmount`);
-          },
-          'allCollateralEvents.events',
-        );
-      }
+      assertArrayElements(
+        allCollateralEvents.events,
+        (event, label) => {
+          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertString(event.submissionIndex, `${label}.submissionIndex`);
+          assertDefined(event.eventType, `${label}.eventType`);
+          assertBigDecimalFinite(event.amount, `${label}.amount`);
+          assertBigDecimalFinite(event.newAmount, `${label}.newAmount`);
+        },
+        'allCollateralEvents.events',
+      );
     });
 
     void test('getPaginatedSubaccountCollateralEvents filters by deposit events', async () => {

@@ -55,13 +55,12 @@ void describe(
 
       debugPrint('List subaccounts', subaccounts);
       assertArray(subaccounts, 'subaccounts');
-      if (subaccounts.length > 0) {
-        assertArrayElements(
-          subaccounts,
-          assertSubaccountListingShape,
-          'subaccounts',
-        );
-      }
+
+      assertArrayElements(
+        subaccounts,
+        assertSubaccountListingShape,
+        'subaccounts',
+      );
     });
 
     void test('listSubaccounts supports pagination params', async () => {

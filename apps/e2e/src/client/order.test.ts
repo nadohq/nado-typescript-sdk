@@ -17,7 +17,6 @@ import {
   assertHexString,
   assertNonEmptyArray,
 } from '../utils/assertions';
-import { ALL_TRADEABLE_PRODUCT_IDS } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
@@ -62,7 +61,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
     try {
       await nadoClient.market.cancelProductOrders({
         subaccountName: TEST_SUBACCOUNT_NAME,
-        productIds: ALL_TRADEABLE_PRODUCT_IDS,
+        productIds: Object.values(TEST_PRODUCT_IDS),
       });
     } catch {
       // No open orders or already cancelled
