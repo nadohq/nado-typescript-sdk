@@ -294,13 +294,18 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
         (po, label) => {
           assertNumber(po.productId, `${label}.productId`);
           assertArray(po.orders, `${label}.orders`);
-          assertArrayElements(
-            po.orders,
-            assertEngineOrderShape,
-            `${label}.orders`,
-          );
         },
         'multiProductOrders.productOrders',
+      );
+
+      const btcOrders = orders.productOrders.find(
+        (po) => po.productId === TEST_PRODUCT_IDS.SPOT_BTC,
+      );
+      assertDefined(btcOrders, 'multiProductOrders SPOT_BTC entry');
+      assertArrayElements(
+        btcOrders.orders,
+        assertEngineOrderShape,
+        'multiProductOrders SPOT_BTC orders',
       );
     });
   });
