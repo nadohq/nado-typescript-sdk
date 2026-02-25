@@ -6,7 +6,7 @@ import {
   packOrderAppendix,
 } from '@nadohq/shared';
 import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import { Address } from 'viem';
 import {
   assertArray,
@@ -15,8 +15,8 @@ import {
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { assertTriggerOrderInfoShape } from '../utils/shapeAssertions';
 import {
@@ -52,9 +52,6 @@ void describe(
         url: context.endpoints.engine,
         walletClient,
       });
-
-      attachRetryInterceptor(client.axiosInstance);
-      attachRetryInterceptor(engineClient.axiosInstance);
 
       const marketPrice = await engineClient.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
@@ -145,11 +142,14 @@ void describe(
     });
 
     after(async () => {
-      if (!client) return;
       await cleanupTestState(
         { engine: engineClient, trigger: client },
         { subaccountOwner, verifyingAddr: endpointAddr, chainId },
       );
+    });
+
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('lists pending reduce-only orders', async () => {

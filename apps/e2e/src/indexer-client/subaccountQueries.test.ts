@@ -7,7 +7,7 @@ import {
   toBigDecimal,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
@@ -20,7 +20,7 @@ import {
   assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertIndexerEventShape,
@@ -52,8 +52,10 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: walletClient.account.address,
       };
+    });
 
-      attachRetryInterceptor(client.axiosInstance);
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('getMultiSubaccountSnapshots returns valid snapshots', async () => {

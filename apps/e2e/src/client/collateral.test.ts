@@ -6,11 +6,11 @@ import {
   toBigInt,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
 import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
@@ -40,10 +40,10 @@ void describe(
         walletClient,
         publicClient,
       });
+    });
 
-      attachRetryInterceptor(nadoClient.context.engineClient.axiosInstance);
-      attachRetryInterceptor(nadoClient.context.indexerClient.axiosInstance);
-      attachRetryInterceptor(nadoClient.context.triggerClient.axiosInstance);
+    beforeEach(async () => {
+      await delay(150);
     });
 
     // ---------------------------------------------------------------

@@ -14,7 +14,7 @@ import {
 } from '@nadohq/shared';
 import { TriggerClient } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import {
   Address,
   createWalletClient,
@@ -26,8 +26,8 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { assertDefined, assertHexString } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
 
@@ -56,9 +56,6 @@ void describe('[engine-client]: execute operations', () => {
       walletClient,
     });
 
-    attachRetryInterceptor(client.axiosInstance);
-    attachRetryInterceptor(triggerClient.axiosInstance);
-
     const clearinghouse = getContract({
       abi: NADO_ABIS.clearinghouse,
       address: context.contracts.clearinghouse,
@@ -77,7 +74,6 @@ void describe('[engine-client]: execute operations', () => {
   });
 
   after(async () => {
-    if (!client) return;
     await cleanupTestState(
       {
         engine: client,
@@ -89,6 +85,10 @@ void describe('[engine-client]: execute operations', () => {
         chainId,
       },
     );
+  });
+
+  beforeEach(async () => {
+    await delay(500);
   });
 
   // ---------------------------------------------------------------
@@ -121,8 +121,8 @@ void describe('[engine-client]: execute operations', () => {
   void describe('transferQuote', () => {
     const TRANSFER_AMOUNT = addDecimals(6);
     const TRANSFER_FEE = addDecimals(1);
-    // Engine arithmetic can introduce sub-wei rounding drift
-    const ROUNDING_TOLERANCE = new BigDecimal(100);
+    // Engine arithmetic plus interest accrual between balance snapshots can drift
+    const ROUNDING_TOLERANCE = new BigDecimal(1e12);
 
     async function getQuoteBalance(
       subaccountName: string,

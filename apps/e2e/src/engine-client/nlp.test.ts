@@ -8,11 +8,11 @@ import {
   removeDecimals,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import { Address, getContract } from 'viem';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
 
@@ -29,6 +29,8 @@ void describe(
     let maxBurnAmount: BigDecimal;
 
     before(async () => {
+      await delay(2500);
+
       const context = createTestContext();
       const walletClient = context.getWalletClient();
       walletClientAddress = walletClient.account.address;
@@ -39,14 +41,16 @@ void describe(
         walletClient,
       });
 
-      attachRetryInterceptor(client.axiosInstance);
-
       const clearinghouse = getContract({
         abi: NADO_ABIS.clearinghouse,
         address: context.contracts.clearinghouse,
         client: walletClient,
       });
       endpointAddr = await clearinghouse.read.getEndpoint();
+    });
+
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('getMaxMintNlpAmount returns the max mintable amount', async () => {

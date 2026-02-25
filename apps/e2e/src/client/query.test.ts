@@ -9,7 +9,7 @@ import {
   TimeInSeconds,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
@@ -21,8 +21,8 @@ import {
   assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
@@ -56,10 +56,10 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
       walletClient,
       publicClient,
     });
+  });
 
-    attachRetryInterceptor(nadoClient.context.engineClient.axiosInstance);
-    attachRetryInterceptor(nadoClient.context.indexerClient.axiosInstance);
-    attachRetryInterceptor(nadoClient.context.triggerClient.axiosInstance);
+  beforeEach(async () => {
+    await delay(150);
   });
 
   void test('getTime returns engine server time', async () => {

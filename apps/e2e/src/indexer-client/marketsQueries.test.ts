@@ -1,6 +1,6 @@
 import { CandlestickPeriod, IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, QUOTE_PRODUCT_ID, TimeInSeconds } from '@nadohq/shared';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
@@ -12,7 +12,7 @@ import {
   assertRecord,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
@@ -37,8 +37,10 @@ void describe(
         url: context.endpoints.indexer,
         walletClient,
       });
+    });
 
-      attachRetryInterceptor(client.axiosInstance);
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('getFundingRate returns a valid funding rate', async () => {

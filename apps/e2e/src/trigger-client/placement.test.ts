@@ -9,7 +9,7 @@ import {
 } from '@nadohq/shared';
 import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import { Address } from 'viem';
 import {
   assertArray,
@@ -21,8 +21,8 @@ import {
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
 
@@ -33,9 +33,6 @@ void describe('[trigger-client]: placement', () => {
   let subaccountOwner: string;
   let endpointAddr: Address;
   let midPrice: BigDecimal;
-
-  // Stored across tests: TWAP placement -> TWAP executions query
-  let twapDigest: string;
 
   before(async () => {
     const context = createTestContext();
@@ -54,9 +51,6 @@ void describe('[trigger-client]: placement', () => {
       walletClient,
     });
 
-    attachRetryInterceptor(client.axiosInstance);
-    attachRetryInterceptor(engineClient.axiosInstance);
-
     const marketPrice = await engineClient.getMarketPrice({
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
     });
@@ -64,11 +58,14 @@ void describe('[trigger-client]: placement', () => {
   });
 
   after(async () => {
-    if (!client) return;
     await cleanupTestState(
       { engine: engineClient, trigger: client },
       { subaccountOwner, verifyingAddr: endpointAddr, chainId },
     );
+  });
+
+  beforeEach(async () => {
+    await delay(150);
   });
 
   void test('places a short stop order via oracle price above', async () => {
@@ -275,7 +272,7 @@ void describe('[trigger-client]: placement', () => {
     assertHexString(result.data.digest, 'isolatedResult.data.digest');
   });
 
-  void test('places a TWAP order with time-based trigger', async () => {
+  void test('places a TWAP order and lists its executions', async () => {
     const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);
 
     const order: EngineOrderParams = {
@@ -304,29 +301,23 @@ void describe('[trigger-client]: placement', () => {
       id: 4000,
     };
 
-    const result = await client.placeTriggerOrder(params);
-    debugPrint('TWAP order result', result.data);
+    const placeResult = await client.placeTriggerOrder(params);
+    debugPrint('TWAP order result', placeResult.data);
 
-    assertDefined(result, 'twapResult');
-    assert.equal(result.status, 'success', 'should return success status');
-    assertDefined(result.data, 'twapResult.data');
-    assertHexString(result.data.digest, 'twapResult.data.digest');
+    assertDefined(placeResult, 'twapResult');
+    assert.equal(placeResult.status, 'success', 'should return success status');
+    assertDefined(placeResult.data, 'twapResult.data');
+    assertHexString(placeResult.data.digest, 'twapResult.data.digest');
 
-    twapDigest = result.data.digest;
-  });
-
-  void test('lists TWAP executions for the placed order', async () => {
-    assertDefined(twapDigest, 'twapDigest (from prior TWAP placement)');
-
-    const result = await client.listTwapExecutions({
-      digest: twapDigest,
+    const execResult = await client.listTwapExecutions({
+      digest: placeResult.data.digest,
     });
-    debugPrint('TWAP executions result', result);
+    debugPrint('TWAP executions result', execResult);
 
-    assertDefined(result, 'twapExecutionsResult');
-    assertArray(result.executions, 'twapExecutionsResult.executions');
+    assertDefined(execResult, 'twapExecutionsResult');
+    assertArray(execResult.executions, 'twapExecutionsResult.executions');
     assertArrayElements(
-      result.executions,
+      execResult.executions,
       (exec, label) => {
         assertNumber(exec.executionId, `${label}.executionId`);
         assertNumber(exec.scheduledTime, `${label}.scheduledTime`);

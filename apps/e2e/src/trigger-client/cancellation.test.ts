@@ -8,13 +8,13 @@ import {
 } from '@nadohq/shared';
 import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import { Address } from 'viem';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
@@ -50,9 +50,6 @@ void describe('[trigger-client]: cancellation', () => {
       url: context.endpoints.engine,
       walletClient,
     });
-
-    attachRetryInterceptor(client.axiosInstance);
-    attachRetryInterceptor(engineClient.axiosInstance);
 
     // Place 3 orders across 2 products so we can test cancel-by-digest
     // and cancel-by-product independently.
@@ -125,11 +122,14 @@ void describe('[trigger-client]: cancellation', () => {
   });
 
   after(async () => {
-    if (!client) return;
     await cleanupTestState(
       { engine: engineClient, trigger: client },
       { subaccountOwner, verifyingAddr: endpointAddr, chainId },
     );
+  });
+
+  beforeEach(async () => {
+    await delay(150);
   });
 
   void describe('cancel operations', () => {

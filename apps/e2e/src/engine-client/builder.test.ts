@@ -16,13 +16,12 @@ import {
   WalletClientWithAccount,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import { Address, getContract, PublicClient, zeroAddress } from 'viem';
 import { assertDefined, assertHexString } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
 import { waitForTransaction } from '../utils/waitForTransaction';
@@ -120,9 +119,6 @@ void describe('[engine-client]: builder', () => {
         url: context.endpoints.indexer,
       });
 
-      attachRetryInterceptor(client.axiosInstance);
-      attachRetryInterceptor(indexerClient.axiosInstance);
-
       const products = await client.getAllMarkets();
       const market = products.find(
         (m) => m.productId === TEST_PRODUCT_IDS.PERP_BTC,
@@ -132,6 +128,10 @@ void describe('[engine-client]: builder', () => {
         `Market not found for product ID ${TEST_PRODUCT_IDS.PERP_BTC}`,
       );
       buyPrice = market.product.oraclePrice.multipliedBy(1.1).decimalPlaces(0);
+    });
+
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('places an order with builder info', async () => {
@@ -178,7 +178,7 @@ void describe('[engine-client]: builder', () => {
       if (!builderConfigured || !orderDigest) return;
 
       // Allow time for the order to be indexed
-      await delay(2000);
+      await delay(3000);
 
       const orders = await indexerClient.getOrders({
         digests: [orderDigest],

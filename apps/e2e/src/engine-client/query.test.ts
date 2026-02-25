@@ -8,7 +8,7 @@ import {
   QUOTE_PRODUCT_ID,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArrayElements,
   assertBigDecimalFinite,
@@ -21,8 +21,8 @@ import {
   assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertEngineMarketPriceShape,
@@ -62,8 +62,10 @@ void describe(
         url: context.endpoints.engine,
         walletClient,
       });
+    });
 
-      attachRetryInterceptor(client.axiosInstance);
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('getSymbols returns market symbols', async () => {
@@ -144,7 +146,6 @@ void describe(
       );
     });
 
-    // FIXME: The method returns "Invalid ABI parameter.".
     void test.skip('validateSignedOrderParams validates a signed order', async () => {
       const products = await client.getAllMarkets();
       const spotBtc = products.find(

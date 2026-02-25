@@ -1,13 +1,13 @@
 import { IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, TimeInSeconds } from '@nadohq/shared';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
   assertDefined,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
@@ -25,8 +25,10 @@ void describe(
         url: context.endpoints.indexer,
         walletClient,
       });
+    });
 
-      attachRetryInterceptor(client.axiosInstance);
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('getNlpSnapshots returns snapshot data', async () => {

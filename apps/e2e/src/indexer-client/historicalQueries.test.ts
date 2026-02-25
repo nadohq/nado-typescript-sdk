@@ -1,7 +1,7 @@
 import { IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, QUOTE_PRODUCT_ID, Subaccount } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import type { Address } from 'viem';
 import {
   assertArray,
@@ -13,8 +13,8 @@ import {
   assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getServerError } from '../utils/getServerError';
-import { attachRetryInterceptor } from '../utils/retryInterceptor';
 import { createTestContext } from '../utils/runWithContext';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
 import {
@@ -46,8 +46,10 @@ void describe(
       };
       chainId = walletClient.chain.id;
       endpointAddr = context.contracts.endpoint;
+    });
 
-      attachRetryInterceptor(client.axiosInstance);
+    beforeEach(async () => {
+      await delay(150);
     });
 
     void test('listSubaccounts returns subaccounts for address', async () => {

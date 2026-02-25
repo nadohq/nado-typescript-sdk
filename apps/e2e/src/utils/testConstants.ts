@@ -1,4 +1,3 @@
-import { QUOTE_PRODUCT_ID } from '@nadohq/shared';
 import { TriggerServerStatusTypeFilter } from '@nadohq/trigger-client';
 
 /**
@@ -6,7 +5,6 @@ import { TriggerServerStatusTypeFilter } from '@nadohq/trigger-client';
  * Derived from the testnet deployment's product registry.
  */
 export const TEST_PRODUCT_IDS = {
-  QUOTE: QUOTE_PRODUCT_ID,
   SPOT_BTC: 1,
   PERP_BTC: 2,
   SPOT_ETH: 3,
