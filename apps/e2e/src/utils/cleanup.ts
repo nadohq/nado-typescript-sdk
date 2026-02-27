@@ -73,8 +73,8 @@ export async function cleanupTestState(
   const shouldCancelTriggers = !hints || hints.hasTriggerOrders === true;
   const shouldCancelEngineOrders = !hints || hints.hasEngineOrders === true;
   const shouldClosePositions = !hints || hints.hasPerpPositions === true;
-  const needSubaccountSummary =
-    shouldCancelEngineOrders || shouldClosePositions;
+  const needSubaccountSummary = shouldClosePositions;
+  const needMarkets = shouldCancelEngineOrders || shouldClosePositions;
 
   // Query only the state types the test actually mutated
   const [triggerOrders, subaccountSummary, isolatedPositions, allMarkets] =
@@ -115,7 +115,7 @@ export async function cleanupTestState(
             return null;
           })
         : null,
-      shouldClosePositions
+      needMarkets
         ? getCachedMarkets().catch((err) => {
             errors.push(err);
             return null;
@@ -153,26 +153,24 @@ export async function cleanupTestState(
     });
   }
 
-  // 2. Cancel all engine orders by product for every product that has a balance
-  if (subaccountSummary) {
-    const tradeableProductIds = subaccountSummary.balances
-      .filter((b) => b.type !== ProductEngineType.SPOT || b.productId !== 0)
-      .map((b) => b.productId);
+  // 2. Cancel all engine orders across every tradeable market
+  const allTradeableProductIds = allMarkets
+    ? allMarkets.map((m) => m.productId)
+    : [];
 
-    if (tradeableProductIds.length > 0) {
-      await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
-      await safeRun(errors, () =>
-        withRetry(() =>
-          clients.engine.cancelProductOrders({
-            subaccountName,
-            subaccountOwner: opts.subaccountOwner,
-            productIds: tradeableProductIds,
-            verifyingAddr: opts.endpointAddr,
-            chainId: opts.chainId,
-          }),
-        ),
-      );
-    }
+  if (shouldCancelEngineOrders && allTradeableProductIds.length > 0) {
+    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
+    await safeRun(errors, () =>
+      withRetry(() =>
+        clients.engine.cancelProductOrders({
+          subaccountName,
+          subaccountOwner: opts.subaccountOwner,
+          productIds: allTradeableProductIds,
+          verifyingAddr: opts.endpointAddr,
+          chainId: opts.chainId,
+        }),
+      ),
+    );
   }
 
   // 3 & 4. Close open perp positions (cross + isolated)

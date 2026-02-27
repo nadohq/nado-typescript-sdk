@@ -1,4 +1,4 @@
-import { EngineServerStatusResponse } from '@nadohq/engine-client';
+import { ENGINE_SERVER_STATUS_VALUES } from '@nadohq/engine-client';
 import {
   addDecimals,
   BigDecimal,
@@ -36,15 +36,6 @@ import {
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
-
-const ENGINE_STATUS_VALUES = [
-  'started',
-  'active',
-  'stopping',
-  'syncing',
-  'live_syncing',
-  'failed',
-] as const satisfies readonly EngineServerStatusResponse[];
 
 void describe(
   '[engine-client]: queries',
@@ -109,7 +100,7 @@ void describe(
 
       debugPrint('Engine status', status);
       assertDefined(status, 'status');
-      assertEnumMember(status, ENGINE_STATUS_VALUES, 'status');
+      assertEnumMember(status, ENGINE_SERVER_STATUS_VALUES, 'status');
     });
 
     void test('getOrder returns order when digest exists', async () => {

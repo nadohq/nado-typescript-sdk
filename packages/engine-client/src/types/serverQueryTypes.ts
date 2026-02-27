@@ -163,13 +163,17 @@ export interface EngineServerContractsResponse {
 }
 
 // Unless in active state, engine is not fully operational
+export const ENGINE_SERVER_STATUS_VALUES = [
+  'started',
+  'active',
+  'stopping',
+  'syncing',
+  'live_syncing',
+  'failed',
+] as const;
+
 export type EngineServerStatusResponse =
-  | 'started'
-  | 'active'
-  | 'stopping'
-  | 'syncing'
-  | 'live_syncing'
-  | 'failed';
+  (typeof ENGINE_SERVER_STATUS_VALUES)[number];
 
 export interface EngineServerNoncesResponse {
   order_nonce: string;
