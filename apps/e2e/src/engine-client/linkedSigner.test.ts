@@ -57,7 +57,7 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.RATE_LIMIT);
+    await delay(TEST_DELAYS.RATE_LIMIT_LONG);
   });
 
   void test('creates and links a deterministic signer', async () => {
