@@ -436,6 +436,10 @@ export interface IndexerMatchEvent extends Subaccount {
   realizedPnl: BigDecimal;
   // Always positive
   closedSize: BigDecimal;
+  // Realized entry price for the closed amount on this match (x18). Represents the total quote value at which the closed portion of the position was originally entered.
+  closedNetEntry: BigDecimal;
+  // Margin allocated to the closed amount on this match (x18). Only present for isolated margin orders; null for cross-margin orders.
+  margin: BigDecimal | null;
 }
 
 export type GetIndexerMatchEventsResponse = IndexerMatchEvent[];

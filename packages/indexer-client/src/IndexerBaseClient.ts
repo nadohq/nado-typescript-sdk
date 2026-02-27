@@ -529,6 +529,8 @@ export class IndexerBaseClient {
         isTaker: matchEvent.is_taker,
         realizedPnl: toBigDecimal(matchEvent.realized_pnl),
         closedSize: toBigDecimal(matchEvent.closed_amount),
+        closedNetEntry: toBigDecimal(matchEvent.closed_net_entry),
+        margin: matchEvent.margin ? toBigDecimal(matchEvent.margin) : null,
         ...subaccountFromHex(matchEvent.order.sender),
       };
     });
