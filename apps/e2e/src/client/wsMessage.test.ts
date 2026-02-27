@@ -17,6 +17,7 @@ import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -44,7 +45,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     // ---------------------------------------------------------------

@@ -1,4 +1,4 @@
-import { EngineClient } from '@nadohq/engine-client';
+import { EngineServerStatusResponse } from '@nadohq/engine-client';
 import {
   addDecimals,
   BigDecimal,
@@ -20,10 +20,10 @@ import {
   assertRecord,
   assertString,
 } from '../utils/assertions';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { createTestContext } from '../utils/runWithContext';
 import {
   assertEngineMarketPriceShape,
   assertEngineOrderShape,
@@ -31,6 +31,7 @@ import {
   assertSubaccountSummaryShape,
 } from '../utils/shapeAssertions';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -43,33 +44,24 @@ const ENGINE_STATUS_VALUES = [
   'syncing',
   'live_syncing',
   'failed',
-] as const;
+] as const satisfies readonly EngineServerStatusResponse[];
 
 void describe(
   '[engine-client]: queries',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let client: EngineClient;
-    let walletClientAddress: string;
-    let chainId: number;
+    let tc: TestClients;
 
     before(() => {
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      walletClientAddress = walletClient.account.address;
-      chainId = walletClient.chain.id;
-      client = new EngineClient({
-        url: context.endpoints.engine,
-        walletClient,
-      });
+      tc = createTestClients();
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('getSymbols returns market symbols', async () => {
-      const result = await client.getSymbols({});
+      const result = await tc.engine.getSymbols({});
 
       debugPrint('Symbols', result);
       assertDefined(result, 'symbolsResult');
@@ -95,14 +87,14 @@ void describe(
     });
 
     void test('getInsurance returns a finite insurance balance', async () => {
-      const insurance = await client.getInsurance();
+      const insurance = await tc.engine.getInsurance();
 
       debugPrint('Insurance', insurance);
       assertBigDecimalFinite(insurance, 'insurance');
     });
 
     void test('getContracts returns chain and endpoint', async () => {
-      const contracts = await client.getContracts();
+      const contracts = await tc.engine.getContracts();
 
       debugPrint('Contracts', contracts);
       assertDefined(contracts, 'contracts');
@@ -111,7 +103,7 @@ void describe(
     });
 
     void test('getStatus returns engine status', async () => {
-      const status = await client.getStatus();
+      const status = await tc.engine.getStatus();
 
       debugPrint('Engine status', status);
       assertDefined(status, 'status');
@@ -119,8 +111,8 @@ void describe(
     });
 
     void test('getOrder returns order when digest exists', async () => {
-      const openOrders = await client.getSubaccountOrders({
-        subaccountOwner: walletClientAddress,
+      const openOrders = await tc.engine.getSubaccountOrders({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
@@ -130,7 +122,7 @@ void describe(
       }
 
       const firstOrder = openOrders.orders[0];
-      const order = await client.getOrder({
+      const order = await tc.engine.getOrder({
         digest: firstOrder.digest,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
@@ -147,7 +139,7 @@ void describe(
     });
 
     void test.skip('validateSignedOrderParams validates a signed order', async () => {
-      const products = await client.getAllMarkets();
+      const products = await tc.engine.getAllMarkets();
       const spotBtc = products.find(
         (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
       );
@@ -157,7 +149,7 @@ void describe(
         .multipliedBy(1.05)
         .decimalPlaces(0);
       const order = {
-        subaccountOwner: walletClientAddress,
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         price,
         amount: addDecimals(0.001),
@@ -166,14 +158,14 @@ void describe(
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       };
 
-      const signature = await client.sign(
+      const signature = await tc.engine.sign(
         'place_order',
         getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
-        chainId,
+        tc.chainId,
         order,
       );
 
-      const result = await client.validateSignedOrderParams({
+      const result = await tc.engine.validateSignedOrderParams({
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         signedOrder: { order, signature },
       });
@@ -189,7 +181,7 @@ void describe(
     });
 
     void test('getEdgeAllMarkets returns markets grouped by chain id', async () => {
-      const edgeMarkets = await client.getEdgeAllMarkets();
+      const edgeMarkets = await tc.engine.getEdgeAllMarkets();
 
       debugPrint('Edge all markets', edgeMarkets);
       assertDefined(edgeMarkets, 'edgeMarkets');
@@ -206,8 +198,8 @@ void describe(
     });
 
     void test('getEstimatedSubaccountSummary returns pre-state when requested', async () => {
-      const result = await client.getEstimatedSubaccountSummary({
-        subaccountOwner: walletClientAddress,
+      const result = await tc.engine.getEstimatedSubaccountSummary({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         preState: true,
         txs: [
@@ -228,7 +220,7 @@ void describe(
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
-      const result = await client.getMarketPrices({
+      const result = await tc.engine.getMarketPrices({
         productIds: [
           TEST_PRODUCT_IDS.SPOT_BTC,
           TEST_PRODUCT_IDS.PERP_BTC,

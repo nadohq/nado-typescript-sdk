@@ -1,70 +1,41 @@
-import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
+import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
   BigDecimal,
   createDeterministicLinkedSignerPrivateKey,
   getOrderNonce,
   getOrderVerifyingAddress,
-  NADO_ABIS,
   packOrderAppendix,
   subaccountToHex,
   WalletClientWithAccount,
 } from '@nadohq/shared';
-import { TriggerClient } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
-import {
-  Address,
-  createWalletClient,
-  getContract,
-  http,
-  zeroAddress,
-} from 'viem';
+import { createWalletClient, http, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { createTestContext } from '../utils/runWithContext';
-import { TEST_PRODUCT_IDS, TEST_SUBACCOUNT_NAME } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_PRODUCT_IDS,
+  TEST_SUBACCOUNT_NAME,
+} from '../utils/testConstants';
 
 void describe('[engine-client]: linked signer lifecycle', () => {
-  let client: EngineClient;
-  let triggerClient: TriggerClient;
-  let walletClient: WalletClientWithAccount;
-  let walletClientAddress: string;
-  let chainId: number;
-  let endpointAddr: Address;
+  let tc: TestClients;
   let shortLimitPrice: BigDecimal;
   let linkedSignerWalletClient: WalletClientWithAccount;
 
   before(async () => {
-    await delay(1500);
+    await delay(TEST_DELAYS.LINKED_SIGNER_SETUP);
 
-    const context = createTestContext();
-    walletClient = context.getWalletClient();
-    walletClientAddress = walletClient.account.address;
-    chainId = walletClient.chain.id;
+    tc = createTestClients();
 
-    client = new EngineClient({
-      url: context.endpoints.engine,
-      walletClient,
-    });
-
-    triggerClient = new TriggerClient({
-      url: context.endpoints.trigger,
-      walletClient,
-    });
-
-    const clearinghouse = getContract({
-      abi: NADO_ABIS.clearinghouse,
-      address: context.contracts.clearinghouse,
-      client: walletClient,
-    });
-    endpointAddr = await clearinghouse.read.getEndpoint();
-
-    const products = await client.getAllMarkets();
+    const products = await tc.engine.getAllMarkets();
     const spotMarket = products.find(
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
     );
@@ -76,32 +47,32 @@ void describe('[engine-client]: linked signer lifecycle', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: client, trigger: triggerClient },
+      { engine: tc.engine, trigger: tc.trigger },
       {
-        subaccountOwner: walletClientAddress,
-        verifyingAddr: endpointAddr,
-        chainId,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
       },
     );
   });
 
   beforeEach(async () => {
-    await delay(500);
+    await delay(TEST_DELAYS.RATE_LIMIT);
   });
 
   void test('creates and links a deterministic signer', async () => {
     const linkedSignerPrivKey = await createDeterministicLinkedSignerPrivateKey(
       {
-        chainId,
-        endpointAddress: endpointAddr,
-        walletClient,
-        subaccountOwner: walletClientAddress,
+        chainId: tc.chainId,
+        endpointAddress: tc.endpointAddr,
+        walletClient: tc.walletClient,
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       },
     );
 
     linkedSignerWalletClient = createWalletClient({
-      chain: walletClient.chain,
+      chain: tc.walletClient.chain,
       account: privateKeyToAccount(linkedSignerPrivKey),
       transport: http(),
     });
@@ -110,15 +81,15 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       linkedSignerWalletClient.account.address,
     );
 
-    const result = await client.linkSigner({
-      chainId,
+    const result = await tc.engine.linkSigner({
+      chainId: tc.chainId,
       signer: subaccountToHex({
         subaccountOwner: linkedSignerWalletClient.account.address,
         subaccountName: '',
       }),
-      subaccountOwner: walletClientAddress,
+      subaccountOwner: tc.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      verifyingAddr: endpointAddr,
+      verifyingAddr: tc.endpointAddr,
     });
 
     debugPrint('Link signer result', result);
@@ -127,8 +98,8 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   void test('getLinkedSigner returns the linked signer address', async () => {
-    const result = await client.getLinkedSigner({
-      subaccountOwner: walletClientAddress,
+    const result = await tc.engine.getLinkedSigner({
+      subaccountOwner: tc.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
     });
 
@@ -136,12 +107,12 @@ void describe('[engine-client]: linked signer lifecycle', () => {
     assertDefined(result, 'linkedSignerQuery');
     assertDefined(result.signer, 'linkedSignerQuery.signer');
 
-    client.setLinkedSigner(linkedSignerWalletClient);
+    tc.engine.setLinkedSigner(linkedSignerWalletClient);
   });
 
   void test('places an isolated position using the linked signer', async () => {
     const iocOrder: EngineOrderParams = {
-      subaccountOwner: walletClientAddress,
+      subaccountOwner: tc.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
       amount: addDecimals(0.03),
       expiration: getExpiration(),
@@ -154,9 +125,9 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       }),
     };
 
-    const result = await client.placeOrder({
+    const result = await tc.engine.placeOrder({
       verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
-      chainId,
+      chainId: tc.chainId,
       productId: TEST_PRODUCT_IDS.PERP_BTC,
       order: iocOrder,
       nonce: getOrderNonce(),
@@ -172,8 +143,8 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   void test('getIsolatedPositions returns positions for the subaccount', async () => {
-    const result = await client.getIsolatedPositions({
-      subaccountOwner: walletClientAddress,
+    const result = await tc.engine.getIsolatedPositions({
+      subaccountOwner: tc.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
     });
 
@@ -182,18 +153,18 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   void test('revokes the linked signer', async () => {
-    const result = await client.linkSigner({
-      chainId,
+    const result = await tc.engine.linkSigner({
+      chainId: tc.chainId,
       signer: subaccountToHex({
         subaccountOwner: zeroAddress,
         subaccountName: '',
       }),
-      subaccountOwner: walletClientAddress,
+      subaccountOwner: tc.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      verifyingAddr: endpointAddr,
+      verifyingAddr: tc.endpointAddr,
     });
 
-    client.setLinkedSigner(null);
+    tc.engine.setLinkedSigner(null);
 
     debugPrint('Revoke signer result', result);
     assertDefined(result, 'revokeSignerResult');

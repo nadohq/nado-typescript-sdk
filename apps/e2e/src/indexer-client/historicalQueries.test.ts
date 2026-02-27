@@ -19,6 +19,7 @@ import { createTestContext } from '../utils/runWithContext';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
 import {
   TEST_CONTEST_IDS,
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -49,7 +50,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('listSubaccounts returns subaccounts for address', async () => {

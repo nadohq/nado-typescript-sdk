@@ -17,33 +17,30 @@ import {
   assertHexString,
   assertNonEmptyArray,
 } from '../utils/assertions';
+import { cleanupTestState } from '../utils/cleanup';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { createTestContext } from '../utils/runWithContext';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
 
 void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
+  let tc: TestClients;
   let nadoClient: NadoClient;
-  let chainId: number;
-  let walletClientAddress: string;
   let shortLimitPrice: BigDecimal;
   let shortMarketPrice: BigDecimal;
 
   before(async () => {
-    const context = createTestContext();
-    const walletClient = context.getWalletClient();
-    const publicClient = context.publicClient;
-    chainId = walletClient.chain.id;
-    walletClientAddress = walletClient.account.address;
+    tc = createTestClients();
 
-    nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient,
-      publicClient,
+    nadoClient = createNadoClient(tc.context.env.chainEnv, {
+      walletClient: tc.walletClient,
+      publicClient: tc.context.publicClient,
     });
 
     const allMarkets = await nadoClient.market.getAllMarkets();
@@ -58,19 +55,21 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   });
 
   after(async () => {
-    if (!nadoClient) return;
-    try {
-      await nadoClient.market.cancelProductOrders({
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        productIds: Object.values(TEST_PRODUCT_IDS),
-      });
-    } catch {
-      // No open orders or already cancelled
-    }
+    await cleanupTestState(
+      {
+        engine: tc.engine,
+        trigger: tc.trigger,
+      },
+      {
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      },
+    );
   });
 
   beforeEach(async () => {
-    await delay(150);
+    await delay(TEST_DELAYS.BETWEEN_TESTS);
   });
 
   // ---------------------------------------------------------------
@@ -120,7 +119,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       const result = await nadoClient.context.engineClient.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: walletClientAddress,
+        subaccountOwner: tc.walletClientAddress,
       });
 
       debugPrint('Subaccount orders', result);
@@ -133,7 +132,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
         await nadoClient.context.engineClient.getSubaccountOrders({
           productId: TEST_PRODUCT_IDS.SPOT_ETH,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner: walletClientAddress,
+          subaccountOwner: tc.walletClientAddress,
         });
       assertNonEmptyArray(ordersResult.orders, 'ordersToCancel');
 
@@ -176,7 +175,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
 
       perpOrderDigest = getOrderDigest({
         order: result.orderParams,
-        chainId,
+        chainId: tc.chainId,
         productId: TEST_PRODUCT_IDS.PERP_ETH,
       });
     });

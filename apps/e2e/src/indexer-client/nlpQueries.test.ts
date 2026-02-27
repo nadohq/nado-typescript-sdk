@@ -10,7 +10,7 @@ import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
-import { TEST_TIMEOUTS } from '../utils/testConstants';
+import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 
 void describe(
   '[indexer-client]: NLP queries',
@@ -28,7 +28,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('getNlpSnapshots returns snapshot data', async () => {

@@ -1,26 +1,25 @@
-import { EngineClient } from '@nadohq/engine-client';
 import {
   addDecimals,
   BigDecimal,
   getOrderVerifyingAddress,
   packOrderAppendix,
 } from '@nadohq/shared';
-import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
+import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import { after, before, beforeEach, describe, test } from 'node:test';
-import { Address } from 'viem';
 import {
   assertArray,
   assertArrayElements,
   assertDefined,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { createTestContext } from '../utils/runWithContext';
 import { assertTriggerOrderInfoShape } from '../utils/shapeAssertions';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -30,43 +29,25 @@ void describe(
   '[trigger-client]: listing queries',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let client: TriggerClient;
-    let engineClient: EngineClient;
-    let chainId: number;
-    let subaccountOwner: string;
-    let endpointAddr: Address;
+    let tc: TestClients;
 
     before(async () => {
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      chainId = walletClient.chain.id;
-      subaccountOwner = walletClient.account.address;
-      endpointAddr = context.contracts.endpoint;
+      tc = createTestClients();
 
-      client = new TriggerClient({
-        url: context.endpoints.trigger,
-        walletClient,
-      });
-
-      engineClient = new EngineClient({
-        url: context.endpoints.engine,
-        walletClient,
-      });
-
-      const marketPrice = await engineClient.getMarketPrice({
+      const marketPrice = await tc.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
       const midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
       const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);
 
       const reduceOnlyOrder: TriggerPlaceOrderParams = {
-        chainId,
+        chainId: tc.chainId,
         order: {
           amount: addDecimals(0.1),
           expiration: getExpiration(),
           price: 1000,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
+          subaccountOwner: tc.walletClientAddress,
           appendix: packOrderAppendix({
             reduceOnly: true,
             orderExecutionType: 'default',
@@ -86,13 +67,13 @@ void describe(
       };
 
       const twapOrder: TriggerPlaceOrderParams = {
-        chainId,
+        chainId: tc.chainId,
         order: {
           amount: addDecimals(1),
           expiration: getExpiration(),
           price: 950,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
+          subaccountOwner: tc.walletClientAddress,
           appendix: packOrderAppendix({
             orderExecutionType: 'ioc',
             triggerType: 'twap',
@@ -109,13 +90,13 @@ void describe(
       };
 
       const priceOrder: TriggerPlaceOrderParams = {
-        chainId,
+        chainId: tc.chainId,
         order: {
           amount: addDecimals(0.1),
           expiration: getExpiration(),
           price: 1000,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
+          subaccountOwner: tc.walletClientAddress,
           appendix: packOrderAppendix({
             orderExecutionType: 'default',
             triggerType: 'price',
@@ -135,30 +116,34 @@ void describe(
       };
 
       await Promise.all([
-        client.placeTriggerOrder(reduceOnlyOrder),
-        client.placeTriggerOrder(twapOrder),
-        client.placeTriggerOrder(priceOrder),
+        tc.trigger.placeTriggerOrder(reduceOnlyOrder),
+        tc.trigger.placeTriggerOrder(twapOrder),
+        tc.trigger.placeTriggerOrder(priceOrder),
       ]);
     });
 
     after(async () => {
       await cleanupTestState(
-        { engine: engineClient, trigger: client },
-        { subaccountOwner, verifyingAddr: endpointAddr, chainId },
+        { engine: tc.engine, trigger: tc.trigger },
+        {
+          subaccountOwner: tc.walletClientAddress,
+          verifyingAddr: tc.endpointAddr,
+          chainId: tc.chainId,
+        },
       );
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('lists pending reduce-only orders', async () => {
-      const result = await client.listOrders({
-        chainId,
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
         reduceOnly: true,
       });
       debugPrint('Pending reduce-only orders result', result);
@@ -173,12 +158,12 @@ void describe(
     });
 
     void test('lists pending TWAP orders', async () => {
-      const result = await client.listOrders({
-        chainId,
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
         triggerTypes: ['time_trigger'],
       });
       debugPrint('Pending TWAP orders result', result);
@@ -193,12 +178,12 @@ void describe(
     });
 
     void test('lists all pending trigger orders', async () => {
-      const result = await client.listOrders({
-        chainId,
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
       });
       debugPrint('Pending list all trigger orders result', result);
 
@@ -212,12 +197,12 @@ void describe(
     });
 
     void test('lists pending orders filtered by product', async () => {
-      const result = await client.listOrders({
-        chainId,
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
         productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
       });
       debugPrint('Pending list orders for product result', result);

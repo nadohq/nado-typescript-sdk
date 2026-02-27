@@ -1,4 +1,4 @@
-import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
+import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
   BigDecimal,
@@ -6,28 +6,24 @@ import {
   getOrderVerifyingAddress,
   packOrderAppendix,
 } from '@nadohq/shared';
-import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
+import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
-import { Address } from 'viem';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { createTestContext } from '../utils/runWithContext';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
 } from '../utils/testConstants';
 
 void describe('[trigger-client]: cancellation', () => {
-  let client: TriggerClient;
-  let engineClient: EngineClient;
-  let chainId: number;
-  let subaccountOwner: string;
-  let endpointAddr: Address;
+  let tc: TestClients;
 
   // Digests captured during setup for cancel / list-by-digest tests
   let ethDigest: string;
@@ -35,21 +31,7 @@ void describe('[trigger-client]: cancellation', () => {
   let ethDigest2: string;
 
   before(async () => {
-    const context = createTestContext();
-    const walletClient = context.getWalletClient();
-    chainId = walletClient.chain.id;
-    subaccountOwner = walletClient.account.address;
-    endpointAddr = context.contracts.endpoint;
-
-    client = new TriggerClient({
-      url: context.endpoints.trigger,
-      walletClient,
-    });
-
-    engineClient = new EngineClient({
-      url: context.endpoints.engine,
-      walletClient,
-    });
+    tc = createTestClients();
 
     // Place 3 orders across 2 products so we can test cancel-by-digest
     // and cancel-by-product independently.
@@ -65,7 +47,7 @@ void describe('[trigger-client]: cancellation', () => {
       expiration: getExpiration(),
       price,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner,
+      subaccountOwner: tc.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'default',
         triggerType: 'price',
@@ -77,7 +59,7 @@ void describe('[trigger-client]: cancellation', () => {
       productId: number,
       verifyingAddr: string,
     ): TriggerPlaceOrderParams => ({
-      chainId,
+      chainId: tc.chainId,
       order,
       productId,
       spotLeverage: true,
@@ -93,21 +75,21 @@ void describe('[trigger-client]: cancellation', () => {
     });
 
     const [r1, r2, r3] = await Promise.all([
-      client.placeTriggerOrder(
+      tc.trigger.placeTriggerOrder(
         makeTriggerParams(
           makeOrder(1000),
           TEST_PRODUCT_IDS.SPOT_ETH,
           ethVerifyingAddr,
         ),
       ),
-      client.placeTriggerOrder(
+      tc.trigger.placeTriggerOrder(
         makeTriggerParams(
           makeOrder(60000),
           TEST_PRODUCT_IDS.PERP_BTC,
           btcVerifyingAddr,
         ),
       ),
-      client.placeTriggerOrder(
+      tc.trigger.placeTriggerOrder(
         makeTriggerParams(
           makeOrder(1001),
           TEST_PRODUCT_IDS.SPOT_ETH,
@@ -123,24 +105,28 @@ void describe('[trigger-client]: cancellation', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: engineClient, trigger: client },
-      { subaccountOwner, verifyingAddr: endpointAddr, chainId },
+      { engine: tc.engine, trigger: tc.trigger },
+      {
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      },
     );
   });
 
   beforeEach(async () => {
-    await delay(150);
+    await delay(TEST_DELAYS.BETWEEN_TESTS);
   });
 
   void describe('cancel operations', () => {
     void test('cancels an order via digest', async () => {
-      const result = await client.cancelTriggerOrders({
+      const result = await tc.trigger.cancelTriggerOrders({
         digests: [ethDigest],
         productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
-        chainId,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
       });
       debugPrint('Cancel via digest result', result);
 
@@ -153,12 +139,12 @@ void describe('[trigger-client]: cancellation', () => {
     });
 
     void test('cancels orders via product', async () => {
-      const result = await client.cancelProductOrders({
+      const result = await tc.trigger.cancelProductOrders({
         productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_BTC],
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
-        chainId,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
       });
       debugPrint('Cancel via product result', result);
 
@@ -173,12 +159,12 @@ void describe('[trigger-client]: cancellation', () => {
 
   void describe('post-cancellation queries', () => {
     void test('lists orders after cancellation', async () => {
-      const result = await client.listOrders({
-        chainId,
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        verifyingAddr: endpointAddr,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
       });
       debugPrint('Non-pending list orders result', result);
 
@@ -187,11 +173,11 @@ void describe('[trigger-client]: cancellation', () => {
     });
 
     void test('retrieves orders by specific digests', async () => {
-      const result = await client.listOrders({
-        chainId,
-        verifyingAddr: endpointAddr,
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
+        verifyingAddr: tc.endpointAddr,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
+        subaccountOwner: tc.walletClientAddress,
         digests: [ethDigest, btcDigest, ethDigest2],
       });
       debugPrint('List orders by digest result', result);

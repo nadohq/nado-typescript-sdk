@@ -34,6 +34,27 @@ export const TEST_TIMEOUTS = {
   LONG: 60_000,
 } as const;
 
+/**
+ * Delays (ms) inserted between E2E operations to stay within testnet
+ * rate limits and allow backend state to propagate.
+ *
+ * @see {@link delay} in `../utils/delay.ts` for background.
+ */
+export const TEST_DELAYS = {
+  /** Minimum pause between sequential tests to avoid API rate-limiting. */
+  BETWEEN_TESTS: 150,
+  /** Moderate pause for operations that require state settlement before the next step. */
+  RATE_LIMIT: 500,
+  /** Extended pause after heavy state-mutating operations (e.g. linked signer changes). */
+  RATE_LIMIT_LONG: 1_000,
+  /** Setup delay to let prior suite's linked signer state settle before starting. */
+  LINKED_SIGNER_SETUP: 1_500,
+  /** Setup delay to let prior suite's NLP operations complete before starting. */
+  NLP_SETUP: 2_500,
+  /** Wait for the indexer to process and propagate recently submitted data. */
+  INDEXER_PROPAGATION: 3_000,
+} as const;
+
 /** Status type filters that match all non-terminal trigger order states. */
 export const PENDING_TRIGGER_STATUS_TYPES: TriggerServerStatusTypeFilter[] = [
   'triggering',

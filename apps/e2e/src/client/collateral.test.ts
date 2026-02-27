@@ -12,7 +12,11 @@ import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_SUBACCOUNT_NAME,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
 
@@ -43,7 +47,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     // ---------------------------------------------------------------

@@ -22,7 +22,11 @@ import {
   assertProductSnapshotShape,
   assertV2TickerShape,
 } from '../utils/shapeAssertions';
-import { TEST_PRODUCT_IDS, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_PRODUCT_IDS,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
 
 void describe(
   '[indexer-client]: market queries',
@@ -40,7 +44,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(150);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('getFundingRate returns a valid funding rate', async () => {

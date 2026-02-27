@@ -20,6 +20,7 @@ import {
   assertNumber,
   assertRecord,
 } from '../utils/assertions';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
@@ -37,6 +38,7 @@ import {
   assertSubaccountSummaryShape,
 } from '../utils/shapeAssertions';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -45,12 +47,16 @@ import {
 void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   let nadoClient: NadoClient;
   let walletClientAddress: string;
+  let chainId: number;
+  let endpointAddr: string;
 
   before(() => {
     const context = createTestContext();
     const walletClient = context.getWalletClient();
     const publicClient = context.publicClient;
     walletClientAddress = walletClient.account.address;
+    chainId = walletClient.chain.id;
+    endpointAddr = context.contracts.endpoint;
 
     nadoClient = createNadoClient(context.env.chainEnv, {
       walletClient,
@@ -59,7 +65,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   });
 
   beforeEach(async () => {
-    await delay(150);
+    await delay(TEST_DELAYS.BETWEEN_TESTS);
   });
 
   void test('getTime returns engine server time', async () => {
@@ -251,14 +257,17 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     after(async () => {
-      try {
-        await nadoClient.market.cancelProductOrders({
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
-        });
-      } catch {
-        // No open orders to cancel
-      }
+      await cleanupTestState(
+        {
+          engine: nadoClient.context.engineClient,
+          trigger: nadoClient.context.triggerClient,
+        },
+        {
+          subaccountOwner: walletClientAddress,
+          verifyingAddr: endpointAddr,
+          chainId,
+        },
+      );
     });
 
     void test('getOpenSubaccountOrders returns orders for a product', async () => {
