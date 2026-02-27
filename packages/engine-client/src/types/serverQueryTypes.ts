@@ -236,6 +236,7 @@ export interface EngineServerSymbol {
   long_weight_maintenance_x18: string;
   // undefined when there is no max open interest limit (always undefined for spot products)
   max_open_interest_x18: string | undefined;
+  isolated_only: boolean;
 }
 
 export interface EngineServerSymbolsResponse {

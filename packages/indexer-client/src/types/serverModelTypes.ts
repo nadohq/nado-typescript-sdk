@@ -148,6 +148,10 @@ export interface IndexerServerMatchEvent {
   is_taker: boolean;
   realized_pnl: string;
   closed_amount: string;
+  // Realized entry price for the closed amount on this match (x18). Represents the total quote value at which the closed portion of the position was originally entered.
+  closed_net_entry: string;
+  // Margin allocated to the closed amount on this match (x18). Only present for isolated margin orders; null for cross-margin orders.
+  margin: string | null;
 }
 
 export interface IndexerServerMatchEventBalances {
