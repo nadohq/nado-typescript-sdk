@@ -1,13 +1,6 @@
-import type BigDecimal from 'bignumber.js';
-
 import { toBigDecimal } from './bigDecimal';
 
-export const BigDecimals: Readonly<{
-  ZERO: BigDecimal;
-  ONE: BigDecimal;
-  INF: BigDecimal;
-  MAX_I128: BigDecimal;
-}> = Object.freeze({
+export const BigDecimals = Object.freeze({
   ZERO: toBigDecimal(0),
   ONE: toBigDecimal(1),
   INF: toBigDecimal(Infinity),
