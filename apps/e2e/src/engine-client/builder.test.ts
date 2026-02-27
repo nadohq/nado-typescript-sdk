@@ -43,7 +43,7 @@ const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.BETWEEN_SUITES * 2);
   });
 
   // ---------------------------------------------------------------
@@ -105,7 +105,7 @@ void describe('[engine-client]: builder', () => {
     let buyPrice: BigDecimal;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.BETWEEN_SUITES * 2);
 
       tc = createTestClients();
       publicClient = tc.context.publicClient;
@@ -136,7 +136,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.BETWEEN_TESTS * 2);
     });
 
     // ---------------------------------------------------------------
