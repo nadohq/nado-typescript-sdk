@@ -105,7 +105,7 @@ void describe('[engine-client]: builder', () => {
     let buyPrice: BigDecimal;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES * 2);
+      await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
 
       tc = createTestClients();
       publicClient = tc.context.publicClient;
@@ -125,6 +125,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     after(async () => {
+      await delay(TEST_DELAYS.RATE_LIMIT_LONG);
       await cleanupTestState(
         { engine: tc.engine, trigger: tc.trigger },
         {
@@ -136,7 +137,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS * 2);
+      await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
     });
 
     // ---------------------------------------------------------------
