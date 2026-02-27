@@ -15,6 +15,7 @@ import { delay } from './delay';
 import { getExpiration } from './getExpiration';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
+  TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
 } from './testConstants';
 
@@ -27,9 +28,6 @@ export interface CleanupOptions {
 
 /** Engine rejects orders outside 80%-120% of oracle price; use 19% to stay within bounds. */
 const CLOSE_SLIPPAGE_FACTOR = 0.19;
-
-/** Delay between sequential execute operations to stay within rate limits. */
-const EXECUTE_DELAY_MS = 3500;
 
 const REDUCE_ONLY_IOC_APPENDIX = packOrderAppendix({
   orderExecutionType: 'ioc',
@@ -54,6 +52,8 @@ export async function cleanupTestState(
   clients: { engine: EngineClient; trigger: TriggerClient },
   opts: CleanupOptions,
 ): Promise<void> {
+  await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
+
   const subaccountName = opts.subaccountName ?? TEST_SUBACCOUNT_NAME;
   const errors: unknown[] = [];
 
@@ -97,7 +97,7 @@ export async function cleanupTestState(
     const digests = triggerOrders.orders.map((o) => o.order.digest);
     const productIds = triggerOrders.orders.map((o) => o.order.productId);
 
-    await delay(EXECUTE_DELAY_MS);
+    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
     await safeRun(errors, async () => {
       try {
         await clients.trigger.cancelTriggerOrders({
@@ -123,7 +123,7 @@ export async function cleanupTestState(
       .map((b) => b.productId);
 
     if (tradeableProductIds.length > 0) {
-      await delay(EXECUTE_DELAY_MS);
+      await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
       await safeRun(errors, () =>
         clients.engine.cancelProductOrders({
           subaccountName,
@@ -138,7 +138,7 @@ export async function cleanupTestState(
 
   // 3. Close open cross perp positions
   if (subaccountSummary) {
-    await delay(EXECUTE_DELAY_MS);
+    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
     await safeRun(errors, () =>
       closeCrossPositions(clients.engine, subaccountSummary, {
         subaccountOwner: opts.subaccountOwner,
@@ -150,7 +150,7 @@ export async function cleanupTestState(
 
   // 4. Close open isolated perp positions
   if (isolatedPositions && isolatedPositions.length > 0) {
-    await delay(EXECUTE_DELAY_MS);
+    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
     await safeRun(errors, () =>
       closeIsolatedPositions(clients.engine, isolatedPositions, {
         subaccountOwner: opts.subaccountOwner,
@@ -198,7 +198,7 @@ async function closeCrossPositions(
   );
 
   for (const balance of openPerps as PerpBalanceWithProduct[]) {
-    await delay(EXECUTE_DELAY_MS);
+    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
     await placeCloseOrder(engine, balance, priceByProduct, {
       ...opts,
       appendix: REDUCE_ONLY_IOC_APPENDIX,
@@ -227,7 +227,7 @@ async function closeIsolatedPositions(
   );
 
   for (const position of openPositions) {
-    await delay(EXECUTE_DELAY_MS);
+    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
     await placeCloseOrder(engine, position.baseBalance, priceByProduct, {
       ...opts,
       appendix: REDUCE_ONLY_IOC_ISOLATED_APPENDIX,

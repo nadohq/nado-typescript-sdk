@@ -51,6 +51,7 @@ export const TEST_DELAYS = {
   RATE_LIMIT_LONG: 1_000,
   /** Wait for the indexer to process and propagate recently submitted data. */
   INDEXER_PROPAGATION: 3_000,
+  CLEANUP_EXECUTE_DELAY: 3_500,
 } as const;
 
 /** Status type filters that match all non-terminal trigger order states. */
