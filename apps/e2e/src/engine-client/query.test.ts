@@ -20,7 +20,6 @@ import {
   assertRecord,
   assertString,
 } from '../utils/assertions';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
@@ -30,6 +29,7 @@ import {
   assertMarketWithProductShape,
   assertSubaccountSummaryShape,
 } from '../utils/shapeAssertions';
+import { getSharedClients, TestClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -55,7 +55,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = createTestClients();
+      tc = getSharedClients();
     });
 
     beforeEach(async () => {

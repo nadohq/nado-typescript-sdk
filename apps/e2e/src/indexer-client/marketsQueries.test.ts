@@ -13,7 +13,6 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
-import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
   assertFundingRateShape,
@@ -22,6 +21,7 @@ import {
   assertProductSnapshotShape,
   assertV2TickerShape,
 } from '../utils/shapeAssertions';
+import { getSharedIndexerClient } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -37,12 +37,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      client = new IndexerClient({
-        url: context.endpoints.indexer,
-        walletClient,
-      });
+      client = getSharedIndexerClient();
     });
 
     beforeEach(async () => {

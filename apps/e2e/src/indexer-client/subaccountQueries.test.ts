@@ -21,13 +21,16 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
-import { createTestContext } from '../utils/runWithContext';
 import {
   assertIndexerEventShape,
   assertIndexerOrderShape,
   assertLinkedSignerShape,
   assertMatchEventShape,
 } from '../utils/shapeAssertions';
+import {
+  getSharedContext,
+  getSharedIndexerClient,
+} from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -45,12 +48,9 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const context = createTestContext();
+      const context = getSharedContext();
       const walletClient = context.getWalletClient();
-      client = new IndexerClient({
-        url: context.endpoints.indexer,
-        walletClient,
-      });
+      client = getSharedIndexerClient();
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: walletClient.account.address,
@@ -416,11 +416,8 @@ void describe(
     });
 
     void test('getPoints returns points for the wallet address', async () => {
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-
       const points = await client.getPoints({
-        address: walletClient.account.address,
+        address: subaccount.subaccountOwner as `0x${string}`,
       });
 
       debugPrint('Points', points);

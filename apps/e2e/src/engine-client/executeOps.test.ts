@@ -17,10 +17,14 @@ import { createWalletClient, http, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { assertDefined, assertHexString } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import {
+  getCachedOraclePrice,
+  getSharedClients,
+  TestClients,
+} from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -34,29 +38,21 @@ void describe('[engine-client]: execute operations', () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    tc = createTestClients();
+    tc = getSharedClients();
 
-    const products = await tc.engine.getAllMarkets();
-    const spotMarket = products.find(
-      (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
-    );
-    assert.ok(spotMarket, 'spot BTC market should exist');
-    shortLimitPrice = spotMarket.product.oraclePrice
-      .multipliedBy(1.1)
-      .decimalPlaces(0);
+    const oraclePrice = await getCachedOraclePrice(TEST_PRODUCT_IDS.SPOT_BTC);
+    shortLimitPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
   });
 
   after(async () => {
     await cleanupTestState(
-      {
-        engine: tc.engine,
-        trigger: tc.trigger,
-      },
+      { engine: tc.engine, trigger: tc.trigger },
       {
         subaccountOwner: tc.walletClientAddress,
         endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
+      { hasEngineOrders: true },
     );
   });
 

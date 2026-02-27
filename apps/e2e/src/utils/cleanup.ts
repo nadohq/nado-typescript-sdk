@@ -6,6 +6,7 @@ import {
   BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
+  MarketWithProduct,
   packOrderAppendix,
   PerpBalanceWithProduct,
   ProductEngineType,
@@ -13,17 +14,28 @@ import {
 import { TriggerClient } from '@nadohq/trigger-client';
 import { delay } from './delay';
 import { getExpiration } from './getExpiration';
+import { getCachedMarkets } from './sharedTestSetup';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
   TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
 } from './testConstants';
+import { withRetry } from './withRetry';
 
 export interface CleanupOptions {
   subaccountOwner: string;
   subaccountName?: string;
   endpointAddr: string;
   chainId: number;
+}
+
+export interface CleanupHints {
+  /** Set to true if the test placed trigger orders. */
+  hasTriggerOrders?: boolean;
+  /** Set to true if the test placed engine orders. */
+  hasEngineOrders?: boolean;
+  /** Set to true if the test opened perp positions. */
+  hasPerpPositions?: boolean;
 }
 
 /** Engine rejects orders outside 80%-120% of oracle price; use 19% to stay within bounds. */
@@ -51,46 +63,69 @@ const REDUCE_ONLY_IOC_ISOLATED_APPENDIX = packOrderAppendix({
 export async function cleanupTestState(
   clients: { engine: EngineClient; trigger: TriggerClient },
   opts: CleanupOptions,
+  hints?: CleanupHints,
 ): Promise<void> {
   await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
 
   const subaccountName = opts.subaccountName ?? TEST_SUBACCOUNT_NAME;
   const errors: unknown[] = [];
 
-  // Query all open state up-front
-  const [triggerOrders, subaccountSummary, isolatedPositions] =
+  const shouldCancelTriggers = !hints || hints.hasTriggerOrders === true;
+  const shouldCancelEngineOrders = !hints || hints.hasEngineOrders === true;
+  const shouldClosePositions = !hints || hints.hasPerpPositions === true;
+  const needSubaccountSummary =
+    shouldCancelEngineOrders || shouldClosePositions;
+
+  // Query only the state types the test actually mutated
+  const [triggerOrders, subaccountSummary, isolatedPositions, allMarkets] =
     await Promise.all([
-      clients.trigger
-        .listOrders({
-          chainId: opts.chainId,
-          subaccountName,
-          subaccountOwner: opts.subaccountOwner,
-          verifyingAddr: opts.endpointAddr,
-          statusTypes: PENDING_TRIGGER_STATUS_TYPES,
-        })
-        .catch((err) => {
-          errors.push(err);
-          return null;
-        }),
-      clients.engine
-        .getSubaccountSummary({
-          subaccountOwner: opts.subaccountOwner,
-          subaccountName,
-        })
-        .catch((err) => {
-          errors.push(err);
-          return null;
-        }),
-      clients.engine
-        .getIsolatedPositions({
-          subaccountOwner: opts.subaccountOwner,
-          subaccountName,
-        })
-        .catch((err) => {
-          errors.push(err);
-          return null;
-        }),
+      shouldCancelTriggers
+        ? withRetry(() =>
+            clients.trigger.listOrders({
+              chainId: opts.chainId,
+              subaccountName,
+              subaccountOwner: opts.subaccountOwner,
+              verifyingAddr: opts.endpointAddr,
+              statusTypes: PENDING_TRIGGER_STATUS_TYPES,
+            }),
+          ).catch((err) => {
+            errors.push(err);
+            return null;
+          })
+        : null,
+      needSubaccountSummary
+        ? withRetry(() =>
+            clients.engine.getSubaccountSummary({
+              subaccountOwner: opts.subaccountOwner,
+              subaccountName,
+            }),
+          ).catch((err) => {
+            errors.push(err);
+            return null;
+          })
+        : null,
+      shouldClosePositions
+        ? withRetry(() =>
+            clients.engine.getIsolatedPositions({
+              subaccountOwner: opts.subaccountOwner,
+              subaccountName,
+            }),
+          ).catch((err) => {
+            errors.push(err);
+            return null;
+          })
+        : null,
+      shouldClosePositions
+        ? getCachedMarkets().catch((err) => {
+            errors.push(err);
+            return null;
+          })
+        : null,
     ]);
+
+  const marketByProductId = new Map(
+    allMarkets?.map((m) => [m.productId, m]) ?? [],
+  );
 
   // 1. Cancel pending trigger orders by digest (arrays must be parallel)
   if (triggerOrders && triggerOrders.orders.length > 0) {
@@ -100,14 +135,16 @@ export async function cleanupTestState(
     await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
     await safeRun(errors, async () => {
       try {
-        await clients.trigger.cancelTriggerOrders({
-          digests,
-          productIds,
-          subaccountName,
-          subaccountOwner: opts.subaccountOwner,
-          verifyingAddr: opts.endpointAddr,
-          chainId: opts.chainId,
-        });
+        await withRetry(() =>
+          clients.trigger.cancelTriggerOrders({
+            digests,
+            productIds,
+            subaccountName,
+            subaccountOwner: opts.subaccountOwner,
+            verifyingAddr: opts.endpointAddr,
+            chainId: opts.chainId,
+          }),
+        );
       } catch (err) {
         const msg = err instanceof Error ? err.message : '';
         if (msg.includes('could not be found')) return;
@@ -125,39 +162,74 @@ export async function cleanupTestState(
     if (tradeableProductIds.length > 0) {
       await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
       await safeRun(errors, () =>
-        clients.engine.cancelProductOrders({
-          subaccountName,
-          subaccountOwner: opts.subaccountOwner,
-          productIds: tradeableProductIds,
-          verifyingAddr: opts.endpointAddr,
-          chainId: opts.chainId,
-        }),
+        withRetry(() =>
+          clients.engine.cancelProductOrders({
+            subaccountName,
+            subaccountOwner: opts.subaccountOwner,
+            productIds: tradeableProductIds,
+            verifyingAddr: opts.endpointAddr,
+            chainId: opts.chainId,
+          }),
+        ),
       );
     }
   }
 
-  // 3. Close open cross perp positions
-  if (subaccountSummary) {
-    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
-    await safeRun(errors, () =>
-      closeCrossPositions(clients.engine, subaccountSummary, {
-        subaccountOwner: opts.subaccountOwner,
-        subaccountName,
-        chainId: opts.chainId,
-      }),
-    );
-  }
+  // 3 & 4. Close open perp positions (cross + isolated)
+  const crossPerps = subaccountSummary
+    ? subaccountSummary.balances.filter(
+        (b) => b.type === ProductEngineType.PERP && !b.amount.isZero(),
+      )
+    : [];
+  const openIsolated = isolatedPositions
+    ? isolatedPositions.filter((p) => !p.baseBalance.amount.isZero())
+    : [];
 
-  // 4. Close open isolated perp positions
-  if (isolatedPositions && isolatedPositions.length > 0) {
-    await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
-    await safeRun(errors, () =>
-      closeIsolatedPositions(clients.engine, isolatedPositions, {
-        subaccountOwner: opts.subaccountOwner,
-        subaccountName,
-        chainId: opts.chainId,
-      }),
+  if (crossPerps.length > 0 || openIsolated.length > 0) {
+    const productIds = [
+      ...crossPerps.map((b) => b.productId),
+      ...openIsolated.map((p) => p.baseBalance.productId),
+    ];
+    const uniqueProductIds = [...new Set(productIds)];
+
+    const priceByProduct = await fetchPriceMap(
+      clients.engine,
+      uniqueProductIds,
     );
+
+    if (crossPerps.length > 0) {
+      await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
+      await safeRun(errors, () =>
+        closeCrossPositions(
+          clients.engine,
+          crossPerps as PerpBalanceWithProduct[],
+          marketByProductId,
+          priceByProduct,
+          {
+            subaccountOwner: opts.subaccountOwner,
+            subaccountName,
+            chainId: opts.chainId,
+          },
+        ),
+      );
+    }
+
+    if (openIsolated.length > 0) {
+      await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
+      await safeRun(errors, () =>
+        closeIsolatedPositions(
+          clients.engine,
+          openIsolated,
+          marketByProductId,
+          priceByProduct,
+          {
+            subaccountOwner: opts.subaccountOwner,
+            subaccountName,
+            chainId: opts.chainId,
+          },
+        ),
+      );
+    }
   }
 
   if (errors.length > 0) {
@@ -176,74 +248,70 @@ async function safeRun(
   }
 }
 
-/**
- * Places reduce-only IOC orders to flatten open cross-margin perp positions.
- */
 async function closeCrossPositions(
   engine: EngineClient,
-  summary: Awaited<ReturnType<EngineClient['getSubaccountSummary']>>,
+  openPerps: PerpBalanceWithProduct[],
+  marketByProductId: Map<number, MarketWithProduct>,
+  priceByProduct: Map<number, { bid: BigDecimal; ask: BigDecimal }>,
   opts: { subaccountOwner: string; subaccountName: string; chainId: number },
 ): Promise<void> {
-  const openPerps = summary.balances.filter(
-    (b) => b.type === ProductEngineType.PERP && !b.amount.isZero(),
-  );
-
-  if (openPerps.length === 0) {
-    return;
-  }
-
-  const priceByProduct = await fetchPriceMap(
-    engine,
-    openPerps.map((b) => b.productId),
-  );
-
-  for (const balance of openPerps as PerpBalanceWithProduct[]) {
+  for (const balance of openPerps) {
     await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
-    await placeCloseOrder(engine, balance, priceByProduct, {
+    await placeCloseOrder(engine, balance, priceByProduct, marketByProductId, {
       ...opts,
       appendix: REDUCE_ONLY_IOC_APPENDIX,
     });
   }
 }
 
-/**
- * Places reduce-only IOC orders to flatten open isolated perp positions.
- * Uses the parent subaccount with the isolated appendix (margin 0 since we're closing).
- */
 async function closeIsolatedPositions(
   engine: EngineClient,
-  positions: SubaccountIsolatedPosition[],
+  openPositions: SubaccountIsolatedPosition[],
+  marketByProductId: Map<number, MarketWithProduct>,
+  priceByProduct: Map<number, { bid: BigDecimal; ask: BigDecimal }>,
   opts: { subaccountOwner: string; subaccountName: string; chainId: number },
 ): Promise<void> {
-  const openPositions = positions.filter((p) => !p.baseBalance.amount.isZero());
-
-  if (openPositions.length === 0) {
-    return;
-  }
-
-  const priceByProduct = await fetchPriceMap(
-    engine,
-    openPositions.map((p) => p.baseBalance.productId),
-  );
-
   for (const position of openPositions) {
     await delay(TEST_DELAYS.CLEANUP_EXECUTE_DELAY);
-    await placeCloseOrder(engine, position.baseBalance, priceByProduct, {
-      ...opts,
-      appendix: REDUCE_ONLY_IOC_ISOLATED_APPENDIX,
-    });
+    await placeCloseOrder(
+      engine,
+      position.baseBalance,
+      priceByProduct,
+      marketByProductId,
+      {
+        ...opts,
+        appendix: REDUCE_ONLY_IOC_ISOLATED_APPENDIX,
+      },
+    );
   }
 }
 
 async function fetchPriceMap(engine: EngineClient, productIds: number[]) {
-  const { marketPrices } = await engine.getMarketPrices({ productIds });
+  const { marketPrices } = await withRetry(() =>
+    engine.getMarketPrices({ productIds }),
+  );
   return new Map(marketPrices.map((mp) => [mp.productId, mp]));
+}
+
+/**
+ * Rounds {@link value} down (toward zero) to the nearest multiple of {@link increment}.
+ */
+function roundToIncrement(
+  value: BigDecimal,
+  increment: BigDecimal,
+): BigDecimal {
+  if (increment.isZero()) return value;
+  return value
+    .div(increment)
+    .integerValue(BigDecimal.ROUND_DOWN)
+    .multipliedBy(increment);
 }
 
 async function placeCloseOrder(
   engine: EngineClient,
   balance: PerpBalanceWithProduct,
   priceByProduct: Map<number, { bid: BigDecimal; ask: BigDecimal }>,
+  marketByProductId: Map<number, MarketWithProduct>,
   opts: {
     subaccountOwner: string;
     subaccountName: string;
@@ -254,24 +322,46 @@ async function placeCloseOrder(
   const mp = priceByProduct.get(balance.productId);
   if (!mp) return;
 
+  const market = marketByProductId.get(balance.productId);
+  const priceIncrement = market?.priceIncrement ?? new BigDecimal(1);
+  const sizeIncrement = market?.sizeIncrement ?? new BigDecimal(1);
+
   const isLong = balance.amount.gt(0);
-  const closeAmount = isLong ? balance.amount.negated() : balance.amount.abs();
-  const closePrice = isLong
+  const rawCloseAmount = isLong
+    ? balance.amount.negated()
+    : balance.amount.abs();
+  const closeAmount = isLong
+    ? roundToIncrement(rawCloseAmount, sizeIncrement)
+    : roundToIncrement(rawCloseAmount, sizeIncrement).negated();
+
+  const rawPrice = isLong
     ? mp.bid.multipliedBy(1 - CLOSE_SLIPPAGE_FACTOR)
     : mp.ask.multipliedBy(1 + CLOSE_SLIPPAGE_FACTOR);
+  const closePrice = roundToIncrement(rawPrice, priceIncrement);
 
-  await engine.placeOrder({
-    productId: balance.productId,
-    verifyingAddr: getOrderVerifyingAddress(balance.productId),
-    chainId: opts.chainId,
-    order: {
-      subaccountOwner: opts.subaccountOwner,
-      subaccountName: opts.subaccountName,
-      amount: closeAmount.toFixed(0),
-      price: closePrice.decimalPlaces(0),
-      expiration: getExpiration(),
-      appendix: opts.appendix,
-    },
-    nonce: getOrderNonce(),
-  });
+  if (closeAmount.isZero()) return;
+
+  try {
+    await withRetry(() =>
+      engine.placeOrder({
+        productId: balance.productId,
+        verifyingAddr: getOrderVerifyingAddress(balance.productId),
+        chainId: opts.chainId,
+        order: {
+          subaccountOwner: opts.subaccountOwner,
+          subaccountName: opts.subaccountName,
+          amount: closeAmount,
+          price: closePrice,
+          expiration: getExpiration(),
+          appendix: opts.appendix,
+        },
+        nonce: getOrderNonce(),
+      }),
+    );
+  } catch (err) {
+    // Position may already be closed or dust-sized; don't fail cleanup.
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('increases position')) return;
+    throw err;
+  }
 }

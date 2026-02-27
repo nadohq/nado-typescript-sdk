@@ -21,10 +21,15 @@ import { after, before, beforeEach, describe, test } from 'node:test';
 import { getContract, PublicClient, zeroAddress } from 'viem';
 import { assertDefined, assertHexString } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import {
+  getCachedOraclePrice,
+  getSharedClients,
+  getSharedIndexerClient,
+  TestClients,
+} from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -43,7 +48,7 @@ const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES * 2);
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
   });
 
   // ---------------------------------------------------------------
@@ -105,23 +110,14 @@ void describe('[engine-client]: builder', () => {
     let buyPrice: BigDecimal;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = createTestClients();
+      tc = getSharedClients();
       publicClient = tc.context.publicClient;
-      indexerClient = new IndexerClient({
-        url: tc.context.endpoints.indexer,
-      });
+      indexerClient = getSharedIndexerClient();
 
-      const products = await tc.engine.getAllMarkets();
-      const market = products.find(
-        (m) => m.productId === TEST_PRODUCT_IDS.PERP_BTC,
-      );
-      assert.ok(
-        market,
-        `Market not found for product ID ${TEST_PRODUCT_IDS.PERP_BTC}`,
-      );
-      buyPrice = market.product.oraclePrice.multipliedBy(1.1).decimalPlaces(0);
+      const oraclePrice = await getCachedOraclePrice(TEST_PRODUCT_IDS.PERP_BTC);
+      buyPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
     });
 
     after(async () => {
@@ -133,11 +129,12 @@ void describe('[engine-client]: builder', () => {
           endpointAddr: tc.endpointAddr,
           chainId: tc.chainId,
         },
+        { hasEngineOrders: true, hasPerpPositions: true },
       );
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     // ---------------------------------------------------------------

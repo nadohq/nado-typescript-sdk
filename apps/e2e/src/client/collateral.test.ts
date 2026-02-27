@@ -11,7 +11,7 @@ import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
 import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
-import { createTestContext } from '../utils/runWithContext';
+import { getSharedContext } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
@@ -37,7 +37,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const context = createTestContext();
+      const context = getSharedContext();
       const walletClient = context.getWalletClient();
       publicClient = context.publicClient;
       walletClientAddress = walletClient.account.address;

@@ -19,10 +19,10 @@ import {
   assertString,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { getSharedClients, TestClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -36,7 +36,7 @@ void describe('[trigger-client]: placement', () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    tc = createTestClients();
+    tc = getSharedClients();
 
     const marketPrice = await tc.engine.getMarketPrice({
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
@@ -52,6 +52,7 @@ void describe('[trigger-client]: placement', () => {
         endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
+      { hasTriggerOrders: true },
     );
   });
 
@@ -84,7 +85,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: new BigDecimal(2500),
+          triggerPrice: midPrice,
         },
       },
       verifyingAddr,

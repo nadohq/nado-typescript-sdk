@@ -24,7 +24,6 @@ import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
   assertEngineMarketPriceShape,
@@ -37,6 +36,7 @@ import {
   assertProductSnapshotShape,
   assertSubaccountSummaryShape,
 } from '../utils/shapeAssertions';
+import { getSharedContext } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -53,7 +53,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    const context = createTestContext();
+    const context = getSharedContext();
     const walletClient = context.getWalletClient();
     const publicClient = context.publicClient;
     walletClientAddress = walletClient.account.address;
@@ -269,6 +269,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
           endpointAddr,
           chainId,
         },
+        { hasEngineOrders: true },
       );
     });
 

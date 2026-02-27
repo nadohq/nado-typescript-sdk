@@ -18,10 +18,13 @@ import {
   assertNonEmptyArray,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import {
+  getCachedOraclePrice,
+  getSharedContext,
+} from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -30,28 +33,28 @@ import {
 } from '../utils/testConstants';
 
 void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
-  let tc: TestClients;
   let nadoClient: NadoClient;
+  let walletClientAddress: string;
+  let endpointAddr: string;
+  let chainId: number;
   let shortLimitPrice: BigDecimal;
   let shortMarketPrice: BigDecimal;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    tc = createTestClients();
+    const context = getSharedContext();
+    const walletClient = context.getWalletClient();
+    walletClientAddress = walletClient.account.address;
+    chainId = walletClient.chain.id;
+    endpointAddr = context.contracts.endpoint;
 
-    nadoClient = createNadoClient(tc.context.env.chainEnv, {
-      walletClient: tc.walletClient,
-      publicClient: tc.context.publicClient,
+    nadoClient = createNadoClient(context.env.chainEnv, {
+      walletClient,
+      publicClient: context.publicClient,
     });
 
-    const allMarkets = await nadoClient.market.getAllMarkets();
-    const spotMarket = allMarkets.find(
-      (m) => m.productId === TEST_PRODUCT_IDS.SPOT_ETH,
-    );
-    assert.ok(spotMarket, 'spot ETH market should exist');
-    const oraclePrice = spotMarket.product.oraclePrice;
-
+    const oraclePrice = await getCachedOraclePrice(TEST_PRODUCT_IDS.SPOT_ETH);
     shortLimitPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
     shortMarketPrice = oraclePrice.multipliedBy(0.9).decimalPlaces(0);
   });
@@ -59,14 +62,11 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   after(async () => {
     await cleanupTestState(
       {
-        engine: tc.engine,
-        trigger: tc.trigger,
+        engine: nadoClient.context.engineClient,
+        trigger: nadoClient.context.triggerClient,
       },
-      {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
-      },
+      { subaccountOwner: walletClientAddress, endpointAddr, chainId },
+      { hasEngineOrders: true, hasPerpPositions: true },
     );
   });
 
@@ -121,7 +121,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       const result = await nadoClient.context.engineClient.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: walletClientAddress,
       });
 
       debugPrint('Subaccount orders', result);
@@ -134,7 +134,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
         await nadoClient.context.engineClient.getSubaccountOrders({
           productId: TEST_PRODUCT_IDS.SPOT_ETH,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: walletClientAddress,
         });
       assertNonEmptyArray(ordersResult.orders, 'ordersToCancel');
 
@@ -177,7 +177,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
 
       perpOrderDigest = getOrderDigest({
         order: result.orderParams,
-        chainId: tc.chainId,
+        chainId: chainId,
         productId: TEST_PRODUCT_IDS.PERP_ETH,
       });
     });

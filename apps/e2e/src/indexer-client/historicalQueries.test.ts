@@ -15,8 +15,11 @@ import {
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getServerError } from '../utils/getServerError';
-import { createTestContext } from '../utils/runWithContext';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
+import {
+  getSharedContext,
+  getSharedIndexerClient,
+} from '../utils/sharedTestSetup';
 import {
   TEST_CONTEST_IDS,
   TEST_DELAYS,
@@ -37,12 +40,9 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const context = createTestContext();
+      const context = getSharedContext();
       const walletClient = context.getWalletClient();
-      client = new IndexerClient({
-        url: context.endpoints.indexer,
-        walletClient,
-      });
+      client = getSharedIndexerClient();
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: walletClient.account.address,
@@ -136,17 +136,15 @@ void describe(
       assertDefined(result, 'liquidationEvents');
       assertPaginatedResponse(result, 'liquidationEvents');
       assertArray(result.events, 'result.events');
-      if (result.events.length > 0) {
-        assertArrayElements(
-          result.events,
-          (event, label) => {
-            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
-            assertString(event.submissionIndex, `${label}.submissionIndex`);
-            assertDefined(event.quote, `${label}.quote`);
-          },
-          'result.events',
-        );
-      }
+      assertArrayElements(
+        result.events,
+        (event, label) => {
+          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertString(event.submissionIndex, `${label}.submissionIndex`);
+          assertDefined(event.quote, `${label}.quote`);
+        },
+        'result.events',
+      );
     });
 
     void test('getPaginatedSubaccountLiquidationEvents with productIds filter', async () => {
@@ -161,17 +159,15 @@ void describe(
       assertDefined(result, 'liquidationEvents');
       assertPaginatedResponse(result, 'liquidationEvents');
       assertArray(result.events, 'result.events');
-      if (result.events.length > 0) {
-        assertArrayElements(
-          result.events,
-          (event, label) => {
-            assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
-            assertString(event.submissionIndex, `${label}.submissionIndex`);
-            assertDefined(event.quote, `${label}.quote`);
-          },
-          'result.events',
-        );
-      }
+      assertArrayElements(
+        result.events,
+        (event, label) => {
+          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertString(event.submissionIndex, `${label}.submissionIndex`);
+          assertDefined(event.quote, `${label}.quote`);
+        },
+        'result.events',
+      );
     });
   },
 );

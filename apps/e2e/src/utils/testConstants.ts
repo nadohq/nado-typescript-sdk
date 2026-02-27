@@ -42,16 +42,16 @@ export const TEST_TIMEOUTS = {
  */
 export const TEST_DELAYS = {
   /** Pause between individual tests within a suite. */
-  BETWEEN_TESTS: 200,
+  BETWEEN_TESTS: 150,
   /** Pause at the start of each top-level suite to space out suite execution. */
-  BETWEEN_SUITES: 1_000,
+  BETWEEN_SUITES: 500,
   /** Moderate pause for operations that require state settlement before the next step. */
   RATE_LIMIT: 500,
   /** Extended pause after heavy state-mutating operations (e.g. linked signer changes). */
   RATE_LIMIT_LONG: 1_000,
   /** Wait for the indexer to process and propagate recently submitted data. */
   INDEXER_PROPAGATION: 3_000,
-  CLEANUP_EXECUTE_DELAY: 3_500,
+  CLEANUP_EXECUTE_DELAY: 1_500,
 } as const;
 
 /** Status type filters that match all non-terminal trigger order states. */

@@ -1,6 +1,5 @@
 import {
   addDecimals,
-  BigDecimal,
   getOrderVerifyingAddress,
   packOrderAppendix,
 } from '@nadohq/shared';
@@ -12,11 +11,11 @@ import {
   assertDefined,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { assertTriggerOrderInfoShape } from '../utils/shapeAssertions';
+import { getSharedClients, TestClients } from '../utils/sharedTestSetup';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
   TEST_DELAYS,
@@ -34,7 +33,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = createTestClients();
+      tc = getSharedClients();
 
       const marketPrice = await tc.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
@@ -110,7 +109,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'oracle_price_above',
-            triggerPrice: new BigDecimal(2500),
+            triggerPrice: midPrice,
           },
         },
         verifyingAddr,
@@ -132,6 +131,7 @@ void describe(
           endpointAddr: tc.endpointAddr,
           chainId: tc.chainId,
         },
+        { hasTriggerOrders: true },
       );
     });
 
