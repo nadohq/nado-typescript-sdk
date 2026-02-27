@@ -42,7 +42,9 @@ void describe(
     let client: IndexerClient;
     let subaccount: Subaccount;
 
-    before(() => {
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       const context = createTestContext();
       const walletClient = context.getWalletClient();
       client = new IndexerClient({

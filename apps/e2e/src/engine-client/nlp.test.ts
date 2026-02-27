@@ -27,7 +27,7 @@ void describe(
     let maxBurnAmount: BigDecimal;
 
     before(async () => {
-      await delay(TEST_DELAYS.NLP_SETUP);
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
 
       tc = createTestClients();
     });

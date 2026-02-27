@@ -32,6 +32,8 @@ void describe('[engine-client]: execute operations', () => {
   let shortLimitPrice: BigDecimal;
 
   before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+
     tc = createTestClients();
 
     const products = await tc.engine.getAllMarkets();
@@ -52,7 +54,7 @@ void describe('[engine-client]: execute operations', () => {
       },
       {
         subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
     );

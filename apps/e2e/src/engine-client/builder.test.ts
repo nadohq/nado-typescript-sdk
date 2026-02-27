@@ -42,6 +42,10 @@ const BUILDER_FEE_RATE = 50;
 const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
+  before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+  });
+
   // ---------------------------------------------------------------
   // Pure encoding tests — no network or client setup needed
   // ---------------------------------------------------------------
@@ -101,6 +105,8 @@ void describe('[engine-client]: builder', () => {
     let buyPrice: BigDecimal;
 
     before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       tc = createTestClients();
       publicClient = tc.context.publicClient;
       indexerClient = new IndexerClient({
@@ -123,7 +129,7 @@ void describe('[engine-client]: builder', () => {
         { engine: tc.engine, trigger: tc.trigger },
         {
           subaccountOwner: tc.walletClientAddress,
-          verifyingAddr: tc.endpointAddr,
+          endpointAddr: tc.endpointAddr,
           chainId: tc.chainId,
         },
       );

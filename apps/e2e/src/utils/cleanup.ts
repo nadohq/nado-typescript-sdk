@@ -21,7 +21,7 @@ import {
 export interface CleanupOptions {
   subaccountOwner: string;
   subaccountName?: string;
-  verifyingAddr: string;
+  endpointAddr: string;
   chainId: number;
 }
 
@@ -65,7 +65,7 @@ export async function cleanupTestState(
           chainId: opts.chainId,
           subaccountName,
           subaccountOwner: opts.subaccountOwner,
-          verifyingAddr: opts.verifyingAddr,
+          verifyingAddr: opts.endpointAddr,
           statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         })
         .catch((err) => {
@@ -105,7 +105,7 @@ export async function cleanupTestState(
           productIds,
           subaccountName,
           subaccountOwner: opts.subaccountOwner,
-          verifyingAddr: opts.verifyingAddr,
+          verifyingAddr: opts.endpointAddr,
           chainId: opts.chainId,
         });
       } catch (err) {
@@ -129,7 +129,7 @@ export async function cleanupTestState(
           subaccountName,
           subaccountOwner: opts.subaccountOwner,
           productIds: tradeableProductIds,
-          verifyingAddr: opts.verifyingAddr,
+          verifyingAddr: opts.endpointAddr,
           chainId: opts.chainId,
         }),
       );

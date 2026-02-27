@@ -36,6 +36,8 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   let shortMarketPrice: BigDecimal;
 
   before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+
     tc = createTestClients();
 
     nadoClient = createNadoClient(tc.context.env.chainEnv, {
@@ -62,7 +64,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       },
       {
         subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
     );

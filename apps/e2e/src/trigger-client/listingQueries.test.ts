@@ -32,6 +32,8 @@ void describe(
     let tc: TestClients;
 
     before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       tc = createTestClients();
 
       const marketPrice = await tc.engine.getMarketPrice({
@@ -127,7 +129,7 @@ void describe(
         { engine: tc.engine, trigger: tc.trigger },
         {
           subaccountOwner: tc.walletClientAddress,
-          verifyingAddr: tc.endpointAddr,
+          endpointAddr: tc.endpointAddr,
           chainId: tc.chainId,
         },
       );

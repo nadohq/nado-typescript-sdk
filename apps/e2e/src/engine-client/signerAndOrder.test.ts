@@ -41,6 +41,8 @@ void describe('[engine-client]: signer and orders', () => {
   let shortLimitPrice: BigDecimal;
 
   before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+
     tc = createTestClients();
 
     const products = await tc.engine.getAllMarkets();
@@ -58,7 +60,7 @@ void describe('[engine-client]: signer and orders', () => {
       { engine: tc.engine, trigger: tc.trigger },
       {
         subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
     );

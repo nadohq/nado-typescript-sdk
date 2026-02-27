@@ -41,16 +41,14 @@ export const TEST_TIMEOUTS = {
  * @see {@link delay} in `../utils/delay.ts` for background.
  */
 export const TEST_DELAYS = {
-  /** Minimum pause between sequential tests to avoid API rate-limiting. */
-  BETWEEN_TESTS: 150,
+  /** Pause between individual tests within a suite. */
+  BETWEEN_TESTS: 200,
+  /** Pause at the start of each top-level suite to space out suite execution. */
+  BETWEEN_SUITES: 1_000,
   /** Moderate pause for operations that require state settlement before the next step. */
   RATE_LIMIT: 500,
   /** Extended pause after heavy state-mutating operations (e.g. linked signer changes). */
   RATE_LIMIT_LONG: 1_000,
-  /** Setup delay to let prior suite's linked signer state settle before starting. */
-  LINKED_SIGNER_SETUP: 1_500,
-  /** Setup delay to let prior suite's NLP operations complete before starting. */
-  NLP_SETUP: 2_500,
   /** Wait for the indexer to process and propagate recently submitted data. */
   INDEXER_PROPAGATION: 3_000,
 } as const;

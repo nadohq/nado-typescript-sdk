@@ -31,6 +31,8 @@ void describe('[trigger-client]: cancellation', () => {
   let ethDigest2: string;
 
   before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+
     tc = createTestClients();
 
     // Place 3 orders across 2 products so we can test cancel-by-digest
@@ -108,7 +110,7 @@ void describe('[trigger-client]: cancellation', () => {
       { engine: tc.engine, trigger: tc.trigger },
       {
         subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
     );

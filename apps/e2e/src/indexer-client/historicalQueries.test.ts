@@ -34,7 +34,9 @@ void describe(
     let chainId: number;
     let endpointAddr: Address;
 
-    before(() => {
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       const context = createTestContext();
       const walletClient = context.getWalletClient();
       client = new IndexerClient({

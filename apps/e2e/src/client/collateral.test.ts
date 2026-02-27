@@ -34,7 +34,9 @@ void describe(
     const WITHDRAW_AMOUNT = addDecimals(50, 6);
     const SLOW_MODE_FEE_AMOUNT = addDecimals(1, 6);
 
-    before(() => {
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       const context = createTestContext();
       const walletClient = context.getWalletClient();
       publicClient = context.publicClient;

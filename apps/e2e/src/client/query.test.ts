@@ -50,7 +50,9 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   let chainId: number;
   let endpointAddr: string;
 
-  before(() => {
+  before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+
     const context = createTestContext();
     const walletClient = context.getWalletClient();
     const publicClient = context.publicClient;
@@ -264,7 +266,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
         },
         {
           subaccountOwner: walletClientAddress,
-          verifyingAddr: endpointAddr,
+          endpointAddr,
           chainId,
         },
       );
