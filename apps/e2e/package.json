@@ -17,6 +17,7 @@
     "e2e:indexer": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/indexer-client/*.test.ts",
     "e2e:trigger": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/trigger-client/*.test.ts",
     "e2e:one": "tsx --test --test-reporter=spec --test-concurrency=1",
+    "cleanup": "tsx ./src/scripts/cleanupState.ts",
     "fund": "tsx ./src/scripts/fundSubaccount.ts",
     "typecheck": "tsc --noEmit"
   },

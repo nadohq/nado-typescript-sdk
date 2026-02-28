@@ -9,7 +9,7 @@ import {
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
-import { getSharedIndexerClient } from '../utils/sharedTestSetup';
+import { getSharedClients } from '../utils/sharedTestSetup';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 
 void describe(
@@ -21,7 +21,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      client = getSharedIndexerClient();
+      client = getSharedClients().indexer;
     });
 
     beforeEach(async () => {

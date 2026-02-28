@@ -131,7 +131,6 @@ void describe(
           endpointAddr: tc.endpointAddr,
           chainId: tc.chainId,
         },
-        { hasTriggerOrders: true },
       );
     });
 

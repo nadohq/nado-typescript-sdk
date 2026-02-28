@@ -27,7 +27,6 @@ import { getExpiration } from '../utils/getExpiration';
 import {
   getCachedOraclePrice,
   getSharedClients,
-  getSharedIndexerClient,
   TestClients,
 } from '../utils/sharedTestSetup';
 import {
@@ -114,14 +113,14 @@ void describe('[engine-client]: builder', () => {
 
       tc = getSharedClients();
       publicClient = tc.context.publicClient;
-      indexerClient = getSharedIndexerClient();
+      indexerClient = tc.indexer;
 
       const oraclePrice = await getCachedOraclePrice(TEST_PRODUCT_IDS.PERP_BTC);
       buyPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
     });
 
     after(async () => {
-      await delay(TEST_DELAYS.RATE_LIMIT_LONG);
+      await delay(TEST_DELAYS.SETTLE_STATE_LONG);
       await cleanupTestState(
         { engine: tc.engine, trigger: tc.trigger },
         {
@@ -129,7 +128,6 @@ void describe('[engine-client]: builder', () => {
           endpointAddr: tc.endpointAddr,
           chainId: tc.chainId,
         },
-        { hasEngineOrders: true, hasPerpPositions: true },
       );
     });
 

@@ -52,12 +52,11 @@ void describe('[engine-client]: execute operations', () => {
         endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
-      { hasEngineOrders: true },
     );
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.RATE_LIMIT);
+    await delay(TEST_DELAYS.SETTLE_STATE);
   });
 
   // ---------------------------------------------------------------

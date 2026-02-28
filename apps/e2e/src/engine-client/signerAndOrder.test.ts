@@ -61,7 +61,6 @@ void describe('[engine-client]: signer and orders', () => {
         endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
-      { hasEngineOrders: true, hasPerpPositions: true },
     );
   });
 
@@ -401,7 +400,7 @@ void describe('[engine-client]: signer and orders', () => {
   void describe('multi-product order placement and cancellation', () => {
     before(async () => {
       // Rate-limit delay after the linked signer operations
-      await delay(TEST_DELAYS.RATE_LIMIT_LONG);
+      await delay(TEST_DELAYS.SETTLE_STATE_LONG);
     });
 
     void test('places orders for spot and perp products', async () => {
@@ -449,7 +448,7 @@ void describe('[engine-client]: signer and orders', () => {
         );
 
         // Rate-limit delay between product placements
-        await delay(TEST_DELAYS.RATE_LIMIT);
+        await delay(TEST_DELAYS.SETTLE_STATE);
       }
     });
 

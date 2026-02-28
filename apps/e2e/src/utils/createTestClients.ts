@@ -1,4 +1,5 @@
 import { EngineClient } from '@nadohq/engine-client';
+import { IndexerClient } from '@nadohq/indexer-client';
 import { WalletClientWithAccount } from '@nadohq/shared';
 import { TriggerClient } from '@nadohq/trigger-client';
 import { Address } from 'viem';
@@ -16,6 +17,7 @@ export interface TestClients {
   chainId: number;
   endpointAddr: Address;
   engine: EngineClient;
+  indexer: IndexerClient;
   trigger: TriggerClient;
 }
 
@@ -37,6 +39,10 @@ export function createTestClients(): TestClients {
     endpointAddr: context.contracts.endpoint,
     engine: new EngineClient({
       url: context.endpoints.engine,
+      walletClient,
+    }),
+    indexer: new IndexerClient({
+      url: context.endpoints.indexer,
       walletClient,
     }),
     trigger: new TriggerClient({

@@ -21,7 +21,7 @@ import {
   assertProductSnapshotShape,
   assertV2TickerShape,
 } from '../utils/shapeAssertions';
-import { getSharedIndexerClient } from '../utils/sharedTestSetup';
+import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -37,7 +37,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      client = getSharedIndexerClient();
+      client = getSharedClients().indexer;
     });
 
     beforeEach(async () => {

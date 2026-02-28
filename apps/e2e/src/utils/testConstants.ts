@@ -11,6 +11,9 @@ export const TEST_PRODUCT_IDS = {
   PERP_ETH: 4,
 } as const;
 
+/** All testnet product IDs as a flat array, for bulk cancel operations. */
+export const TEST_PRODUCT_ID_LIST: number[] = Object.values(TEST_PRODUCT_IDS);
+
 /** Default subaccount name used across E2E tests. */
 export const TEST_SUBACCOUNT_NAME = 'default';
 
@@ -44,14 +47,15 @@ export const TEST_DELAYS = {
   /** Pause between individual tests within a suite. */
   BETWEEN_TESTS: 150,
   /** Pause at the start of each top-level suite to space out suite execution. */
-  BETWEEN_SUITES: 500,
-  /** Moderate pause for operations that require state settlement before the next step. */
-  RATE_LIMIT: 500,
-  /** Extended pause after heavy state-mutating operations (e.g. linked signer changes). */
-  RATE_LIMIT_LONG: 1_000,
+  BETWEEN_SUITES: 300,
+  /** Moderate pause for engine state to settle after a mutation. */
+  SETTLE_STATE: 500,
+  /** Extended pause for engine state to settle after heavy mutations (e.g. linked signer changes). */
+  SETTLE_STATE_LONG: 1_000,
   /** Wait for the indexer to process and propagate recently submitted data. */
   INDEXER_PROPAGATION: 3_000,
-  CLEANUP_EXECUTE_DELAY: 1_500,
+  /** Pause between sequential cleanup operations to avoid overwhelming the engine. */
+  BETWEEN_CLEANUP_STEPS: 1_500,
 } as const;
 
 /** Status type filters that match all non-terminal trigger order states. */

@@ -23,7 +23,7 @@ import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import {
   getCachedOraclePrice,
-  getSharedContext,
+  getSharedClients,
 } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
@@ -43,7 +43,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    const context = getSharedContext();
+    const { context } = getSharedClients();
     const walletClient = context.getWalletClient();
     walletClientAddress = walletClient.account.address;
     chainId = walletClient.chain.id;
@@ -66,7 +66,6 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
         trigger: nadoClient.context.triggerClient,
       },
       { subaccountOwner: walletClientAddress, endpointAddr, chainId },
-      { hasEngineOrders: true, hasPerpPositions: true },
     );
   });
 

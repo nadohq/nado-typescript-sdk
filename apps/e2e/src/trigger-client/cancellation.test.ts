@@ -113,7 +113,6 @@ void describe('[trigger-client]: cancellation', () => {
         endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
-      { hasTriggerOrders: true },
     );
   });
 

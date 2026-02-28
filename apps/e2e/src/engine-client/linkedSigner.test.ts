@@ -51,12 +51,11 @@ void describe('[engine-client]: linked signer lifecycle', () => {
         endpointAddr: tc.endpointAddr,
         chainId: tc.chainId,
       },
-      { hasEngineOrders: true, hasPerpPositions: true },
     );
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.RATE_LIMIT_LONG);
+    await delay(TEST_DELAYS.SETTLE_STATE_LONG);
   });
 
   void test('creates and links a deterministic signer', async () => {

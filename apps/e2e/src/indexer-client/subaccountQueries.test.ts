@@ -27,10 +27,7 @@ import {
   assertLinkedSignerShape,
   assertMatchEventShape,
 } from '../utils/shapeAssertions';
-import {
-  getSharedContext,
-  getSharedIndexerClient,
-} from '../utils/sharedTestSetup';
+import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -48,12 +45,11 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const context = getSharedContext();
-      const walletClient = context.getWalletClient();
-      client = getSharedIndexerClient();
+      const tc = getSharedClients();
+      client = tc.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: walletClient.account.address,
+        subaccountOwner: tc.walletClientAddress,
       };
     });
 

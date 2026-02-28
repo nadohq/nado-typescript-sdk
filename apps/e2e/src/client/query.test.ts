@@ -36,7 +36,7 @@ import {
   assertProductSnapshotShape,
   assertSubaccountSummaryShape,
 } from '../utils/shapeAssertions';
-import { getSharedContext } from '../utils/sharedTestSetup';
+import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -53,7 +53,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    const context = getSharedContext();
+    const { context } = getSharedClients();
     const walletClient = context.getWalletClient();
     const publicClient = context.publicClient;
     walletClientAddress = walletClient.account.address;
@@ -269,7 +269,6 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
           endpointAddr,
           chainId,
         },
-        { hasEngineOrders: true },
       );
     });
 

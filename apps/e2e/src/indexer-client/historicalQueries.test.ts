@@ -16,10 +16,7 @@ import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getServerError } from '../utils/getServerError';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
-import {
-  getSharedContext,
-  getSharedIndexerClient,
-} from '../utils/sharedTestSetup';
+import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_CONTEST_IDS,
   TEST_DELAYS,
@@ -40,15 +37,14 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const context = getSharedContext();
-      const walletClient = context.getWalletClient();
-      client = getSharedIndexerClient();
+      const tc = getSharedClients();
+      client = tc.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: walletClient.account.address,
+        subaccountOwner: tc.walletClientAddress,
       };
-      chainId = walletClient.chain.id;
-      endpointAddr = context.contracts.endpoint;
+      chainId = tc.chainId;
+      endpointAddr = tc.endpointAddr;
     });
 
     beforeEach(async () => {
