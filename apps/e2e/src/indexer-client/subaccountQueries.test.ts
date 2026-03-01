@@ -19,6 +19,7 @@ import {
   assertPaginatedResponse,
   assertString,
 } from '../utils/assertions';
+import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import {
@@ -27,7 +28,6 @@ import {
   assertLinkedSignerShape,
   assertMatchEventShape,
 } from '../utils/shapeAssertions';
-import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -45,7 +45,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const tc = getSharedClients();
+      const tc = createTestClients();
       client = tc.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,

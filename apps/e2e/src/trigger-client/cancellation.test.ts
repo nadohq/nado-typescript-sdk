@@ -11,10 +11,10 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { getSharedClients, TestClients } from '../utils/sharedTestSetup';
 import {
   PENDING_TRIGGER_STATUS_TYPES,
   TEST_DELAYS,
@@ -33,7 +33,7 @@ void describe('[trigger-client]: cancellation', () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    tc = getSharedClients();
+    tc = createTestClients();
 
     // Place 3 orders across 2 products so we can test cancel-by-digest
     // and cancel-by-product independently.

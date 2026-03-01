@@ -12,11 +12,11 @@ import {
   assertPaginatedResponse,
   assertString,
 } from '../utils/assertions';
+import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getServerError } from '../utils/getServerError';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
-import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_CONTEST_IDS,
   TEST_DELAYS,
@@ -37,7 +37,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const tc = getSharedClients();
+      const tc = createTestClients();
       client = tc.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,

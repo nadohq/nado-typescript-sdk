@@ -9,9 +9,9 @@ import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
 import { assertDefined } from '../utils/assertions';
+import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
-import { getSharedClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
@@ -31,13 +31,15 @@ void describe(
     const MINT_AMOUNT = addDecimals(1000, 6);
     const DEPOSIT_AMOUNT = addDecimals(500, 6);
     const TRANSFER_AMOUNT = addDecimals(100);
+    const TRANSFER_BACK_AMOUNT = addDecimals(95);
     const WITHDRAW_AMOUNT = addDecimals(50, 6);
     const SLOW_MODE_FEE_AMOUNT = addDecimals(1, 6);
 
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const { context } = getSharedClients();
+      const tc = createTestClients();
+      const { context } = tc;
       const walletClient = context.getWalletClient();
       publicClient = context.publicClient;
       walletClientAddress = walletClient.account.address;
@@ -115,7 +117,7 @@ void describe(
 
       void test('transfers quote back from default2 to default', async () => {
         const result = await nadoClient.spot.transferQuote({
-          amount: TRANSFER_AMOUNT,
+          amount: TRANSFER_BACK_AMOUNT,
           subaccountName: 'default2',
           recipientSubaccountName: TEST_SUBACCOUNT_NAME,
         });

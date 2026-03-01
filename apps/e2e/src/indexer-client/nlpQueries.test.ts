@@ -6,10 +6,10 @@ import {
   assertArrayElements,
   assertDefined,
 } from '../utils/assertions';
+import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
-import { getSharedClients } from '../utils/sharedTestSetup';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 
 void describe(
@@ -21,7 +21,8 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      client = getSharedClients().indexer;
+      const tc = createTestClients();
+      client = tc.indexer;
     });
 
     beforeEach(async () => {

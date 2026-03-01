@@ -18,13 +18,10 @@ import {
   assertNonEmptyArray,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
+import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import {
-  getCachedOraclePrice,
-  getSharedClients,
-} from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -43,7 +40,8 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    const { context } = getSharedClients();
+    const tc = createTestClients();
+    const { context } = tc;
     const walletClient = context.getWalletClient();
     walletClientAddress = walletClient.account.address;
     chainId = walletClient.chain.id;
@@ -54,7 +52,10 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       publicClient: context.publicClient,
     });
 
-    const oraclePrice = await getCachedOraclePrice(TEST_PRODUCT_IDS.SPOT_ETH);
+    const markets = await tc.engine.getAllMarkets();
+    const oraclePrice = markets.find(
+      (m) => m.productId === TEST_PRODUCT_IDS.SPOT_ETH,
+    )!.product.oraclePrice;
     shortLimitPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
     shortMarketPrice = oraclePrice.multipliedBy(0.9).decimalPlaces(0);
   });

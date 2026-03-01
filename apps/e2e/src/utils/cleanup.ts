@@ -16,7 +16,6 @@ import {
 import { TriggerClient } from '@nadohq/trigger-client';
 import { delay } from './delay';
 import { getExpiration } from './getExpiration';
-import { getCachedMarkets } from './sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_ID_LIST,
@@ -94,7 +93,7 @@ export async function cleanupTestState(
   if (crossPerps.length === 0 && openIsolated.length === 0) return;
 
   // 3. Fetch market increments, build close orders, batch execute
-  const allMarkets = await getCachedMarkets();
+  const allMarkets = await clients.engine.getAllMarkets();
   const marketByProductId = new Map(allMarkets.map((m) => [m.productId, m]));
 
   const closeOrders = [

@@ -8,9 +8,9 @@ import {
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import { assertArray, assertDefined } from '../utils/assertions';
+import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
-import { getSharedClients, TestClients } from '../utils/sharedTestSetup';
 import {
   TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
@@ -29,7 +29,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = getSharedClients();
+      tc = createTestClients();
     });
 
     beforeEach(async () => {
