@@ -2,11 +2,11 @@ import { createNadoClient, NadoClient } from '@nadohq/client';
 import { CandlestickPeriod } from '@nadohq/indexer-client';
 import {
   addDecimals,
-  BigDecimal,
   nowInSeconds,
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
   TimeInSeconds,
+  toBigDecimal,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
@@ -569,8 +569,8 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
             type: 'apply_delta',
             tx: {
               productId: QUOTE_PRODUCT_ID,
-              amountDelta: new BigDecimal(1000000000000000000n),
-              vQuoteDelta: new BigDecimal(0),
+              amountDelta: toBigDecimal(1000000000000000000n),
+              vQuoteDelta: toBigDecimal(0),
             },
           },
         ],

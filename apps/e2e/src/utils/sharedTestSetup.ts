@@ -1,6 +1,5 @@
 import { BigDecimal, MarketWithProduct } from '@nadohq/shared';
 import { createTestClients } from './createTestClients';
-import { withRetry } from './withRetry';
 
 export type { TestClients } from './createTestClients';
 
@@ -25,7 +24,7 @@ export function getSharedClients(): ReturnType<typeof createTestClients> {
 export async function getCachedMarkets(): Promise<MarketWithProduct[]> {
   if (!_cachedMarkets) {
     const { engine } = getSharedClients();
-    _cachedMarkets = await withRetry(() => engine.getAllMarkets());
+    _cachedMarkets = await engine.getAllMarkets();
   }
   return _cachedMarkets;
 }

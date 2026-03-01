@@ -48,9 +48,9 @@ export const TEST_DELAYS = {
   BETWEEN_TESTS: 150,
   /** Pause at the start of each top-level suite to space out suite execution. */
   BETWEEN_SUITES: 300,
-  /** Moderate pause for engine state to settle after a mutation. */
+  /** Moderate pause for state to settle after a mutation. */
   SETTLE_STATE: 500,
-  /** Extended pause for engine state to settle after heavy mutations (e.g. linked signer changes). */
+  /** Extended pause for state to settle after heavy on-chain mutations (e.g. linked signer changes). */
   SETTLE_STATE_LONG: 1_000,
   /** Wait for the indexer to process and propagate recently submitted data. */
   INDEXER_PROPAGATION: 3_000,

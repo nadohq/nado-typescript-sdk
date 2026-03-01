@@ -1,11 +1,11 @@
 import { ENGINE_SERVER_STATUS_VALUES } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
+  toBigDecimal,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
@@ -200,8 +200,8 @@ void describe(
             type: 'apply_delta',
             tx: {
               productId: QUOTE_PRODUCT_ID,
-              amountDelta: new BigDecimal(1000000000000000000n),
-              vQuoteDelta: new BigDecimal(0),
+              amountDelta: toBigDecimal(1000000000000000000n),
+              vQuoteDelta: toBigDecimal(0),
             },
           },
         ],

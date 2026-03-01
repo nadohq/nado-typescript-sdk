@@ -1,10 +1,10 @@
 import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  toBigDecimal,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
@@ -69,7 +69,7 @@ void describe('[trigger-client]: cancellation', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: new BigDecimal(99999),
+          triggerPrice: toBigDecimal(99999),
         },
       },
       verifyingAddr,

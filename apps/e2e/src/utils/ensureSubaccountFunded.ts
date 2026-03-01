@@ -1,18 +1,8 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
-import { addDecimals, BigDecimal, QUOTE_PRODUCT_ID } from '@nadohq/shared';
+import { addDecimals, QUOTE_PRODUCT_ID } from '@nadohq/shared';
 import { TEST_SUBACCOUNT_NAME } from './testConstants';
 import { RunContext } from './types';
 import { waitForTransaction } from './waitForTransaction';
-
-/**
- * Options for {@link ensureSubaccountFunded}.
- */
-export interface EnsureFundedOptions {
-  /** Amount to deposit (with decimals already applied). Defaults to 1 000 USDC. */
-  depositAmount?: BigDecimal | number;
-  /** Subaccount name to deposit into. Defaults to {@link TEST_SUBACCOUNT_NAME}. */
-  subaccountName?: string;
-}
 
 /**
  * Mints mock ERC20 tokens, approves allowance, and deposits into the given
@@ -23,12 +13,9 @@ export interface EnsureFundedOptions {
  */
 export async function ensureSubaccountFunded(
   context: RunContext,
-  opts?: EnsureFundedOptions,
 ): Promise<void> {
-  const {
-    depositAmount = addDecimals(1000, 6),
-    subaccountName = TEST_SUBACCOUNT_NAME,
-  } = opts ?? {};
+  const depositAmount = addDecimals(1000, 6);
+  const subaccountName = TEST_SUBACCOUNT_NAME;
 
   const walletClient = context.getWalletClient();
   const publicClient = context.publicClient;
