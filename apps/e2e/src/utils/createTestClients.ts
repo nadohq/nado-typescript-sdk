@@ -43,7 +43,6 @@ export function createTestClients(): TestClients {
     }),
     indexer: new IndexerClient({
       url: context.endpoints.indexer,
-      walletClient,
     }),
     trigger: new TriggerClient({
       url: context.endpoints.trigger,
