@@ -11,11 +11,13 @@ import {
   subaccountToHex,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -29,17 +31,21 @@ void describe(
     let chainId: number;
     let walletClientAddress: string;
 
-    before(() => {
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      const publicClient = context.publicClient;
-      chainId = walletClient.chain.id;
-      walletClientAddress = walletClient.account.address;
+      chainId = context.chainId;
+      walletClientAddress = context.walletClientAddress;
 
       nadoClient = createNadoClient(context.env.chainEnv, {
-        walletClient,
-        publicClient,
+        walletClient: context.walletClient,
+        publicClient: context.publicClient,
       });
+    });
+
+    beforeEach(async () => {
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     // ---------------------------------------------------------------

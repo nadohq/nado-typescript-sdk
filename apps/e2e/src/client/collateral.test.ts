@@ -6,39 +6,48 @@ import {
   toBigInt,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
 import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_SUBACCOUNT_NAME,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
 
+const MINT_AMOUNT = addDecimals(1000, 6);
+const DEPOSIT_AMOUNT = addDecimals(500, 6);
+const TRANSFER_AMOUNT = addDecimals(100);
+const TRANSFER_BACK_AMOUNT = addDecimals(95);
+const WITHDRAW_AMOUNT = addDecimals(50, 6);
+const SLOW_MODE_FEE_AMOUNT = addDecimals(1, 6);
+
 void describe(
   '[client]: collateral operations',
-  { timeout: TEST_TIMEOUTS.ON_CHAIN },
+  { timeout: TEST_TIMEOUTS.LONG },
   () => {
     let nadoClient: NadoClient;
     let publicClient: RunContext['publicClient'];
     let walletClientAddress: string;
 
-    const MINT_AMOUNT = addDecimals(1000, 6);
-    const DEPOSIT_AMOUNT = addDecimals(500, 6);
-    const TRANSFER_AMOUNT = addDecimals(100);
-    const WITHDRAW_AMOUNT = addDecimals(50, 6);
-    const SLOW_MODE_FEE_AMOUNT = addDecimals(1, 6);
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    before(() => {
       const context = createTestContext();
-      const walletClient = context.getWalletClient();
       publicClient = context.publicClient;
-      walletClientAddress = walletClient.account.address;
-
+      walletClientAddress = context.walletClientAddress;
       nadoClient = createNadoClient(context.env.chainEnv, {
-        walletClient,
-        publicClient,
+        walletClient: context.walletClient,
+        publicClient: context.publicClient,
       });
+    });
+    beforeEach(async () => {
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     // ---------------------------------------------------------------
@@ -104,7 +113,7 @@ void describe(
 
       void test('transfers quote back from default2 to default', async () => {
         const result = await nadoClient.spot.transferQuote({
-          amount: TRANSFER_AMOUNT,
+          amount: TRANSFER_BACK_AMOUNT,
           subaccountName: 'default2',
           recipientSubaccountName: TEST_SUBACCOUNT_NAME,
         });

@@ -49,6 +49,7 @@
       },
       "devDependencies": {
         "@types/node": "^25.2.3",
+        "axios": "^1.13.4",
       },
     },
     "apps/node-compat-test": {
@@ -60,7 +61,7 @@
     },
     "packages/client": {
       "name": "@nadohq/client",
-      "version": "0.1.0-alpha.49",
+      "version": "0.1.0-alpha.50",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/indexer-client": "workspace:*",
@@ -77,7 +78,7 @@
     },
     "packages/engine-client": {
       "name": "@nadohq/engine-client",
-      "version": "0.1.0-alpha.49",
+      "version": "0.1.0-alpha.50",
       "dependencies": {
         "@nadohq/shared": "workspace:*",
         "axios": "*",
@@ -92,7 +93,7 @@
     },
     "packages/indexer-client": {
       "name": "@nadohq/indexer-client",
-      "version": "0.1.0-alpha.49",
+      "version": "0.1.0-alpha.50",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
@@ -108,7 +109,7 @@
     },
     "packages/shared": {
       "name": "@nadohq/shared",
-      "version": "0.1.0-alpha.49",
+      "version": "0.1.0-alpha.50",
       "dependencies": {
         "abitype": "^1.2.3",
       },
@@ -124,7 +125,7 @@
     },
     "packages/trigger-client": {
       "name": "@nadohq/trigger-client",
-      "version": "0.1.0-alpha.49",
+      "version": "0.1.0-alpha.50",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
