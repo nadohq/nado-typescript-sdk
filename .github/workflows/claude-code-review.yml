@@ -1,0 +1,58 @@
+name: Claude Code Review
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '@claude')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/head
+          fetch-depth: 0
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true
+
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR_NUMBER: ${{ github.event.issue.number }}
+
+            You are a Senior Technical Reviewer. Your goal is to provide a high-quality, actionable code review using GitHub's review system.
+
+            REVIEW GUIDELINES:
+            1.  **Read AGENTS.md** in the root directory first to understand the project's style guide.
+            2.  **Focus on Substance:** Look for logic errors, security vulnerabilities, performance bottlenecks, and race conditions.
+            3.  **Ignore Fluff:** Do not comment on trivial formatting if it's handled by a linter.
+            4.  **Be Explicit:** When suggesting a fix, provide the code snippet.
+
+            EXECUTION STEPS:
+            1.  Retrieve the PR diff and analyze the changes (`mcp__github__get_pull_request_diff`).
+            2.  If context is needed, read full files using `Read` or `Grep`.
+            3.  Start a pending review using `mcp__github__create_pending_pull_request_review`.
+            4.  Iterate through the diff. For every issue found, add a specific inline comment using `mcp__github__add_comment_to_pending_review`.
+                - Ensure the `path`, `line`, and `side` (RIGHT for additions) are accurate.
+            5.  Finalize the review by submitting it with `mcp__github__submit_pending_pull_request_review` using event 'COMMENT'.
+
+          claude_args: >-
+            --allowedTools "mcp__github__create_pending_pull_request_review,mcp__github__add_comment_to_pending_review,mcp__github__get_pull_request,mcp__github__submit_pending_pull_request_review,mcp__github__get_pull_request_diff,mcp__github__read_file,Bash,Read,LS,Glob,Grep,mcp__github__get_pull_request_files"
