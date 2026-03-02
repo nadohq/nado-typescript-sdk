@@ -54,6 +54,8 @@ export async function cleanupTestState(
   clients: { engine: EngineClient; trigger: TriggerClient },
   opts: CleanupOptions,
 ): Promise<void> {
+  await delay(TEST_DELAYS.BETWEEN_SUITES);
+
   const subaccountName = opts.subaccountName ?? TEST_SUBACCOUNT_NAME;
 
   const cancelParams: EngineCancelProductOrdersParams = {
