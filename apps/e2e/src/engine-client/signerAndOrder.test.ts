@@ -22,10 +22,10 @@ import {
   assertRecord,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { createTestContext } from '../utils/runWithContext';
 import {
   assertEngineMarketPriceShape,
   assertEngineOrderShape,
@@ -35,15 +35,16 @@ import {
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
 } from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: signer and orders', () => {
-  let tc: TestClients;
+  let tc: RunContext;
   let shortLimitPrice: BigDecimal;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    tc = createTestClients();
+    tc = createTestContext();
 
     const markets = await tc.engine.getAllMarkets();
     const oraclePrice = markets.find(

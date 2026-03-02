@@ -20,10 +20,10 @@ import {
   assertRecord,
   assertString,
 } from '../utils/assertions';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { createTestContext } from '../utils/runWithContext';
 import {
   assertEngineMarketPriceShape,
   assertEngineOrderShape,
@@ -36,17 +36,18 @@ import {
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe(
   '[engine-client]: queries',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: TestClients;
+    let tc: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = createTestClients();
+      tc = createTestContext();
     });
 
     beforeEach(async () => {

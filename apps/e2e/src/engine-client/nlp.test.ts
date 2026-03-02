@@ -8,20 +8,21 @@ import {
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import { assertArray, assertDefined } from '../utils/assertions';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe(
   '[engine-client]: NLP operations',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: TestClients;
+    let tc: RunContext;
 
     /** Stored across tests: burn test reads the amount queried by the preceding test. */
     let maxBurnAmount: BigDecimal;
@@ -29,7 +30,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = createTestClients();
+      tc = createTestContext();
     });
 
     beforeEach(async () => {

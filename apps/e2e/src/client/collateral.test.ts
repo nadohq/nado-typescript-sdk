@@ -9,9 +9,9 @@ import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import { encodeAbiParameters, encodePacked, parseAbiParameters } from 'viem';
 import { assertDefined } from '../utils/assertions';
-import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
   TEST_SUBACCOUNT_NAME,
@@ -38,13 +38,11 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const tc = createTestClients();
-      const { context } = tc;
-      const walletClient = context.getWalletClient();
+      const context = createTestContext();
       publicClient = context.publicClient;
-      walletClientAddress = walletClient.account.address;
+      walletClientAddress = context.walletClientAddress;
       nadoClient = createNadoClient(context.env.chainEnv, {
-        walletClient,
+        walletClient: context.walletClient,
         publicClient: context.publicClient,
       });
     });

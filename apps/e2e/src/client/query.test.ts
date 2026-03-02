@@ -21,10 +21,10 @@ import {
   assertRecord,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
   assertEngineMarketPriceShape,
@@ -53,17 +53,14 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    const tc = createTestClients();
-    const { context } = tc;
-    const walletClient = context.getWalletClient();
-    const publicClient = context.publicClient;
-    walletClientAddress = walletClient.account.address;
-    chainId = walletClient.chain.id;
-    endpointAddr = context.contracts.endpoint;
+    const context = createTestContext();
+    walletClientAddress = context.walletClientAddress;
+    chainId = context.chainId;
+    endpointAddr = context.endpointAddr;
 
     nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient,
-      publicClient,
+      walletClient: context.walletClient,
+      publicClient: context.publicClient,
     });
   });
 

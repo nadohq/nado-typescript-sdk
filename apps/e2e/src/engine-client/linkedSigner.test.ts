@@ -15,25 +15,26 @@ import { createWalletClient, http, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
 } from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: linked signer lifecycle', () => {
-  let tc: TestClients;
+  let tc: RunContext;
   let shortLimitPrice: BigDecimal;
   let linkedSignerWalletClient: WalletClientWithAccount;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
 
-    tc = createTestClients();
+    tc = createTestContext();
 
     const markets = await tc.engine.getAllMarkets();
     const oraclePrice = markets.find(

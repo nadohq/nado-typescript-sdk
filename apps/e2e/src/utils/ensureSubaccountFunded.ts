@@ -9,7 +9,6 @@ import { waitForTransaction } from './waitForTransaction';
  * subaccount. Intended for test environment setup on testnet.
  *
  * @param context - The test run context providing wallet and chain clients.
- * @param opts - Optional overrides for deposit amount and subaccount name.
  */
 export async function ensureSubaccountFunded(
   context: RunContext,
@@ -17,12 +16,9 @@ export async function ensureSubaccountFunded(
   const depositAmount = addDecimals(1000, 6);
   const subaccountName = TEST_SUBACCOUNT_NAME;
 
-  const walletClient = context.getWalletClient();
-  const publicClient = context.publicClient;
-
   const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
-    walletClient,
-    publicClient,
+    walletClient: context.walletClient,
+    publicClient: context.publicClient,
   });
 
   await waitForTransaction(
@@ -30,7 +26,7 @@ export async function ensureSubaccountFunded(
       amount: depositAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
-    publicClient,
+    context.publicClient,
   );
 
   await waitForTransaction(
@@ -38,7 +34,7 @@ export async function ensureSubaccountFunded(
       amount: depositAmount,
       productId: QUOTE_PRODUCT_ID,
     }),
-    publicClient,
+    context.publicClient,
   );
 
   await waitForTransaction(
@@ -47,6 +43,6 @@ export async function ensureSubaccountFunded(
       productId: QUOTE_PRODUCT_ID,
       amount: depositAmount,
     }),
-    publicClient,
+    context.publicClient,
   );
 }

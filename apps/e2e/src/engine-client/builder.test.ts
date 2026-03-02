@@ -21,15 +21,16 @@ import { after, before, beforeEach, describe, test } from 'node:test';
 import { getContract, PublicClient, zeroAddress } from 'viem';
 import { assertDefined, assertHexString } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients, TestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
 } from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
 
 /** Builder ID configured on the testnet. */
@@ -99,7 +100,7 @@ void describe('[engine-client]: builder', () => {
   // Shared setup for network-dependent builder tests
   // ---------------------------------------------------------------
   void describe('builder order operations', () => {
-    let tc: TestClients;
+    let tc: RunContext;
     let indexerClient: IndexerClient;
     let publicClient: PublicClient;
     let buyPrice: BigDecimal;
@@ -107,8 +108,8 @@ void describe('[engine-client]: builder', () => {
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      tc = createTestClients();
-      publicClient = tc.context.publicClient;
+      tc = createTestContext();
+      publicClient = tc.publicClient;
       indexerClient = tc.indexer;
 
       const markets = await tc.engine.getAllMarkets();
@@ -223,10 +224,10 @@ void describe('[engine-client]: builder', () => {
       void test('submits ClaimBuilderFee via slow mode and polls for event', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        const nadoClient: NadoClient = createNadoClient(
-          tc.context.env.chainEnv,
-          { walletClient: tc.walletClient, publicClient },
-        );
+        const nadoClient: NadoClient = createNadoClient(tc.env.chainEnv, {
+          walletClient: tc.walletClient,
+          publicClient,
+        });
 
         const slowModeFeeAmount = addDecimals(1, 6);
         await waitForTransaction(

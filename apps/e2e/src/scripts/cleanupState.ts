@@ -1,8 +1,8 @@
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients } from '../utils/createTestClients';
+import { createTestContext } from '../utils/runWithContext';
 
 const { engine, trigger, walletClientAddress, endpointAddr, chainId } =
-  createTestClients();
+  createTestContext();
 
 await cleanupTestState(
   { engine, trigger },

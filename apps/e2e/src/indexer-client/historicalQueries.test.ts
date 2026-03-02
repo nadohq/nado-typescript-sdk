@@ -12,10 +12,10 @@ import {
   assertPaginatedResponse,
   assertString,
 } from '../utils/assertions';
-import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getServerError } from '../utils/getServerError';
+import { createTestContext } from '../utils/runWithContext';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
 import {
   TEST_CONTEST_IDS,
@@ -37,7 +37,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const tc = createTestClients();
+      const tc = createTestContext();
       client = tc.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,

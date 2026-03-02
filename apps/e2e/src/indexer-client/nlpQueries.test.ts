@@ -6,9 +6,9 @@ import {
   assertArrayElements,
   assertDefined,
 } from '../utils/assertions';
-import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { createTestContext } from '../utils/runWithContext';
 import { assertNlpSnapshotShape } from '../utils/shapeAssertions';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 
@@ -21,7 +21,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const tc = createTestClients();
+      const tc = createTestContext();
       client = tc.indexer;
     });
 

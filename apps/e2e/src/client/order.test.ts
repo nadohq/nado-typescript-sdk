@@ -18,10 +18,10 @@ import {
   assertNonEmptyArray,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
-import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -40,19 +40,17 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-    const tc = createTestClients();
-    const { context } = tc;
-    const walletClient = context.getWalletClient();
-    walletClientAddress = walletClient.account.address;
-    chainId = walletClient.chain.id;
-    endpointAddr = context.contracts.endpoint;
+    const context = createTestContext();
+    walletClientAddress = context.walletClientAddress;
+    chainId = context.chainId;
+    endpointAddr = context.endpointAddr;
 
     nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient,
+      walletClient: context.walletClient,
       publicClient: context.publicClient,
     });
 
-    const markets = await tc.engine.getAllMarkets();
+    const markets = await context.engine.getAllMarkets();
     const oraclePrice = markets.find(
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_ETH,
     )!.product.oraclePrice;

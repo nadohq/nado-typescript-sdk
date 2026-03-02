@@ -19,9 +19,9 @@ import {
   assertPaginatedResponse,
   assertString,
 } from '../utils/assertions';
-import { createTestClients } from '../utils/createTestClients';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { createTestContext } from '../utils/runWithContext';
 import {
   assertIndexerEventShape,
   assertIndexerOrderShape,
@@ -45,7 +45,7 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      const tc = createTestClients();
+      const tc = createTestContext();
       client = tc.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,
