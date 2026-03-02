@@ -11,7 +11,6 @@ import {
   packOrderAppendix,
   PerpBalanceWithProduct,
   ProductEngineType,
-  toBigDecimal,
 } from '@nadohq/shared';
 import { TriggerClient } from '@nadohq/trigger-client';
 import { delay } from './delay';
@@ -71,6 +70,8 @@ export async function cleanupTestState(
     clients.trigger.cancelProductOrders(cancelParams),
   ]);
 
+  await delay(TEST_DELAYS.BETWEEN_SUITES);
+
   // 2. Query subaccount summary + isolated positions in parallel
   const [subaccountSummary, isolatedPositions] = await Promise.all([
     clients.engine.getSubaccountSummary({
@@ -117,10 +118,10 @@ export async function cleanupTestState(
         appendix: REDUCE_ONLY_IOC_ISOLATED_APPENDIX,
       }),
     ),
-  ].filter((order): order is EnginePlaceOrderParams => order !== null);
+  ];
 
   if (closeOrders.length > 0) {
-    await delay(TEST_DELAYS.BETWEEN_CLEANUP_STEPS);
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
     await clients.engine.placeOrders({ orders: closeOrders });
   }
 }
@@ -140,8 +141,9 @@ function roundToIncrement(
 }
 
 /**
- * Builds a single close-order param for a perp position, or returns {@link null}
- * if the position is dust-sized after rounding.
+ * Builds a single close-order param for a perp position.
+ *
+ * @throws If the market is not found or the close amount rounds to zero.
  */
 function buildCloseOrder(params: {
   balance: PerpBalanceWithProduct;
@@ -150,17 +152,31 @@ function buildCloseOrder(params: {
   subaccountName: string;
   chainId: number;
   appendix: bigint;
-}): EnginePlaceOrderParams | null {
+}): EnginePlaceOrderParams {
   const { balance, marketByProductId } = params;
   const market = marketByProductId.get(balance.productId);
-  const priceIncrement = market?.priceIncrement ?? toBigDecimal(1);
-  const sizeIncrement = market?.sizeIncrement ?? toBigDecimal(1);
+
+  if (!market) {
+    throw new Error(
+      `No market found for productId ${balance.productId.toString()}`,
+    );
+  }
+
+  const { priceIncrement, sizeIncrement } = market;
 
   const closeAmount = roundToIncrement(balance.amount.negated(), sizeIncrement);
 
-  if (closeAmount.isZero()) return null;
+  if (closeAmount.isZero()) {
+    throw new Error(
+      `Close amount is zero after rounding for productId ${balance.productId.toString()}`,
+    );
+  }
 
-  const rawPrice = balance.oraclePrice.multipliedBy(1 - CLOSE_SLIPPAGE_FACTOR);
+  const isBuy = closeAmount.isPositive();
+  const slippageMultiplier = isBuy
+    ? 1 + CLOSE_SLIPPAGE_FACTOR
+    : 1 - CLOSE_SLIPPAGE_FACTOR;
+  const rawPrice = balance.oraclePrice.multipliedBy(slippageMultiplier);
   const closePrice = roundToIncrement(rawPrice, priceIncrement);
 
   return {

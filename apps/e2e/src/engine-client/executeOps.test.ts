@@ -33,7 +33,7 @@ void describe('[engine-client]: execute operations', () => {
   let shortLimitPrice: BigDecimal;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
 
     tc = createTestClients();
 
@@ -56,7 +56,7 @@ void describe('[engine-client]: execute operations', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.SETTLE_STATE);
+    await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
   });
 
   // ---------------------------------------------------------------

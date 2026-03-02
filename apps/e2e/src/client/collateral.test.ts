@@ -20,6 +20,13 @@ import {
 import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
 
+const MINT_AMOUNT = addDecimals(1000, 6);
+const DEPOSIT_AMOUNT = addDecimals(500, 6);
+const TRANSFER_AMOUNT = addDecimals(100);
+const TRANSFER_BACK_AMOUNT = addDecimals(95);
+const WITHDRAW_AMOUNT = addDecimals(50, 6);
+const SLOW_MODE_FEE_AMOUNT = addDecimals(1, 6);
+
 void describe(
   '[client]: collateral operations',
   { timeout: TEST_TIMEOUTS.LONG },
@@ -27,13 +34,6 @@ void describe(
     let nadoClient: NadoClient;
     let publicClient: RunContext['publicClient'];
     let walletClientAddress: string;
-
-    const MINT_AMOUNT = addDecimals(1000, 6);
-    const DEPOSIT_AMOUNT = addDecimals(500, 6);
-    const TRANSFER_AMOUNT = addDecimals(100);
-    const TRANSFER_BACK_AMOUNT = addDecimals(95);
-    const WITHDRAW_AMOUNT = addDecimals(50, 6);
-    const SLOW_MODE_FEE_AMOUNT = addDecimals(1, 6);
 
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
@@ -43,13 +43,11 @@ void describe(
       const walletClient = context.getWalletClient();
       publicClient = context.publicClient;
       walletClientAddress = walletClient.account.address;
-
       nadoClient = createNadoClient(context.env.chainEnv, {
         walletClient,
-        publicClient,
+        publicClient: context.publicClient,
       });
     });
-
     beforeEach(async () => {
       await delay(TEST_DELAYS.BETWEEN_TESTS);
     });

@@ -119,7 +119,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     after(async () => {
-      await delay(TEST_DELAYS.SETTLE_STATE_LONG);
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
       await cleanupTestState(
         { engine: tc.engine, trigger: tc.trigger },
         {

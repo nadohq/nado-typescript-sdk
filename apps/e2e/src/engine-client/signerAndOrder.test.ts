@@ -399,7 +399,7 @@ void describe('[engine-client]: signer and orders', () => {
   void describe('multi-product order placement and cancellation', () => {
     before(async () => {
       // Rate-limit delay after the linked signer operations
-      await delay(TEST_DELAYS.SETTLE_STATE_LONG);
+      await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
     });
 
     void test('places orders for spot and perp products', async () => {
@@ -447,7 +447,7 @@ void describe('[engine-client]: signer and orders', () => {
         );
 
         // Rate-limit delay between product placements
-        await delay(TEST_DELAYS.SETTLE_STATE);
+        await delay(TEST_DELAYS.BETWEEN_TESTS);
       }
     });
 
