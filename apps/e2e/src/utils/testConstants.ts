@@ -49,7 +49,7 @@ export const TEST_DELAYS = {
   /** Pause at the start of each top-level suite to space out suite execution. */
   BETWEEN_SUITES: 300,
   /** Wait for the indexer to process and propagate recently submitted data. */
-  INDEXER_PROPAGATION: 3_000,
+  INDEXER_PROPAGATION: 300,
 } as const;
 
 /** Status type filters that match all non-terminal trigger order states. */
