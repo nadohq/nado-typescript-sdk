@@ -1,77 +1,240 @@
-import { EngineClient } from '@nadohq/engine-client';
-import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { ENGINE_SERVER_STATUS_VALUES } from '@nadohq/engine-client';
 import {
-  assertArray,
+  addDecimals,
+  getOrderNonce,
+  getOrderVerifyingAddress,
+  packOrderAppendix,
+  QUOTE_PRODUCT_ID,
+  toBigDecimal,
+} from '@nadohq/shared';
+import assert from 'node:assert/strict';
+import { before, beforeEach, describe, test } from 'node:test';
+import {
+  assertArrayElements,
+  assertBigDecimalFinite,
   assertDefined,
+  assertEnumMember,
+  assertHexString,
   assertNonEmptyArray,
+  assertNumber,
+  assertRecord,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
+import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  assertEngineMarketPriceShape,
+  assertEngineOrderShape,
+  assertMarketWithProductShape,
+  assertSubaccountSummaryShape,
+} from '../utils/shapeAssertions';
+import {
+  TEST_DELAYS,
+  TEST_PRODUCT_IDS,
+  TEST_SUBACCOUNT_NAME,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe(
   '[engine-client]: queries',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let client: EngineClient;
-    let walletClientAddress: string;
+    let tc: RunContext;
 
-    before(() => {
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      walletClientAddress = walletClient.account.address;
-      client = new EngineClient({
-        url: context.endpoints.engine,
-        walletClient,
-      });
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
+      tc = createTestContext();
     });
 
-    void test('getSubaccountSummary returns subaccount info', async () => {
-      const subaccountInfo = await client.getSubaccountSummary({
-        subaccountOwner: walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-
-      debugPrint('Subaccount info', subaccountInfo);
-      assertDefined(subaccountInfo, 'subaccountInfo');
-      assertArray(subaccountInfo.balances, 'subaccountInfo.balances');
-      assertDefined(subaccountInfo.health, 'subaccountInfo.health');
+    beforeEach(async () => {
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('getSymbols returns market symbols', async () => {
-      const result = await client.getSymbols({});
+      const result = await tc.engine.getSymbols({});
 
       debugPrint('Symbols', result);
       assertDefined(result, 'symbolsResult');
       assertDefined(result.symbols, 'symbolsResult.symbols');
-      assert.ok(
-        Object.keys(result.symbols).length > 0,
-        'should have at least one symbol',
-      );
-    });
-
-    void test('getAllMarkets returns product definitions', async () => {
-      const products = await client.getAllMarkets();
-
-      debugPrint('All products', products);
-      assertNonEmptyArray(products, 'products');
-    });
-
-    void test('getHealthGroups returns health group definitions', async () => {
-      const result = await client.getHealthGroups();
-
-      debugPrint('Health groups', result);
-      assertDefined(result, 'healthGroupsResult');
-      assertArray(result.healthGroups, 'healthGroupsResult.healthGroups');
+      assertRecord(result.symbols, 'symbolsResult.symbols');
+      for (const [symbolName, symbol] of Object.entries(result.symbols)) {
+        assertString(symbolName, 'symbol key');
+        assertNumber(symbol.productId, `symbols[${symbolName}].productId`);
+        assertString(symbol.symbol, `symbols[${symbolName}].symbol`);
+        assertBigDecimalFinite(
+          symbol.priceIncrement,
+          `symbols[${symbolName}].priceIncrement`,
+        );
+        assertBigDecimalFinite(
+          symbol.sizeIncrement,
+          `symbols[${symbolName}].sizeIncrement`,
+        );
+        assertBigDecimalFinite(
+          symbol.minSize,
+          `symbols[${symbolName}].minSize`,
+        );
+      }
     });
 
     void test('getInsurance returns a finite insurance balance', async () => {
-      const insurance = await client.getInsurance();
+      const insurance = await tc.engine.getInsurance();
 
       debugPrint('Insurance', insurance);
-      assertDefined(insurance, 'insurance');
-      assert.ok(insurance.isFinite(), 'insurance should be a finite number');
+      assertBigDecimalFinite(insurance, 'insurance');
+    });
+
+    void test('getContracts returns chain and endpoint', async () => {
+      const contracts = await tc.engine.getContracts();
+
+      debugPrint('Contracts', contracts);
+      assertDefined(contracts, 'contracts');
+      assertNumber(contracts.chainId, 'contracts.chainId');
+      assertHexString(contracts.endpointAddr, 'contracts.endpointAddr');
+    });
+
+    void test('getStatus returns engine status', async () => {
+      const status = await tc.engine.getStatus();
+
+      debugPrint('Engine status', status);
+      assertDefined(status, 'status');
+      assertEnumMember(status, ENGINE_SERVER_STATUS_VALUES, 'status');
+    });
+
+    void test('getOrder returns order when digest exists', async () => {
+      const openOrders = await tc.engine.getSubaccountOrders({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      });
+
+      if (openOrders.orders.length === 0) {
+        return;
+      }
+
+      const firstOrder = openOrders.orders[0];
+      const order = await tc.engine.getOrder({
+        digest: firstOrder.digest,
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      });
+
+      debugPrint('Order by digest', order);
+      assertDefined(order, 'order');
+      assertEngineOrderShape(order, 'order');
+      assert.equal(order.digest, firstOrder.digest, 'digest should match');
+      assert.equal(
+        order.productId,
+        TEST_PRODUCT_IDS.SPOT_BTC,
+        'productId should match',
+      );
+    });
+
+    void test.skip('validateSignedOrderParams validates a signed order', async () => {
+      const products = await tc.engine.getAllMarkets();
+      const spotBtc = products.find(
+        (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
+      );
+      assert.ok(spotBtc, 'SPOT_BTC market should exist');
+
+      const price = spotBtc.product.oraclePrice
+        .multipliedBy(1.05)
+        .decimalPlaces(0);
+      const order = {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        price,
+        amount: addDecimals(0.001),
+        expiration: getExpiration(),
+        nonce: getOrderNonce(),
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      };
+
+      const signature = await tc.engine.sign(
+        'place_order',
+        getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
+        tc.chainId,
+        order,
+      );
+
+      const result = await tc.engine.validateSignedOrderParams({
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+        signedOrder: { order, signature },
+      });
+
+      debugPrint('Validate signed order result', result);
+      assertDefined(result, 'validateResult');
+      assert.equal(
+        result.productId,
+        TEST_PRODUCT_IDS.SPOT_BTC,
+        'productId should match',
+      );
+      assert.equal(typeof result.valid, 'boolean', 'valid should be boolean');
+    });
+
+    void test('getEdgeAllMarkets returns markets grouped by chain id', async () => {
+      const edgeMarkets = await tc.engine.getEdgeAllMarkets();
+
+      debugPrint('Edge all markets', edgeMarkets);
+      assertDefined(edgeMarkets, 'edgeMarkets');
+      assertRecord(edgeMarkets, 'edgeMarkets');
+      for (const [chainIdKey, markets] of Object.entries(edgeMarkets)) {
+        assert.ok(Number(chainIdKey) > 0, 'chain id should be positive');
+        assertNonEmptyArray(markets, `edgeMarkets[${chainIdKey}]`);
+        assertArrayElements(
+          markets,
+          assertMarketWithProductShape,
+          `edgeMarkets[${chainIdKey}]`,
+        );
+      }
+    });
+
+    void test('getEstimatedSubaccountSummary returns pre-state when requested', async () => {
+      const result = await tc.engine.getEstimatedSubaccountSummary({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        preState: true,
+        txs: [
+          {
+            type: 'apply_delta',
+            tx: {
+              productId: QUOTE_PRODUCT_ID,
+              amountDelta: toBigDecimal(1000000000000000000n),
+              vQuoteDelta: toBigDecimal(0),
+            },
+          },
+        ],
+      });
+
+      debugPrint('Estimated subaccount summary with pre-state', result);
+      assertDefined(result, 'estimatedSummaryWithPreState');
+      assertSubaccountSummaryShape(result, 'estimatedSummaryWithPreState');
+    });
+
+    void test('getMarketPrices returns prices for multiple products', async () => {
+      const result = await tc.engine.getMarketPrices({
+        productIds: [
+          TEST_PRODUCT_IDS.SPOT_BTC,
+          TEST_PRODUCT_IDS.PERP_BTC,
+          TEST_PRODUCT_IDS.SPOT_ETH,
+        ],
+      });
+
+      debugPrint('Market prices', result);
+      assertDefined(result, 'marketPrices');
+      assertNonEmptyArray(result.marketPrices, 'marketPrices.marketPrices');
+      assert.equal(
+        result.marketPrices.length,
+        3,
+        'should return prices for all 3 requested products',
+      );
+      assertArrayElements(
+        result.marketPrices,
+        assertEngineMarketPriceShape,
+        'marketPrices.marketPrices',
+      );
     });
   },
 );

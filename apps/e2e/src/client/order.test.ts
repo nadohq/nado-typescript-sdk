@@ -11,16 +11,19 @@ import {
   packOrderAppendix,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import {
   assertDefined,
   assertHexString,
   assertNonEmptyArray,
 } from '../utils/assertions';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -28,32 +31,45 @@ import {
 
 void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   let nadoClient: NadoClient;
-  let chainId: number;
   let walletClientAddress: string;
+  let endpointAddr: string;
+  let chainId: number;
   let shortLimitPrice: BigDecimal;
   let shortMarketPrice: BigDecimal;
 
   before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+
     const context = createTestContext();
-    const walletClient = context.getWalletClient();
-    const publicClient = context.publicClient;
-    chainId = walletClient.chain.id;
-    walletClientAddress = walletClient.account.address;
+    walletClientAddress = context.walletClientAddress;
+    chainId = context.chainId;
+    endpointAddr = context.endpointAddr;
 
     nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient,
-      publicClient,
+      walletClient: context.walletClient,
+      publicClient: context.publicClient,
     });
 
-    const allMarkets = await nadoClient.market.getAllMarkets();
-    const spotMarket = allMarkets.find(
+    const markets = await context.engine.getAllMarkets();
+    const oraclePrice = markets.find(
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_ETH,
-    );
-    assert.ok(spotMarket, 'spot ETH market should exist');
-    const oraclePrice = spotMarket.product.oraclePrice;
-
+    )!.product.oraclePrice;
     shortLimitPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
     shortMarketPrice = oraclePrice.multipliedBy(0.9).decimalPlaces(0);
+  });
+
+  after(async () => {
+    await cleanupTestState(
+      {
+        engine: nadoClient.context.engineClient,
+        trigger: nadoClient.context.triggerClient,
+      },
+      { subaccountOwner: walletClientAddress, endpointAddr, chainId },
+    );
+  });
+
+  beforeEach(async () => {
+    await delay(TEST_DELAYS.BETWEEN_TESTS);
   });
 
   // ---------------------------------------------------------------
@@ -159,7 +175,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
 
       perpOrderDigest = getOrderDigest({
         order: result.orderParams,
-        chainId,
+        chainId: chainId,
         productId: TEST_PRODUCT_IDS.PERP_ETH,
       });
     });
@@ -234,6 +250,48 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
         result.data.length,
         2,
         'should return results for both orders',
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // Cancel product orders
+  // ---------------------------------------------------------------
+  void describe('cancelProductOrders', () => {
+    void test('places orders then cancels all via product IDs', async () => {
+      await nadoClient.market.placeOrder({
+        order: {
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          amount: addDecimals(-1),
+          appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
+        },
+        productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      });
+
+      await nadoClient.market.placeOrder({
+        order: {
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          amount: addDecimals(-1),
+          appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
+        },
+        productId: TEST_PRODUCT_IDS.PERP_ETH,
+      });
+
+      const result = await nadoClient.market.cancelProductOrders({
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_ETH],
+      });
+
+      debugPrint('Cancel product orders result', result);
+      assertDefined(result, 'cancelProductOrdersResult');
+      assert.equal(
+        result.status,
+        'success',
+        'cancelProductOrders should succeed',
       );
     });
   });

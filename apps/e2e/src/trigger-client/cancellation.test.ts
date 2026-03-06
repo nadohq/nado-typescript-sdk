@@ -1,199 +1,197 @@
 import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  toBigDecimal,
 } from '@nadohq/shared';
-import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
+import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
-import { Address } from 'viem';
+import { after, before, beforeEach, describe, test } from 'node:test';
 import { assertArray, assertDefined } from '../utils/assertions';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  PENDING_TRIGGER_STATUS_TYPES,
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
-  TEST_TIMEOUTS,
 } from '../utils/testConstants';
-import {
-  depositTestCollateral,
-  PENDING_TRIGGER_STATUS_TYPES,
-} from './setupTriggerAccount';
+import { RunContext } from '../utils/types';
 
-void describe(
-  '[trigger-client]: cancellation',
-  { timeout: TEST_TIMEOUTS.ON_CHAIN },
-  () => {
-    let client: TriggerClient;
-    let chainId: number;
-    let subaccountOwner: string;
-    let endpointAddr: Address;
+void describe('[trigger-client]: cancellation', () => {
+  let tc: RunContext;
 
-    // Digests captured during setup for cancel / list-by-digest tests
-    let ethDigest: string;
-    let btcDigest: string;
-    let ethDigest2: string;
+  // Digests captured during setup for cancel / list-by-digest tests
+  let ethDigest: string;
+  let btcDigest: string;
+  let ethDigest2: string;
 
-    before(async () => {
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      chainId = walletClient.chain.id;
-      subaccountOwner = walletClient.account.address;
-      endpointAddr = context.contracts.endpoint;
+  before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      client = new TriggerClient({
-        url: context.endpoints.trigger,
-        walletClient,
-      });
+    tc = createTestContext();
 
-      await depositTestCollateral(context);
+    // Place 3 orders across 2 products so we can test cancel-by-digest
+    // and cancel-by-product independently.
+    const ethVerifyingAddr = getOrderVerifyingAddress(
+      TEST_PRODUCT_IDS.SPOT_ETH,
+    );
+    const btcVerifyingAddr = getOrderVerifyingAddress(
+      TEST_PRODUCT_IDS.PERP_BTC,
+    );
 
-      // Place 3 orders across 2 products so we can test cancel-by-digest
-      // and cancel-by-product independently.
-      const ethVerifyingAddr = getOrderVerifyingAddress(
-        TEST_PRODUCT_IDS.SPOT_ETH,
-      );
-      const btcVerifyingAddr = getOrderVerifyingAddress(
-        TEST_PRODUCT_IDS.PERP_BTC,
-      );
+    const makeOrder = (price: number): EngineOrderParams => ({
+      amount: addDecimals(0.1),
+      expiration: getExpiration(),
+      price,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      subaccountOwner: tc.walletClientAddress,
+      appendix: packOrderAppendix({
+        orderExecutionType: 'default',
+        triggerType: 'price',
+      }),
+    });
 
-      const makeOrder = (price: number): EngineOrderParams => ({
-        amount: addDecimals(0.1),
-        expiration: getExpiration(),
-        price,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner,
-        appendix: packOrderAppendix({
-          orderExecutionType: 'default',
-          triggerType: 'price',
-        }),
-      });
-
-      const makeTriggerParams = (
-        order: EngineOrderParams,
-        productId: number,
-        verifyingAddr: string,
-      ): TriggerPlaceOrderParams => ({
-        chainId,
-        order,
-        productId,
-        spotLeverage: true,
-        triggerCriteria: {
-          type: 'price',
-          criteria: {
-            type: 'oracle_price_above',
-            triggerPrice: new BigDecimal(99999),
-          },
+    const makeTriggerParams = (
+      order: EngineOrderParams,
+      productId: number,
+      verifyingAddr: string,
+    ): TriggerPlaceOrderParams => ({
+      chainId: tc.chainId,
+      order,
+      productId,
+      spotLeverage: true,
+      triggerCriteria: {
+        type: 'price',
+        criteria: {
+          type: 'oracle_price_above',
+          triggerPrice: toBigDecimal(99999),
         },
-        verifyingAddr,
-        nonce: getOrderNonce(),
-      });
-
-      const [r1, r2, r3] = await Promise.all([
-        client.placeTriggerOrder(
-          makeTriggerParams(
-            makeOrder(1000),
-            TEST_PRODUCT_IDS.SPOT_ETH,
-            ethVerifyingAddr,
-          ),
-        ),
-        client.placeTriggerOrder(
-          makeTriggerParams(
-            makeOrder(60000),
-            TEST_PRODUCT_IDS.PERP_BTC,
-            btcVerifyingAddr,
-          ),
-        ),
-        client.placeTriggerOrder(
-          makeTriggerParams(
-            makeOrder(1001),
-            TEST_PRODUCT_IDS.SPOT_ETH,
-            ethVerifyingAddr,
-          ),
-        ),
-      ]);
-
-      ethDigest = r1.data.digest;
-      btcDigest = r2.data.digest;
-      ethDigest2 = r3.data.digest;
+      },
+      verifyingAddr,
+      nonce: getOrderNonce(),
     });
 
-    void describe('cancel operations', () => {
-      void test('cancels an order via digest', async () => {
-        const result = await client.cancelTriggerOrders({
-          digests: [ethDigest],
-          productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
-          verifyingAddr: endpointAddr,
-          chainId,
-        });
-        debugPrint('Cancel via digest result', result);
+    const [r1, r2, r3] = await Promise.all([
+      tc.trigger.placeTriggerOrder(
+        makeTriggerParams(
+          makeOrder(1000),
+          TEST_PRODUCT_IDS.SPOT_ETH,
+          ethVerifyingAddr,
+        ),
+      ),
+      tc.trigger.placeTriggerOrder(
+        makeTriggerParams(
+          makeOrder(60000),
+          TEST_PRODUCT_IDS.PERP_BTC,
+          btcVerifyingAddr,
+        ),
+      ),
+      tc.trigger.placeTriggerOrder(
+        makeTriggerParams(
+          makeOrder(1001),
+          TEST_PRODUCT_IDS.SPOT_ETH,
+          ethVerifyingAddr,
+        ),
+      ),
+    ]);
 
-        assertDefined(result, 'cancelViaDigestResult');
-        assert.equal(
-          result.status,
-          'success',
-          'cancel via digest should succeed',
-        );
+    ethDigest = r1.data.digest;
+    btcDigest = r2.data.digest;
+    ethDigest2 = r3.data.digest;
+  });
+
+  after(async () => {
+    await cleanupTestState(
+      { engine: tc.engine, trigger: tc.trigger },
+      {
+        subaccountOwner: tc.walletClientAddress,
+        endpointAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      },
+    );
+  });
+
+  beforeEach(async () => {
+    await delay(TEST_DELAYS.BETWEEN_TESTS);
+  });
+
+  void describe('cancel operations', () => {
+    void test('cancels an order via digest', async () => {
+      const result = await tc.trigger.cancelTriggerOrders({
+        digests: [ethDigest],
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
       });
+      debugPrint('Cancel via digest result', result);
 
-      void test('cancels orders via product', async () => {
-        const result = await client.cancelProductOrders({
-          productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_BTC],
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
-          verifyingAddr: endpointAddr,
-          chainId,
-        });
-        debugPrint('Cancel via product result', result);
-
-        assertDefined(result, 'cancelViaProductResult');
-        assert.equal(
-          result.status,
-          'success',
-          'cancel via product should succeed',
-        );
-      });
+      assertDefined(result, 'cancelViaDigestResult');
+      assert.equal(
+        result.status,
+        'success',
+        'cancel via digest should succeed',
+      );
     });
 
-    void describe('post-cancellation queries', () => {
-      void test('lists orders after cancellation', async () => {
-        const result = await client.listOrders({
-          chainId,
-          statusTypes: PENDING_TRIGGER_STATUS_TYPES,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
-          verifyingAddr: endpointAddr,
-        });
-        debugPrint('Non-pending list orders result', result);
-
-        assertDefined(result, 'nonPendingListOrdersResult');
-        assertArray(result.orders, 'nonPendingListOrdersResult.orders');
+    void test('cancels orders via product', async () => {
+      const result = await tc.trigger.cancelProductOrders({
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_BTC],
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
       });
+      debugPrint('Cancel via product result', result);
 
-      void test('retrieves orders by specific digests', async () => {
-        const result = await client.listOrders({
-          chainId,
-          verifyingAddr: endpointAddr,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner,
-          digests: [ethDigest, btcDigest, ethDigest2],
-        });
-        debugPrint('List orders by digest result', result);
-
-        assertDefined(result, 'ordersByDigest');
-        assertArray(result.orders, 'ordersByDigest.orders');
-        assert.equal(
-          result.orders.length,
-          3,
-          'should return all 3 requested orders',
-        );
-      });
+      assertDefined(result, 'cancelViaProductResult');
+      assert.equal(
+        result.status,
+        'success',
+        'cancel via product should succeed',
+      );
     });
-  },
-);
+  });
+
+  void describe('post-cancellation queries', () => {
+    void test('lists orders after cancellation', async () => {
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
+        statusTypes: PENDING_TRIGGER_STATUS_TYPES,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountOwner: tc.walletClientAddress,
+        verifyingAddr: tc.endpointAddr,
+      });
+      debugPrint('Non-pending list orders result', result);
+
+      assertDefined(result, 'nonPendingListOrdersResult');
+      assertArray(result.orders, 'nonPendingListOrdersResult.orders');
+    });
+
+    void test('retrieves orders by specific digests', async () => {
+      const result = await tc.trigger.listOrders({
+        chainId: tc.chainId,
+        verifyingAddr: tc.endpointAddr,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountOwner: tc.walletClientAddress,
+        digests: [ethDigest, btcDigest, ethDigest2],
+      });
+      debugPrint('List orders by digest result', result);
+
+      assertDefined(result, 'ordersByDigest');
+      assertArray(result.orders, 'ordersByDigest.orders');
+      assert.equal(
+        result.orders.length,
+        3,
+        'should return all 3 requested orders',
+      );
+    });
+  });
+});

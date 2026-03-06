@@ -1,54 +1,45 @@
-import { EngineClient } from '@nadohq/engine-client';
 import {
   addDecimals,
   BigDecimal,
   BigDecimals,
-  NADO_ABIS,
   NLP_PRODUCT_ID,
   removeDecimals,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
-import { Address, getContract } from 'viem';
+import { before, beforeEach, describe, test } from 'node:test';
 import { assertArray, assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
+import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_SUBACCOUNT_NAME, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_SUBACCOUNT_NAME,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe(
   '[engine-client]: NLP operations',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let client: EngineClient;
-    let walletClientAddress: string;
-    let chainId: number;
-    let endpointAddr: Address;
+    let tc: RunContext;
 
     /** Stored across tests: burn test reads the amount queried by the preceding test. */
     let maxBurnAmount: BigDecimal;
 
     before(async () => {
-      const context = createTestContext();
-      const walletClient = context.getWalletClient();
-      walletClientAddress = walletClient.account.address;
-      chainId = walletClient.chain.id;
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
 
-      client = new EngineClient({
-        url: context.endpoints.engine,
-        walletClient,
-      });
+      tc = createTestContext();
+    });
 
-      const clearinghouse = getContract({
-        abi: NADO_ABIS.clearinghouse,
-        address: context.contracts.clearinghouse,
-        client: walletClient,
-      });
-      endpointAddr = await clearinghouse.read.getEndpoint();
+    beforeEach(async () => {
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     void test('getMaxMintNlpAmount returns the max mintable amount', async () => {
-      const result = await client.getMaxMintNlpAmount({
-        subaccountOwner: walletClientAddress,
+      const result = await tc.engine.getMaxMintNlpAmount({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         spotLeverage: true,
       });
@@ -61,12 +52,12 @@ void describe(
     // TODO: Enable the NLP deposit for connected wallet address
     void test('mintNlp mints NLP tokens into the subaccount', async () => {
       try {
-        const result = await client.mintNlp({
-          subaccountOwner: walletClientAddress,
+        const result = await tc.engine.mintNlp({
+          subaccountOwner: tc.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           quoteAmount: addDecimals(10),
-          verifyingAddr: endpointAddr,
-          chainId,
+          verifyingAddr: tc.endpointAddr,
+          chainId: tc.chainId,
         });
 
         debugPrint('Mint NLP result', result);
@@ -90,8 +81,8 @@ void describe(
     });
 
     void test('NLP balance appears in subaccount after minting', async () => {
-      const subaccountInfo = await client.getSubaccountSummary({
-        subaccountOwner: walletClientAddress,
+      const subaccountInfo = await tc.engine.getSubaccountSummary({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -104,8 +95,8 @@ void describe(
     });
 
     void test('getMaxBurnNlpAmount returns the max burnable amount', async () => {
-      maxBurnAmount = await client.getMaxBurnNlpAmount({
-        subaccountOwner: walletClientAddress,
+      maxBurnAmount = await tc.engine.getMaxBurnNlpAmount({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -120,12 +111,12 @@ void describe(
         return;
       }
 
-      const result = await client.burnNlp({
-        subaccountOwner: walletClientAddress,
+      const result = await tc.engine.burnNlp({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         nlpAmount: maxBurnAmount,
-        verifyingAddr: endpointAddr,
-        chainId,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
       });
 
       debugPrint('Burn NLP result', result);
@@ -134,8 +125,8 @@ void describe(
     });
 
     void test('getNlpLockedBalances returns locked balance info', async () => {
-      const result = await client.getNlpLockedBalances({
-        subaccountOwner: walletClientAddress,
+      const result = await tc.engine.getNlpLockedBalances({
+        subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -145,7 +136,7 @@ void describe(
     });
 
     void test('getNlpPoolInfo returns pool information', async () => {
-      const result = await client.getNlpPoolInfo();
+      const result = await tc.engine.getNlpPoolInfo();
 
       debugPrint('NLP Pool Info', result);
       assertDefined(result, 'nlpPoolInfo');

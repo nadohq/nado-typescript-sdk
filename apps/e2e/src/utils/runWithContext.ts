@@ -1,58 +1,71 @@
-import { ENGINE_CLIENT_ENDPOINTS } from '@nadohq/engine-client';
-import { INDEXER_CLIENT_ENDPOINTS } from '@nadohq/indexer-client';
+import { ENGINE_CLIENT_ENDPOINTS, EngineClient } from '@nadohq/engine-client';
+import {
+  INDEXER_CLIENT_ENDPOINTS,
+  IndexerClient,
+} from '@nadohq/indexer-client';
 import { CHAIN_ENV_TO_CHAIN, NADO_DEPLOYMENTS } from '@nadohq/shared';
-import { TRIGGER_CLIENT_ENDPOINTS } from '@nadohq/trigger-client';
+import {
+  TRIGGER_CLIENT_ENDPOINTS,
+  TriggerClient,
+} from '@nadohq/trigger-client';
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
-import { RunContext, RunFn } from './types';
+import { RunContext } from './types';
 
 /**
- * Creates a test context with wallet clients, public client, and endpoint configuration.
- * Intended for use in `before()` hooks when tests use `describe()` blocks.
+ * Creates a fully-initialized test context with wallet/public clients, endpoint
+ * configuration, and pre-built service clients. Intended for use in `before()`
+ * hooks.
  *
- * @returns A fully-initialized RunContext for the current chain environment.
+ * @returns A {@link RunContext} for the current chain environment.
  */
 export function createTestContext(): RunContext {
-  const getWalletClient = () => {
-    if (!env.privateKey) {
-      throw new Error('No private key found. Please check .env');
-    }
-    const account = privateKeyToAccount(env.privateKey);
+  if (!env.privateKey) {
+    throw new Error('No private key found. Please check .env');
+  }
 
-    return createWalletClient({
-      account,
-      chain: CHAIN_ENV_TO_CHAIN[env.chainEnv],
-      transport: http(),
-    });
-  };
+  const account = privateKeyToAccount(env.privateKey);
+  const chain = CHAIN_ENV_TO_CHAIN[env.chainEnv];
+
+  const walletClient = createWalletClient({
+    account,
+    chain,
+    transport: http(),
+  });
 
   const publicClient = createPublicClient({
-    chain: CHAIN_ENV_TO_CHAIN[env.chainEnv],
+    chain,
     transport: http(),
-    // The cast below is needed for some reason
   }) as RunContext['publicClient'];
+
+  const endpoints = {
+    engine: ENGINE_CLIENT_ENDPOINTS[env.chainEnv],
+    indexer: INDEXER_CLIENT_ENDPOINTS[env.chainEnv],
+    trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
+  };
+
+  const contracts = NADO_DEPLOYMENTS[env.chainEnv];
 
   return {
     env,
-    getWalletClient,
+    walletClient,
+    walletClientAddress: walletClient.account.address,
     publicClient,
-    endpoints: {
-      engine: ENGINE_CLIENT_ENDPOINTS[env.chainEnv],
-      indexer: INDEXER_CLIENT_ENDPOINTS[env.chainEnv],
-      trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
-    },
-    contracts: NADO_DEPLOYMENTS[env.chainEnv],
+    chainId: chain.id,
+    endpointAddr: contracts.endpoint,
+    endpoints,
+    contracts,
+    engine: new EngineClient({
+      url: endpoints.engine,
+      walletClient,
+    }),
+    indexer: new IndexerClient({
+      url: endpoints.indexer,
+    }),
+    trigger: new TriggerClient({
+      url: endpoints.trigger,
+      walletClient,
+    }),
   };
-}
-
-/**
- * Creates a test context and invokes the given function with it.
- * Kept for backwards compatibility with existing single-function test files.
- *
- * @param runFn - The test function to execute with the context.
- */
-export async function runWithContext(runFn: RunFn) {
-  const context = createTestContext();
-  await runFn(context);
 }

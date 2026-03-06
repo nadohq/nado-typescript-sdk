@@ -1,10 +1,12 @@
 import { createNadoClient, NadoClient } from '@nadohq/client';
-import { EngineClient, EngineOrderParams } from '@nadohq/engine-client';
+import {
+  EngineOrderParams,
+  EngineServerFailureError,
+} from '@nadohq/engine-client';
 import { IndexerClient } from '@nadohq/indexer-client';
 import {
   addDecimals,
   BigDecimal,
-  ChainEnv,
   encodeClaimBuilderFeeTx,
   getOrderNonce,
   getOrderVerifyingAddress,
@@ -13,21 +15,22 @@ import {
   QUOTE_PRODUCT_ID,
   subaccountToHex,
   unpackOrderAppendix,
-  WalletClientWithAccount,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
-import { Address, getContract, PublicClient, zeroAddress } from 'viem';
+import { after, before, beforeEach, describe, test } from 'node:test';
+import { getContract, PublicClient, zeroAddress } from 'viem';
 import { assertDefined, assertHexString } from '../utils/assertions';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
-  TEST_TIMEOUTS,
 } from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 import { waitForTransaction } from '../utils/waitForTransaction';
 
 /** Builder ID configured on the testnet. */
@@ -36,112 +39,111 @@ const BUILDER_ID = 2;
 /** Builder fee rate in bps (5 bps = 0.05%). */
 const BUILDER_FEE_RATE = 50;
 
-void describe(
-  '[engine-client]: builder',
-  { timeout: TEST_TIMEOUTS.ON_CHAIN },
-  () => {
-    // ---------------------------------------------------------------
-    // Pure encoding tests — no network or client setup needed
-    // ---------------------------------------------------------------
-    void describe('appendix encoding', () => {
-      void test('packs and unpacks builder fields correctly', () => {
-        const packed = packOrderAppendix({
-          orderExecutionType: 'default',
-          builder: {
-            builderId: BUILDER_ID,
-            builderFeeRate: BUILDER_FEE_RATE,
-          },
-        });
+/** Builder ID that does not exist on-chain, used to test rejection. */
+const INVALID_BUILDER_ID = 999_999;
 
-        debugPrint('Packed appendix with builder', packed.toString());
-        const unpacked = unpackOrderAppendix(packed);
-        debugPrint('Unpacked appendix', unpacked);
+void describe('[engine-client]: builder', () => {
+  before(async () => {
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
+  });
 
-        assert.equal(
-          unpacked.builder?.builderId,
-          BUILDER_ID,
-          `builderId should be ${BUILDER_ID}`,
-        );
-        assert.equal(
-          unpacked.builder?.builderFeeRate,
-          BUILDER_FEE_RATE,
-          `builderFeeRate should be ${BUILDER_FEE_RATE}`,
-        );
-      });
-
-      void test('encodeClaimBuilderFeeTx produces tx with type 31 prefix', () => {
-        const sender = subaccountToHex({
-          subaccountOwner: zeroAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-        });
-
-        const claimTx = encodeClaimBuilderFeeTx({
-          sender,
+  // ---------------------------------------------------------------
+  // Pure encoding tests — no network or client setup needed
+  // ---------------------------------------------------------------
+  void describe('appendix encoding', () => {
+    void test('packs and unpacks builder fields correctly', () => {
+      const packed = packOrderAppendix({
+        orderExecutionType: 'default',
+        builder: {
           builderId: BUILDER_ID,
-        });
-
-        debugPrint('Encoded ClaimBuilderFee tx', claimTx);
-        assertHexString(claimTx, 'claimBuilderFeeTx');
-        assert.ok(
-          claimTx.startsWith('0x1f'),
-          `claimTx should start with 0x1f (tx type 31), got ${claimTx.slice(0, 4)}`,
-        );
+          builderFeeRate: BUILDER_FEE_RATE,
+        },
       });
+
+      debugPrint('Packed appendix with builder', packed.toString());
+      const unpacked = unpackOrderAppendix(packed);
+      debugPrint('Unpacked appendix', unpacked);
+
+      assert.equal(
+        unpacked.builder?.builderId,
+        BUILDER_ID,
+        `builderId should be ${BUILDER_ID}`,
+      );
+      assert.equal(
+        unpacked.builder?.builderFeeRate,
+        BUILDER_FEE_RATE,
+        `builderFeeRate should be ${BUILDER_FEE_RATE}`,
+      );
+    });
+
+    void test('encodeClaimBuilderFeeTx produces tx with type 31 prefix', () => {
+      const sender = subaccountToHex({
+        subaccountOwner: zeroAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
+
+      const claimTx = encodeClaimBuilderFeeTx({
+        sender,
+        builderId: BUILDER_ID,
+      });
+
+      debugPrint('Encoded ClaimBuilderFee tx', claimTx);
+      assertHexString(claimTx, 'claimBuilderFeeTx');
+      assert.ok(
+        claimTx.startsWith('0x1f'),
+        `claimTx should start with 0x1f (tx type 31), got ${claimTx.slice(0, 4)}`,
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // Shared setup for network-dependent builder tests
+  // ---------------------------------------------------------------
+  void describe('builder order operations', () => {
+    let tc: RunContext;
+    let indexerClient: IndexerClient;
+    let publicClient: PublicClient;
+    let buyPrice: BigDecimal;
+
+    before(async () => {
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
+      tc = createTestContext();
+      publicClient = tc.publicClient;
+      indexerClient = tc.indexer;
+
+      const markets = await tc.engine.getAllMarkets();
+      const oraclePrice = markets.find(
+        (m) => m.productId === TEST_PRODUCT_IDS.PERP_BTC,
+      )!.product.oraclePrice;
+      buyPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
+    });
+
+    after(async () => {
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await cleanupTestState(
+        { engine: tc.engine, trigger: tc.trigger },
+        {
+          subaccountOwner: tc.walletClientAddress,
+          endpointAddr: tc.endpointAddr,
+          chainId: tc.chainId,
+        },
+      );
+    });
+
+    beforeEach(async () => {
+      await delay(TEST_DELAYS.BETWEEN_TESTS);
     });
 
     // ---------------------------------------------------------------
-    // Builder order lifecycle: place, query, claim, cleanup
+    // Happy path: configured builder
     // ---------------------------------------------------------------
-    void describe('builder order lifecycle', () => {
-      let client: EngineClient;
-      let indexerClient: IndexerClient;
-      let walletClient: WalletClientWithAccount;
-      let publicClient: PublicClient;
-      let chainEnv: ChainEnv;
-      let walletClientAddress: string;
-      let chainId: number;
-      let endpointAddress: Address;
-      let buyPrice: BigDecimal;
-
-      /** Order digest from the placement test, shared across subsequent tests. */
-      let orderDigest: string | undefined;
-
-      /** Set to false when the builder is not configured in the test environment. */
-      let builderConfigured = true;
-
-      before(async () => {
-        const context = createTestContext();
-        walletClient = context.getWalletClient();
-        publicClient = context.publicClient;
-        chainEnv = context.env.chainEnv;
-        walletClientAddress = walletClient.account.address;
-        chainId = walletClient.chain.id;
-        endpointAddress = context.contracts.endpoint;
-
-        client = new EngineClient({
-          url: context.endpoints.engine,
-          walletClient,
-        });
-        indexerClient = new IndexerClient({
-          url: context.endpoints.indexer,
-        });
-
-        const products = await client.getAllMarkets();
-        const market = products.find(
-          (m) => m.productId === TEST_PRODUCT_IDS.PERP_BTC,
-        );
-        assert.ok(
-          market,
-          `Market not found for product ID ${TEST_PRODUCT_IDS.PERP_BTC}`,
-        );
-        buyPrice = market.product.oraclePrice
-          .multipliedBy(1.1)
-          .decimalPlaces(0);
-      });
+    void describe('with a configured builder', () => {
+      let orderDigest: string;
 
       void test('places an order with builder info', async () => {
         const order: EngineOrderParams = {
-          subaccountOwner: walletClientAddress,
+          subaccountOwner: tc.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           amount: addDecimals(0.01),
           expiration: getExpiration(),
@@ -155,38 +157,25 @@ void describe(
           }),
         };
 
-        try {
-          const result = await client.placeOrder({
-            verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
-            chainId,
-            productId: TEST_PRODUCT_IDS.PERP_BTC,
-            order,
-            nonce: getOrderNonce(),
-          });
+        const result = await tc.engine.placeOrder({
+          verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
+          chainId: tc.chainId,
+          productId: TEST_PRODUCT_IDS.PERP_BTC,
+          order,
+          nonce: getOrderNonce(),
+        });
 
-          debugPrint('Order placed with builder info', result);
-          assertDefined(result, 'placeOrderResult');
-          assert.equal(result.status, 'success', 'order should succeed');
-          assertHexString(result.data.digest, 'placeOrderResult.data.digest');
-          orderDigest = result.data.digest;
-        } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e);
-          if (
-            msg.includes('InvalidBuilder') ||
-            msg.includes('invalid builder')
-          ) {
-            builderConfigured = false;
-            return;
-          }
-          throw e;
-        }
+        debugPrint('Order placed with builder info', result);
+        assertDefined(result, 'placeOrderResult');
+        assert.equal(result.status, 'success', 'order should succeed');
+        assertHexString(result.data.digest, 'placeOrderResult.data.digest');
+        orderDigest = result.data.digest;
       });
 
       void test('queries historical order for builder fee', async () => {
-        if (!builderConfigured || !orderDigest) return;
+        assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        // Allow time for the order to be indexed
-        await delay(2000);
+        await delay(TEST_DELAYS.INDEXER_PROPAGATION);
 
         const orders = await indexerClient.getOrders({
           digests: [orderDigest],
@@ -195,29 +184,27 @@ void describe(
 
         debugPrint('Order query result', orders);
 
-        if (orders.length > 0) {
-          const order = orders[0];
-          assert.equal(order.digest, orderDigest, 'digest should match');
-          assertDefined(order.totalFee, 'order.totalFee');
-          assertDefined(order.builderFee, 'order.builderFee');
+        const order = orders[0];
+        assert.equal(order.digest, orderDigest, 'digest should match');
+        assertDefined(order.totalFee, 'order.totalFee');
+        assertDefined(order.builderFee, 'order.builderFee');
 
-          if (order.appendix.builder) {
-            assert.equal(
-              order.appendix.builder.builderId,
-              BUILDER_ID,
-              'order appendix builderId should match',
-            );
-          }
+        if (order.appendix.builder) {
+          assert.equal(
+            order.appendix.builder.builderId,
+            BUILDER_ID,
+            'order appendix builderId should match',
+          );
         }
       });
 
       void test('queries match events for the builder order', async () => {
-        if (!builderConfigured || !orderDigest) return;
+        assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
         const matches = await indexerClient.getMatchEvents({
           subaccounts: [
             {
-              subaccountOwner: walletClientAddress,
+              subaccountOwner: tc.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
           ],
@@ -235,14 +222,13 @@ void describe(
       });
 
       void test('submits ClaimBuilderFee via slow mode and polls for event', async () => {
-        if (!builderConfigured || !orderDigest) return;
+        assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        const nadoClient: NadoClient = createNadoClient(chainEnv, {
-          walletClient,
+        const nadoClient: NadoClient = createNadoClient(tc.env.chainEnv, {
+          walletClient: tc.walletClient,
           publicClient,
         });
 
-        // Approve 1 USDT for slow mode fee
         const slowModeFeeAmount = addDecimals(1, 6);
         await waitForTransaction(
           nadoClient.spot.approveAllowance({
@@ -253,7 +239,7 @@ void describe(
         );
 
         const senderSubaccount = subaccountToHex({
-          subaccountOwner: walletClientAddress,
+          subaccountOwner: tc.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
         });
         const claimTx = encodeClaimBuilderFeeTx({
@@ -265,8 +251,8 @@ void describe(
 
         const endpoint = getContract({
           abi: NADO_ABIS.endpoint,
-          address: endpointAddress,
-          client: { public: publicClient, wallet: walletClient },
+          address: tc.endpointAddr,
+          client: { public: publicClient, wallet: tc.walletClient },
         });
 
         try {
@@ -275,7 +261,6 @@ void describe(
           ]);
           debugPrint('ClaimBuilderFee tx hash', txHash);
 
-          // Poll for claim_builder_fee event
           const maxAttempts = 10;
           const pollInterval = 2000;
 
@@ -284,7 +269,7 @@ void describe(
             const events = await indexerClient.getEvents({
               subaccounts: [
                 {
-                  subaccountOwner: walletClientAddress,
+                  subaccountOwner: tc.walletClientAddress,
                   subaccountName: TEST_SUBACCOUNT_NAME,
                 },
               ],
@@ -303,8 +288,6 @@ void describe(
               return;
             }
           }
-
-          // Not fatal: account may not be the builder owner or no fees accumulated
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
           if (!msg.includes('TF')) {
@@ -313,23 +296,54 @@ void describe(
           // Not fatal: insufficient USDT0 for slow mode fee, or not builder owner
         }
       });
+    });
 
-      after(async () => {
-        if (!orderDigest) return;
+    // ---------------------------------------------------------------
+    // Rejection: invalid builder ID
+    // ---------------------------------------------------------------
+    void describe('with an invalid builder ID', () => {
+      void test('rejects an order referencing a non-existent builder', async () => {
+        const order: EngineOrderParams = {
+          subaccountOwner: tc.walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          amount: addDecimals(0.01),
+          expiration: getExpiration(),
+          price: buyPrice,
+          appendix: packOrderAppendix({
+            orderExecutionType: 'default',
+            builder: {
+              builderId: INVALID_BUILDER_ID,
+              builderFeeRate: BUILDER_FEE_RATE,
+            },
+          }),
+        };
 
-        try {
-          await client.cancelOrders({
-            subaccountName: TEST_SUBACCOUNT_NAME,
-            subaccountOwner: walletClientAddress,
-            productIds: [TEST_PRODUCT_IDS.PERP_BTC],
-            digests: [orderDigest],
-            verifyingAddr: endpointAddress,
-            chainId,
-          });
-        } catch {
-          // Order already filled or cancelled — no action needed
-        }
+        await assert.rejects(
+          () =>
+            tc.engine.placeOrder({
+              verifyingAddr: getOrderVerifyingAddress(
+                TEST_PRODUCT_IDS.PERP_BTC,
+              ),
+              chainId: tc.chainId,
+              productId: TEST_PRODUCT_IDS.PERP_BTC,
+              order,
+              nonce: getOrderNonce(),
+            }),
+          (err: unknown) => {
+            assert.ok(
+              err instanceof EngineServerFailureError,
+              'error should be EngineServerFailureError',
+            );
+            const msg = err.message.toLowerCase();
+            assert.ok(
+              msg.includes('invalidbuilder') || msg.includes('invalid builder'),
+              `error message should mention invalid builder, got: "${err.message}"`,
+            );
+            return true;
+          },
+          'placeOrder with invalid builder ID should be rejected',
+        );
       });
     });
-  },
-);
+  });
+});

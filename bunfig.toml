@@ -2,4 +2,4 @@
 # Add packages to minimumReleaseAgeExcludes when a newer version is required.
 [install]
 minimumReleaseAge = 259200  # 3 days, in seconds
-minimumReleaseAgeExcludes = ["bignumber.js"]
+minimumReleaseAgeExcludes = []

@@ -14,19 +14,22 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
 - `bun build` - Build all packages in the monorepo using Lerna
 - `bun clean` - Clean all packages
 - `bun dev` - Run development mode for all packages
-- `bun test` - Run Jest tests across the entire codebase
+- `bun run test` - Run Jest unit tests (packages only)
+- `bun run test:e2e` - Build and run all E2E tests (node:test in apps/e2e)
 - `bun lint` - Run ESLint with auto-fix and Prettier formatting
 - `bun typecheck` - Run TypeScript type checking for all packages
 - `bun gen-typedoc` - Generate TypeDoc documentation for all packages
 
 ### Testing
 
-- **IMPORTANT**: Run `bun build` before running any E2E tests to ensure all packages are built
-- `bun --cwd apps/e2e e2e` - Run all E2E tests
-- `bun --cwd apps/e2e e2e:client` - Run client-specific E2E tests
-- `bun --cwd apps/e2e e2e:engine` - Run engine-client E2E tests
-- `bun --cwd apps/e2e e2e:indexer` - Run indexer-client E2E tests
-- `bun --cwd apps/e2e e2e:trigger` - Run trigger-client E2E tests
+- **Unit tests (Jest)**: `bun run test`
+- **E2E tests (node:test in apps/e2e)** — each command runs `bun run build` first:
+  - `bun run test:e2e` - Run all E2E tests
+  - `bun run test:e2e:client` - Client E2E tests
+  - `bun run test:e2e:engine` - Engine-client E2E tests
+  - `bun run test:e2e:indexer` - Indexer-client E2E tests
+  - `bun run test:e2e:trigger` - Trigger-client E2E tests
+- Without building first (if already built): `bun --cwd apps/e2e e2e` and `e2e:client`, `e2e:engine`, `e2e:indexer`, `e2e:trigger`
 
 ### Package Management
 
@@ -84,7 +87,7 @@ After making edits, **ALWAYS** run the following verification sequence:
 3. **Build**
     - Run `bun build` to build all packages before running any tests
 4. **Tests**
-    - Run `bun test` to run all tests across the codebase
+    - Run `bun run test` for Jest unit tests; run `bun run test:e2e` for E2E tests (builds first)
 
 ### Requirements
 

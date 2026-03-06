@@ -1,5 +1,10 @@
+import { BigDecimal } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { isHex } from 'viem';
+
+// ---------------------------------------------------------------------------
+// Primitive / utility assertions
+// ---------------------------------------------------------------------------
 
 /**
  * Asserts that a value is neither null nor undefined.
@@ -77,4 +82,126 @@ export function assertPaginatedResponse(
     'boolean',
     `${label}.meta.hasMore should be a boolean`,
   );
+}
+
+/**
+ * Asserts that a value is a finite BigDecimal.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertBigDecimalFinite(value: unknown, label: string): void {
+  assert.ok(
+    value instanceof BigDecimal && value.isFinite(),
+    `${label} should be a finite BigDecimal`,
+  );
+}
+
+/**
+ * Asserts that a value is a finite BigDecimal greater than zero.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertBigDecimalPositive(value: unknown, label: string): void {
+  assertBigDecimalFinite(value, label);
+  assert.ok((value as BigDecimal).gt(0), `${label} should be positive`);
+}
+
+/**
+ * Asserts that a value is a finite BigDecimal greater than or equal to zero.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertBigDecimalNonNegative(
+  value: unknown,
+  label: string,
+): void {
+  assertBigDecimalFinite(value, label);
+  assert.ok((value as BigDecimal).gte(0), `${label} should be non-negative`);
+}
+
+/**
+ * Asserts that a value is of type `number`.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertNumber(value: unknown, label: string): void {
+  assert.equal(typeof value, 'number', `${label} should be a number`);
+}
+
+/**
+ * Asserts that a value is a non-empty string.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertString(value: unknown, label: string): void {
+  assert.equal(typeof value, 'string', `${label} should be a string`);
+  assert.ok((value as string).length > 0, `${label} should not be empty`);
+}
+
+/**
+ * Asserts that a value is of type `boolean`.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertBoolean(value: unknown, label: string): void {
+  assert.equal(typeof value, 'boolean', `${label} should be a boolean`);
+}
+
+/**
+ * Asserts that a value is a non-array object with at least one key.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertRecord(value: unknown, label: string): void {
+  assert.ok(
+    typeof value === 'object' && value !== null && !Array.isArray(value),
+    `${label} should be a record object`,
+  );
+  assert.ok(
+    Object.keys(value).length > 0,
+    `${label} should have at least one key`,
+  );
+}
+
+/**
+ * Asserts that a value is a member of the given set of allowed values.
+ *
+ * @param value - The value to check.
+ * @param validValues - Accepted values.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertEnumMember<T>(
+  value: unknown,
+  validValues: readonly T[],
+  label: string,
+): void {
+  assert.ok(
+    (validValues as readonly unknown[]).includes(value),
+    `${label} should be one of [${validValues.join(', ')}], got ${String(value)}`,
+  );
+}
+
+/**
+ * Runs an assertion callback against every element in an array.
+ * Automatically generates labels like `label[0]`, `label[1]`, etc.
+ *
+ * @param arr - The array whose elements to validate.
+ * @param assertFn - Callback receiving `(element, elementLabel)`.
+ * @param label - Base label for error messages.
+ */
+export function assertArrayElements<T>(
+  arr: T[],
+  assertFn: (element: T, elementLabel: string) => void,
+  label: string,
+): void {
+  for (let i = 0; i < arr.length; i++) {
+    assertFn(arr[i], `${label}[${i}]`);
+  }
 }

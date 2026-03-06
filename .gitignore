@@ -56,7 +56,6 @@ jspm_packages
 .eslintcache
 
 # agent instructions
-AGENTS.md
 QWEN.md
 GEMINI.md
 GPT.md

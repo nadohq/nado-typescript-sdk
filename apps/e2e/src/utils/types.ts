@@ -1,9 +1,12 @@
+import { EngineClient } from '@nadohq/engine-client';
+import { IndexerClient } from '@nadohq/indexer-client';
 import {
   ChainEnv,
   NadoDeploymentAddresses,
   WalletClientWithAccount,
 } from '@nadohq/shared';
-import { Hex, PublicClient } from 'viem';
+import { TriggerClient } from '@nadohq/trigger-client';
+import { Address, Hex, PublicClient } from 'viem';
 
 export interface Env {
   chainEnv: ChainEnv;
@@ -12,16 +15,18 @@ export interface Env {
 
 export interface RunContext {
   env: Env;
+  walletClient: WalletClientWithAccount;
+  walletClientAddress: string;
   publicClient: PublicClient;
+  chainId: number;
+  endpointAddr: Address;
   endpoints: {
     engine: string;
     trigger: string;
     indexer: string;
   };
   contracts: NadoDeploymentAddresses;
-
-  // Throws on invalid / non-existent private key
-  getWalletClient(): WalletClientWithAccount;
+  engine: EngineClient;
+  indexer: IndexerClient;
+  trigger: TriggerClient;
 }
-
-export type RunFn = (ctx: RunContext) => Promise<void> | void;
