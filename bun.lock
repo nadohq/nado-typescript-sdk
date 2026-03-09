@@ -61,7 +61,7 @@
     },
     "packages/client": {
       "name": "@nadohq/client",
-      "version": "0.1.0-alpha.51",
+      "version": "0.1.0-alpha.53",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/indexer-client": "workspace:*",
@@ -78,7 +78,7 @@
     },
     "packages/engine-client": {
       "name": "@nadohq/engine-client",
-      "version": "0.1.0-alpha.51",
+      "version": "0.1.0-alpha.53",
       "dependencies": {
         "@nadohq/shared": "workspace:*",
         "axios": "*",
@@ -93,7 +93,7 @@
     },
     "packages/indexer-client": {
       "name": "@nadohq/indexer-client",
-      "version": "0.1.0-alpha.51",
+      "version": "0.1.0-alpha.53",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
@@ -109,23 +109,23 @@
     },
     "packages/shared": {
       "name": "@nadohq/shared",
-      "version": "0.1.0-alpha.51",
+      "version": "0.1.0-alpha.53",
       "dependencies": {
         "abitype": "^1.2.3",
       },
       "devDependencies": {
         "@jest/globals": "*",
-        "bignumber.js": "^10.0.2",
+        "bignumber.js": "^9.3.1",
         "viem": "workspace:*",
       },
       "peerDependencies": {
-        "bignumber.js": "^10.0.2",
+        "bignumber.js": "^9.3.1",
         "viem": "*",
       },
     },
     "packages/trigger-client": {
       "name": "@nadohq/trigger-client",
-      "version": "0.1.0-alpha.51",
+      "version": "0.1.0-alpha.53",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
@@ -803,7 +803,7 @@
 
     "before-after-hook": ["before-after-hook@2.2.3", "", {}, "sha512-NzUnlZexiaH/46WDhANlyR2bXRopNg4F/zuSA3OpZnllCUgRaOF2znDioDWrmbNVsuZk6l9pMquQB38cfBZwkQ=="],
 
-    "bignumber.js": ["bignumber.js@10.0.2", "", {}, "sha512-E8Wp9O06QA6lneJ4aRUXKYf/1GIomqUEmUMwtIOMtDxf1U52ffJY+y7JBk/8wRafA8qOIqLnXQGqonYXZdBnFQ=="],
+    "bignumber.js": ["bignumber.js@9.3.1", "", {}, "sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ=="],
 
     "bin-links": ["bin-links@5.0.0", "", { "dependencies": { "cmd-shim": "^7.0.0", "npm-normalize-package-bin": "^4.0.0", "proc-log": "^5.0.0", "read-cmd-shim": "^5.0.0", "write-file-atomic": "^6.0.0" } }, "sha512-sdleLVfCjBtgO5cNjA2HVRvWBJAHs4zwenaCPMNJAJU0yNxpzj80IpjOIimkpkr+mhlA+how5poQtt53PygbHA=="],
 
