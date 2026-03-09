@@ -1,7 +1,7 @@
-import { BigNumber as BigDecimal } from 'bignumber.js';
+import { default as BigDecimal } from 'bignumber.js';
 
 // Renames `BigNumber` type from `bignumber.js`.
-export { BigNumber as BigDecimal } from 'bignumber.js';
+export { default as BigDecimal } from 'bignumber.js';
 
 /**
  * BigDecimal is a renamed `BigNumber` type from `bignumber.js`.
