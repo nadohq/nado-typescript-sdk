@@ -89,7 +89,7 @@ void describe('[engine-client]: execute operations', () => {
   // ---------------------------------------------------------------
   void describe('transferQuote', () => {
     const TRANSFER_AMOUNT = addDecimals(6);
-    const TRANSFER_BACK_AMOUNT = addDecimals(3);
+    const TRANSFER_BACK_AMOUNT = addDecimals(5);
 
     async function getQuoteBalance(
       subaccountName: string,
