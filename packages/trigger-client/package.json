@@ -47,8 +47,8 @@
     "ts-mixer": "*"
   },
   "peerDependencies": {
-    "bignumber.js": "workspace:*",
-    "viem": "workspace:*"
+    "bignumber.js": "*",
+    "viem": "*"
   },
   "devDependencies": {
     "bignumber.js": "*",
