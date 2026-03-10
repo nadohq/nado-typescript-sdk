@@ -2,7 +2,6 @@ import {
   BalanceHealthContributions,
   BalanceSide,
   BalanceWithProduct,
-  BigDecimal,
   EIP712OrderParams,
   HealthGroup,
   HealthStatusByType,
@@ -14,6 +13,7 @@ import {
   SpotBalanceWithProduct,
   Subaccount,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import {
   EngineServerNoncesParams,
   EngineServerTimeResponse,
@@ -49,8 +49,8 @@ export type SubaccountTx = {
 
 export interface SubaccountProductDeltaTx {
   productId: number;
-  amountDelta: BigDecimal;
-  vQuoteDelta: BigDecimal;
+  amountDelta: BigNumber;
+  vQuoteDelta: BigNumber;
 }
 
 export interface GetEngineContractsResponse {
@@ -84,15 +84,15 @@ export interface EngineSymbol {
   type: ProductEngineType;
   productId: number;
   symbol: string;
-  priceIncrement: BigDecimal;
-  sizeIncrement: BigDecimal;
-  minSize: BigDecimal;
-  makerFeeRate: BigDecimal;
-  takerFeeRate: BigDecimal;
-  longWeightInitial: BigDecimal;
-  longWeightMaintenance: BigDecimal;
+  priceIncrement: BigNumber;
+  sizeIncrement: BigNumber;
+  minSize: BigNumber;
+  makerFeeRate: BigNumber;
+  takerFeeRate: BigNumber;
+  longWeightInitial: BigNumber;
+  longWeightMaintenance: BigNumber;
   // undefined when there is no max open interest limit (always undefined for spot products)
-  maxOpenInterest: BigDecimal | undefined;
+  maxOpenInterest: BigNumber | undefined;
   isolatedOnly: boolean;
 }
 
@@ -109,11 +109,11 @@ export interface GetEngineOrderParams {
 
 export interface EngineOrder extends Subaccount {
   productId: number;
-  price: BigDecimal;
+  price: BigNumber;
   // Amount initially requested
-  totalAmount: BigDecimal;
+  totalAmount: BigNumber;
   // Amount still unfilled
-  unfilledAmount: BigDecimal;
+  unfilledAmount: BigNumber;
   expiration: number;
   nonce: string;
   digest: string;
@@ -161,23 +161,23 @@ export interface GetEngineSubaccountProductOrdersResponse {
 export type GetEngineSubaccountFeeRatesParams = Subaccount;
 
 export interface SubaccountOrderFeeRates {
-  maker: BigDecimal;
-  taker: BigDecimal;
+  maker: BigNumber;
+  taker: BigNumber;
 }
 
 export interface GetEngineSubaccountFeeRatesResponse {
   // By Product ID
   orders: Record<number, SubaccountOrderFeeRates>;
-  withdrawal: Record<number, BigDecimal>;
-  liquidationSequencerFee: BigDecimal;
-  healthCheckSequencerFee: BigDecimal;
-  takerSequencerFee: BigDecimal;
+  withdrawal: Record<number, BigNumber>;
+  liquidationSequencerFee: BigNumber;
+  healthCheckSequencerFee: BigNumber;
+  takerSequencerFee: BigNumber;
   feeTier: number;
 }
 
 export interface EnginePriceTickLiquidity {
-  price: BigDecimal;
-  liquidity: BigDecimal;
+  price: BigNumber;
+  liquidity: BigNumber;
 }
 
 export interface GetEngineMarketLiquidityParams {
@@ -197,8 +197,8 @@ export interface GetEngineMarketPriceParams {
 
 export interface EngineMarketPrice {
   productId: number;
-  bid: BigDecimal;
-  ask: BigDecimal;
+  bid: BigNumber;
+  ask: BigNumber;
 }
 
 export type GetEngineMarketPriceResponse = EngineMarketPrice;
@@ -212,7 +212,7 @@ export interface GetEngineMarketPricesResponse {
 }
 
 export interface GetEngineMaxOrderSizeParams extends Subaccount {
-  price: BigDecimal;
+  price: BigNumber;
   productId: number;
   // Note: When `reduceOnly` is true, `side` must be opposite of the current position, otherwise it returns 0.
   side: BalanceSide;
@@ -228,7 +228,7 @@ export interface GetEngineMaxOrderSizeParams extends Subaccount {
   isoBorrowMargin?: boolean;
 }
 
-export type GetEngineMaxOrderSizeResponse = BigDecimal;
+export type GetEngineMaxOrderSizeResponse = BigNumber;
 
 export interface GetEngineMaxWithdrawableParams extends Subaccount {
   productId: number;
@@ -236,7 +236,7 @@ export interface GetEngineMaxWithdrawableParams extends Subaccount {
   spotLeverage?: boolean;
 }
 
-export type GetEngineMaxWithdrawableResponse = BigDecimal;
+export type GetEngineMaxWithdrawableResponse = BigNumber;
 
 export type GetEngineTimeResponse = EngineServerTimeResponse;
 
@@ -246,7 +246,7 @@ export interface GetEngineLinkedSignerResponse {
   signer: string;
 }
 
-export type GetEngineInsuranceResponse = BigDecimal;
+export type GetEngineInsuranceResponse = BigNumber;
 
 /**
  * Given an IP, backend will either:
@@ -261,17 +261,17 @@ export interface GetEngineMaxMintNlpAmountParams extends Subaccount {
   spotLeverage?: boolean;
 }
 
-export type GetEngineMaxMintNlpAmountResponse = BigDecimal;
+export type GetEngineMaxMintNlpAmountResponse = BigNumber;
 
 export type GetEngineMaxBurnNlpAmountParams = Subaccount;
 
-export type GetEngineMaxBurnNlpAmountResponse = BigDecimal;
+export type GetEngineMaxBurnNlpAmountResponse = BigNumber;
 
 export type GetEngineNlpLockedBalancesParams = Subaccount;
 
 export interface EngineNlpBalance {
   productId: number;
-  balance: BigDecimal;
+  balance: BigNumber;
 }
 
 export interface EngineNlpLockedBalance extends EngineNlpBalance {
@@ -288,7 +288,7 @@ export interface NlpPool {
   poolId: number;
   subaccountHex: string;
   ownerAddress: string;
-  balanceWeight: BigDecimal;
+  balanceWeight: BigNumber;
   subaccountInfo: GetEngineSubaccountSummaryResponse;
   openOrders: EngineOrder[];
 }

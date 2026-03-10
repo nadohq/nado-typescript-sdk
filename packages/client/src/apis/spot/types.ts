@@ -4,7 +4,7 @@ import {
   EngineTransferQuoteParams,
   EngineWithdrawCollateralParams,
 } from '@nadohq/engine-client';
-import { BigDecimalish } from '@nadohq/shared';
+import { BigNumberish } from '@nadohq/shared';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
 export type ProductIdOrTokenAddress =
@@ -20,7 +20,7 @@ type TokenQueryParams = {
 } & ProductIdOrTokenAddress;
 
 export type ApproveAllowanceParams = ProductIdOrTokenAddress & {
-  amount: BigDecimalish;
+  amount: BigNumberish;
 };
 
 export type GetTokenWalletBalanceParams = TokenQueryParams;
@@ -45,5 +45,5 @@ export type BurnNlpParams = OptionalSignatureParams<
 
 export interface MintMockERC20Params {
   productId: number;
-  amount: BigDecimalish;
+  amount: BigNumberish;
 }

@@ -1,7 +1,7 @@
-import { BigDecimal } from './math/bigDecimal';
+import BigNumber from 'bignumber.js';
 
 /**
- * Util for converting any BigDecimal types into a string so that it can be logged nicely.
+ * Util for converting any BigNumber types into a string so that it can be logged nicely.
  * Handles cyclic references by returning '[Circular]' for already-visited objects.
  */
 export function toPrintableObject(
@@ -9,7 +9,7 @@ export function toPrintableObject(
   seen?: WeakSet<object>,
 ): null;
 export function toPrintableObject(
-  obj: BigDecimal | bigint,
+  obj: BigNumber | bigint,
   seen?: WeakSet<object>,
 ): string;
 export function toPrintableObject(obj: unknown, seen?: WeakSet<object>): object;
@@ -17,7 +17,7 @@ export function toPrintableObject(obj: unknown, seen = new WeakSet()): unknown {
   if (obj === null || obj === undefined) {
     return null;
   }
-  if (obj instanceof BigDecimal || typeof obj === 'bigint') {
+  if (obj instanceof BigNumber || typeof obj === 'bigint') {
     return obj.toString();
   }
   if (Array.isArray(obj)) {

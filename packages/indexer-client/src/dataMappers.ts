@@ -11,7 +11,7 @@ import {
   removeDecimals,
   SpotMarket,
   subaccountFromHex,
-  toBigDecimal,
+  toBigNumber,
   toIntegerString,
   unpackOrderAppendix,
 } from '@nadohq/shared';
@@ -78,44 +78,42 @@ export function mapIndexerServerBalance(
 ): IndexerSpotBalance | IndexerPerpBalance {
   if ('spot' in balance) {
     return {
-      amount: toBigDecimal(balance.spot.balance.amount),
+      amount: toBigNumber(balance.spot.balance.amount),
       productId: balance.spot.product_id,
       type: ProductEngineType.SPOT,
     };
   }
   return {
-    amount: toBigDecimal(balance.perp.balance.amount),
+    amount: toBigNumber(balance.perp.balance.amount),
     productId: balance.perp.product_id,
     type: ProductEngineType.PERP,
-    vQuoteBalance: toBigDecimal(balance.perp.balance.v_quote_balance),
+    vQuoteBalance: toBigNumber(balance.perp.balance.v_quote_balance),
   };
 }
 
 export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
   const appendix = unpackOrderAppendix(order.appendix);
   return {
-    amount: toBigDecimal(order.amount),
+    amount: toBigNumber(order.amount),
     digest: order.digest,
     expiration: Number(order.expiration),
     appendix,
-    nonce: toBigDecimal(order.nonce),
+    nonce: toBigNumber(order.nonce),
     recvTimeSeconds: getRecvTimeFromOrderNonce(order.nonce) / 1000,
     price: removeDecimals(order.price_x18),
     productId: order.product_id,
     subaccount: order.subaccount,
     submissionIndex: order.submission_idx,
-    baseFilled: toBigDecimal(order.base_filled),
-    quoteFilled: toBigDecimal(order.quote_filled),
-    totalFee: toBigDecimal(order.fee),
-    builderFee: toBigDecimal(order.builder_fee),
-    realizedPnl: toBigDecimal(order.realized_pnl),
-    closedSize: toBigDecimal(order.closed_amount),
-    closedNetEntry: toBigDecimal(order.closed_net_entry),
-    closedMargin: order.closed_margin
-      ? toBigDecimal(order.closed_margin)
-      : null,
-    firstFillTimestamp: toBigDecimal(order.first_fill_timestamp),
-    lastFillTimestamp: toBigDecimal(order.last_fill_timestamp),
+    baseFilled: toBigNumber(order.base_filled),
+    quoteFilled: toBigNumber(order.quote_filled),
+    totalFee: toBigNumber(order.fee),
+    builderFee: toBigNumber(order.builder_fee),
+    realizedPnl: toBigNumber(order.realized_pnl),
+    closedSize: toBigNumber(order.closed_amount),
+    closedNetEntry: toBigNumber(order.closed_net_entry),
+    closedMargin: order.closed_margin ? toBigNumber(order.closed_margin) : null,
+    firstFillTimestamp: toBigNumber(order.first_fill_timestamp),
+    lastFillTimestamp: toBigNumber(order.last_fill_timestamp),
   };
 }
 
@@ -155,13 +153,13 @@ export function mapIndexerEvent(event: IndexerServerEvent): IndexerEvent {
     subaccount: event.subaccount,
     submissionIndex: event.submission_idx,
     trackedVars: {
-      netEntryCumulative: toBigDecimal(event.net_entry_cumulative),
-      netEntryUnrealized: toBigDecimal(event.net_entry_unrealized),
-      netFundingCumulative: toBigDecimal(event.net_funding_cumulative),
-      netFundingUnrealized: toBigDecimal(event.net_funding_unrealized),
-      netInterestCumulative: toBigDecimal(event.net_interest_cumulative),
-      netInterestUnrealized: toBigDecimal(event.net_interest_unrealized),
-      quoteVolumeCumulative: toBigDecimal(event.quote_volume_cumulative),
+      netEntryCumulative: toBigNumber(event.net_entry_cumulative),
+      netEntryUnrealized: toBigNumber(event.net_entry_unrealized),
+      netFundingCumulative: toBigNumber(event.net_funding_cumulative),
+      netFundingUnrealized: toBigNumber(event.net_funding_unrealized),
+      netInterestCumulative: toBigNumber(event.net_interest_cumulative),
+      netInterestUnrealized: toBigNumber(event.net_interest_unrealized),
+      quoteVolumeCumulative: toBigNumber(event.quote_volume_cumulative),
     },
   };
 }
@@ -171,7 +169,7 @@ export function mapIndexerEventWithTx(
   tx: IndexerServerTx,
 ): IndexerEventWithTx {
   return {
-    timestamp: toBigDecimal(tx.timestamp),
+    timestamp: toBigNumber(tx.timestamp),
     tx: tx.tx,
     ...mapIndexerEvent(event),
   };
@@ -193,9 +191,9 @@ export function mapIndexerProductPayment(
 ): IndexerProductPayment {
   return {
     submissionIndex: payment.idx,
-    timestamp: toBigDecimal(payment.timestamp),
-    paymentAmount: toBigDecimal(payment.amount),
-    balanceAmount: toBigDecimal(payment.balance_amount),
+    timestamp: toBigNumber(payment.timestamp),
+    paymentAmount: toBigNumber(payment.amount),
+    balanceAmount: toBigNumber(payment.balance_amount),
     annualPaymentRate: removeDecimals(payment.rate_x18),
     oraclePrice: removeDecimals(payment.oracle_price_x18),
     isolated: payment.isolated,
@@ -210,7 +208,7 @@ export function mapIndexerPerpPrices(
   return {
     indexPrice: removeDecimals(perpPrices.index_price_x18),
     markPrice: removeDecimals(perpPrices.mark_price_x18),
-    updateTime: toBigDecimal(perpPrices.update_time),
+    updateTime: toBigNumber(perpPrices.update_time),
     productId: perpPrices.product_id,
   };
 }
@@ -220,7 +218,7 @@ export function mapIndexerFundingRate(
 ): IndexerFundingRate {
   return {
     fundingRate: removeDecimals(fundingRate.funding_rate_x18),
-    updateTime: toBigDecimal(fundingRate.update_time),
+    updateTime: toBigNumber(fundingRate.update_time),
     productId: fundingRate.product_id,
   };
 }
@@ -232,13 +230,13 @@ export function mapIndexerMakerStatistics(
     address: maker.address,
     snapshots: maker.data.map((makerData) => {
       return {
-        timestamp: toBigDecimal(makerData.timestamp),
-        makerFee: toBigDecimal(makerData.maker_fee),
-        uptime: toBigDecimal(makerData.uptime),
-        sumQMin: toBigDecimal(makerData.sum_q_min),
-        qScore: toBigDecimal(makerData.q_score),
-        makerShare: toBigDecimal(makerData.maker_share),
-        expectedMakerReward: toBigDecimal(makerData.expected_maker_reward),
+        timestamp: toBigNumber(makerData.timestamp),
+        makerFee: toBigNumber(makerData.maker_fee),
+        uptime: toBigNumber(makerData.uptime),
+        sumQMin: toBigNumber(makerData.sum_q_min),
+        qScore: toBigNumber(makerData.q_score),
+        makerShare: toBigNumber(makerData.maker_share),
+        expectedMakerReward: toBigNumber(makerData.expected_maker_reward),
       };
     }),
   };
@@ -250,13 +248,13 @@ export function mapIndexerLeaderboardPosition(
   return {
     subaccount: subaccountFromHex(position.subaccount),
     contestId: position.contest_id,
-    pnl: toBigDecimal(position.pnl),
-    pnlRank: toBigDecimal(position.pnl_rank),
-    percentRoi: toBigDecimal(position.roi),
-    roiRank: toBigDecimal(position.roi_rank),
-    accountValue: toBigDecimal(position.account_value),
-    volume: position.volume ? toBigDecimal(position.volume) : undefined,
-    updateTime: toBigDecimal(position.update_time),
+    pnl: toBigNumber(position.pnl),
+    pnlRank: toBigNumber(position.pnl_rank),
+    percentRoi: toBigNumber(position.roi),
+    roiRank: toBigNumber(position.roi_rank),
+    accountValue: toBigNumber(position.account_value),
+    volume: position.volume ? toBigNumber(position.volume) : undefined,
+    updateTime: toBigNumber(position.update_time),
   };
 }
 
@@ -266,7 +264,7 @@ export function mapIndexerLeaderboardRegistration(
   return {
     subaccount: subaccountFromHex(registration.subaccount),
     contestId: registration.contest_id,
-    updateTime: toBigDecimal(registration.update_time),
+    updateTime: toBigNumber(registration.update_time),
   };
 }
 
@@ -275,15 +273,15 @@ export function mapIndexerLeaderboardContest(
 ): IndexerLeaderboardContest {
   return {
     contestId: contest.contest_id,
-    startTime: toBigDecimal(contest.start_time),
-    endTime: toBigDecimal(contest.end_time),
-    period: toBigDecimal(contest.threshold),
-    totalParticipants: toBigDecimal(contest.count),
-    minRequiredAccountValue: toBigDecimal(contest.threshold),
-    minRequiredVolume: toBigDecimal(contest.volume_threshold),
+    startTime: toBigNumber(contest.start_time),
+    endTime: toBigNumber(contest.end_time),
+    period: toBigNumber(contest.threshold),
+    totalParticipants: toBigNumber(contest.count),
+    minRequiredAccountValue: toBigNumber(contest.threshold),
+    minRequiredVolume: toBigNumber(contest.volume_threshold),
     requiredProductIds: contest.product_ids,
     active: contest.active,
-    lastUpdated: toBigDecimal(contest.last_updated),
+    lastUpdated: toBigNumber(contest.last_updated),
   };
 }
 
@@ -295,8 +293,8 @@ export function mapIndexerCandlesticks(
     high: removeDecimals(candlestick.high_x18),
     low: removeDecimals(candlestick.low_x18),
     open: removeDecimals(candlestick.open_x18),
-    time: toBigDecimal(candlestick.timestamp),
-    volume: toBigDecimal(candlestick.volume),
+    time: toBigNumber(candlestick.timestamp),
+    volume: toBigNumber(candlestick.volume),
   };
 }
 
@@ -304,46 +302,40 @@ export function mapIndexerMarketSnapshot(
   snapshot: IndexerServerMarketSnapshot,
 ): IndexerMarketSnapshot {
   return {
-    timestamp: toBigDecimal(snapshot.timestamp),
-    cumulativeUsers: toBigDecimal(snapshot.cumulative_users),
-    dailyActiveUsers: toBigDecimal(snapshot.daily_active_users),
-    tvl: toBigDecimal(snapshot.tvl),
+    timestamp: toBigNumber(snapshot.timestamp),
+    cumulativeUsers: toBigNumber(snapshot.cumulative_users),
+    dailyActiveUsers: toBigNumber(snapshot.daily_active_users),
+    tvl: toBigNumber(snapshot.tvl),
     borrowRates: mapValues(snapshot.borrow_rates, (value) =>
       removeDecimals(value),
     ),
     cumulativeLiquidationAmounts: mapValues(
       snapshot.cumulative_liquidation_amounts,
-      toBigDecimal,
+      toBigNumber,
     ),
-    cumulativeMakerFees: mapValues(
-      snapshot.cumulative_maker_fees,
-      toBigDecimal,
-    ),
+    cumulativeMakerFees: mapValues(snapshot.cumulative_maker_fees, toBigNumber),
     cumulativeSequencerFees: mapValues(
       snapshot.cumulative_sequencer_fees,
-      toBigDecimal,
+      toBigNumber,
     ),
-    cumulativeTakerFees: mapValues(
-      snapshot.cumulative_taker_fees,
-      toBigDecimal,
-    ),
-    cumulativeTrades: mapValues(snapshot.cumulative_trades, toBigDecimal),
-    cumulativeVolumes: mapValues(snapshot.cumulative_volumes, toBigDecimal),
+    cumulativeTakerFees: mapValues(snapshot.cumulative_taker_fees, toBigNumber),
+    cumulativeTrades: mapValues(snapshot.cumulative_trades, toBigNumber),
+    cumulativeVolumes: mapValues(snapshot.cumulative_volumes, toBigNumber),
     depositRates: mapValues(snapshot.deposit_rates, (value) =>
       removeDecimals(value),
     ),
     fundingRates: mapValues(snapshot.funding_rates, (value) =>
       removeDecimals(value),
     ),
-    openInterestsQuote: mapValues(snapshot.open_interests, toBigDecimal),
-    totalBorrows: mapValues(snapshot.total_borrows, toBigDecimal),
-    totalDeposits: mapValues(snapshot.total_deposits, toBigDecimal),
+    openInterestsQuote: mapValues(snapshot.open_interests, toBigNumber),
+    totalBorrows: mapValues(snapshot.total_borrows, toBigNumber),
+    totalDeposits: mapValues(snapshot.total_deposits, toBigNumber),
     cumulativeTradeSizes: mapValues(
       snapshot.cumulative_trade_sizes,
-      toBigDecimal,
+      toBigNumber,
     ),
-    cumulativeInflows: mapValues(snapshot.cumulative_inflows, toBigDecimal),
-    cumulativeOutflows: mapValues(snapshot.cumulative_outflows, toBigDecimal),
+    cumulativeInflows: mapValues(snapshot.cumulative_inflows, toBigNumber),
+    cumulativeOutflows: mapValues(snapshot.cumulative_outflows, toBigNumber),
     oraclePrices: mapValues(snapshot.oracle_prices, (value) =>
       removeDecimals(value),
     ),
@@ -355,15 +347,15 @@ export function mapIndexerNlpSnapshot(
 ): IndexerNlpSnapshot {
   return {
     submissionIndex: snapshot.submission_idx,
-    timestamp: toBigDecimal(snapshot.timestamp),
-    cumulativeBurnAmountQuote: toBigDecimal(snapshot.cumulative_burn_quote),
-    cumulativeMintAmountQuote: toBigDecimal(snapshot.cumulative_mint_quote),
-    cumulativePnl: toBigDecimal(snapshot.cumulative_pnl),
-    cumulativeTrades: toBigDecimal(snapshot.cumulative_trades),
-    cumulativeVolume: toBigDecimal(snapshot.cumulative_volume),
-    depositors: toBigDecimal(snapshot.depositors),
+    timestamp: toBigNumber(snapshot.timestamp),
+    cumulativeBurnAmountQuote: toBigNumber(snapshot.cumulative_burn_quote),
+    cumulativeMintAmountQuote: toBigNumber(snapshot.cumulative_mint_quote),
+    cumulativePnl: toBigNumber(snapshot.cumulative_pnl),
+    cumulativeTrades: toBigNumber(snapshot.cumulative_trades),
+    cumulativeVolume: toBigNumber(snapshot.cumulative_volume),
+    depositors: toBigNumber(snapshot.depositors),
     oraclePrice: removeDecimals(snapshot.oracle_price_x18),
-    tvl: toBigDecimal(snapshot.tvl),
+    tvl: toBigNumber(snapshot.tvl),
   };
 }
 

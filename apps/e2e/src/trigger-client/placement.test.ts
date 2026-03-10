@@ -1,13 +1,13 @@
 import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
-  toBigDecimal,
+  toBigNumber,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import {
@@ -32,7 +32,7 @@ import { RunContext } from '../utils/types';
 
 void describe('[trigger-client]: placement', () => {
   let tc: RunContext;
-  let midPrice: BigDecimal;
+  let midPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
@@ -126,7 +126,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_below',
-          triggerPrice: toBigDecimal(60000),
+          triggerPrice: toBigNumber(60000),
         },
       },
       verifyingAddr,
@@ -346,7 +346,7 @@ void describe('[trigger-client]: placement', () => {
           type: 'price',
           criteria: {
             type: 'oracle_price_below',
-            triggerPrice: toBigDecimal(3100),
+            triggerPrice: toBigNumber(3100),
           },
         },
         verifyingAddr,
@@ -361,7 +361,7 @@ void describe('[trigger-client]: placement', () => {
           type: 'price',
           criteria: {
             type: 'oracle_price_below',
-            triggerPrice: toBigDecimal(3200),
+            triggerPrice: toBigNumber(3200),
           },
         },
         verifyingAddr,

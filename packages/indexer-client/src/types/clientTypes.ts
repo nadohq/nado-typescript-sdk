@@ -1,5 +1,4 @@
 import {
-  BigDecimal,
   EIP712OrderValues,
   Market,
   OrderAppendix,
@@ -10,6 +9,7 @@ import {
   SpotMarket,
   Subaccount,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import { Address, Hex } from 'viem';
 import { CandlestickPeriod } from './CandlestickPeriod';
 import { IndexerEventType } from './IndexerEventType';
@@ -48,13 +48,13 @@ export type IndexerEventBalanceStateSnapshot =
   | IndexerEventPerpStateSnapshot;
 
 export interface IndexerBalanceTrackedVars {
-  netInterestUnrealized: BigDecimal;
-  netInterestCumulative: BigDecimal;
-  netFundingUnrealized: BigDecimal;
-  netFundingCumulative: BigDecimal;
-  netEntryUnrealized: BigDecimal;
-  netEntryCumulative: BigDecimal;
-  quoteVolumeCumulative: BigDecimal;
+  netInterestUnrealized: BigNumber;
+  netInterestCumulative: BigNumber;
+  netFundingUnrealized: BigNumber;
+  netFundingCumulative: BigNumber;
+  netEntryUnrealized: BigNumber;
+  netEntryCumulative: BigNumber;
+  quoteVolumeCumulative: BigNumber;
 }
 
 export interface IndexerEvent<
@@ -76,7 +76,7 @@ export interface IndexerEventWithTx<
   TStateType extends IndexerEventBalanceStateSnapshot =
     IndexerEventBalanceStateSnapshot,
 > extends IndexerEvent<TStateType> {
-  timestamp: BigDecimal;
+  timestamp: BigNumber;
   tx: NadoTx;
 }
 
@@ -111,7 +111,7 @@ export type IndexerSnapshotBalance<
 > = IndexerEvent<TStateType>;
 
 export interface IndexerSubaccountSnapshot {
-  timestamp: BigDecimal;
+  timestamp: BigNumber;
   balances: IndexerSnapshotBalance[];
 }
 
@@ -132,10 +132,10 @@ export interface GetIndexerPerpPricesParams {
 
 export interface IndexerPerpPrices {
   productId: number;
-  indexPrice: BigDecimal;
-  markPrice: BigDecimal;
+  indexPrice: BigNumber;
+  markPrice: BigNumber;
   // Seconds
-  updateTime: BigDecimal;
+  updateTime: BigNumber;
 }
 
 export type GetIndexerPerpPricesResponse = IndexerPerpPrices;
@@ -160,9 +160,9 @@ export interface GetIndexerOraclePricesParams {
 
 export interface IndexerOraclePrice {
   productId: number;
-  oraclePrice: BigDecimal;
+  oraclePrice: BigNumber;
   // Seconds
-  updateTime: BigDecimal;
+  updateTime: BigNumber;
 }
 
 export type GetIndexerOraclePricesResponse = IndexerOraclePrice[];
@@ -177,9 +177,9 @@ export interface GetIndexerFundingRateParams {
 
 export interface IndexerFundingRate {
   productId: number;
-  fundingRate: BigDecimal;
+  fundingRate: BigNumber;
   // Seconds
-  updateTime: BigDecimal;
+  updateTime: BigNumber;
 }
 
 export type GetIndexerFundingRateResponse = IndexerFundingRate;
@@ -209,12 +209,12 @@ export interface GetIndexerCandlesticksParams {
 // Semi-Tradingview compatible bars
 export interface Candlestick {
   // In SECONDS, for TV compat, this needs to be in millis
-  time: BigDecimal;
-  open: BigDecimal;
-  high: BigDecimal;
-  low: BigDecimal;
-  close: BigDecimal;
-  volume: BigDecimal;
+  time: BigNumber;
+  open: BigNumber;
+  high: BigNumber;
+  low: BigNumber;
+  close: BigNumber;
+  volume: BigNumber;
 }
 
 export type GetIndexerCandlesticksResponse = Candlestick[];
@@ -274,26 +274,26 @@ export interface GetIndexerMarketSnapshotsParams extends IndexerSnapshotsInterva
 }
 
 export interface IndexerMarketSnapshot {
-  timestamp: BigDecimal;
-  cumulativeUsers: BigDecimal;
-  dailyActiveUsers: BigDecimal;
-  tvl: BigDecimal;
-  cumulativeVolumes: Record<number, BigDecimal>;
-  cumulativeTakerFees: Record<number, BigDecimal>;
-  cumulativeSequencerFees: Record<number, BigDecimal>;
-  cumulativeMakerFees: Record<number, BigDecimal>;
-  cumulativeTrades: Record<number, BigDecimal>;
-  cumulativeLiquidationAmounts: Record<number, BigDecimal>;
-  openInterestsQuote: Record<number, BigDecimal>;
-  totalDeposits: Record<number, BigDecimal>;
-  totalBorrows: Record<number, BigDecimal>;
-  fundingRates: Record<number, BigDecimal>;
-  depositRates: Record<number, BigDecimal>;
-  borrowRates: Record<number, BigDecimal>;
-  cumulativeTradeSizes: Record<number, BigDecimal>;
-  cumulativeInflows: Record<number, BigDecimal>;
-  cumulativeOutflows: Record<number, BigDecimal>;
-  oraclePrices: Record<number, BigDecimal>;
+  timestamp: BigNumber;
+  cumulativeUsers: BigNumber;
+  dailyActiveUsers: BigNumber;
+  tvl: BigNumber;
+  cumulativeVolumes: Record<number, BigNumber>;
+  cumulativeTakerFees: Record<number, BigNumber>;
+  cumulativeSequencerFees: Record<number, BigNumber>;
+  cumulativeMakerFees: Record<number, BigNumber>;
+  cumulativeTrades: Record<number, BigNumber>;
+  cumulativeLiquidationAmounts: Record<number, BigNumber>;
+  openInterestsQuote: Record<number, BigNumber>;
+  totalDeposits: Record<number, BigNumber>;
+  totalBorrows: Record<number, BigNumber>;
+  fundingRates: Record<number, BigNumber>;
+  depositRates: Record<number, BigNumber>;
+  borrowRates: Record<number, BigNumber>;
+  cumulativeTradeSizes: Record<number, BigNumber>;
+  cumulativeInflows: Record<number, BigNumber>;
+  cumulativeOutflows: Record<number, BigNumber>;
+  oraclePrices: Record<number, BigNumber>;
 }
 
 export type GetIndexerMarketSnapshotsResponse = IndexerMarketSnapshot[];
@@ -356,32 +356,32 @@ export interface IndexerOrder {
   subaccount: string;
   productId: number;
   submissionIndex: string;
-  amount: BigDecimal;
-  price: BigDecimal;
+  amount: BigNumber;
+  price: BigNumber;
   expiration: number;
   // Order metadata from appendix
   appendix: OrderAppendix;
-  nonce: BigDecimal;
+  nonce: BigNumber;
   // Derived from the nonce
   recvTimeSeconds: number;
   // Fill amounts
-  baseFilled: BigDecimal;
+  baseFilled: BigNumber;
   // Includes fee
-  quoteFilled: BigDecimal;
+  quoteFilled: BigNumber;
   // Includes sequencer fee
-  totalFee: BigDecimal;
-  builderFee: BigDecimal;
-  realizedPnl: BigDecimal;
+  totalFee: BigNumber;
+  builderFee: BigNumber;
+  realizedPnl: BigNumber;
   // Always positive
-  closedSize: BigDecimal;
+  closedSize: BigNumber;
   // Cumulative realized entry price for the closed amount on an order
-  closedNetEntry: BigDecimal;
+  closedNetEntry: BigNumber;
   // Weighted average margin allocated to the closed amount. Only present for isolated margin orders; null for cross-margin orders
-  closedMargin: BigDecimal | null;
+  closedMargin: BigNumber | null;
   // Unix timestamp (seconds) of the first fill on the order
-  firstFillTimestamp: BigDecimal;
+  firstFillTimestamp: BigNumber;
   // Unix timestamp (seconds) of the last fill on the order
-  lastFillTimestamp: BigDecimal;
+  lastFillTimestamp: BigNumber;
 }
 
 export type GetIndexerOrdersResponse = IndexerOrder[];
@@ -413,17 +413,17 @@ export interface IndexerMatchEvent extends Subaccount {
   digest: string;
   isolated: boolean;
   order: EIP712OrderValues;
-  baseFilled: BigDecimal;
-  quoteFilled: BigDecimal;
+  baseFilled: BigNumber;
+  quoteFilled: BigNumber;
   // Includes sequencer fee
-  totalFee: BigDecimal;
-  sequencerFee: BigDecimal;
-  builderFee: BigDecimal;
-  cumulativeBaseFilled: BigDecimal;
-  cumulativeQuoteFilled: BigDecimal;
-  cumulativeFee: BigDecimal;
+  totalFee: BigNumber;
+  sequencerFee: BigNumber;
+  builderFee: BigNumber;
+  cumulativeBaseFilled: BigNumber;
+  cumulativeQuoteFilled: BigNumber;
+  cumulativeFee: BigNumber;
   submissionIndex: string;
-  timestamp: BigDecimal;
+  timestamp: BigNumber;
   isTaker: boolean;
   // Tracked vars for the balance BEFORE this match event occurred
   preEventTrackedVars: Pick<
@@ -433,13 +433,13 @@ export interface IndexerMatchEvent extends Subaccount {
   preBalances: IndexerMatchEventBalances;
   postBalances: IndexerMatchEventBalances;
   tx: NadoTx;
-  realizedPnl: BigDecimal;
+  realizedPnl: BigNumber;
   // Always positive
-  closedSize: BigDecimal;
+  closedSize: BigNumber;
   // Realized entry price for the closed amount on this match (x18). Represents the total quote value at which the closed portion of the position was originally entered.
-  closedNetEntry: BigDecimal;
+  closedNetEntry: BigNumber;
   // Margin allocated to the closed amount on this match (x18). Only present for isolated margin orders; null for cross-margin orders.
-  margin: BigDecimal | null;
+  margin: BigNumber | null;
 }
 
 export type GetIndexerMatchEventsResponse = IndexerMatchEvent[];
@@ -449,7 +449,7 @@ export type GetIndexerMatchEventsResponse = IndexerMatchEvent[];
  */
 
 export interface GetIndexerQuotePriceResponse {
-  price: BigDecimal;
+  price: BigNumber;
 }
 
 /**
@@ -461,10 +461,10 @@ export interface GetIndexerLinkedSignerParams {
 }
 
 export interface GetIndexerLinkedSignerResponse {
-  totalTxLimit: BigDecimal;
-  remainingTxs: BigDecimal;
+  totalTxLimit: BigNumber;
+  remainingTxs: BigNumber;
   // If remainingTxs is 0, this is the time until the next link signer tx can be sent
-  waitTimeUntilNextTx: BigDecimal;
+  waitTimeUntilNextTx: BigNumber;
   // If zero address, none is configured
   signer: string;
 }
@@ -485,14 +485,14 @@ export interface GetIndexerInterestFundingPaymentsParams {
 export interface IndexerProductPayment {
   productId: number;
   submissionIndex: string;
-  timestamp: BigDecimal;
-  paymentAmount: BigDecimal;
+  timestamp: BigNumber;
+  paymentAmount: BigNumber;
   // For spots: previous spot balance at the moment of payment (exclusive of `paymentAmount`).
   // For perps: previous perp balance at the moment of payment + amount of perps locked in LPs (exclusive of `paymentAmount`).
-  balanceAmount: BigDecimal;
+  balanceAmount: BigNumber;
   // Represents the annually interest rate for spots and annually funding rate for perps.
-  annualPaymentRate: BigDecimal;
-  oraclePrice: BigDecimal;
+  annualPaymentRate: BigNumber;
+  oraclePrice: BigNumber;
   isolated: boolean;
   // The product ID associated with the isolated perp market. This is only used when product_id === QUOTE_PRODUCT_ID and isolated === true
   isolatedProductId: number | null;
@@ -527,13 +527,13 @@ export interface GetIndexerMakerStatisticsParams {
 }
 
 export interface IndexerMakerSnapshot {
-  timestamp: BigDecimal;
-  makerFee: BigDecimal;
-  uptime: BigDecimal;
-  sumQMin: BigDecimal;
-  qScore: BigDecimal;
-  makerShare: BigDecimal;
-  expectedMakerReward: BigDecimal;
+  timestamp: BigNumber;
+  makerFee: BigNumber;
+  uptime: BigNumber;
+  sumQMin: BigNumber;
+  qScore: BigNumber;
+  makerShare: BigNumber;
+  expectedMakerReward: BigNumber;
 }
 
 export interface IndexerMaker {
@@ -542,7 +542,7 @@ export interface IndexerMaker {
 }
 
 export interface GetIndexerMakerStatisticsResponse {
-  rewardCoefficient: BigDecimal;
+  rewardCoefficient: BigNumber;
   makers: IndexerMaker[];
 }
 
@@ -561,17 +561,17 @@ export interface GetIndexerLeaderboardParams {
 export interface IndexerLeaderboardParticipant {
   subaccount: Subaccount;
   contestId: number;
-  pnl: BigDecimal;
-  pnlRank: BigDecimal;
-  percentRoi: BigDecimal;
-  roiRank: BigDecimal;
+  pnl: BigNumber;
+  pnlRank: BigNumber;
+  percentRoi: BigNumber;
+  roiRank: BigNumber;
   // Float indicating the ending account value at the time the snapshot was taken i.e: at updateTime
-  accountValue: BigDecimal;
+  accountValue: BigNumber;
   // Float indicating the trading volume at the time the snapshot was taken i.e: at updateTime.
   // Null for contests that have no volume requirement.
-  volume?: BigDecimal;
+  volume?: BigNumber;
   // Seconds
-  updateTime: BigDecimal;
+  updateTime: BigNumber;
 }
 
 export interface GetIndexerLeaderboardResponse {
@@ -602,14 +602,14 @@ export interface GetIndexerLeaderboardRegistrationParams extends Subaccount {
 export interface UpdateIndexerLeaderboardRegistrationParams extends GetIndexerLeaderboardRegistrationParams {
   updateRegistration: LeaderboardSignatureParams;
   // In millis, defaults to 90s in the future
-  recvTime?: BigDecimal;
+  recvTime?: BigNumber;
 }
 
 export interface IndexerLeaderboardRegistration {
   subaccount: Subaccount;
   contestId: number;
   // Seconds
-  updateTime: BigDecimal;
+  updateTime: BigNumber;
 }
 
 export interface GetIndexerLeaderboardRegistrationResponse {
@@ -629,19 +629,19 @@ export interface IndexerLeaderboardContest {
   contestId: number;
   // NOTE: Start / End times are ignored when `period` is non-zero.
   // Start time in seconds
-  startTime: BigDecimal;
+  startTime: BigNumber;
   // End time in seconds
-  endTime: BigDecimal;
+  endTime: BigNumber;
   // Contest duration in seconds; when set to 0, contest duration is [startTime,endTime];
   // Otherwise, contest runs indefinitely in the interval [lastUpdated - period, lastUpdated] if active;
-  period: BigDecimal;
+  period: BigNumber;
   // Last updated time in Seconds
-  lastUpdated: BigDecimal;
-  totalParticipants: BigDecimal;
+  lastUpdated: BigNumber;
+  totalParticipants: BigNumber;
   // Float indicating the min account value required to be eligible for this contest e.g: 250.0
-  minRequiredAccountValue: BigDecimal;
+  minRequiredAccountValue: BigNumber;
   // Float indicating the min trading volume required to be eligible for this contest e.g: 1000.0
-  minRequiredVolume: BigDecimal;
+  minRequiredVolume: BigNumber;
   // For market-specific contests, only the volume from these products will be counted.
   requiredProductIds: number[];
   active: boolean;
@@ -669,16 +669,16 @@ export type GetIndexerNlpSnapshotsParams = IndexerSnapshotsIntervalParams;
 
 export interface IndexerNlpSnapshot {
   submissionIndex: string;
-  timestamp: BigDecimal;
+  timestamp: BigNumber;
   // Total volume traded by the NLP, in terms of the primary quote
-  cumulativeVolume: BigDecimal;
-  cumulativeTrades: BigDecimal;
-  cumulativeMintAmountQuote: BigDecimal;
-  cumulativeBurnAmountQuote: BigDecimal;
-  cumulativePnl: BigDecimal;
-  tvl: BigDecimal;
-  oraclePrice: BigDecimal;
-  depositors: BigDecimal;
+  cumulativeVolume: BigNumber;
+  cumulativeTrades: BigNumber;
+  cumulativeMintAmountQuote: BigNumber;
+  cumulativeBurnAmountQuote: BigNumber;
+  cumulativePnl: BigNumber;
+  tvl: BigNumber;
+  oraclePrice: BigNumber;
+  depositors: BigNumber;
 }
 
 export interface GetIndexerNlpSnapshotsResponse {
@@ -687,17 +687,17 @@ export interface GetIndexerNlpSnapshotsResponse {
 
 export interface GetIndexerBacklogResponse {
   // Total number of transactions stored in the indexer DB
-  totalTxs: BigDecimal;
+  totalTxs: BigNumber;
   // Current nSubmissions value from the chain (i.e., number of processed txs)
-  totalSubmissions: BigDecimal;
+  totalSubmissions: BigNumber;
   // Number of unprocessed transactions (totalTxs - totalSubmissions)
-  backlogSize: BigDecimal;
+  backlogSize: BigNumber;
   // UNIX timestamp (in seconds) of when the data was last updated
-  updatedAt: BigDecimal;
+  updatedAt: BigNumber;
   // Estimated time in seconds (float) to clear the entire backlog (null if unavailable)
-  backlogEtaInSeconds: BigDecimal | null;
+  backlogEtaInSeconds: BigNumber | null;
   // Current submission rate in transactions per second (float) (null if unavailable)
-  txsPerSecond: BigDecimal | null;
+  txsPerSecond: BigNumber | null;
 }
 
 export interface GetIndexerSubaccountDDAParams {
@@ -717,8 +717,8 @@ export interface GetIndexerPrivateAlphaChoiceParams {
 }
 
 export interface GetIndexerPrivateAlphaChoiceResponse {
-  points: BigDecimal;
-  feeRefund: BigDecimal;
+  points: BigNumber;
+  feeRefund: BigNumber;
   nftEligibility: boolean;
 }
 
@@ -734,17 +734,17 @@ export interface IndexerPointsEpoch {
   epoch: number;
   description: string;
   /** Unix timestamp in seconds */
-  startTime: BigDecimal;
+  startTime: BigNumber;
   /** Unix timestamp in seconds */
-  endTime: BigDecimal;
-  totalPoints: BigDecimal;
-  points: BigDecimal;
+  endTime: BigNumber;
+  totalPoints: BigNumber;
+  points: BigNumber;
   rank: number;
   tier: number;
 }
 
 export interface IndexerAllTimePoints {
-  points: BigDecimal;
+  points: BigNumber;
   rank: number;
   tier: number;
 }

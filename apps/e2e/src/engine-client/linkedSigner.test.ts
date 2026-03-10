@@ -1,7 +1,6 @@
 import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   createDeterministicLinkedSignerPrivateKey,
   getOrderNonce,
   getOrderVerifyingAddress,
@@ -9,6 +8,7 @@ import {
   subaccountToHex,
   WalletClientWithAccount,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { createWalletClient, http, zeroAddress } from 'viem';
@@ -28,7 +28,7 @@ import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: linked signer lifecycle', () => {
   let tc: RunContext;
-  let shortLimitPrice: BigDecimal;
+  let shortLimitPrice: BigNumber;
   let linkedSignerWalletClient: WalletClientWithAccount;
 
   before(async () => {

@@ -1,5 +1,5 @@
 import { OrderAppendix } from '../../../types/orderAppendixTypes';
-import { BigDecimalish, toBigInt } from '../../math';
+import { BigNumberish, toBigInt } from '../../math';
 import { unpackIsolatedOrderAppendixValue } from './appendixIsolatedValue';
 import { unpackTwapOrderAppendixValue } from './appendixTwapValue';
 import { bitMaskValue } from './bitMaskValue';
@@ -69,7 +69,7 @@ function mapBitValuesToAppendix(bits: PackedOrderAppendixBits): OrderAppendix {
  * Unpack the OrderAppendix fields from a packed bigint.
  * @param packed
  */
-export function unpackOrderAppendix(packed: BigDecimalish): OrderAppendix {
+export function unpackOrderAppendix(packed: BigNumberish): OrderAppendix {
   let temp = toBigInt(packed);
   // Bitmasks lowest 8 bits for version
   const version = Number(bitMaskValue(temp, 8));

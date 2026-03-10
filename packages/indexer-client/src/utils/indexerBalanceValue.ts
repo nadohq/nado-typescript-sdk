@@ -1,4 +1,4 @@
-import { BigDecimal } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import { IndexerPerpBalance, IndexerSpotBalance } from '../types';
 
 /**
@@ -14,8 +14,8 @@ import { IndexerPerpBalance, IndexerSpotBalance } from '../types';
  */
 export function calcIndexerSpotBalanceValue(
   balance: IndexerSpotBalance,
-  oraclePrice: BigDecimal,
-): BigDecimal {
+  oraclePrice: BigNumber,
+): BigNumber {
   return balance.amount.multipliedBy(oraclePrice);
 }
 
@@ -27,8 +27,8 @@ export function calcIndexerSpotBalanceValue(
  */
 export function calcIndexerPerpBalanceNotionalValue(
   balance: IndexerPerpBalance,
-  oraclePrice: BigDecimal,
-): BigDecimal {
+  oraclePrice: BigNumber,
+): BigNumber {
   return balance.amount.multipliedBy(oraclePrice).abs();
 }
 
@@ -40,7 +40,7 @@ export function calcIndexerPerpBalanceNotionalValue(
  */
 export function calcIndexerPerpBalanceValue(
   balance: IndexerPerpBalance,
-  oraclePrice: BigDecimal,
-): BigDecimal {
+  oraclePrice: BigNumber,
+): BigNumber {
   return balance.amount.multipliedBy(oraclePrice).plus(balance.vQuoteBalance);
 }

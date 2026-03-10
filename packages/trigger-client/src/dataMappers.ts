@@ -1,7 +1,7 @@
 import {
   addDecimals,
   removeDecimals,
-  toBigDecimal,
+  toBigNumber,
   toIntegerString,
   unpackOrderAppendix,
 } from '@nadohq/shared';
@@ -99,10 +99,10 @@ export function mapServerOrderInfo(
 ): TriggerOrderInfo {
   const { order: serverOrder, status, updated_at, placed_at } = info;
   const order: TriggerOrder = {
-    amount: toBigDecimal(serverOrder.order.amount),
+    amount: toBigNumber(serverOrder.order.amount),
     expiration: Number(serverOrder.order.expiration),
     nonce: serverOrder.order.nonce,
-    price: removeDecimals(toBigDecimal(serverOrder.order.priceX18)),
+    price: removeDecimals(toBigNumber(serverOrder.order.priceX18)),
     digest: serverOrder.digest,
     productId: serverOrder.product_id,
     triggerCriteria: mapServerTriggerCriteria(serverOrder.trigger),
@@ -243,9 +243,9 @@ function mapServerTimeTriggerCriteria(
   serverCriteria: TriggerServerTimeTriggerCriteria,
 ): TimeTriggerCriteria {
   return {
-    interval: toBigDecimal(serverCriteria.interval),
+    interval: toBigNumber(serverCriteria.interval),
     amounts: serverCriteria.amounts?.map((amount: string) =>
-      toBigDecimal(amount),
+      toBigNumber(amount),
     ),
   };
 }

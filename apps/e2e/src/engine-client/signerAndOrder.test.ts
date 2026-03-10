@@ -1,20 +1,20 @@
 import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   getOrderDigest,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
-  assertBigDecimalFinite,
-  assertBigDecimalNonNegative,
+  assertBigNumberFinite,
+  assertBigNumberNonNegative,
   assertDefined,
   assertHexString,
   assertNonEmptyArray,
@@ -39,7 +39,7 @@ import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: signer and orders', () => {
   let tc: RunContext;
-  let shortLimitPrice: BigDecimal;
+  let shortLimitPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
@@ -74,7 +74,7 @@ void describe('[engine-client]: signer and orders', () => {
   void describe('order placement and queries', () => {
     let spotOrderDigest: string;
     let perpIsolatedOrderDigest: string;
-    let marketPrice: { bid: BigDecimal; ask: BigDecimal };
+    let marketPrice: { bid: BigNumber; ask: BigNumber };
 
     void test('places a spot limit order and verifies its digest', async () => {
       const spotOrder: EngineOrderParams = {
@@ -187,8 +187,8 @@ void describe('[engine-client]: signer and orders', () => {
         assertArrayElements(
           result[side],
           (tick, label) => {
-            assertBigDecimalFinite(tick.price, `${label}.price`);
-            assertBigDecimalFinite(tick.liquidity, `${label}.liquidity`);
+            assertBigNumberFinite(tick.price, `${label}.price`);
+            assertBigNumberFinite(tick.liquidity, `${label}.liquidity`);
           },
           `marketLiquidity.${side}`,
         );
@@ -235,7 +235,7 @@ void describe('[engine-client]: signer and orders', () => {
       debugPrint('Fee rates', result);
       assertDefined(result, 'feeRates');
       assertRecord(result.orders, 'feeRates.orders');
-      assertBigDecimalFinite(
+      assertBigNumberFinite(
         result.takerSequencerFee,
         'feeRates.takerSequencerFee',
       );
@@ -255,7 +255,7 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Max order size', result);
-      assertBigDecimalNonNegative(result, 'maxOrderSize');
+      assertBigNumberNonNegative(result, 'maxOrderSize');
     });
 
     void test('getMaxOrderSize supports reduce-only mode', async () => {
@@ -272,7 +272,7 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Reduce-only max order size', result);
-      assertBigDecimalNonNegative(result, 'reduceOnlyMaxOrderSize');
+      assertBigNumberNonNegative(result, 'reduceOnlyMaxOrderSize');
     });
 
     void test('getMaxWithdrawable returns a valid amount', async () => {
@@ -283,7 +283,7 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Max withdrawable', result);
-      assertBigDecimalNonNegative(result, 'maxWithdrawable');
+      assertBigNumberNonNegative(result, 'maxWithdrawable');
     });
 
     void test('getMaxWithdrawable supports no-spot-leverage mode', async () => {
@@ -295,7 +295,7 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Max withdrawable (no spot leverage)', result);
-      assertBigDecimalNonNegative(result, 'maxWithdrawableNoSpotLeverage');
+      assertBigNumberNonNegative(result, 'maxWithdrawableNoSpotLeverage');
     });
 
     void test('getOrder retrieves the placed spot order by digest', async () => {

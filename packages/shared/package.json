@@ -40,16 +40,16 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "peerDependencies": {
-    "bignumber.js": "^9.3.1",
-    "viem": "catalog:"
-  },
   "dependencies": {
     "abitype": "^1.2.3"
   },
+  "peerDependencies": {
+    "bignumber.js": "catalog:",
+    "viem": "catalog:"
+  },
   "devDependencies": {
     "@jest/globals": "catalog:",
-    "bignumber.js": "^9.3.1",
+    "bignumber.js": "catalog:",
     "viem": "catalog:"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"

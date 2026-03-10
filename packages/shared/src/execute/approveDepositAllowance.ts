@@ -1,10 +1,10 @@
 import { ERC20_ABI } from '../abis';
 import { WithContract } from '../types/nadoContractTypes';
 import { WriteableContractInstance } from '../types/viemTypes';
-import { BigDecimalish, toBigInt } from '../utils';
+import { BigNumberish, toBigInt } from '../utils';
 
 export interface ApproveDepositAllowanceParams {
-  amount: BigDecimalish;
+  amount: BigNumberish;
   tokenContract: WriteableContractInstance<typeof ERC20_ABI>;
 }
 

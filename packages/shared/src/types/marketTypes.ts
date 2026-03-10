@@ -1,4 +1,4 @@
-import { BigDecimal } from '../utils/math';
+import BigNumber from 'bignumber.js';
 import {
   PerpProduct,
   Product,
@@ -14,11 +14,11 @@ export interface Market {
   type: ProductEngineType;
   product: Product;
   // Minimum order size to be placed on the book (i.e. not an IOC order)
-  minSize: BigDecimal;
+  minSize: BigNumber;
   // Price increment for the orderbook, order prices must be placed at multiples of this increment
-  priceIncrement: BigDecimal;
+  priceIncrement: BigNumber;
   // Size increment for the orderbook, order sizes must be placed at multiples of this increment
-  sizeIncrement: BigDecimal;
+  sizeIncrement: BigNumber;
 }
 
 /**

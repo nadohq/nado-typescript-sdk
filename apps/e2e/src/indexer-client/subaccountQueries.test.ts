@@ -4,15 +4,15 @@ import {
   QUOTE_PRODUCT_ID,
   Subaccount,
   TimeInSeconds,
-  toBigDecimal,
+  toBigNumber,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
-  assertBigDecimalFinite,
-  assertBigDecimalNonNegative,
+  assertBigNumberFinite,
+  assertBigNumberNonNegative,
   assertDefined,
   assertHexString,
   assertNumber,
@@ -72,7 +72,7 @@ void describe(
         assertString(hexId, 'snapshot hex id');
         for (const [ts, snapshot] of Object.entries(timestampMap)) {
           assertDefined(snapshot, `snapshots[${hexId}][${ts}]`);
-          assertBigDecimalFinite(
+          assertBigNumberFinite(
             snapshot.timestamp,
             `snapshots[${hexId}][${ts}].timestamp`,
           );
@@ -207,12 +207,12 @@ void describe(
           (payment, label) => {
             assertNumber(payment.productId, `${label}.productId`);
             assertString(payment.submissionIndex, `${label}.submissionIndex`);
-            assertBigDecimalFinite(payment.timestamp, `${label}.timestamp`);
-            assertBigDecimalFinite(
+            assertBigNumberFinite(payment.timestamp, `${label}.timestamp`);
+            assertBigNumberFinite(
               payment.paymentAmount,
               `${label}.paymentAmount`,
             );
-            assertBigDecimalFinite(payment.oraclePrice, `${label}.oraclePrice`);
+            assertBigNumberFinite(payment.oraclePrice, `${label}.oraclePrice`);
           },
           'payment',
         );
@@ -234,9 +234,9 @@ void describe(
       assertArrayElements(
         settlementEvents.events,
         (event, label) => {
-          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
           assertString(event.submissionIndex, `${label}.submissionIndex`);
-          assertBigDecimalFinite(event.quoteDelta, `${label}.quoteDelta`);
+          assertBigNumberFinite(event.quoteDelta, `${label}.quoteDelta`);
           assertDefined(event.snapshot, `${label}.snapshot`);
         },
         'settlementEvents.events',
@@ -258,11 +258,11 @@ void describe(
       assertArrayElements(
         allCollateralEvents.events,
         (event, label) => {
-          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
           assertString(event.submissionIndex, `${label}.submissionIndex`);
           assertDefined(event.eventType, `${label}.eventType`);
-          assertBigDecimalFinite(event.amount, `${label}.amount`);
-          assertBigDecimalFinite(event.newAmount, `${label}.newAmount`);
+          assertBigNumberFinite(event.amount, `${label}.amount`);
+          assertBigNumberFinite(event.newAmount, `${label}.newAmount`);
         },
         'allCollateralEvents.events',
       );
@@ -304,19 +304,19 @@ void describe(
 
       debugPrint('Sequencer backlog', sequencerBacklog);
       assertDefined(sequencerBacklog, 'sequencerBacklog');
-      assertBigDecimalFinite(
+      assertBigNumberFinite(
         sequencerBacklog.totalTxs,
         'sequencerBacklog.totalTxs',
       );
-      assertBigDecimalFinite(
+      assertBigNumberFinite(
         sequencerBacklog.totalSubmissions,
         'sequencerBacklog.totalSubmissions',
       );
-      assertBigDecimalNonNegative(
+      assertBigNumberNonNegative(
         sequencerBacklog.backlogSize,
         'sequencerBacklog.backlogSize',
       );
-      assertBigDecimalFinite(
+      assertBigNumberFinite(
         sequencerBacklog.updatedAt,
         'sequencerBacklog.updatedAt',
       );
@@ -339,7 +339,7 @@ void describe(
         }
 
         const sequencerBacklog = await client.getSequencerBacklog();
-        const withdrawalSubmissionIndex = toBigDecimal(
+        const withdrawalSubmissionIndex = toBigNumber(
           withdrawEvents.events[0].submissionIndex,
         );
         const placeInQueue = withdrawalSubmissionIndex.minus(
@@ -347,7 +347,7 @@ void describe(
         );
 
         const withdrawalPlaceInQueue = placeInQueue.isNegative()
-          ? toBigDecimal(0)
+          ? toBigNumber(0)
           : placeInQueue;
 
         const withdrawalEta = sequencerBacklog.txsPerSecond?.gt(0)
@@ -419,7 +419,7 @@ void describe(
       debugPrint('Points', points);
       assertDefined(points, 'points');
       assertDefined(points.allTimePoints, 'points.allTimePoints');
-      assertBigDecimalFinite(
+      assertBigNumberFinite(
         points.allTimePoints.points,
         'points.allTimePoints.points',
       );
@@ -429,7 +429,7 @@ void describe(
         points.pointsPerEpoch,
         (epoch, label) => {
           assertNumber(epoch.epoch, `${label}.epoch`);
-          assertBigDecimalFinite(epoch.points, `${label}.points`);
+          assertBigNumberFinite(epoch.points, `${label}.points`);
           assertNumber(epoch.rank, `${label}.rank`);
         },
         'points.pointsPerEpoch',

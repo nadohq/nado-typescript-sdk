@@ -1,11 +1,11 @@
-import { BigDecimalish } from './bigDecimal';
+import { BigNumberish } from './bigNumber';
 import { toIntegerString } from './toIntegerString';
 
 /**
- * Converts a BigDecimalish value to bigint
+ * Converts a BigNumberish value to bigint
  *
  * @param val
  */
-export function toBigInt(val: BigDecimalish): bigint {
+export function toBigInt(val: BigNumberish): bigint {
   return BigInt(toIntegerString(val));
 }

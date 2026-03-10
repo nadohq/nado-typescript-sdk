@@ -4,7 +4,6 @@ import {
   EnginePlaceOrderParams,
 } from '@nadohq/engine-client';
 import {
-  BigDecimal,
   getOrderNonce,
   getOrderVerifyingAddress,
   MarketWithProduct,
@@ -13,6 +12,7 @@ import {
   ProductEngineType,
 } from '@nadohq/shared';
 import { TriggerClient } from '@nadohq/trigger-client';
+import BigNumber from 'bignumber.js';
 import { delay } from './delay';
 import { getExpiration } from './getExpiration';
 import {
@@ -131,14 +131,11 @@ export async function cleanupTestState(
 /**
  * Rounds {@link value} down (toward zero) to the nearest multiple of {@link increment}.
  */
-function roundToIncrement(
-  value: BigDecimal,
-  increment: BigDecimal,
-): BigDecimal {
+function roundToIncrement(value: BigNumber, increment: BigNumber): BigNumber {
   if (increment.isZero()) return value;
   return value
     .div(increment)
-    .integerValue(BigDecimal.ROUND_DOWN)
+    .integerValue(BigNumber.ROUND_DOWN)
     .multipliedBy(increment);
 }
 

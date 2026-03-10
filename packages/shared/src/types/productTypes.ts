@@ -1,4 +1,4 @@
-import { BigDecimal } from '../utils/math';
+import BigNumber from 'bignumber.js';
 
 /**
  * Representation of the ProductEngineType enum used within the contract
@@ -31,15 +31,15 @@ interface BaseProduct {
   type: ProductEngineType;
   productId: number;
   // Latest price given by oracle
-  oraclePrice: BigDecimal;
+  oraclePrice: BigNumber;
   // Weight used to calculate initial health for a long position
-  longWeightInitial: BigDecimal;
+  longWeightInitial: BigNumber;
   // Weight used to calculate initial health for a short position
-  shortWeightInitial: BigDecimal;
+  shortWeightInitial: BigNumber;
   // Weight used to calculate maint. health for a long position
-  longWeightMaintenance: BigDecimal;
+  longWeightMaintenance: BigNumber;
   // Weight used to calculate maint. health for a short position
-  shortWeightMaintenance: BigDecimal;
+  shortWeightMaintenance: BigNumber;
 }
 
 /**
@@ -48,9 +48,9 @@ interface BaseProduct {
 export interface PerpProduct extends BaseProduct {
   type: ProductEngineType.PERP;
   // Current open interest
-  openInterest: BigDecimal;
-  cumulativeFundingLong: BigDecimal;
-  cumulativeFundingShort: BigDecimal;
+  openInterest: BigNumber;
+  cumulativeFundingLong: BigNumber;
+  cumulativeFundingShort: BigNumber;
 }
 
 /**
@@ -61,16 +61,16 @@ export interface PerpProduct extends BaseProduct {
 export interface SpotProduct extends BaseProduct {
   type: ProductEngineType.SPOT;
   tokenAddr: string;
-  interestFloor: BigDecimal;
-  interestInflectionUtil: BigDecimal;
-  interestSmallCap: BigDecimal;
-  interestLargeCap: BigDecimal;
-  minDepositRate: BigDecimal;
+  interestFloor: BigNumber;
+  interestInflectionUtil: BigNumber;
+  interestSmallCap: BigNumber;
+  interestLargeCap: BigNumber;
+  minDepositRate: BigNumber;
 
   // Total deposited for this product
-  totalDeposited: BigDecimal;
+  totalDeposited: BigNumber;
   // Total borrowed for this product
-  totalBorrowed: BigDecimal;
+  totalBorrowed: BigNumber;
 }
 
 export type Product = PerpProduct | SpotProduct;

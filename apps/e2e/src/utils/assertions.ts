@@ -1,4 +1,4 @@
-import { BigDecimal } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { isHex } from 'viem';
 
@@ -85,41 +85,41 @@ export function assertPaginatedResponse(
 }
 
 /**
- * Asserts that a value is a finite BigDecimal.
+ * Asserts that a value is a finite BigNumber.
  *
  * @param value - The value to check.
  * @param label - Human-readable label included in the failure message.
  */
-export function assertBigDecimalFinite(value: unknown, label: string): void {
+export function assertBigNumberFinite(value: unknown, label: string): void {
   assert.ok(
-    value instanceof BigDecimal && value.isFinite(),
-    `${label} should be a finite BigDecimal`,
+    value instanceof BigNumber && value.isFinite(),
+    `${label} should be a finite BigNumber`,
   );
 }
 
 /**
- * Asserts that a value is a finite BigDecimal greater than zero.
+ * Asserts that a value is a finite BigNumber greater than zero.
  *
  * @param value - The value to check.
  * @param label - Human-readable label included in the failure message.
  */
-export function assertBigDecimalPositive(value: unknown, label: string): void {
-  assertBigDecimalFinite(value, label);
-  assert.ok((value as BigDecimal).gt(0), `${label} should be positive`);
+export function assertBigNumberPositive(value: unknown, label: string): void {
+  assertBigNumberFinite(value, label);
+  assert.ok((value as BigNumber).gt(0), `${label} should be positive`);
 }
 
 /**
- * Asserts that a value is a finite BigDecimal greater than or equal to zero.
+ * Asserts that a value is a finite BigNumber greater than or equal to zero.
  *
  * @param value - The value to check.
  * @param label - Human-readable label included in the failure message.
  */
-export function assertBigDecimalNonNegative(
+export function assertBigNumberNonNegative(
   value: unknown,
   label: string,
 ): void {
-  assertBigDecimalFinite(value, label);
-  assert.ok((value as BigDecimal).gte(0), `${label} should be non-negative`);
+  assertBigNumberFinite(value, label);
+  assert.ok((value as BigNumber).gte(0), `${label} should be non-negative`);
 }
 
 /**

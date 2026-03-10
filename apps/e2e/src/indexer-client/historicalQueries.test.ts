@@ -6,7 +6,7 @@ import type { Address } from 'viem';
 import {
   assertArray,
   assertArrayElements,
-  assertBigDecimalFinite,
+  assertBigNumberFinite,
   assertDefined,
   assertNumber,
   assertPaginatedResponse,
@@ -104,7 +104,7 @@ void describe(
             TEST_CONTEST_IDS.REGISTRATION,
             'contestId should match',
           );
-          assertBigDecimalFinite(
+          assertBigNumberFinite(
             result.registration.updateTime,
             'registration.updateTime',
           );
@@ -135,7 +135,7 @@ void describe(
       assertArrayElements(
         result.events,
         (event, label) => {
-          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
           assertString(event.submissionIndex, `${label}.submissionIndex`);
           assertDefined(event.quote, `${label}.quote`);
         },
@@ -158,7 +158,7 @@ void describe(
       assertArrayElements(
         result.events,
         (event, label) => {
-          assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+          assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
           assertString(event.submissionIndex, `${label}.submissionIndex`);
           assertDefined(event.quote, `${label}.quote`);
         },

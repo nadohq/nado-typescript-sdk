@@ -6,7 +6,6 @@ import {
 import { IndexerClient } from '@nadohq/indexer-client';
 import {
   addDecimals,
-  BigDecimal,
   encodeClaimBuilderFeeTx,
   getOrderNonce,
   getOrderVerifyingAddress,
@@ -16,6 +15,7 @@ import {
   subaccountToHex,
   unpackOrderAppendix,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { getContract, PublicClient, zeroAddress } from 'viem';
@@ -103,7 +103,7 @@ void describe('[engine-client]: builder', () => {
     let tc: RunContext;
     let indexerClient: IndexerClient;
     let publicClient: PublicClient;
-    let buyPrice: BigDecimal;
+    let buyPrice: BigNumber;
 
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);

@@ -4,7 +4,7 @@ import {
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
-  toBigDecimal,
+  toBigNumber,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
@@ -70,7 +70,7 @@ void describe('[trigger-client]: cancellation', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: toBigDecimal(99999),
+          triggerPrice: toBigNumber(99999),
         },
       },
       verifyingAddr,

@@ -1,4 +1,4 @@
-import { BigDecimalish } from '../utils/math';
+import { BigNumberish } from '../utils/math';
 import { OrderExecutionType } from './OrderExecutionType';
 
 /**
@@ -36,7 +36,7 @@ export interface OrderAppendixIsolatedFields {
    * Packed appendix uses precision of 6 decimals on backend.
    * SDK automatically converts to/from x18 during packing/unpacking.
    */
-  margin: BigDecimalish;
+  margin: BigNumberish;
 }
 
 /**

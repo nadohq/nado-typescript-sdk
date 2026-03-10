@@ -1,11 +1,11 @@
-import { BigDecimalish, toBigDecimal } from './bigDecimal';
+import { BigNumberish, toBigNumber } from './bigNumber';
 
 /**
- * Converts a BigDecimalish value to string
+ * Converts a BigNumberish value to string
  *
  * @param val
  */
-export function toIntegerString(val: BigDecimalish): string {
+export function toIntegerString(val: BigNumberish): string {
   // toFixed is required as toString gives values with `e`
-  return toBigDecimal(val).toFixed(0);
+  return toBigNumber(val).toFixed(0);
 }

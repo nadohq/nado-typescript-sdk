@@ -1,21 +1,16 @@
+import BigNumber from 'bignumber.js';
 import { SpotProduct } from '../types/productTypes';
-import {
-  BigDecimal,
-  BigDecimalish,
-  BigDecimals,
-  removeDecimals,
-  toBigDecimal,
-} from './math';
+import { BigNumberish, BigNumbers, removeDecimals, toBigNumber } from './math';
 import { TimeInSeconds } from './time';
 
 /**
  * Calculate amount total borrowed for a product
  */
 export function calcTotalBorrowed(
-  totalBorrowsNormalized: BigDecimalish,
-  cumulativeBorrowsMultiplierX18: BigDecimalish,
-): BigDecimal {
-  return toBigDecimal(totalBorrowsNormalized).multipliedBy(
+  totalBorrowsNormalized: BigNumberish,
+  cumulativeBorrowsMultiplierX18: BigNumberish,
+): BigNumber {
+  return toBigNumber(totalBorrowsNormalized).multipliedBy(
     removeDecimals(cumulativeBorrowsMultiplierX18),
   );
 }
@@ -24,10 +19,10 @@ export function calcTotalBorrowed(
  * Calculate amount total deposited for a product.
  */
 export function calcTotalDeposited(
-  totalDepositsNormalized: BigDecimalish,
-  cumulativeDepositsMultiplierX18: BigDecimalish,
-): BigDecimal {
-  return toBigDecimal(totalDepositsNormalized).multipliedBy(
+  totalDepositsNormalized: BigNumberish,
+  cumulativeDepositsMultiplierX18: BigNumberish,
+): BigNumber {
+  return toBigNumber(totalDepositsNormalized).multipliedBy(
     removeDecimals(cumulativeDepositsMultiplierX18),
   );
 }
@@ -39,7 +34,7 @@ export function calcTotalDeposited(
  */
 export function calcUtilizationRatio(product: SpotProduct) {
   if (product.totalDeposited.eq(0) || product.totalBorrowed.eq(0)) {
-    return toBigDecimal(0);
+    return toBigNumber(0);
   }
   return product.totalBorrowed.abs().div(product.totalDeposited);
 }
@@ -67,16 +62,16 @@ export function calcBorrowRatePerSecond(product: SpotProduct) {
   } = product;
   const utilization = calcUtilizationRatio(product);
   if (utilization.eq(0)) {
-    return toBigDecimal(0);
+    return toBigNumber(0);
   }
   const pastInflection = utilization.gt(interestInflectionUtil);
 
-  let annualRate: BigDecimal;
+  let annualRate: BigNumber;
   if (pastInflection) {
     const utilizationTerm = interestLargeCap.times(
-      toBigDecimal(utilization)
+      toBigNumber(utilization)
         .minus(interestInflectionUtil)
-        .div(BigDecimals.ONE.minus(interestInflectionUtil)),
+        .div(BigNumbers.ONE.minus(interestInflectionUtil)),
     );
     annualRate = interestFloor.plus(interestSmallCap).plus(utilizationTerm);
   } else {
@@ -97,16 +92,16 @@ export function calcBorrowRatePerSecond(product: SpotProduct) {
  */
 export function calcBorrowRateForTimeRange(
   product: SpotProduct,
-  seconds: BigDecimalish,
-  minDepositRate: BigDecimalish,
+  seconds: BigNumberish,
+  minDepositRate: BigNumberish,
 ) {
   const borrowRatePerSecond = calcBorrowRatePerSecond(product);
 
   // Convert to number for this, with some loss of precision, but using `.pow()` causes us to hit browser resource limits
   const borrowRateForTime =
-    borrowRatePerSecond.plus(1).toNumber() ** toBigDecimal(seconds).toNumber() -
+    borrowRatePerSecond.plus(1).toNumber() ** toBigNumber(seconds).toNumber() -
     1;
-  return toBigDecimal(borrowRateForTime).plus(toBigDecimal(minDepositRate));
+  return toBigNumber(borrowRateForTime).plus(toBigNumber(minDepositRate));
 }
 
 /**
@@ -118,16 +113,16 @@ export function calcBorrowRateForTimeRange(
  */
 export function calcRealizedDepositRateForTimeRange(
   product: SpotProduct,
-  seconds: BigDecimalish,
-  interestFeeFrac: BigDecimalish,
-  minDepositRate: BigDecimalish,
+  seconds: BigNumberish,
+  interestFeeFrac: BigNumberish,
+  minDepositRate: BigNumberish,
 ) {
   const utilization = calcUtilizationRatio(product);
   if (utilization.eq(0)) {
-    return toBigDecimal(0);
+    return toBigNumber(0);
   }
   return utilization
-    .times(calcBorrowRateForTimeRange(product, seconds, toBigDecimal(0)))
-    .times(BigDecimals.ONE.minus(toBigDecimal(interestFeeFrac)))
-    .plus(toBigDecimal(minDepositRate));
+    .times(calcBorrowRateForTimeRange(product, seconds, toBigNumber(0)))
+    .times(BigNumbers.ONE.minus(toBigNumber(interestFeeFrac)))
+    .plus(toBigNumber(minDepositRate));
 }

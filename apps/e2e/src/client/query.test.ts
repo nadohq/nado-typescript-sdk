@@ -6,15 +6,15 @@ import {
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
   TimeInSeconds,
-  toBigDecimal,
+  toBigNumber,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
-  assertBigDecimalFinite,
-  assertBigDecimalNonNegative,
+  assertBigNumberFinite,
+  assertBigNumberNonNegative,
   assertDefined,
   assertNonEmptyArray,
   assertNumber,
@@ -167,8 +167,8 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
       assertArrayElements(
         liquidity[side],
         (tick, label) => {
-          assertBigDecimalFinite(tick.price, `${label}.price`);
-          assertBigDecimalFinite(tick.liquidity, `${label}.liquidity`);
+          assertBigNumberFinite(tick.price, `${label}.price`);
+          assertBigNumberFinite(tick.liquidity, `${label}.liquidity`);
         },
         `marketLiquidity.${side}`,
       );
@@ -206,16 +206,10 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertDefined(feeRates, 'feeRates');
     assertRecord(feeRates.orders, 'feeRates.orders');
     for (const [productId, rates] of Object.entries(feeRates.orders)) {
-      assertBigDecimalFinite(
-        rates.maker,
-        `feeRates.orders[${productId}].maker`,
-      );
-      assertBigDecimalFinite(
-        rates.taker,
-        `feeRates.orders[${productId}].taker`,
-      );
+      assertBigNumberFinite(rates.maker, `feeRates.orders[${productId}].maker`);
+      assertBigNumberFinite(rates.taker, `feeRates.orders[${productId}].taker`);
     }
-    assertBigDecimalFinite(
+    assertBigNumberFinite(
       feeRates.takerSequencerFee,
       'feeRates.takerSequencerFee',
     );
@@ -410,7 +404,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max order size', result);
-    assertBigDecimalNonNegative(result, 'maxOrderSize');
+    assertBigNumberNonNegative(result, 'maxOrderSize');
   });
 
   void test('getFundingRate returns a valid funding rate', async () => {
@@ -506,9 +500,9 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     debugPrint('Perp prices', result);
     assertDefined(result, 'perpPrices');
-    assertBigDecimalFinite(result.indexPrice, 'perpPrices.indexPrice');
-    assertBigDecimalFinite(result.markPrice, 'perpPrices.markPrice');
-    assertBigDecimalFinite(result.updateTime, 'perpPrices.updateTime');
+    assertBigNumberFinite(result.indexPrice, 'perpPrices.indexPrice');
+    assertBigNumberFinite(result.markPrice, 'perpPrices.markPrice');
+    assertBigNumberFinite(result.updateTime, 'perpPrices.updateTime');
     assertNumber(result.productId, 'perpPrices.productId');
   });
 
@@ -521,8 +515,8 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertDefined(result, 'perpPrices');
     assertRecord(result, 'perpPrices');
     for (const prices of Object.values(result)) {
-      assertBigDecimalFinite(prices.indexPrice, 'perpPrices entry.indexPrice');
-      assertBigDecimalFinite(prices.markPrice, 'perpPrices entry.markPrice');
+      assertBigNumberFinite(prices.indexPrice, 'perpPrices entry.indexPrice');
+      assertBigNumberFinite(prices.markPrice, 'perpPrices entry.markPrice');
       assertNumber(prices.productId, 'perpPrices entry.productId');
     }
   });
@@ -539,7 +533,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max withdrawable', result);
-    assertBigDecimalNonNegative(result, 'maxWithdrawable');
+    assertBigNumberNonNegative(result, 'maxWithdrawable');
   });
 
   void test('getMaxMintNlpAmount returns a finite amount', async () => {
@@ -550,7 +544,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max mint NLP amount', result);
-    assertBigDecimalNonNegative(result, 'maxMintNlpAmount');
+    assertBigNumberNonNegative(result, 'maxMintNlpAmount');
   });
 
   // ---------------------------------------------------------------
@@ -567,8 +561,8 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
             type: 'apply_delta',
             tx: {
               productId: QUOTE_PRODUCT_ID,
-              amountDelta: toBigDecimal(1000000000000000000n),
-              vQuoteDelta: toBigDecimal(0),
+              amountDelta: toBigNumber(1000000000000000000n),
+              vQuoteDelta: toBigNumber(0),
             },
           },
         ],

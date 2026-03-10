@@ -23,8 +23,8 @@ import type {
 } from '@nadohq/shared';
 import type { TriggerOrderInfo } from '@nadohq/trigger-client';
 import {
-  assertBigDecimalFinite,
-  assertBigDecimalNonNegative,
+  assertBigNumberFinite,
+  assertBigNumberNonNegative,
   assertBoolean,
   assertDefined,
   assertHexString,
@@ -45,13 +45,13 @@ export function assertMarketWithProductShape(
 ): void {
   assertNumber(market.productId, `${label}.productId`);
   assertDefined(market.product, `${label}.product`);
-  assertBigDecimalFinite(
+  assertBigNumberFinite(
     market.product.oraclePrice,
     `${label}.product.oraclePrice`,
   );
-  assertBigDecimalFinite(market.minSize, `${label}.minSize`);
-  assertBigDecimalFinite(market.priceIncrement, `${label}.priceIncrement`);
-  assertBigDecimalFinite(market.sizeIncrement, `${label}.sizeIncrement`);
+  assertBigNumberFinite(market.minSize, `${label}.minSize`);
+  assertBigNumberFinite(market.priceIncrement, `${label}.priceIncrement`);
+  assertBigNumberFinite(market.sizeIncrement, `${label}.sizeIncrement`);
 }
 
 // ---------------------------------------------------------------------------
@@ -66,9 +66,9 @@ export function assertBalanceWithProductShape(
   label: string,
 ): void {
   assertNumber(balance.productId, `${label}.productId`);
-  assertBigDecimalFinite(balance.amount, `${label}.amount`);
+  assertBigNumberFinite(balance.amount, `${label}.amount`);
   assertDefined(balance.oraclePrice, `${label}.oraclePrice`);
-  assertBigDecimalFinite(balance.oraclePrice, `${label}.oraclePrice`);
+  assertBigNumberFinite(balance.oraclePrice, `${label}.oraclePrice`);
 }
 
 /**
@@ -81,9 +81,9 @@ export function assertHealthStatusByTypeShape(
   for (const healthType of ['initial', 'maintenance', 'unweighted'] as const) {
     const entry = health[healthType];
     assertDefined(entry, `${label}.${healthType}`);
-    assertBigDecimalFinite(entry.health, `${label}.${healthType}.health`);
-    assertBigDecimalFinite(entry.assets, `${label}.${healthType}.assets`);
-    assertBigDecimalFinite(
+    assertBigNumberFinite(entry.health, `${label}.${healthType}.health`);
+    assertBigNumberFinite(entry.assets, `${label}.${healthType}.assets`);
+    assertBigNumberFinite(
       entry.liabilities,
       `${label}.${healthType}.liabilities`,
     );
@@ -120,9 +120,9 @@ export function assertEngineOrderShape(
   label: string,
 ): void {
   assertNumber(order.productId, `${label}.productId`);
-  assertBigDecimalFinite(order.price, `${label}.price`);
-  assertBigDecimalFinite(order.totalAmount, `${label}.totalAmount`);
-  assertBigDecimalFinite(order.unfilledAmount, `${label}.unfilledAmount`);
+  assertBigNumberFinite(order.price, `${label}.price`);
+  assertBigNumberFinite(order.totalAmount, `${label}.totalAmount`);
+  assertBigNumberFinite(order.unfilledAmount, `${label}.unfilledAmount`);
   assertNumber(order.expiration, `${label}.expiration`);
   assertString(order.nonce, `${label}.nonce`);
   assertHexString(order.digest, `${label}.digest`);
@@ -142,8 +142,8 @@ export function assertEngineMarketPriceShape(
   label: string,
 ): void {
   assertNumber(price.productId, `${label}.productId`);
-  assertBigDecimalFinite(price.bid, `${label}.bid`);
-  assertBigDecimalFinite(price.ask, `${label}.ask`);
+  assertBigNumberFinite(price.bid, `${label}.bid`);
+  assertBigNumberFinite(price.ask, `${label}.ask`);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,12 +157,12 @@ export function assertCandlestickShape(
   candle: Candlestick,
   label: string,
 ): void {
-  assertBigDecimalFinite(candle.time, `${label}.time`);
-  assertBigDecimalFinite(candle.open, `${label}.open`);
-  assertBigDecimalFinite(candle.high, `${label}.high`);
-  assertBigDecimalFinite(candle.low, `${label}.low`);
-  assertBigDecimalFinite(candle.close, `${label}.close`);
-  assertBigDecimalNonNegative(candle.volume, `${label}.volume`);
+  assertBigNumberFinite(candle.time, `${label}.time`);
+  assertBigNumberFinite(candle.open, `${label}.open`);
+  assertBigNumberFinite(candle.high, `${label}.high`);
+  assertBigNumberFinite(candle.low, `${label}.low`);
+  assertBigNumberFinite(candle.close, `${label}.close`);
+  assertBigNumberNonNegative(candle.volume, `${label}.volume`);
 }
 
 // ---------------------------------------------------------------------------
@@ -180,13 +180,13 @@ export function assertIndexerOrderShape(
   assertString(order.subaccount, `${label}.subaccount`);
   assertNumber(order.productId, `${label}.productId`);
   assertString(order.submissionIndex, `${label}.submissionIndex`);
-  assertBigDecimalFinite(order.amount, `${label}.amount`);
-  assertBigDecimalFinite(order.price, `${label}.price`);
+  assertBigNumberFinite(order.amount, `${label}.amount`);
+  assertBigNumberFinite(order.price, `${label}.price`);
   assertNumber(order.expiration, `${label}.expiration`);
   assertDefined(order.appendix, `${label}.appendix`);
-  assertBigDecimalFinite(order.baseFilled, `${label}.baseFilled`);
-  assertBigDecimalFinite(order.quoteFilled, `${label}.quoteFilled`);
-  assertBigDecimalFinite(order.totalFee, `${label}.totalFee`);
+  assertBigNumberFinite(order.baseFilled, `${label}.baseFilled`);
+  assertBigNumberFinite(order.quoteFilled, `${label}.quoteFilled`);
+  assertBigNumberFinite(order.totalFee, `${label}.totalFee`);
 }
 
 // ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ export function assertIndexerEventShape(
   assertDefined(event.eventType, `${label}.eventType`);
   assertDefined(event.state, `${label}.state`);
   assertDefined(event.trackedVars, `${label}.trackedVars`);
-  assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+  assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
   assertBoolean(event.isolated, `${label}.isolated`);
 }
 
@@ -224,10 +224,10 @@ export function assertMatchEventShape(
   assertNumber(event.productId, `${label}.productId`);
   assertHexString(event.digest, `${label}.digest`);
   assertBoolean(event.isolated, `${label}.isolated`);
-  assertBigDecimalFinite(event.baseFilled, `${label}.baseFilled`);
-  assertBigDecimalFinite(event.quoteFilled, `${label}.quoteFilled`);
-  assertBigDecimalFinite(event.totalFee, `${label}.totalFee`);
-  assertBigDecimalFinite(event.timestamp, `${label}.timestamp`);
+  assertBigNumberFinite(event.baseFilled, `${label}.baseFilled`);
+  assertBigNumberFinite(event.quoteFilled, `${label}.quoteFilled`);
+  assertBigNumberFinite(event.totalFee, `${label}.totalFee`);
+  assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
   assertBoolean(event.isTaker, `${label}.isTaker`);
   assertDefined(event.preBalances, `${label}.preBalances`);
   assertDefined(event.postBalances, `${label}.postBalances`);
@@ -245,9 +245,9 @@ export function assertPerpPricesShape(
   label: string,
 ): void {
   assertNumber(prices.productId, `${label}.productId`);
-  assertBigDecimalFinite(prices.indexPrice, `${label}.indexPrice`);
-  assertBigDecimalFinite(prices.markPrice, `${label}.markPrice`);
-  assertBigDecimalFinite(prices.updateTime, `${label}.updateTime`);
+  assertBigNumberFinite(prices.indexPrice, `${label}.indexPrice`);
+  assertBigNumberFinite(prices.markPrice, `${label}.markPrice`);
+  assertBigNumberFinite(prices.updateTime, `${label}.updateTime`);
 }
 
 // ---------------------------------------------------------------------------
@@ -262,8 +262,8 @@ export function assertFundingRateShape(
   label: string,
 ): void {
   assertNumber(rate.productId, `${label}.productId`);
-  assertBigDecimalFinite(rate.fundingRate, `${label}.fundingRate`);
-  assertBigDecimalFinite(rate.updateTime, `${label}.updateTime`);
+  assertBigNumberFinite(rate.fundingRate, `${label}.fundingRate`);
+  assertBigNumberFinite(rate.updateTime, `${label}.updateTime`);
 }
 
 // ---------------------------------------------------------------------------
@@ -277,13 +277,10 @@ export function assertMarketSnapshotShape(
   snapshot: IndexerMarketSnapshot,
   label: string,
 ): void {
-  assertBigDecimalFinite(snapshot.timestamp, `${label}.timestamp`);
-  assertBigDecimalFinite(snapshot.tvl, `${label}.tvl`);
-  assertBigDecimalFinite(snapshot.cumulativeUsers, `${label}.cumulativeUsers`);
-  assertBigDecimalFinite(
-    snapshot.dailyActiveUsers,
-    `${label}.dailyActiveUsers`,
-  );
+  assertBigNumberFinite(snapshot.timestamp, `${label}.timestamp`);
+  assertBigNumberFinite(snapshot.tvl, `${label}.tvl`);
+  assertBigNumberFinite(snapshot.cumulativeUsers, `${label}.cumulativeUsers`);
+  assertBigNumberFinite(snapshot.dailyActiveUsers, `${label}.dailyActiveUsers`);
   assertDefined(snapshot.cumulativeVolumes, `${label}.cumulativeVolumes`);
   assertDefined(snapshot.fundingRates, `${label}.fundingRates`);
   assertDefined(snapshot.oraclePrices, `${label}.oraclePrices`);
@@ -302,8 +299,8 @@ export function assertProductSnapshotShape(
 ): void {
   assertNumber(snapshot.productId, `${label}.productId`);
   assertString(snapshot.submissionIndex, `${label}.submissionIndex`);
-  assertBigDecimalFinite(snapshot.minSize, `${label}.minSize`);
-  assertBigDecimalFinite(snapshot.priceIncrement, `${label}.priceIncrement`);
+  assertBigNumberFinite(snapshot.minSize, `${label}.minSize`);
+  assertBigNumberFinite(snapshot.priceIncrement, `${label}.priceIncrement`);
 }
 
 // ---------------------------------------------------------------------------
@@ -319,12 +316,12 @@ export function assertLeaderboardParticipantShape(
 ): void {
   assertDefined(p.subaccount, `${label}.subaccount`);
   assertNumber(p.contestId, `${label}.contestId`);
-  assertBigDecimalFinite(p.pnl, `${label}.pnl`);
-  assertBigDecimalFinite(p.pnlRank, `${label}.pnlRank`);
-  assertBigDecimalFinite(p.percentRoi, `${label}.percentRoi`);
-  assertBigDecimalFinite(p.roiRank, `${label}.roiRank`);
-  assertBigDecimalFinite(p.accountValue, `${label}.accountValue`);
-  assertBigDecimalFinite(p.updateTime, `${label}.updateTime`);
+  assertBigNumberFinite(p.pnl, `${label}.pnl`);
+  assertBigNumberFinite(p.pnlRank, `${label}.pnlRank`);
+  assertBigNumberFinite(p.percentRoi, `${label}.percentRoi`);
+  assertBigNumberFinite(p.roiRank, `${label}.roiRank`);
+  assertBigNumberFinite(p.accountValue, `${label}.accountValue`);
+  assertBigNumberFinite(p.updateTime, `${label}.updateTime`);
 }
 
 // ---------------------------------------------------------------------------
@@ -360,27 +357,21 @@ export function assertNlpSnapshotShape(
   label: string,
 ): void {
   assertString(snapshot.submissionIndex, `${label}.submissionIndex`);
-  assertBigDecimalFinite(snapshot.timestamp, `${label}.timestamp`);
-  assertBigDecimalFinite(
-    snapshot.cumulativeVolume,
-    `${label}.cumulativeVolume`,
-  );
-  assertBigDecimalFinite(
-    snapshot.cumulativeTrades,
-    `${label}.cumulativeTrades`,
-  );
-  assertBigDecimalFinite(
+  assertBigNumberFinite(snapshot.timestamp, `${label}.timestamp`);
+  assertBigNumberFinite(snapshot.cumulativeVolume, `${label}.cumulativeVolume`);
+  assertBigNumberFinite(snapshot.cumulativeTrades, `${label}.cumulativeTrades`);
+  assertBigNumberFinite(
     snapshot.cumulativeMintAmountQuote,
     `${label}.cumulativeMintAmountQuote`,
   );
-  assertBigDecimalFinite(
+  assertBigNumberFinite(
     snapshot.cumulativeBurnAmountQuote,
     `${label}.cumulativeBurnAmountQuote`,
   );
-  assertBigDecimalFinite(snapshot.cumulativePnl, `${label}.cumulativePnl`);
-  assertBigDecimalFinite(snapshot.tvl, `${label}.tvl`);
-  assertBigDecimalFinite(snapshot.oraclePrice, `${label}.oraclePrice`);
-  assertBigDecimalFinite(snapshot.depositors, `${label}.depositors`);
+  assertBigNumberFinite(snapshot.cumulativePnl, `${label}.cumulativePnl`);
+  assertBigNumberFinite(snapshot.tvl, `${label}.tvl`);
+  assertBigNumberFinite(snapshot.oraclePrice, `${label}.oraclePrice`);
+  assertBigNumberFinite(snapshot.depositors, `${label}.depositors`);
 }
 
 // ---------------------------------------------------------------------------
@@ -394,9 +385,9 @@ export function assertLinkedSignerShape(
   signer: GetIndexerLinkedSignerResponse,
   label: string,
 ): void {
-  assertBigDecimalFinite(signer.totalTxLimit, `${label}.totalTxLimit`);
-  assertBigDecimalFinite(signer.remainingTxs, `${label}.remainingTxs`);
-  assertBigDecimalFinite(
+  assertBigNumberFinite(signer.totalTxLimit, `${label}.totalTxLimit`);
+  assertBigNumberFinite(signer.remainingTxs, `${label}.remainingTxs`);
+  assertBigNumberFinite(
     signer.waitTimeUntilNextTx,
     `${label}.waitTimeUntilNextTx`,
   );
@@ -434,8 +425,8 @@ export function assertTriggerOrderInfoShape(
 ): void {
   assertDefined(info.order, `${label}.order`);
   assertNumber(info.order.productId, `${label}.order.productId`);
-  assertBigDecimalFinite(info.order.price, `${label}.order.price`);
-  assertBigDecimalFinite(info.order.amount, `${label}.order.amount`);
+  assertBigNumberFinite(info.order.price, `${label}.order.price`);
+  assertBigNumberFinite(info.order.amount, `${label}.order.amount`);
   assertHexString(info.order.digest, `${label}.order.digest`);
   assertDefined(info.order.triggerCriteria, `${label}.order.triggerCriteria`);
   assertDefined(info.status, `${label}.status`);

@@ -1,11 +1,11 @@
-import { BigDecimal } from '../utils/math';
+import BigNumber from 'bignumber.js';
 
 export type HealthType = 'maintenance' | 'initial' | 'unweighted';
 
 export interface HealthStatus {
-  health: BigDecimal;
-  assets: BigDecimal;
-  liabilities: BigDecimal;
+  health: BigNumber;
+  assets: BigNumber;
+  liabilities: BigNumber;
 }
 
 export type HealthStatusByType = Record<HealthType, HealthStatus>;

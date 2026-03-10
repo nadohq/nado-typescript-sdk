@@ -1,6 +1,6 @@
 import { Address } from 'viem';
 import { Subaccount } from '../types/subaccountTypes';
-import { BigDecimalish } from '../utils';
+import { BigNumberish } from '../utils';
 
 export interface SignedTx<TBaseTx> {
   tx: TBaseTx;
@@ -14,7 +14,7 @@ export interface SignedEIP712OrderParams {
 
 export interface EIP712WithdrawCollateralParams extends Subaccount {
   productId: number;
-  amount: BigDecimalish;
+  amount: BigNumberish;
   nonce: string;
 }
 
@@ -25,26 +25,26 @@ export interface EIP712LiquidateSubaccountParams extends Subaccount {
   // 0 = spread, 1 = long, 2 = short
   mode: number;
   // Spot & perp pair
-  healthGroup: BigDecimalish;
-  amount: BigDecimalish;
+  healthGroup: BigNumberish;
+  amount: BigNumberish;
   nonce: string;
 }
 
 export interface EIP712OrderParams extends Subaccount {
   // Expiration time in seconds, with order type encoded if relevant
-  expiration: BigDecimalish;
+  expiration: BigNumberish;
   // Limit price
-  price: BigDecimalish;
+  price: BigNumberish;
   // Positive for buy, negative for sell
-  amount: BigDecimalish;
+  amount: BigNumberish;
   // A unique nonce to identify the order
   nonce: string;
   // Packed order appendix (uint128) to encode order details such as order execution behavior, isolated, etc.
-  appendix: BigDecimalish;
+  appendix: BigNumberish;
 }
 
 export interface EIP712ListTriggerOrdersParams extends Subaccount {
-  recvTime: BigDecimalish;
+  recvTime: BigNumberish;
 }
 
 export interface EIP712CancelOrdersParams extends Subaccount {
@@ -65,20 +65,20 @@ export interface EIP712LinkSignerParams extends Subaccount {
 
 export interface EIP712TransferQuoteParams extends Subaccount {
   recipientSubaccountName: string;
-  amount: BigDecimalish;
+  amount: BigNumberish;
   nonce: string;
 }
 
 export interface EIP712LeaderboardAuthenticationParams extends Subaccount {
-  expiration: BigDecimalish;
+  expiration: BigNumberish;
 }
 
 export interface EIP712MintNlpParams extends Subaccount {
-  quoteAmount: BigDecimalish;
+  quoteAmount: BigNumberish;
   nonce: string;
 }
 
 export interface EIP712BurnNlpParams extends Subaccount {
-  nlpAmount: BigDecimalish;
+  nlpAmount: BigNumberish;
   nonce: string;
 }
