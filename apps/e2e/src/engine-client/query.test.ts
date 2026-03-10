@@ -5,13 +5,13 @@ import {
   getOrderVerifyingAddress,
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
-  toBigDecimal,
+  toBigNumber,
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArrayElements,
-  assertBigDecimalFinite,
+  assertBigNumberFinite,
   assertDefined,
   assertEnumMember,
   assertHexString,
@@ -65,18 +65,15 @@ void describe(
         assertString(symbolName, 'symbol key');
         assertNumber(symbol.productId, `symbols[${symbolName}].productId`);
         assertString(symbol.symbol, `symbols[${symbolName}].symbol`);
-        assertBigDecimalFinite(
+        assertBigNumberFinite(
           symbol.priceIncrement,
           `symbols[${symbolName}].priceIncrement`,
         );
-        assertBigDecimalFinite(
+        assertBigNumberFinite(
           symbol.sizeIncrement,
           `symbols[${symbolName}].sizeIncrement`,
         );
-        assertBigDecimalFinite(
-          symbol.minSize,
-          `symbols[${symbolName}].minSize`,
-        );
+        assertBigNumberFinite(symbol.minSize, `symbols[${symbolName}].minSize`);
       }
     });
 
@@ -84,7 +81,7 @@ void describe(
       const insurance = await tc.engine.getInsurance();
 
       debugPrint('Insurance', insurance);
-      assertBigDecimalFinite(insurance, 'insurance');
+      assertBigNumberFinite(insurance, 'insurance');
     });
 
     void test('getContracts returns chain and endpoint', async () => {
@@ -201,8 +198,8 @@ void describe(
             type: 'apply_delta',
             tx: {
               productId: QUOTE_PRODUCT_ID,
-              amountDelta: toBigDecimal(1000000000000000000n),
-              vQuoteDelta: toBigDecimal(0),
+              amountDelta: toBigNumber(1000000000000000000n),
+              vQuoteDelta: toBigNumber(0),
             },
           },
         ],

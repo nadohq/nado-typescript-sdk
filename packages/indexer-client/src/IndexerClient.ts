@@ -3,7 +3,7 @@ import {
   ProductEngineType,
   QUOTE_PRODUCT_ID,
   subaccountFromHex,
-  toBigDecimal,
+  toBigNumber,
   toIntegerString,
 } from '@nadohq/shared';
 
@@ -103,8 +103,8 @@ export class IndexerClient extends IndexerBaseClient {
         }
 
         const newEvent: IndexerNlpEvent = {
-          nlpDelta: toBigDecimal(0),
-          primaryQuoteDelta: toBigDecimal(0),
+          nlpDelta: toBigNumber(0),
+          primaryQuoteDelta: toBigNumber(0),
           timestamp: event.timestamp,
           submissionIndex: event.submissionIndex,
           tx: event.tx,

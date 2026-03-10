@@ -2,7 +2,8 @@ import {
   GetEngineMaxMintNlpAmountParams,
   GetEngineMaxWithdrawableParams,
 } from '@nadohq/engine-client';
-import { BigDecimal, getValidatedAddress, toBigDecimal } from '@nadohq/shared';
+import { getValidatedAddress, toBigNumber } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import { GetTokenAllowanceParams, GetTokenWalletBalanceParams } from './types';
 
@@ -41,9 +42,9 @@ export class SpotQueryAPI extends BaseSpotAPI {
   async getTokenAllowance({
     address,
     ...rest
-  }: GetTokenAllowanceParams): Promise<BigDecimal> {
+  }: GetTokenAllowanceParams): Promise<BigNumber> {
     const token = await this.getTokenContractForProduct(rest);
-    return toBigDecimal(
+    return toBigNumber(
       await token.read.allowance([
         getValidatedAddress(address),
         this.getEndpointAddress(),

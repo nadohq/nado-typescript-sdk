@@ -1,4 +1,5 @@
-import { BigDecimal, Subaccount } from '@nadohq/shared';
+import { Subaccount } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import {
   GetIndexerInterestFundingPaymentsParams,
   GetIndexerInterestFundingPaymentsResponse,
@@ -39,7 +40,7 @@ type BaseSubaccountPaginationParams = Subaccount &
   };
 
 export interface BaseIndexerPaginatedEvent extends Subaccount {
-  timestamp: BigDecimal;
+  timestamp: BigNumber;
   submissionIndex: string;
   tx: NadoTx;
 }
@@ -63,9 +64,9 @@ export interface GetIndexerSubaccountCollateralEventsParams extends BaseSubaccou
 export interface IndexerCollateralEvent extends BaseIndexerPaginatedEvent {
   eventType: CollateralEventType;
   // Positive for deposits, negative for withdrawals
-  amount: BigDecimal;
+  amount: BigNumber;
   // The collateral balance after the event
-  newAmount: BigDecimal;
+  newAmount: BigNumber;
   snapshot: IndexerEventSpotStateSnapshot;
 }
 
@@ -79,8 +80,8 @@ export type GetIndexerSubaccountNlpEventsParams =
   BaseSubaccountPaginationParams;
 
 export interface IndexerNlpEvent extends BaseIndexerPaginatedEvent {
-  nlpDelta: BigDecimal;
-  primaryQuoteDelta: BigDecimal;
+  nlpDelta: BigNumber;
+  primaryQuoteDelta: BigNumber;
 }
 
 export type GetIndexerSubaccountNlpEventsResponse =
@@ -130,7 +131,7 @@ export interface IndexerLiquidationEvent extends BaseIndexerPaginatedEvent {
     {
       // The original balance that was liquidated
       // ex. if it was originally a short, amount is negative, but the net delta from the liquidation is positive
-      amountLiquidated: BigDecimal;
+      amountLiquidated: BigNumber;
     },
     IndexerEventSpotStateSnapshot
   >;
@@ -138,7 +139,7 @@ export interface IndexerLiquidationEvent extends BaseIndexerPaginatedEvent {
     {
       // The original balance that was liquidated
       // ex. if it was originally a short, amount is negative, but the net delta from the liquidation is positive
-      amountLiquidated: BigDecimal;
+      amountLiquidated: BigNumber;
     },
     IndexerEventPerpStateSnapshot
   >;
@@ -146,7 +147,7 @@ export interface IndexerLiquidationEvent extends BaseIndexerPaginatedEvent {
   // Only the SPOT QUOTE payment made for the liquidation. Does not include the perp vQuote balance change
   quote: WithIndexerEvent<
     {
-      balanceDelta: BigDecimal;
+      balanceDelta: BigNumber;
     },
     IndexerEventSpotStateSnapshot
   >;
@@ -164,7 +165,7 @@ export type GetIndexerSubaccountSettlementEventsParams =
 
 export interface IndexerSettlementEvent extends BaseIndexerPaginatedEvent {
   // Quote delta for the subaccount being settled
-  quoteDelta: BigDecimal;
+  quoteDelta: BigNumber;
   snapshot: IndexerEventPerpStateSnapshot;
   isolated: boolean;
 }

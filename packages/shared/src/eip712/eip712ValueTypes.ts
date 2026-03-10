@@ -1,5 +1,5 @@
 import { Hex } from 'viem';
-import { BigDecimalish } from '../utils/math';
+import { BigNumberish } from '../utils/math';
 import {
   EIP712BurnNlpParams,
   EIP712CancelOrdersParams,
@@ -36,7 +36,7 @@ export type EIP712OrderValues = Omit<
   WithEIP712Sender<EIP712OrderParams>,
   'price'
 > & {
-  priceX18: BigDecimalish;
+  priceX18: BigNumberish;
 };
 
 export type EIP712ListTriggerOrdersValues =

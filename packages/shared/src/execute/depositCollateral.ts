@@ -1,11 +1,11 @@
 import { toHex } from 'viem';
 import { WithContract } from '../types/nadoContractTypes';
-import { BigDecimalish, subaccountNameToBytes12, toBigInt } from '../utils';
+import { BigNumberish, subaccountNameToBytes12, toBigInt } from '../utils';
 
 export interface DepositCollateralParams {
   subaccountName: string;
   productId: number;
-  amount: BigDecimalish;
+  amount: BigNumberish;
   referralCode?: string;
 }
 

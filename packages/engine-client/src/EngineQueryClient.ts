@@ -1,15 +1,15 @@
 import {
   addDecimals,
-  BigDecimal,
   encodeSignedOrder,
   getOrderVerifyingAddress,
   mapValues,
   MarketWithProduct,
   removeDecimals,
   subaccountToHex,
-  toBigDecimal,
+  toBigNumber,
   toIntegerString,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineServerStatusResponse,
@@ -367,13 +367,13 @@ export class EngineQueryClient extends EngineBaseClient {
     });
 
     return {
-      healthCheckSequencerFee: toBigDecimal(
+      healthCheckSequencerFee: toBigNumber(
         baseResponse.health_check_sequencer_fee,
       ),
-      liquidationSequencerFee: toBigDecimal(
+      liquidationSequencerFee: toBigNumber(
         baseResponse.liquidation_sequencer_fee,
       ),
-      takerSequencerFee: toBigDecimal(baseResponse.taker_sequencer_fee),
+      takerSequencerFee: toBigNumber(baseResponse.taker_sequencer_fee),
       orders: baseResponse.taker_fee_rates_x18.reduce(
         (acc, takerRateX18, currIndex) => {
           acc[currIndex] = {
@@ -386,10 +386,10 @@ export class EngineQueryClient extends EngineBaseClient {
       ),
       withdrawal: baseResponse.withdraw_sequencer_fees.reduce(
         (acc, productFee, currIndex) => {
-          acc[currIndex] = toBigDecimal(productFee);
+          acc[currIndex] = toBigNumber(productFee);
           return acc;
         },
-        {} as Record<number, BigDecimal>,
+        {} as Record<number, BigNumber>,
       ),
       feeTier: baseResponse.fee_tier,
     };
@@ -467,7 +467,7 @@ export class EngineQueryClient extends EngineBaseClient {
           : null,
     });
 
-    return toBigDecimal(baseResponse.max_order_size);
+    return toBigNumber(baseResponse.max_order_size);
   }
 
   /**
@@ -487,7 +487,7 @@ export class EngineQueryClient extends EngineBaseClient {
         params.spotLeverage != null ? String(params.spotLeverage) : null,
     });
 
-    return toBigDecimal(baseResponse.max_withdrawable);
+    return toBigNumber(baseResponse.max_withdrawable);
   }
 
   /**
@@ -507,7 +507,7 @@ export class EngineQueryClient extends EngineBaseClient {
         params.spotLeverage != null ? String(params.spotLeverage) : null,
     });
 
-    return toBigDecimal(baseResponse.max_quote_amount);
+    return toBigNumber(baseResponse.max_quote_amount);
   }
 
   /**
@@ -525,7 +525,7 @@ export class EngineQueryClient extends EngineBaseClient {
       }),
     });
 
-    return toBigDecimal(baseResponse.max_nlp_amount);
+    return toBigNumber(baseResponse.max_nlp_amount);
   }
 
   /**
@@ -555,7 +555,7 @@ export class EngineQueryClient extends EngineBaseClient {
   public async getInsurance(): Promise<GetEngineInsuranceResponse> {
     const baseResponse = await this.query('insurance', {});
 
-    return toBigDecimal(baseResponse.insurance);
+    return toBigNumber(baseResponse.insurance);
   }
 
   /**

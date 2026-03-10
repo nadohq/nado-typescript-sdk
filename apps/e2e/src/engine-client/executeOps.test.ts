@@ -1,7 +1,6 @@
 import { EngineOrderParams } from '@nadohq/engine-client';
 import {
   addDecimals,
-  BigDecimal,
   createDeterministicLinkedSignerPrivateKey,
   getOrderDigest,
   getOrderNonce,
@@ -9,9 +8,10 @@ import {
   packOrderAppendix,
   QUOTE_PRODUCT_ID,
   subaccountToHex,
-  toBigDecimal,
+  toBigNumber,
   WalletClientWithAccount,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { createWalletClient, http, zeroAddress } from 'viem';
@@ -31,7 +31,7 @@ import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: execute operations', () => {
   let tc: RunContext;
-  let shortLimitPrice: BigDecimal;
+  let shortLimitPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
@@ -91,9 +91,7 @@ void describe('[engine-client]: execute operations', () => {
     const TRANSFER_AMOUNT = addDecimals(6);
     const TRANSFER_BACK_AMOUNT = addDecimals(5);
 
-    async function getQuoteBalance(
-      subaccountName: string,
-    ): Promise<BigDecimal> {
+    async function getQuoteBalance(subaccountName: string): Promise<BigNumber> {
       const summary = await tc.engine.getSubaccountSummary({
         subaccountOwner: tc.walletClientAddress,
         subaccountName,
@@ -127,7 +125,7 @@ void describe('[engine-client]: execute operations', () => {
 
       const delta = balanceBefore.minus(balanceAfter);
       assert.ok(
-        delta.gte(toBigDecimal(TRANSFER_AMOUNT)),
+        delta.gte(toBigNumber(TRANSFER_AMOUNT)),
         `sender balance should decrease by at least the transfer amount (${TRANSFER_AMOUNT.toString()}), got delta ${delta.toString()}`,
       );
     });

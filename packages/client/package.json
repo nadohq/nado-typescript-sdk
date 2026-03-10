@@ -48,9 +48,11 @@
     "ts-mixer": "catalog:"
   },
   "peerDependencies": {
+    "bignumber.js": "catalog:",
     "viem": "catalog:"
   },
   "devDependencies": {
+    "bignumber.js": "catalog:",
     "viem": "catalog:"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"

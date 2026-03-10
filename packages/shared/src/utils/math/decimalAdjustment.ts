@@ -1,4 +1,5 @@
-import { BigDecimal, BigDecimalish, toBigDecimal } from './bigDecimal';
+import BigNumber from 'bignumber.js';
+import { BigNumberish, toBigNumber } from './bigNumber';
 
 /**
  * All Nado balances have 18 decimals. Ex. 1e18 = 1.0
@@ -10,10 +11,10 @@ export const NADO_PRODUCT_DECIMALS = 18;
  *
  * - If `T` is `undefined`, the result is `undefined`.
  * - If `T` is a `number`, the result is a `number`.
- * - Otherwise, the result is a `BigDecimal`.
+ * - Otherwise, the result is a `BigNumber`.
  */
-type AdjustDecimalsResult<T extends BigDecimalish | undefined> =
-  T extends undefined ? undefined : T extends number ? number : BigDecimal;
+type AdjustDecimalsResult<T extends BigNumberish | undefined> =
+  T extends undefined ? undefined : T extends number ? number : BigNumber;
 
 /**
  * Adds the specified # of decimals to the number. For example, value = 1, decimals = 2, returns 100.
@@ -22,7 +23,7 @@ type AdjustDecimalsResult<T extends BigDecimalish | undefined> =
  * @param decimals number of decimal places to add, defaults to 18, which is the standard within Nado
  */
 
-export function addDecimals<T extends BigDecimalish | undefined>(
+export function addDecimals<T extends BigNumberish | undefined>(
   value: T,
   decimals: number = NADO_PRODUCT_DECIMALS,
 ): AdjustDecimalsResult<T> {
@@ -31,8 +32,8 @@ export function addDecimals<T extends BigDecimalish | undefined>(
       return undefined;
     }
 
-    const adjustedValue = toBigDecimal(value).multipliedBy(
-      toBigDecimal(10).pow(decimals),
+    const adjustedValue = toBigNumber(value).multipliedBy(
+      toBigNumber(10).pow(decimals),
     );
     return typeof value === 'number' ? adjustedValue.toNumber() : adjustedValue;
   };
@@ -46,7 +47,7 @@ export function addDecimals<T extends BigDecimalish | undefined>(
  * @param value can be undefined for better developer experience. If undefined, returns undefined.
  * @param decimals number of decimal places to remove, defaults to 18, which is the standard within Nado
  */
-export function removeDecimals<T extends BigDecimalish | undefined>(
+export function removeDecimals<T extends BigNumberish | undefined>(
   value: T,
   decimals: number = NADO_PRODUCT_DECIMALS,
 ): AdjustDecimalsResult<T> {
@@ -55,8 +56,8 @@ export function removeDecimals<T extends BigDecimalish | undefined>(
       return undefined;
     }
 
-    const adjustedValue = toBigDecimal(value).dividedBy(
-      toBigDecimal(10).pow(decimals),
+    const adjustedValue = toBigNumber(value).dividedBy(
+      toBigNumber(10).pow(decimals),
     );
     return typeof value === 'number' ? adjustedValue.toNumber() : adjustedValue;
   };

@@ -4,8 +4,8 @@ import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
-  assertBigDecimalFinite,
-  assertBigDecimalPositive,
+  assertBigNumberFinite,
+  assertBigNumberPositive,
   assertDefined,
   assertNonEmptyArray,
   assertNumber,
@@ -107,8 +107,8 @@ void describe(
         const price = oraclePrices[i];
         const label = `oraclePrices[${i}]`;
         assertNumber(price.productId, `${label}.productId`);
-        assertBigDecimalFinite(price.oraclePrice, `${label}.oraclePrice`);
-        assertBigDecimalFinite(price.updateTime, `${label}.updateTime`);
+        assertBigNumberFinite(price.oraclePrice, `${label}.oraclePrice`);
+        assertBigNumberFinite(price.updateTime, `${label}.updateTime`);
       }
     });
 
@@ -117,7 +117,7 @@ void describe(
 
       debugPrint('Quote Price (USDT)', quotePrice);
       assertDefined(quotePrice, 'quotePrice');
-      assertBigDecimalPositive(quotePrice.price, 'quotePrice.price');
+      assertBigNumberPositive(quotePrice.price, 'quotePrice.price');
     });
 
     void test('getCandlesticks returns candlestick data', async () => {

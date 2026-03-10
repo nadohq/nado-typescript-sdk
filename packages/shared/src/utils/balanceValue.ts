@@ -1,8 +1,8 @@
+import BigNumber from 'bignumber.js';
 import {
   PerpBalanceWithProduct,
   SpotBalanceWithProduct,
 } from '../types/balanceTypes';
-import { BigDecimal } from './math';
 
 /**
  * Calculates the quote value of a spot balance, in terms of quote units
@@ -11,7 +11,7 @@ import { BigDecimal } from './math';
  */
 export function calcSpotBalanceValue(
   balanceWithProduct: SpotBalanceWithProduct,
-): BigDecimal {
+): BigNumber {
   return balanceWithProduct.amount.multipliedBy(balanceWithProduct.oraclePrice);
 }
 
@@ -22,7 +22,7 @@ export function calcSpotBalanceValue(
  */
 export function calcPerpBalanceNotionalValue(
   balanceWithProduct: PerpBalanceWithProduct,
-): BigDecimal {
+): BigNumber {
   return balanceWithProduct.amount
     .multipliedBy(balanceWithProduct.oraclePrice)
     .abs();
@@ -35,7 +35,7 @@ export function calcPerpBalanceNotionalValue(
  */
 export function calcPerpBalanceValue(
   balanceWithProduct: PerpBalanceWithProduct,
-): BigDecimal {
+): BigNumber {
   return balanceWithProduct.amount
     .multipliedBy(balanceWithProduct.oraclePrice)
     .plus(balanceWithProduct.vQuoteBalance);

@@ -3,12 +3,12 @@ import {
   EngineServerExecuteResult,
 } from '@nadohq/engine-client';
 import {
-  BigDecimal,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
   OrderAppendix,
   Subaccount,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import { TriggerCriteria, TriggerOrderStatus } from './clientModelTypes';
 import {
   TriggerServerOrder,
@@ -65,7 +65,7 @@ export type TriggerCancelProductOrdersParams = SignatureParams &
 
 export interface TriggerListOrdersParams extends Subaccount, SignatureParams {
   // In millis, defaults to 90s in the future
-  recvTime?: BigDecimal;
+  recvTime?: BigNumber;
   // If not given, defaults to all products
   productIds?: number[];
   // In seconds
@@ -84,8 +84,8 @@ export interface TriggerListOrdersParams extends Subaccount, SignatureParams {
 export interface TriggerOrder {
   productId: number;
   triggerCriteria: TriggerCriteria;
-  price: BigDecimal;
-  amount: BigDecimal;
+  price: BigNumber;
+  amount: BigNumber;
   expiration: number;
   nonce: string;
   digest: string;

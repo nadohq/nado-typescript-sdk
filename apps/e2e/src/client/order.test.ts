@@ -5,11 +5,11 @@ import {
   PlaceOrderParams,
 } from '@nadohq/client';
 import {
-  BigDecimal,
   getOrderDigest,
   getOrderNonce,
   packOrderAppendix,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import {
@@ -34,8 +34,8 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   let walletClientAddress: string;
   let endpointAddr: string;
   let chainId: number;
-  let shortLimitPrice: BigDecimal;
-  let shortMarketPrice: BigDecimal;
+  let shortLimitPrice: BigNumber;
+  let shortMarketPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.BETWEEN_SUITES);

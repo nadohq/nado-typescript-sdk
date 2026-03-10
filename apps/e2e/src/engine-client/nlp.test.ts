@@ -1,10 +1,10 @@
 import {
   addDecimals,
-  BigDecimal,
-  BigDecimals,
+  BigNumbers,
   NLP_PRODUCT_ID,
   removeDecimals,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import { assertArray, assertDefined } from '../utils/assertions';
@@ -25,7 +25,7 @@ void describe(
     let tc: RunContext;
 
     /** Stored across tests: burn test reads the amount queried by the preceding test. */
-    let maxBurnAmount: BigDecimal;
+    let maxBurnAmount: BigNumber;
 
     before(async () => {
       await delay(TEST_DELAYS.BETWEEN_SUITES);
@@ -88,7 +88,7 @@ void describe(
 
       const nlpBalance =
         subaccountInfo.balances.find((bal) => bal.productId === NLP_PRODUCT_ID)
-          ?.amount ?? BigDecimals.ZERO;
+          ?.amount ?? BigNumbers.ZERO;
 
       debugPrint('NLP Balance', removeDecimals(nlpBalance));
       assert.ok(nlpBalance.gte(0), 'NLP balance should be non-negative');

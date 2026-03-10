@@ -1,10 +1,10 @@
-import { BigDecimal } from './bigDecimal';
+import BigNumber from 'bignumber.js';
 
 interface ClampOptions {
   // Inclusive minimum value
-  min?: BigDecimal;
+  min?: BigNumber;
   // Inclusive maximum value
-  max?: BigDecimal;
+  max?: BigNumber;
 }
 
 /**
@@ -13,10 +13,7 @@ interface ClampOptions {
  * @param val
  * @param opts Clamp options
  */
-export function clampBigDecimal(
-  val: BigDecimal,
-  opts: ClampOptions,
-): BigDecimal {
+export function clampBigNumber(val: BigNumber, opts: ClampOptions): BigNumber {
   if (opts.min != null && val.lt(opts.min)) {
     return opts.min;
   } else if (opts.max != null && val.gt(opts.max)) {

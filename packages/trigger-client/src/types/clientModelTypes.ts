@@ -1,5 +1,5 @@
 import { EngineServerExecuteResult } from '@nadohq/engine-client';
-import { BigDecimalish } from '@nadohq/shared';
+import { BigNumberish } from '@nadohq/shared';
 
 /*
 Price trigger
@@ -26,7 +26,7 @@ export interface PriceTriggerDependency {
 
 export interface PriceTriggerCriteria {
   type: PriceTriggerRequirementType;
-  triggerPrice: BigDecimalish;
+  triggerPrice: BigNumberish;
   dependency?: PriceTriggerDependency;
 }
 
@@ -38,12 +38,12 @@ export interface TimeTriggerCriteria {
   /**
    * For TWAP: Trigger interval in seconds
    */
-  interval: BigDecimalish;
+  interval: BigNumberish;
   /**
    * For TWAP: By default, trigger service will split up orders as per total amount / interval
    * If you want to specify the amounts for each interval, you can provide them here.
    */
-  amounts?: BigDecimalish[];
+  amounts?: BigNumberish[];
 }
 
 /**

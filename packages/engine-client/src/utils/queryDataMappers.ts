@@ -8,7 +8,7 @@ import {
   removeDecimals,
   SpotMarket,
   subaccountFromHex,
-  toBigDecimal,
+  toBigNumber,
   unpackOrderAppendix,
 } from '@nadohq/shared';
 import {
@@ -43,7 +43,7 @@ export function mapEngineServerTickLiquidity(
 ): EnginePriceTickLiquidity {
   return {
     price: removeDecimals(tick[0]),
-    liquidity: toBigDecimal(tick[1]),
+    liquidity: toBigNumber(tick[1]),
   };
 }
 
@@ -59,8 +59,8 @@ export function mapEngineServerOrder(
     productId: order.product_id,
     subaccountOwner: subaccount.subaccountOwner,
     subaccountName: subaccount.subaccountName,
-    totalAmount: toBigDecimal(order.amount),
-    unfilledAmount: toBigDecimal(order.unfilled_amount),
+    totalAmount: toBigNumber(order.amount),
+    unfilledAmount: toBigNumber(order.unfilled_amount),
     placementTime: order.placed_at,
     appendix: unpackOrderAppendix(order.appendix),
   };
@@ -72,9 +72,9 @@ export function mapEngineServerSpotProduct(
   return {
     type: ProductEngineType.SPOT,
     productId: product.product_id,
-    minSize: toBigDecimal(product.book_info.min_size),
+    minSize: toBigNumber(product.book_info.min_size),
     priceIncrement: removeDecimals(product.book_info.price_increment_x18),
-    sizeIncrement: toBigDecimal(product.book_info.size_increment),
+    sizeIncrement: toBigNumber(product.book_info.size_increment),
     product: {
       productId: product.product_id,
       type: ProductEngineType.SPOT,
@@ -113,9 +113,9 @@ export function mapEngineServerPerpProduct(
   return {
     type: ProductEngineType.PERP,
     productId: product.product_id,
-    minSize: toBigDecimal(product.book_info.min_size),
+    minSize: toBigNumber(product.book_info.min_size),
     priceIncrement: removeDecimals(product.book_info.price_increment_x18),
-    sizeIncrement: toBigDecimal(product.book_info.size_increment),
+    sizeIncrement: toBigNumber(product.book_info.size_increment),
     product: {
       productId: product.product_id,
       type: ProductEngineType.PERP,
@@ -128,7 +128,7 @@ export function mapEngineServerPerpProduct(
       shortWeightMaintenance: removeDecimals(
         product.risk.short_weight_maintenance_x18,
       ),
-      openInterest: toBigDecimal(product.state.open_interest),
+      openInterest: toBigNumber(product.state.open_interest),
       cumulativeFundingLong: removeDecimals(
         product.state.cumulative_funding_long_x18,
       ),
@@ -143,9 +143,9 @@ export function mapEngineServerBalanceHealthContributions(
   healthContributionsForBalance: string[],
 ): BalanceHealthContributions {
   return {
-    initial: toBigDecimal(healthContributionsForBalance[0]),
-    maintenance: toBigDecimal(healthContributionsForBalance[1]),
-    unweighted: toBigDecimal(healthContributionsForBalance[2]),
+    initial: toBigNumber(healthContributionsForBalance[0]),
+    maintenance: toBigNumber(healthContributionsForBalance[1]),
+    unweighted: toBigNumber(healthContributionsForBalance[2]),
   };
 }
 
@@ -185,7 +185,7 @@ function mapSubaccountSummaryState(
     }
 
     balances.push({
-      amount: toBigDecimal(spotBalance.balance.amount),
+      amount: toBigNumber(spotBalance.balance.amount),
       healthContributions: mapEngineServerBalanceHealthContributions(
         state.health_contributions[spotBalance.product_id],
       ),
@@ -202,8 +202,8 @@ function mapSubaccountSummaryState(
     }
 
     balances.push({
-      amount: toBigDecimal(perpBalance.balance.amount),
-      vQuoteBalance: toBigDecimal(perpBalance.balance.v_quote_balance),
+      amount: toBigNumber(perpBalance.balance.amount),
+      vQuoteBalance: toBigNumber(perpBalance.balance.v_quote_balance),
       healthContributions: mapEngineServerBalanceHealthContributions(
         state.health_contributions[perpBalance.product_id],
       ),
@@ -215,19 +215,19 @@ function mapSubaccountSummaryState(
     balances,
     health: {
       initial: {
-        health: toBigDecimal(state.healths[0].health),
-        assets: toBigDecimal(state.healths[0].assets),
-        liabilities: toBigDecimal(state.healths[0].liabilities),
+        health: toBigNumber(state.healths[0].health),
+        assets: toBigNumber(state.healths[0].assets),
+        liabilities: toBigNumber(state.healths[0].liabilities),
       },
       maintenance: {
-        health: toBigDecimal(state.healths[1].health),
-        assets: toBigDecimal(state.healths[1].assets),
-        liabilities: toBigDecimal(state.healths[1].liabilities),
+        health: toBigNumber(state.healths[1].health),
+        assets: toBigNumber(state.healths[1].assets),
+        liabilities: toBigNumber(state.healths[1].liabilities),
       },
       unweighted: {
-        health: toBigDecimal(state.healths[2].health),
-        assets: toBigDecimal(state.healths[2].assets),
-        liabilities: toBigDecimal(state.healths[2].liabilities),
+        health: toBigNumber(state.healths[2].health),
+        assets: toBigNumber(state.healths[2].assets),
+        liabilities: toBigNumber(state.healths[2].liabilities),
       },
     },
   };
@@ -243,27 +243,27 @@ export function mapEngineServerIsolatedPositions(
     return {
       subaccount: subaccountFromHex(position.subaccount),
       healths: {
-        initial: toBigDecimal(position.healths[0].health),
-        maintenance: toBigDecimal(position.healths[1].health),
-        unweighted: toBigDecimal(position.healths[2].health),
+        initial: toBigNumber(position.healths[0].health),
+        maintenance: toBigNumber(position.healths[1].health),
+        unweighted: toBigNumber(position.healths[2].health),
       },
       baseBalance: {
-        amount: toBigDecimal(perpBalance.balance.amount),
-        vQuoteBalance: toBigDecimal(perpBalance.balance.v_quote_balance),
+        amount: toBigNumber(perpBalance.balance.amount),
+        vQuoteBalance: toBigNumber(perpBalance.balance.v_quote_balance),
         // Health contributions === healths for an isolated position
         healthContributions: {
-          initial: toBigDecimal(position.base_healths[0]),
-          maintenance: toBigDecimal(position.base_healths[1]),
-          unweighted: toBigDecimal(position.base_healths[2]),
+          initial: toBigNumber(position.base_healths[0]),
+          maintenance: toBigNumber(position.base_healths[1]),
+          unweighted: toBigNumber(position.base_healths[2]),
         },
         ...mapEngineServerPerpProduct(position.base_product).product,
       },
       quoteBalance: {
-        amount: toBigDecimal(quoteBalance.balance.amount),
+        amount: toBigNumber(quoteBalance.balance.amount),
         healthContributions: {
-          initial: toBigDecimal(position.quote_healths[0]),
-          maintenance: toBigDecimal(position.quote_healths[1]),
-          unweighted: toBigDecimal(position.quote_healths[2]),
+          initial: toBigNumber(position.quote_healths[0]),
+          maintenance: toBigNumber(position.quote_healths[1]),
+          unweighted: toBigNumber(position.quote_healths[2]),
         },
         ...mapEngineServerSpotProduct(position.quote_product).product,
       },
@@ -292,8 +292,8 @@ export function mapEngineServerSymbol(
     productId: engineServerSymbol.product_id,
     symbol: engineServerSymbol.symbol,
     priceIncrement: removeDecimals(engineServerSymbol.price_increment_x18),
-    sizeIncrement: toBigDecimal(engineServerSymbol.size_increment),
-    minSize: toBigDecimal(engineServerSymbol.min_size),
+    sizeIncrement: toBigNumber(engineServerSymbol.size_increment),
+    minSize: toBigNumber(engineServerSymbol.min_size),
     makerFeeRate: removeDecimals(engineServerSymbol.maker_fee_rate_x18),
     takerFeeRate: removeDecimals(engineServerSymbol.taker_fee_rate_x18),
     longWeightInitial: removeDecimals(
@@ -323,7 +323,7 @@ export function mapEngineServerNlpLockedBalances(
   const lockedBalances: EngineNlpLockedBalance[] =
     baseResponse.locked_balances.map((lockedBalance) => ({
       productId: lockedBalance.balance.product_id,
-      balance: toBigDecimal(lockedBalance.balance.balance.amount),
+      balance: toBigNumber(lockedBalance.balance.balance.amount),
       unlockedAt: lockedBalance.unlocked_at,
     }));
 
@@ -331,11 +331,11 @@ export function mapEngineServerNlpLockedBalances(
     lockedBalances,
     balanceLocked: {
       productId: baseResponse.balance_locked.product_id,
-      balance: toBigDecimal(baseResponse.balance_locked.balance.amount),
+      balance: toBigNumber(baseResponse.balance_locked.balance.amount),
     },
     balanceUnlocked: {
       productId: baseResponse.balance_unlocked.product_id,
-      balance: toBigDecimal(baseResponse.balance_unlocked.balance.amount),
+      balance: toBigNumber(baseResponse.balance_unlocked.balance.amount),
     },
   };
 }

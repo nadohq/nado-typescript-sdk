@@ -14,8 +14,8 @@ import {
   SignedTx,
   subaccountFromHex,
   subaccountToHex,
-  toBigDecimal,
   toBigInt,
+  toBigNumber,
   toIntegerString,
   WalletClientWithAccount,
   WalletNotProvidedError,
@@ -200,7 +200,7 @@ export class IndexerBaseClient {
             events.map(mapIndexerEvent);
 
           snapshotByTimestamp[timestamp] = {
-            timestamp: toBigDecimal(timestamp),
+            timestamp: toBigNumber(timestamp),
             balances,
           };
         });
@@ -305,7 +305,7 @@ export class IndexerBaseClient {
     return baseResponse.prices.map((price): IndexerOraclePrice => {
       return {
         oraclePrice: removeDecimals(price.oracle_price_x18),
-        updateTime: toBigDecimal(price.update_time),
+        updateTime: toBigNumber(price.update_time),
         productId: price.product_id,
       };
     });
@@ -507,30 +507,30 @@ export class IndexerBaseClient {
       return {
         productId: postBalances.base.productId,
         isolated: matchEvent.isolated,
-        totalFee: toBigDecimal(matchEvent.fee),
-        sequencerFee: toBigDecimal(matchEvent.sequencer_fee),
-        builderFee: toBigDecimal(matchEvent.builder_fee),
-        baseFilled: toBigDecimal(matchEvent.base_filled),
-        quoteFilled: toBigDecimal(matchEvent.quote_filled),
-        cumulativeFee: toBigDecimal(matchEvent.cumulative_fee),
-        cumulativeBaseFilled: toBigDecimal(matchEvent.cumulative_base_filled),
-        cumulativeQuoteFilled: toBigDecimal(matchEvent.cumulative_quote_filled),
+        totalFee: toBigNumber(matchEvent.fee),
+        sequencerFee: toBigNumber(matchEvent.sequencer_fee),
+        builderFee: toBigNumber(matchEvent.builder_fee),
+        baseFilled: toBigNumber(matchEvent.base_filled),
+        quoteFilled: toBigNumber(matchEvent.quote_filled),
+        cumulativeFee: toBigNumber(matchEvent.cumulative_fee),
+        cumulativeBaseFilled: toBigNumber(matchEvent.cumulative_base_filled),
+        cumulativeQuoteFilled: toBigNumber(matchEvent.cumulative_quote_filled),
         digest: matchEvent.digest,
         order: matchEvent.order,
         submissionIndex: matchEvent.submission_idx,
-        timestamp: toBigDecimal(timestamp),
+        timestamp: toBigNumber(timestamp),
         preEventTrackedVars: {
-          netEntryUnrealized: toBigDecimal(matchEvent.net_entry_unrealized),
-          netEntryCumulative: toBigDecimal(matchEvent.net_entry_cumulative),
+          netEntryUnrealized: toBigNumber(matchEvent.net_entry_unrealized),
+          netEntryCumulative: toBigNumber(matchEvent.net_entry_cumulative),
         },
         preBalances: mapIndexerMatchEventBalances(matchEvent.pre_balance),
         postBalances,
         tx,
         isTaker: matchEvent.is_taker,
-        realizedPnl: toBigDecimal(matchEvent.realized_pnl),
-        closedSize: toBigDecimal(matchEvent.closed_amount),
-        closedNetEntry: toBigDecimal(matchEvent.closed_net_entry),
-        margin: matchEvent.margin ? toBigDecimal(matchEvent.margin) : null,
+        realizedPnl: toBigNumber(matchEvent.realized_pnl),
+        closedSize: toBigNumber(matchEvent.closed_amount),
+        closedNetEntry: toBigNumber(matchEvent.closed_net_entry),
+        margin: matchEvent.margin ? toBigNumber(matchEvent.margin) : null,
         ...subaccountFromHex(matchEvent.order.sender),
       };
     });
@@ -589,10 +589,10 @@ export class IndexerBaseClient {
       subaccount: subaccountToHex(params.subaccount),
     });
     return {
-      totalTxLimit: toBigDecimal(baseResponse.total_tx_limit),
-      remainingTxs: toBigDecimal(baseResponse.remaining_tx),
+      totalTxLimit: toBigNumber(baseResponse.total_tx_limit),
+      remainingTxs: toBigNumber(baseResponse.remaining_tx),
       signer: baseResponse.signer,
-      waitTimeUntilNextTx: toBigDecimal(baseResponse.wait_time),
+      waitTimeUntilNextTx: toBigNumber(baseResponse.wait_time),
     };
   }
 
@@ -642,7 +642,7 @@ export class IndexerBaseClient {
     });
 
     return {
-      rewardCoefficient: toBigDecimal(baseResponse.reward_coefficient),
+      rewardCoefficient: toBigNumber(baseResponse.reward_coefficient),
       makers: baseResponse.makers.map(mapIndexerMakerStatistics),
     };
   }
@@ -827,15 +827,15 @@ export class IndexerBaseClient {
     const baseResponse = await this.query('backlog', {});
 
     return {
-      totalTxs: toBigDecimal(baseResponse.total_txs),
-      totalSubmissions: toBigDecimal(baseResponse.total_submissions),
-      backlogSize: toBigDecimal(baseResponse.backlog_size),
-      updatedAt: toBigDecimal(baseResponse.updated_at),
+      totalTxs: toBigNumber(baseResponse.total_txs),
+      totalSubmissions: toBigNumber(baseResponse.total_submissions),
+      backlogSize: toBigNumber(baseResponse.backlog_size),
+      updatedAt: toBigNumber(baseResponse.updated_at),
       backlogEtaInSeconds: baseResponse.backlog_eta_in_seconds
-        ? toBigDecimal(baseResponse.backlog_eta_in_seconds)
+        ? toBigNumber(baseResponse.backlog_eta_in_seconds)
         : null,
       txsPerSecond: baseResponse.txs_per_second
-        ? toBigDecimal(baseResponse.txs_per_second)
+        ? toBigNumber(baseResponse.txs_per_second)
         : null,
     };
   }
@@ -852,8 +852,8 @@ export class IndexerBaseClient {
     });
 
     return {
-      points: toBigDecimal(baseResponse.points),
-      feeRefund: toBigDecimal(baseResponse.fee_refund),
+      points: toBigNumber(baseResponse.points),
+      feeRefund: toBigNumber(baseResponse.fee_refund),
       nftEligibility: baseResponse.nft_eligibility,
     };
   }
@@ -873,15 +873,15 @@ export class IndexerBaseClient {
       pointsPerEpoch: baseResponse.points_per_epoch.map((epoch) => ({
         epoch: epoch.epoch,
         description: epoch.description,
-        startTime: toBigDecimal(epoch.start_time),
-        endTime: toBigDecimal(epoch.end_time),
-        totalPoints: toBigDecimal(epoch.total_points),
-        points: toBigDecimal(epoch.points),
+        startTime: toBigNumber(epoch.start_time),
+        endTime: toBigNumber(epoch.end_time),
+        totalPoints: toBigNumber(epoch.total_points),
+        points: toBigNumber(epoch.points),
         rank: epoch.rank,
         tier: epoch.tier,
       })),
       allTimePoints: {
-        points: toBigDecimal(baseResponse.all_time_points.points),
+        points: toBigNumber(baseResponse.all_time_points.points),
         rank: baseResponse.all_time_points.rank,
         tier: baseResponse.all_time_points.tier,
       },

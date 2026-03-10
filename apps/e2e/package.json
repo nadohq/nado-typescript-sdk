@@ -27,6 +27,7 @@
     "@nadohq/indexer-client": "workspace:*",
     "@nadohq/shared": "workspace:*",
     "@nadohq/trigger-client": "workspace:*",
+    "bignumber.js": "catalog:",
     "dotenv": "^17.0.1",
     "viem": "catalog:"
   },
