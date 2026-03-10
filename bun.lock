@@ -45,7 +45,7 @@
         "@nadohq/shared": "workspace:*",
         "@nadohq/trigger-client": "workspace:*",
         "dotenv": "^17.0.1",
-        "viem": "workspace:*",
+        "viem": "catalog:",
       },
       "devDependencies": {
         "@types/node": "^25.2.3",
@@ -67,13 +67,13 @@
         "@nadohq/indexer-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
         "@nadohq/trigger-client": "workspace:*",
-        "ts-mixer": "*",
+        "ts-mixer": "catalog:",
       },
       "devDependencies": {
-        "viem": "workspace:*",
+        "viem": "catalog:",
       },
       "peerDependencies": {
-        "viem": "*",
+        "viem": "catalog:",
       },
     },
     "packages/engine-client": {
@@ -81,14 +81,14 @@
       "version": "0.1.0-alpha.53",
       "dependencies": {
         "@nadohq/shared": "workspace:*",
-        "axios": "*",
-        "ts-mixer": "*",
+        "axios": "catalog:",
+        "ts-mixer": "catalog:",
       },
       "devDependencies": {
-        "viem": "workspace:*",
+        "viem": "catalog:",
       },
       "peerDependencies": {
-        "viem": "*",
+        "viem": "catalog:",
       },
     },
     "packages/indexer-client": {
@@ -97,14 +97,14 @@
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
-        "axios": "*",
-        "ts-mixer": "*",
+        "axios": "catalog:",
+        "ts-mixer": "catalog:",
       },
       "devDependencies": {
-        "viem": "workspace:*",
+        "viem": "catalog:",
       },
       "peerDependencies": {
-        "viem": "*",
+        "viem": "catalog:",
       },
     },
     "packages/shared": {
@@ -114,13 +114,13 @@
         "abitype": "^1.2.3",
       },
       "devDependencies": {
-        "@jest/globals": "*",
+        "@jest/globals": "catalog:",
         "bignumber.js": "^9.3.1",
-        "viem": "workspace:*",
+        "viem": "catalog:",
       },
       "peerDependencies": {
         "bignumber.js": "^9.3.1",
-        "viem": "*",
+        "viem": "catalog:",
       },
     },
     "packages/trigger-client": {
@@ -129,18 +129,18 @@
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
-        "axios": "*",
-        "ts-mixer": "*",
+        "axios": "catalog:",
+        "ts-mixer": "catalog:",
       },
       "devDependencies": {
-        "viem": "workspace:*",
+        "viem": "catalog:",
       },
       "peerDependencies": {
-        "viem": "*",
+        "viem": "catalog:",
       },
     },
   },
-  "overrides": {
+  "catalog": {
     "@jest/globals": "^30.0.3",
     "axios": "^1.10.0",
     "ts-mixer": "^6.0.4",

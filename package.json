@@ -58,7 +58,7 @@
     "typescript-eslint": "^8.54.0",
     "viem": "2.41.2"
   },
-  "overrides": {
+  "catalog": {
     "@jest/globals": "^30.0.3",
     "viem": "2.41.2",
     "axios": "^1.10.0",

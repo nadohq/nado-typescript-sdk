@@ -45,13 +45,13 @@
     "@nadohq/indexer-client": "workspace:*",
     "@nadohq/shared": "workspace:*",
     "@nadohq/trigger-client": "workspace:*",
-    "ts-mixer": "*"
+    "ts-mixer": "catalog:"
   },
   "peerDependencies": {
-    "viem": "*"
+    "viem": "catalog:"
   },
   "devDependencies": {
-    "viem": "workspace:*"
+    "viem": "catalog:"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }
