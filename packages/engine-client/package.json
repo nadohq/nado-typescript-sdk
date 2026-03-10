@@ -42,12 +42,12 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@nadohq/shared": "workspace:*",
-    "axios": "workspace:*",
-    "ts-mixer": "workspace:*"
+    "axios": "*",
+    "ts-mixer": "*"
   },
   "peerDependencies": {
-    "bignumber.js": "workspace:*",
-    "viem": "workspace:*"
+    "bignumber.js": "*",
+    "viem": "*"
   },
   "devDependencies": {
     "bignumber.js": "workspace:*",

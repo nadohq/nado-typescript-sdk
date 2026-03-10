@@ -43,16 +43,16 @@
   "dependencies": {
     "@nadohq/engine-client": "workspace:*",
     "@nadohq/shared": "workspace:*",
-    "axios": "workspace:*",
-    "ts-mixer": "workspace:*"
+    "axios": "*",
+    "ts-mixer": "*"
   },
   "peerDependencies": {
     "bignumber.js": "workspace:*",
     "viem": "workspace:*"
   },
   "devDependencies": {
-    "bignumber.js": "workspace:*",
-    "viem": "workspace:*"
+    "bignumber.js": "*",
+    "viem": "*"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }

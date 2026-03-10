@@ -45,11 +45,11 @@
     "@nadohq/indexer-client": "workspace:*",
     "@nadohq/shared": "workspace:*",
     "@nadohq/trigger-client": "workspace:*",
-    "ts-mixer": "workspace:*"
+    "ts-mixer": "*"
   },
   "peerDependencies": {
-    "bignumber.js": "workspace:*",
-    "viem": "workspace:*"
+    "bignumber.js": "*",
+    "viem": "*"
   },
   "devDependencies": {
     "bignumber.js": "workspace:*",
