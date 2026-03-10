@@ -27,5 +27,11 @@ export function toBigNumber(val: BigNumberish): BigNumber {
     // This is unlikely to occur, but it's here for completeness. Uses the suggestion here: https://typescript-eslint.io/rules/no-base-to-string/#alternatives
     return JSON.stringify(val);
   })();
-  return new BigNumber(bnConstructorVal);
+  try {
+    return new BigNumber(bnConstructorVal);
+  } catch {
+    // bignumber.js v10 throws an error if the value is invalid, but we want to return NaN in that case
+    // https://github.com/MikeMcl/bignumber.js/issues/402
+    return new BigNumber(Number.NaN);
+  }
 }
