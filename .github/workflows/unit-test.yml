@@ -1,4 +1,4 @@
-name: Build & Test
+name: Build & Unit Test
 
 on:
   push:
@@ -26,5 +26,5 @@ jobs:
 
       - run: bun run build
       - run: bun run typecheck
-      - run: bun run test
+      - run: bun run test:unit
       - run: bun --cwd apps/node-compat-test test
