@@ -44,13 +44,13 @@
     "abitype": "^1.2.3"
   },
   "peerDependencies": {
-    "bignumber.js": "catalog:",
-    "viem": "catalog:"
+    "bignumber.js": "workspace:*",
+    "viem": "workspace:*"
   },
   "devDependencies": {
-    "@jest/globals": "catalog:",
-    "bignumber.js": "catalog:",
-    "viem": "catalog:"
+    "@jest/globals": "workspace:*",
+    "bignumber.js": "workspace:*",
+    "viem": "workspace:*"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }

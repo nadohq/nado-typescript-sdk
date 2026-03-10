@@ -45,15 +45,15 @@
     "@nadohq/indexer-client": "workspace:*",
     "@nadohq/shared": "workspace:*",
     "@nadohq/trigger-client": "workspace:*",
-    "ts-mixer": "catalog:"
+    "ts-mixer": "workspace:*"
   },
   "peerDependencies": {
-    "bignumber.js": "catalog:",
-    "viem": "catalog:"
+    "bignumber.js": "workspace:*",
+    "viem": "workspace:*"
   },
   "devDependencies": {
-    "bignumber.js": "catalog:",
-    "viem": "catalog:"
+    "bignumber.js": "workspace:*",
+    "viem": "workspace:*"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }

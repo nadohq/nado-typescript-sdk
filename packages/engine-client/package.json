@@ -42,16 +42,16 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@nadohq/shared": "workspace:*",
-    "axios": "catalog:",
-    "ts-mixer": "catalog:"
+    "axios": "workspace:*",
+    "ts-mixer": "workspace:*"
   },
   "peerDependencies": {
-    "bignumber.js": "catalog:",
-    "viem": "catalog:"
+    "bignumber.js": "workspace:*",
+    "viem": "workspace:*"
   },
   "devDependencies": {
-    "bignumber.js": "catalog:",
-    "viem": "catalog:"
+    "bignumber.js": "workspace:*",
+    "viem": "workspace:*"
   },
   "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
 }
