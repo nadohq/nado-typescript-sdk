@@ -37,7 +37,7 @@ import {
   mapIndexerPerpPrices,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
-  mapIndexerV2Symbol,
+  mapIndexerV2Symbols,
   mapIndexerV2Ticker,
   mapSnapshotsIntervalToServerParams,
 } from './dataMappers';
@@ -930,7 +930,7 @@ export class IndexerBaseClient {
 
     this.checkResponseStatus(response);
 
-    return mapValues(response.data, mapIndexerV2Symbol);
+    return mapValues(response.data, mapIndexerV2Symbols);
   }
 
   protected async query<TRequestType extends IndexerServerQueryRequestType>(

@@ -852,22 +852,22 @@ export interface IndexerV2SymbolResponse {
   productId: number;
   /** Trading symbol (e.g., "BTC-PERP", "WETH") */
   symbol: string;
-  /** Minimum price increment (x18 precision) */
-  priceIncrementX18: string;
-  /** Minimum order size increment (x18 precision, base denominated) */
+  /** Minimum price increment */
+  priceIncrement: BigNumber;
+  /** Minimum order size increment (base denominated) */
   sizeIncrement: string;
-  /** Minimum order size (x18 precision, USDT0 denominated) */
+  /** Minimum order size (USDT0 denominated) */
   minSize: string;
-  /** Default maker fee rate (x18 precision, negative = rebate) */
-  makerFeeRateX18: string;
-  /** Default taker fee rate (x18 precision) */
-  takerFeeRateX18: string;
-  /** Initial margin weight for long positions (x18 precision) */
-  longWeightInitialX18: string;
-  /** Maintenance margin weight for long positions (x18 precision) */
-  longWeightMaintenanceX18: string;
-  /** Maximum open interest cap (x18 precision). Null if uncapped. */
-  maxOpenInterestX18: string | null;
+  /** Default maker fee rate (negative = rebate) */
+  makerFeeRate: BigNumber;
+  /** Default taker fee rate */
+  takerFeeRate: BigNumber;
+  /** Initial margin weight for long positions */
+  longWeightInitial: BigNumber;
+  /** Maintenance margin weight for long positions */
+  longWeightMaintenance: BigNumber;
+  /** Maximum open interest cap. Null if uncapped. */
+  maxOpenInterest: BigNumber | null;
   /** Current trading status */
   tradingStatus: string;
   /** Whether the market only accepts isolated margin orders */

@@ -360,18 +360,21 @@ export function assertV2SymbolShape(
   assertString(symbol.type, `${label}.type`);
   assertNumber(symbol.productId, `${label}.productId`);
   assertString(symbol.symbol, `${label}.symbol`);
-  assertString(symbol.priceIncrementX18, `${label}.priceIncrementX18`);
+  assertBigNumberFinite(symbol.priceIncrement, `${label}.priceIncrement`);
   assertString(symbol.sizeIncrement, `${label}.sizeIncrement`);
   assertString(symbol.minSize, `${label}.minSize`);
-  assertString(symbol.makerFeeRateX18, `${label}.makerFeeRateX18`);
-  assertString(symbol.takerFeeRateX18, `${label}.takerFeeRateX18`);
-  assertString(symbol.longWeightInitialX18, `${label}.longWeightInitialX18`);
-  assertString(
-    symbol.longWeightMaintenanceX18,
-    `${label}.longWeightMaintenanceX18`,
+  assertBigNumberFinite(symbol.makerFeeRate, `${label}.makerFeeRate`);
+  assertBigNumberFinite(symbol.takerFeeRate, `${label}.takerFeeRate`);
+  assertBigNumberFinite(symbol.longWeightInitial, `${label}.longWeightInitial`);
+  assertBigNumberFinite(
+    symbol.longWeightMaintenance,
+    `${label}.longWeightMaintenance`,
   );
   assertString(symbol.tradingStatus, `${label}.tradingStatus`);
   assertBoolean(symbol.isolatedOnly, `${label}.isolatedOnly`);
+  if (symbol.marketHours != null) {
+    assertBoolean(symbol.marketHours.isOpen, `${label}.marketHours.isOpen`);
+  }
 }
 
 // ---------------------------------------------------------------------------

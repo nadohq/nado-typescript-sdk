@@ -389,21 +389,23 @@ export function mapIndexerV2MarketHours(
   };
 }
 
-export function mapIndexerV2Symbol(
+export function mapIndexerV2Symbols(
   symbol: IndexerServerV2SymbolResponse,
 ): IndexerV2SymbolResponse {
   return {
     type: symbol.type,
     productId: symbol.product_id,
     symbol: symbol.symbol,
-    priceIncrementX18: symbol.price_increment_x18,
+    priceIncrement: removeDecimals(symbol.price_increment_x18),
     sizeIncrement: symbol.size_increment,
     minSize: symbol.min_size,
-    makerFeeRateX18: symbol.maker_fee_rate_x18,
-    takerFeeRateX18: symbol.taker_fee_rate_x18,
-    longWeightInitialX18: symbol.long_weight_initial_x18,
-    longWeightMaintenanceX18: symbol.long_weight_maintenance_x18,
-    maxOpenInterestX18: symbol.max_open_interest_x18,
+    makerFeeRate: removeDecimals(symbol.maker_fee_rate_x18),
+    takerFeeRate: removeDecimals(symbol.taker_fee_rate_x18),
+    longWeightInitial: removeDecimals(symbol.long_weight_initial_x18),
+    longWeightMaintenance: removeDecimals(symbol.long_weight_maintenance_x18),
+    maxOpenInterest: symbol.max_open_interest_x18
+      ? removeDecimals(symbol.max_open_interest_x18)
+      : null,
     tradingStatus: symbol.trading_status,
     isolatedOnly: symbol.isolated_only,
     marketHours: symbol.market_hours
