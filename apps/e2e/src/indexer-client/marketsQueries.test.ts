@@ -1,5 +1,6 @@
 import { CandlestickPeriod, IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, QUOTE_PRODUCT_ID, TimeInSeconds } from '@nadohq/shared';
+import assert from 'node:assert';
 import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
@@ -296,6 +297,11 @@ void describe(
       assertRecord(perpSymbols, 'perpSymbols');
       for (const symbol of Object.values(perpSymbols)) {
         assertV2SymbolShape(symbol, 'perpSymbols entry');
+        assert.equal(
+          symbol.type,
+          'perp',
+          `Expected perp but got ${symbol.type} for product ${symbol.productId}`,
+        );
       }
     });
   },
