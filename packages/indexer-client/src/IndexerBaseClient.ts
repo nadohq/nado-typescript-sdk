@@ -37,6 +37,7 @@ import {
   mapIndexerPerpPrices,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
+  mapIndexerV2Symbol,
   mapIndexerV2Ticker,
   mapSnapshotsIntervalToServerParams,
 } from './dataMappers';
@@ -99,6 +100,8 @@ import {
   GetIndexerReferralCodeResponse,
   GetIndexerSubaccountDDAParams,
   GetIndexerSubaccountDDAResponse,
+  GetIndexerV2SymbolsParams,
+  GetIndexerV2SymbolsResponse,
   GetIndexerV2TickersParams,
   GetIndexerV2TickersResponse,
   IndexerEventWithTx,
@@ -108,6 +111,7 @@ import {
   IndexerServerQueryRequestByType,
   IndexerServerQueryRequestType,
   IndexerServerQueryResponseByType,
+  IndexerServerV2SymbolsResponse,
   IndexerServerV2TickersResponse,
   IndexerSnapshotBalance,
   IndexerSubaccountSnapshot,
@@ -904,6 +908,29 @@ export class IndexerBaseClient {
     this.checkResponseStatus(response);
 
     return mapValues(response.data, mapIndexerV2Ticker);
+  }
+
+  /**
+   * Get symbols with market hours from the v2 indexer endpoint
+   * @param params
+   */
+  async getV2Symbols(
+    params?: GetIndexerV2SymbolsParams,
+  ): Promise<GetIndexerV2SymbolsResponse> {
+    const response =
+      await this.axiosInstance.get<IndexerServerV2SymbolsResponse>(
+        `${this.v2Url}/symbols`,
+        {
+          params: {
+            product_type: params?.productType,
+            product_ids: params?.productIds,
+          },
+        },
+      );
+
+    this.checkResponseStatus(response);
+
+    return mapValues(response.data, mapIndexerV2Symbol);
   }
 
   protected async query<TRequestType extends IndexerServerQueryRequestType>(

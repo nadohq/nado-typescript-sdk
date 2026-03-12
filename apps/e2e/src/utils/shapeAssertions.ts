@@ -13,6 +13,7 @@ import type {
   IndexerOrder,
   IndexerPerpPrices,
   IndexerProductSnapshot,
+  IndexerV2SymbolResponse,
   IndexerV2TickerResponse,
   ListIndexerSubaccountsResponse,
 } from '@nadohq/indexer-client';
@@ -343,6 +344,34 @@ export function assertV2TickerShape(
   assertNumber(ticker.baseVolume, `${label}.baseVolume`);
   assertNumber(ticker.quoteVolume, `${label}.quoteVolume`);
   assertNumber(ticker.priceChangePercent24h, `${label}.priceChangePercent24h`);
+}
+
+// ---------------------------------------------------------------------------
+// V2 symbol shape
+// ---------------------------------------------------------------------------
+
+/**
+ * Validates the shape of an {@link IndexerV2SymbolResponse}.
+ */
+export function assertV2SymbolShape(
+  symbol: IndexerV2SymbolResponse,
+  label: string,
+): void {
+  assertString(symbol.type, `${label}.type`);
+  assertNumber(symbol.productId, `${label}.productId`);
+  assertString(symbol.symbol, `${label}.symbol`);
+  assertString(symbol.priceIncrementX18, `${label}.priceIncrementX18`);
+  assertString(symbol.sizeIncrement, `${label}.sizeIncrement`);
+  assertString(symbol.minSize, `${label}.minSize`);
+  assertString(symbol.makerFeeRateX18, `${label}.makerFeeRateX18`);
+  assertString(symbol.takerFeeRateX18, `${label}.takerFeeRateX18`);
+  assertString(symbol.longWeightInitialX18, `${label}.longWeightInitialX18`);
+  assertString(
+    symbol.longWeightMaintenanceX18,
+    `${label}.longWeightMaintenanceX18`,
+  );
+  assertString(symbol.tradingStatus, `${label}.tradingStatus`);
+  assertBoolean(symbol.isolatedOnly, `${label}.isolatedOnly`);
 }
 
 // ---------------------------------------------------------------------------

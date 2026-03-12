@@ -48,9 +48,13 @@ import {
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
   IndexerServerTx,
+  IndexerServerV2MarketHours,
+  IndexerServerV2SymbolResponse,
   IndexerServerV2TickerResponse,
   IndexerSnapshotsIntervalParams,
   IndexerSpotBalance,
+  IndexerV2MarketHours,
+  IndexerV2SymbolResponse,
   IndexerV2TickerResponse,
 } from './types';
 
@@ -371,5 +375,39 @@ export function mapIndexerV2Ticker(
     baseVolume: ticker.base_volume,
     quoteVolume: ticker.quote_volume,
     priceChangePercent24h: ticker.price_change_percent_24h,
+  };
+}
+
+export function mapIndexerV2MarketHours(
+  hours: IndexerServerV2MarketHours,
+): IndexerV2MarketHours {
+  return {
+    isOpen: hours.is_open,
+    reason: hours.reason,
+    nextClose: hours.next_close,
+    nextOpen: hours.next_open,
+  };
+}
+
+export function mapIndexerV2Symbol(
+  symbol: IndexerServerV2SymbolResponse,
+): IndexerV2SymbolResponse {
+  return {
+    type: symbol.type,
+    productId: symbol.product_id,
+    symbol: symbol.symbol,
+    priceIncrementX18: symbol.price_increment_x18,
+    sizeIncrement: symbol.size_increment,
+    minSize: symbol.min_size,
+    makerFeeRateX18: symbol.maker_fee_rate_x18,
+    takerFeeRateX18: symbol.taker_fee_rate_x18,
+    longWeightInitialX18: symbol.long_weight_initial_x18,
+    longWeightMaintenanceX18: symbol.long_weight_maintenance_x18,
+    maxOpenInterestX18: symbol.max_open_interest_x18,
+    tradingStatus: symbol.trading_status,
+    isolatedOnly: symbol.isolated_only,
+    marketHours: symbol.market_hours
+      ? mapIndexerV2MarketHours(symbol.market_hours)
+      : null,
   };
 }
