@@ -13,7 +13,7 @@ import type {
   IndexerOrder,
   IndexerPerpPrices,
   IndexerProductSnapshot,
-  IndexerV2SymbolResponse,
+  IndexerV2Symbol,
   IndexerV2TickerResponse,
   ListIndexerSubaccountsResponse,
 } from '@nadohq/indexer-client';
@@ -351,10 +351,10 @@ export function assertV2TickerShape(
 // ---------------------------------------------------------------------------
 
 /**
- * Validates the shape of an {@link IndexerV2SymbolResponse}.
+ * Validates the shape of an {@link IndexerV2Symbol}.
  */
 export function assertV2SymbolShape(
-  symbol: IndexerV2SymbolResponse,
+  symbol: IndexerV2Symbol,
   label: string,
 ): void {
   assertString(symbol.type, `${label}.type`);

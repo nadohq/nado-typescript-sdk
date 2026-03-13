@@ -525,7 +525,7 @@ export interface IndexerServerV2MarketHours {
 /**
  * Individual symbol data from v2 indexer endpoint (server format)
  */
-export interface IndexerServerV2SymbolResponse {
+export interface IndexerServerV2Symbol {
   type: string;
   product_id: number;
   symbol: string;
@@ -548,5 +548,5 @@ export interface IndexerServerV2SymbolResponse {
  */
 export type IndexerServerV2SymbolsResponse = Record<
   string,
-  IndexerServerV2SymbolResponse
+  IndexerServerV2Symbol
 >;

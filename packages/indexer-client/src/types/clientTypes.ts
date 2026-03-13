@@ -842,10 +842,22 @@ export interface IndexerV2MarketHours {
   nextOpen: string | null;
 }
 
+export type IndexerV2TradingStatus =
+  // Normal trading, all order types accepted
+  | 'live'
+  // Only post-only orders accepted (taker orders rejected)
+  | 'post_only'
+  // Only reduce-only orders accepted; used when a market is being delisted
+  | 'reduce_only'
+  // No new positions can be opened; only orders that reduce existing positions are accepted. Used during periods of low activity (e.g. weekends, holidays)
+  | 'soft_reduce_only'
+  // No orders accepted
+  | 'not_tradable';
+
 /**
  * Individual symbol data from v2 endpoint
  */
-export interface IndexerV2SymbolResponse {
+export interface IndexerV2Symbol {
   /** Product type: "spot" or "perp" */
   type: string;
   /** Unique product identifier */
@@ -869,7 +881,7 @@ export interface IndexerV2SymbolResponse {
   /** Maximum open interest cap. Null if uncapped. */
   maxOpenInterest: BigNumber | null;
   /** Current trading status */
-  tradingStatus: string;
+  tradingStatus: IndexerV2TradingStatus;
   /** Whether the market only accepts isolated margin orders */
   isolatedOnly: boolean;
   /** Market hours information. Null for 24/7 markets. */
@@ -880,7 +892,4 @@ export interface IndexerV2SymbolResponse {
  * Response from v2 symbols endpoint
  * Maps symbols to their respective data
  */
-export type GetIndexerV2SymbolsResponse = Record<
-  string,
-  IndexerV2SymbolResponse
->;
+export type GetIndexerV2SymbolsResponse = Record<string, IndexerV2Symbol>;

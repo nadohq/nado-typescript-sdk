@@ -49,13 +49,14 @@ import {
   IndexerServerSnapshotsInterval,
   IndexerServerTx,
   IndexerServerV2MarketHours,
-  IndexerServerV2SymbolResponse,
+  IndexerServerV2Symbol,
   IndexerServerV2TickerResponse,
   IndexerSnapshotsIntervalParams,
   IndexerSpotBalance,
   IndexerV2MarketHours,
-  IndexerV2SymbolResponse,
+  IndexerV2Symbol,
   IndexerV2TickerResponse,
+  IndexerV2TradingStatus,
 } from './types';
 
 export function mapSnapshotsIntervalToServerParams(
@@ -390,8 +391,8 @@ export function mapIndexerV2MarketHours(
 }
 
 export function mapIndexerV2Symbols(
-  symbol: IndexerServerV2SymbolResponse,
-): IndexerV2SymbolResponse {
+  symbol: IndexerServerV2Symbol,
+): IndexerV2Symbol {
   return {
     type: symbol.type,
     productId: symbol.product_id,
@@ -406,7 +407,7 @@ export function mapIndexerV2Symbols(
     maxOpenInterest: symbol.max_open_interest_x18
       ? removeDecimals(symbol.max_open_interest_x18)
       : null,
-    tradingStatus: symbol.trading_status,
+    tradingStatus: symbol.trading_status as IndexerV2TradingStatus,
     isolatedOnly: symbol.isolated_only,
     marketHours: symbol.market_hours
       ? mapIndexerV2MarketHours(symbol.market_hours)
