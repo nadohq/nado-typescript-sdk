@@ -13,6 +13,7 @@ import type {
   IndexerOrder,
   IndexerPerpPrices,
   IndexerProductSnapshot,
+  IndexerV2SymbolResponse,
   IndexerV2TickerResponse,
   ListIndexerSubaccountsResponse,
 } from '@nadohq/indexer-client';
@@ -343,6 +344,37 @@ export function assertV2TickerShape(
   assertNumber(ticker.baseVolume, `${label}.baseVolume`);
   assertNumber(ticker.quoteVolume, `${label}.quoteVolume`);
   assertNumber(ticker.priceChangePercent24h, `${label}.priceChangePercent24h`);
+}
+
+// ---------------------------------------------------------------------------
+// V2 symbol shape
+// ---------------------------------------------------------------------------
+
+/**
+ * Validates the shape of an {@link IndexerV2SymbolResponse}.
+ */
+export function assertV2SymbolShape(
+  symbol: IndexerV2SymbolResponse,
+  label: string,
+): void {
+  assertString(symbol.type, `${label}.type`);
+  assertNumber(symbol.productId, `${label}.productId`);
+  assertString(symbol.symbol, `${label}.symbol`);
+  assertBigNumberFinite(symbol.priceIncrement, `${label}.priceIncrement`);
+  assertString(symbol.sizeIncrement, `${label}.sizeIncrement`);
+  assertString(symbol.minSize, `${label}.minSize`);
+  assertBigNumberFinite(symbol.makerFeeRate, `${label}.makerFeeRate`);
+  assertBigNumberFinite(symbol.takerFeeRate, `${label}.takerFeeRate`);
+  assertBigNumberFinite(symbol.longWeightInitial, `${label}.longWeightInitial`);
+  assertBigNumberFinite(
+    symbol.longWeightMaintenance,
+    `${label}.longWeightMaintenance`,
+  );
+  assertString(symbol.tradingStatus, `${label}.tradingStatus`);
+  assertBoolean(symbol.isolatedOnly, `${label}.isolatedOnly`);
+  if (symbol.marketHours != null) {
+    assertBoolean(symbol.marketHours.isOpen, `${label}.marketHours.isOpen`);
+  }
 }
 
 // ---------------------------------------------------------------------------

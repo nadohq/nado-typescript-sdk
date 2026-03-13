@@ -511,3 +511,42 @@ export type IndexerServerV2TickersResponse = Record<
   string,
   IndexerServerV2TickerResponse
 >;
+
+/**
+ * Market hours data from v2 symbols endpoint (server format)
+ */
+export interface IndexerServerV2MarketHours {
+  is_open: boolean;
+  reason: string | null;
+  next_close: string | null;
+  next_open: string | null;
+}
+
+/**
+ * Individual symbol data from v2 indexer endpoint (server format)
+ */
+export interface IndexerServerV2SymbolResponse {
+  type: string;
+  product_id: number;
+  symbol: string;
+  price_increment_x18: string;
+  size_increment: string;
+  min_size: string;
+  maker_fee_rate_x18: string;
+  taker_fee_rate_x18: string;
+  long_weight_initial_x18: string;
+  long_weight_maintenance_x18: string;
+  max_open_interest_x18: string | null;
+  trading_status: string;
+  isolated_only: boolean;
+  market_hours: IndexerServerV2MarketHours | null;
+}
+
+/**
+ * Response from v2 symbols endpoint (server format)
+ * Maps symbols to their respective data
+ */
+export type IndexerServerV2SymbolsResponse = Record<
+  string,
+  IndexerServerV2SymbolResponse
+>;

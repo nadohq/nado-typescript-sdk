@@ -810,3 +810,77 @@ export type GetIndexerV2TickersResponse = Record<
   string,
   IndexerV2TickerResponse
 >;
+
+/**
+ * Parameters for querying v2 symbols endpoint
+ */
+export interface GetIndexerV2SymbolsParams {
+  /**
+   * Filter by product type
+   * @example 'spot'
+   * @example 'perp'
+   */
+  productType?: 'spot' | 'perp';
+  /**
+   * Comma-separated list of product IDs to filter by
+   * @example '2,4,42'
+   */
+  productIds?: string;
+}
+
+/**
+ * Market hours information for a product
+ */
+export interface IndexerV2MarketHours {
+  /** Whether the market is currently in its regular trading session */
+  isOpen: boolean;
+  /** Why the market is closed: "weekend" or "holiday". Null when open. */
+  reason: string | null;
+  /** ISO 8601 UTC timestamp of the next session close. Null when closed. */
+  nextClose: string | null;
+  /** ISO 8601 UTC timestamp of the next session open. Null when no upcoming open. */
+  nextOpen: string | null;
+}
+
+/**
+ * Individual symbol data from v2 endpoint
+ */
+export interface IndexerV2SymbolResponse {
+  /** Product type: "spot" or "perp" */
+  type: string;
+  /** Unique product identifier */
+  productId: number;
+  /** Trading symbol (e.g., "BTC-PERP", "WETH") */
+  symbol: string;
+  /** Minimum price increment */
+  priceIncrement: BigNumber;
+  /** Minimum order size increment (base denominated) */
+  sizeIncrement: string;
+  /** Minimum order size (USDT0 denominated) */
+  minSize: string;
+  /** Default maker fee rate (negative = rebate) */
+  makerFeeRate: BigNumber;
+  /** Default taker fee rate */
+  takerFeeRate: BigNumber;
+  /** Initial margin weight for long positions */
+  longWeightInitial: BigNumber;
+  /** Maintenance margin weight for long positions */
+  longWeightMaintenance: BigNumber;
+  /** Maximum open interest cap. Null if uncapped. */
+  maxOpenInterest: BigNumber | null;
+  /** Current trading status */
+  tradingStatus: string;
+  /** Whether the market only accepts isolated margin orders */
+  isolatedOnly: boolean;
+  /** Market hours information. Null for 24/7 markets. */
+  marketHours: IndexerV2MarketHours | null;
+}
+
+/**
+ * Response from v2 symbols endpoint
+ * Maps symbols to their respective data
+ */
+export type GetIndexerV2SymbolsResponse = Record<
+  string,
+  IndexerV2SymbolResponse
+>;

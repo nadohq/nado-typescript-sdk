@@ -1,5 +1,6 @@
 import { CandlestickPeriod, IndexerClient } from '@nadohq/indexer-client';
 import { nowInSeconds, QUOTE_PRODUCT_ID, TimeInSeconds } from '@nadohq/shared';
+import assert from 'node:assert';
 import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
@@ -20,6 +21,7 @@ import {
   assertMarketSnapshotShape,
   assertPerpPricesShape,
   assertProductSnapshotShape,
+  assertV2SymbolShape,
   assertV2TickerShape,
 } from '../utils/shapeAssertions';
 import {
@@ -271,6 +273,35 @@ void describe(
       assertRecord(tickers, 'tickers');
       for (const ticker of Object.values(tickers)) {
         assertV2TickerShape(ticker, 'tickers entry');
+      }
+    });
+
+    void test('getV2Symbols returns symbol data', async () => {
+      const symbols = await client.getV2Symbols();
+
+      debugPrint('Symbols', symbols);
+      assertDefined(symbols, 'symbols');
+      assertRecord(symbols, 'symbols');
+      for (const symbol of Object.values(symbols)) {
+        assertV2SymbolShape(symbol, 'symbols entry');
+      }
+    });
+
+    void test('getV2Symbols filters by product type', async () => {
+      const perpSymbols = await client.getV2Symbols({
+        productType: 'perp',
+      });
+
+      debugPrint('Perp Symbols', perpSymbols);
+      assertDefined(perpSymbols, 'perpSymbols');
+      assertRecord(perpSymbols, 'perpSymbols');
+      for (const symbol of Object.values(perpSymbols)) {
+        assertV2SymbolShape(symbol, 'perpSymbols entry');
+        assert.equal(
+          symbol.type,
+          'perp',
+          `Expected perp but got ${symbol.type} for product ${symbol.productId}`,
+        );
       }
     });
   },
