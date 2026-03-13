@@ -9,7 +9,7 @@ import {
   TriggerClient,
 } from '@nadohq/trigger-client';
 import { createPublicClient, createWalletClient, http } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+import { nonceManager, privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
 import { RunContext } from './types';
 
@@ -25,7 +25,7 @@ export function createTestContext(): RunContext {
     throw new Error('No private key found. Please check .env');
   }
 
-  const account = privateKeyToAccount(env.privateKey);
+  const account = privateKeyToAccount(env.privateKey, { nonceManager });
   const chain = CHAIN_ENV_TO_CHAIN[env.chainEnv];
 
   const walletClient = createWalletClient({
