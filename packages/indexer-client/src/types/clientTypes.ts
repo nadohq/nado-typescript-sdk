@@ -558,6 +558,15 @@ export interface GetIndexerLeaderboardParams {
   // Min rank inclusive
   startCursor?: string;
   limit?: number;
+  /** Sort order. Defaults to `'DESC'`. */
+  order?: 'ASC' | 'DESC';
+}
+
+export interface IndexerSocialAccountInfo {
+  provider: 'twitter';
+  username: string;
+  displayName: string;
+  profileImageUrl: string;
 }
 
 export interface IndexerLeaderboardParticipant {
@@ -570,10 +579,15 @@ export interface IndexerLeaderboardParticipant {
   // Float indicating the ending account value at the time the snapshot was taken i.e: at updateTime
   accountValue: BigNumber;
   // Float indicating the trading volume at the time the snapshot was taken i.e: at updateTime.
-  // Null for contests that have no volume requirement.
-  volume?: BigNumber;
+  volume: BigNumber;
+  volumeRank: BigNumber;
   // Seconds
   updateTime: BigNumber;
+  socialAccounts: IndexerSocialAccountInfo[];
+  qualificationStatus?:
+    | 'qualified'
+    | 'insufficient_account_value'
+    | 'insufficient_volume';
 }
 
 export interface GetIndexerLeaderboardResponse {
@@ -597,13 +611,17 @@ interface LeaderboardSignatureParams {
   chainId: number;
 }
 
-export interface GetIndexerLeaderboardRegistrationParams extends Subaccount {
-  contestId: number;
+export interface GetIndexerLeaderboardRegistrationsParams {
+  subaccount: Subaccount;
+  contestIds: number[];
+  /** Filter to active contests only. Defaults to `true`. */
+  active?: boolean;
 }
 
-export interface UpdateIndexerLeaderboardRegistrationParams extends GetIndexerLeaderboardRegistrationParams {
-  updateRegistration: LeaderboardSignatureParams;
-  // In millis, defaults to 90s in the future
+export interface RegisterLeaderboardParams extends Subaccount {
+  contestIds: number[];
+  registration: LeaderboardSignatureParams;
+  /** In millis, defaults to 90s in the future. */
   recvTime?: BigNumber;
 }
 
@@ -614,17 +632,17 @@ export interface IndexerLeaderboardRegistration {
   updateTime: BigNumber;
 }
 
-export interface GetIndexerLeaderboardRegistrationResponse {
-  // For non-tiered contests, null if the user is not registered for the provided contestId.
-  // For tiered contests (i.e., related contests), null if the user is not registered for any of the contests in the tier group.
-  registration: IndexerLeaderboardRegistration | null;
+export interface GetIndexerLeaderboardRegistrationsResponse {
+  registrations: IndexerLeaderboardRegistration[];
 }
 
-export type UpdateIndexerLeaderboardRegistrationResponse =
-  GetIndexerLeaderboardRegistrationResponse;
+export type RegisterLeaderboardResponse =
+  GetIndexerLeaderboardRegistrationsResponse;
 
 export interface GetIndexerLeaderboardContestsParams {
   contestIds: number[];
+  /** Filter to active contests only. Defaults to `true`. Pass `false` to include inactive contests. */
+  active?: boolean;
 }
 
 export interface IndexerLeaderboardContest {

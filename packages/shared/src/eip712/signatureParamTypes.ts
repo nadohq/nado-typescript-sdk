@@ -71,6 +71,7 @@ export interface EIP712TransferQuoteParams extends Subaccount {
 
 export interface EIP712LeaderboardAuthenticationParams extends Subaccount {
   expiration: BigNumberish;
+  contestIds: number[];
 }
 
 export interface EIP712MintNlpParams extends Subaccount {

@@ -247,6 +247,13 @@ export interface IndexerServerMaker {
  * Leaderboard
  */
 
+export interface IndexerServerSocialAccount {
+  provider: 'twitter';
+  username: string;
+  display_name: string;
+  profile_image_url: string;
+}
+
 export interface IndexerServerLeaderboardPosition {
   subaccount: string;
   contest_id: number;
@@ -255,8 +262,14 @@ export interface IndexerServerLeaderboardPosition {
   roi: string;
   roi_rank: string;
   account_value: string;
-  volume?: string;
+  volume: string;
+  volume_rank: string;
   update_time: string;
+  social_accounts: IndexerServerSocialAccount[];
+  qualification_status?:
+    | 'qualified'
+    | 'insufficient_account_value'
+    | 'insufficient_volume';
 }
 
 export interface IndexerServerLeaderboardContest {

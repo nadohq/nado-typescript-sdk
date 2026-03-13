@@ -6,6 +6,7 @@ import {
   toBigNumber,
   toIntegerString,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 
 import { IndexerBaseClient } from './IndexerBaseClient';
 import {
@@ -447,11 +448,21 @@ export class IndexerClient extends IndexerBaseClient {
       startCursor: params.startCursor,
     });
 
-    // Next cursor is the rank number of the (requestedLimit+1)th item
-    const nextCursor =
-      params.rankType === 'pnl'
-        ? baseResponse.participants[requestedLimit]?.pnlRank
-        : baseResponse.participants[requestedLimit]?.roiRank;
+    const overflowParticipant = baseResponse.participants[requestedLimit];
+    let nextCursor: BigNumber | undefined;
+    if (overflowParticipant) {
+      switch (params.rankType) {
+        case 'pnl':
+          nextCursor = overflowParticipant.pnlRank;
+          break;
+        case 'roi':
+          nextCursor = overflowParticipant.roiRank;
+          break;
+        case 'volume':
+          nextCursor = overflowParticipant.volumeRank;
+          break;
+      }
+    }
 
     return {
       ...baseResponse,

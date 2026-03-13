@@ -18,15 +18,10 @@ export const TEST_PRODUCT_ID_LIST: number[] = Object.values(TEST_PRODUCT_IDS);
 export const TEST_SUBACCOUNT_NAME = 'default';
 
 /**
- * Contest IDs known to exist on the testnet leaderboard.
+ * Contest ID known to exist on the testnet leaderboard.
  * These may go stale if testnet state is reset.
  */
-export const TEST_CONTEST_IDS = {
-  LEGACY: 1,
-  RECENT: [5, 6, 7] as readonly number[],
-  LEADERBOARD: 8,
-  REGISTRATION: 16,
-} as const;
+export const TEST_CONTEST_ID = 1 as const;
 
 /**
  * Test timeouts for different categories of E2E operations.

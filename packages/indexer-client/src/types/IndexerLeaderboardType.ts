@@ -1,2 +1,7 @@
-// `pnl` ranks by the absolute pnl value, whereas `roi` ranks by the % roi value
-export type IndexerLeaderboardRankType = 'pnl' | 'roi';
+/**
+ * Leaderboard ranking metric.
+ * - `pnl` ranks by absolute PnL value
+ * - `roi` ranks by percentage ROI value
+ * - `volume` ranks by trading volume
+ */
+export type IndexerLeaderboardRankType = 'pnl' | 'roi' | 'volume';

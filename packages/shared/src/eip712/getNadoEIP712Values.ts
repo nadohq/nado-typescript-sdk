@@ -222,6 +222,7 @@ function getLeaderboardAuthenticationValues(
       subaccountName: params.subaccountName,
     }),
     expiration: toIntegerString(params.expiration),
+    contestIds: params.contestIds,
   };
 }
 

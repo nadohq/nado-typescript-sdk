@@ -259,8 +259,16 @@ export function mapIndexerLeaderboardPosition(
     percentRoi: toBigNumber(position.roi),
     roiRank: toBigNumber(position.roi_rank),
     accountValue: toBigNumber(position.account_value),
-    volume: position.volume ? toBigNumber(position.volume) : undefined,
+    volume: toBigNumber(position.volume),
+    volumeRank: toBigNumber(position.volume_rank),
     updateTime: toBigNumber(position.update_time),
+    socialAccounts: position.social_accounts.map((account) => ({
+      provider: account.provider,
+      username: account.username,
+      displayName: account.display_name,
+      profileImageUrl: account.profile_image_url,
+    })),
+    qualificationStatus: position.qualification_status,
   };
 }
 
@@ -281,7 +289,7 @@ export function mapIndexerLeaderboardContest(
     contestId: contest.contest_id,
     startTime: toBigNumber(contest.start_time),
     endTime: toBigNumber(contest.end_time),
-    period: toBigNumber(contest.threshold),
+    period: toBigNumber(contest.timeframe),
     totalParticipants: toBigNumber(contest.count),
     minRequiredAccountValue: toBigNumber(contest.threshold),
     minRequiredVolume: toBigNumber(contest.volume_threshold),

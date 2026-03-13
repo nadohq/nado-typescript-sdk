@@ -175,6 +175,7 @@ export interface IndexerServerLeaderboardParams {
   rank_type: IndexerLeaderboardRankType;
   start?: number | string;
   limit?: number | string;
+  order?: 'ASC' | 'DESC';
 }
 
 export interface IndexerServerLeaderboardRankParams {
@@ -184,12 +185,17 @@ export interface IndexerServerLeaderboardRankParams {
 
 export interface IndexerServerLeaderboardContestsParams {
   contest_ids: number[];
+  active?: boolean;
 }
 
-export interface IndexerServerLeaderboardRegistrationParams {
+export interface IndexerServerLeaderboardRegistrationsParams {
   subaccount: string;
-  contest_id: number;
-  update_registration: SignedTx<EIP712LeaderboardAuthenticationValues> | null;
+  contest_ids: number[];
+  active?: boolean;
+}
+
+export interface IndexerServerLeaderboardRegisterParams {
+  update_registration: SignedTx<EIP712LeaderboardAuthenticationValues>;
 }
 
 export interface IndexerServerFastWithdrawalSignatureParams {
@@ -231,7 +237,8 @@ export interface IndexerServerQueryRequestByType {
   leaderboard: IndexerServerLeaderboardParams;
   leaderboard_contests: IndexerServerLeaderboardContestsParams;
   leaderboard_rank: IndexerServerLeaderboardRankParams;
-  leaderboard_registration: IndexerServerLeaderboardRegistrationParams;
+  leaderboard_register: IndexerServerLeaderboardRegisterParams;
+  leaderboard_registrations: IndexerServerLeaderboardRegistrationsParams;
   linked_signer_rate_limit: IndexerServerLinkedSignerParams;
   maker_statistics: IndexerServerMakerStatisticsParams;
   market_snapshots: IndexerServerMarketSnapshotsParams;
@@ -376,11 +383,12 @@ export interface IndexerServerLeaderboardResponse {
   positions: IndexerServerLeaderboardPosition[];
 }
 
-export interface IndexerServerLeaderboardRegistrationResponse {
-  // For non-tiered contests, null if the user is not registered for the provided contestId.
-  // For tiered contests (i.e., related contests), null if the user is not registered for any of the contests in the tier group.
-  registration: IndexerServerLeaderboardRegistration | null;
+export interface IndexerServerLeaderboardRegistrationsResponse {
+  registrations: IndexerServerLeaderboardRegistration[];
 }
+
+export type IndexerServerLeaderboardRegisterResponse =
+  IndexerServerLeaderboardRegistrationsResponse;
 
 export interface IndexerServerLeaderboardRankResponse {
   // If the subaccount is not eligible for a given contest, it would not be included in the response.
@@ -466,7 +474,8 @@ export interface IndexerServerQueryResponseByType {
   leaderboard: IndexerServerLeaderboardResponse;
   leaderboard_contests: IndexerServerLeaderboardContestsResponse;
   leaderboard_rank: IndexerServerLeaderboardRankResponse;
-  leaderboard_registration: IndexerServerLeaderboardRegistrationResponse;
+  leaderboard_register: IndexerServerLeaderboardRegisterResponse;
+  leaderboard_registrations: IndexerServerLeaderboardRegistrationsResponse;
   linked_signer_rate_limit: IndexerServerLinkedSignerResponse;
   maker_statistics: IndexerServerMakerStatisticsResponse;
   market_snapshots: IndexerServerMarketSnapshotsResponse;
