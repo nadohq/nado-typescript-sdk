@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/trigger-client",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "sideEffects": false,
   "description": "> TODO: description",
