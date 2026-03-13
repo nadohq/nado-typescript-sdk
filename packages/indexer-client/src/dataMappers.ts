@@ -117,6 +117,7 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     closedSize: toBigNumber(order.closed_amount),
     closedNetEntry: toBigNumber(order.closed_net_entry),
     closedMargin: order.closed_margin ? toBigNumber(order.closed_margin) : null,
+    preOrderAmount: toBigNumber(order.prev_position),
     firstFillTimestamp: toBigNumber(order.first_fill_timestamp),
     lastFillTimestamp: toBigNumber(order.last_fill_timestamp),
   };
