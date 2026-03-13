@@ -116,6 +116,8 @@ export interface IndexerServerOrder {
   closed_net_entry: string;
   // Weighted average margin for the closed amount (x18). Only present for isolated margin orders; null for cross-margin orders
   closed_margin: string | null;
+  // Position amount right before the order
+  prev_position: string;
   // Unix timestamp (seconds) of the first fill on the order
   first_fill_timestamp: string;
   // Unix timestamp (seconds) of the last fill on the order
