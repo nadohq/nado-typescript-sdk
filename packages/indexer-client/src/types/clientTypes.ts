@@ -372,8 +372,8 @@ export interface IndexerOrder {
   totalFee: BigNumber;
   builderFee: BigNumber;
   realizedPnl: BigNumber;
-  // Always positive
-  closedSize: BigNumber;
+  // Signed closed amount (positive for longs, negative for shorts)
+  closedAmount: BigNumber;
   // Cumulative realized entry price for the closed amount on an order
   closedNetEntry: BigNumber;
   // Weighted average margin allocated to the closed amount. Only present for isolated margin orders; null for cross-margin orders
@@ -436,8 +436,8 @@ export interface IndexerMatchEvent extends Subaccount {
   postBalances: IndexerMatchEventBalances;
   tx: NadoTx;
   realizedPnl: BigNumber;
-  // Always positive
-  closedSize: BigNumber;
+  // Signed closed amount (positive for longs, negative for shorts)
+  closedAmount: BigNumber;
   // Realized entry price for the closed amount on this match (x18). Represents the total quote value at which the closed portion of the position was originally entered.
   closedNetEntry: BigNumber;
   // Margin allocated to the closed amount on this match (x18). Only present for isolated margin orders; null for cross-margin orders.
