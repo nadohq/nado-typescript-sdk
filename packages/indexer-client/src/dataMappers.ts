@@ -114,7 +114,7 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     totalFee: toBigNumber(order.fee),
     builderFee: toBigNumber(order.builder_fee),
     realizedPnl: toBigNumber(order.realized_pnl),
-    closedSize: toBigNumber(order.closed_amount),
+    closedAmount: toBigNumber(order.closed_amount),
     closedNetEntry: toBigNumber(order.closed_net_entry),
     closedMargin: order.closed_margin ? toBigNumber(order.closed_margin) : null,
     preOrderAmount: toBigNumber(order.prev_position),

@@ -532,7 +532,7 @@ export class IndexerBaseClient {
         tx,
         isTaker: matchEvent.is_taker,
         realizedPnl: toBigNumber(matchEvent.realized_pnl),
-        closedSize: toBigNumber(matchEvent.closed_amount),
+        closedAmount: toBigNumber(matchEvent.closed_amount),
         closedNetEntry: toBigNumber(matchEvent.closed_net_entry),
         margin: matchEvent.margin ? toBigNumber(matchEvent.margin) : null,
         ...subaccountFromHex(matchEvent.order.sender),
