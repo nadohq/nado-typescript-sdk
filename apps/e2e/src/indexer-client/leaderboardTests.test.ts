@@ -1,6 +1,7 @@
 import {
   type IndexerClient,
   type IndexerLeaderboardContest,
+  type IndexerLeaderboardContestTrack,
   type IndexerLeaderboardParticipant,
   type IndexerLeaderboardRegistration,
 } from '@nadohq/indexer-client';
@@ -15,6 +16,7 @@ import {
   assertDefined,
   assertNumber,
   assertPaginatedResponse,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
@@ -32,14 +34,28 @@ function assertLeaderboardParticipantShape(
 ) {
   assertDefined(participant.subaccount, `${label}.subaccount`);
   assertNumber(participant.contestId, `${label}.contestId`);
-  assertBigNumberFinite(participant.pnl, `${label}.pnl`);
-  assertBigNumberFinite(participant.pnlRank, `${label}.pnlRank`);
-  assertBigNumberFinite(participant.percentRoi, `${label}.percentRoi`);
-  assertBigNumberFinite(participant.roiRank, `${label}.roiRank`);
   assertBigNumberFinite(participant.accountValue, `${label}.accountValue`);
-  assertBigNumberFinite(participant.volume, `${label}.volume`);
-  assertBigNumberFinite(participant.volumeRank, `${label}.volumeRank`);
   assertBigNumberFinite(participant.updateTime, `${label}.updateTime`);
+  assertDefined(participant.tracks, `${label}.tracks`);
+
+  for (const [rankType, trackData] of Object.entries(participant.tracks)) {
+    assertBigNumberFinite(trackData.value, `${label}.tracks.${rankType}.value`);
+    assertBigNumberFinite(trackData.rank, `${label}.tracks.${rankType}.rank`);
+    assertDefined(
+      trackData.qualificationStatus,
+      `${label}.tracks.${rankType}.qualificationStatus`,
+    );
+  }
+}
+
+function assertLeaderboardContestTrackShape(
+  track: IndexerLeaderboardContestTrack,
+  label: string,
+) {
+  assertNumber(track.trackId, `${label}.trackId`);
+  assertDefined(track.rankType, `${label}.rankType`);
+  assertDefined(track.sortOrder, `${label}.sortOrder`);
+  assertBigNumberFinite(track.minRequiredAccountValue, `${label}.minRequiredAccountValue`);
 }
 
 function assertLeaderboardContestShape(
@@ -54,17 +70,17 @@ function assertLeaderboardContestShape(
     contest.totalParticipants,
     `${label}.totalParticipants`,
   );
-  assertBigNumberFinite(
-    contest.minRequiredAccountValue,
-    `${label}.minRequiredAccountValue`,
-  );
-  assertBigNumberFinite(
-    contest.minRequiredVolume,
-    `${label}.minRequiredVolume`,
-  );
   assertArray(contest.requiredProductIds, `${label}.requiredProductIds`);
   assertBoolean(contest.active, `${label}.active`);
   assertBigNumberFinite(contest.lastUpdated, `${label}.lastUpdated`);
+  assertString(contest.title, `${label}.title`);
+  assertString(contest.description, `${label}.description`);
+  assertArray(contest.tracks, `${label}.tracks`);
+  assertArrayElements(
+    contest.tracks,
+    (t, trackLabel) => assertLeaderboardContestTrackShape(t, trackLabel),
+    `${label}.tracks`,
+  );
 }
 
 function assertRegistrationShape(
@@ -110,6 +126,26 @@ void describe(
       });
 
       debugPrint('Leaderboard', result);
+      assertDefined(result, 'result');
+      assertArray(result.participants, 'participants');
+      assertArrayElements(
+        result.participants,
+        (p, label) => assertLeaderboardParticipantShape(p, label),
+        'participants',
+      );
+      assert.ok(
+        result.participants.length <= 5,
+        'should return at most limit items',
+      );
+    });
+
+    void test('getLeaderboard without rankType returns participants for single-track contest', async () => {
+      const result = await client.getLeaderboard({
+        limit: 5,
+        contestId: TEST_CONTEST_ID,
+      });
+
+      debugPrint('Leaderboard (no rankType)', result);
       assertDefined(result, 'result');
       assertArray(result.participants, 'participants');
       assertArrayElements(
@@ -216,6 +252,35 @@ void describe(
         });
 
         debugPrint('Leaderboard Second Page', secondPage);
+        assertPaginatedResponse(secondPage, 'secondPage');
+        assertArray(secondPage.participants, 'secondPage.participants');
+      }
+    });
+
+    void test('getPaginatedLeaderboard without rankType paginates single-track contest', async () => {
+      const firstPage = await client.getPaginatedLeaderboard({
+        contestId: TEST_CONTEST_ID,
+        limit: 5,
+      });
+
+      debugPrint('Leaderboard First Page (no rankType)', firstPage);
+      assertPaginatedResponse(firstPage, 'firstPage');
+      assertArray(firstPage.participants, 'firstPage.participants');
+      assert.ok(
+        firstPage.participants.length <= 5,
+        'first page should return at most limit items',
+      );
+
+      if (firstPage.meta.hasMore) {
+        assertDefined(firstPage.meta.nextCursor, 'firstPage.meta.nextCursor');
+
+        const secondPage = await client.getPaginatedLeaderboard({
+          startCursor: firstPage.meta.nextCursor,
+          contestId: TEST_CONTEST_ID,
+          limit: 5,
+        });
+
+        debugPrint('Leaderboard Second Page (no rankType)', secondPage);
         assertPaginatedResponse(secondPage, 'secondPage');
         assertArray(secondPage.participants, 'secondPage.participants');
       }

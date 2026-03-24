@@ -22,6 +22,7 @@ import {
   IndexerFundingRate,
   IndexerLeaderboardContest,
   IndexerLeaderboardParticipant,
+  IndexerLeaderboardRankType,
   IndexerLeaderboardRegistration,
   IndexerMaker,
   IndexerMarketSnapshot,
@@ -251,24 +252,27 @@ export function mapIndexerMakerStatistics(
 export function mapIndexerLeaderboardPosition(
   position: IndexerServerLeaderboardPosition,
 ): IndexerLeaderboardParticipant {
+  const tracks: IndexerLeaderboardParticipant['tracks'] = {};
+  for (const [rankType, trackData] of Object.entries(position.tracks)) {
+    tracks[rankType as IndexerLeaderboardRankType] = {
+      value: toBigNumber(trackData.value),
+      rank: toBigNumber(trackData.rank),
+      qualificationStatus: trackData.qualification_status,
+    };
+  }
+
   return {
     subaccount: subaccountFromHex(position.subaccount),
     contestId: position.contest_id,
-    pnl: toBigNumber(position.pnl),
-    pnlRank: toBigNumber(position.pnl_rank),
-    percentRoi: toBigNumber(position.roi),
-    roiRank: toBigNumber(position.roi_rank),
     accountValue: toBigNumber(position.account_value),
-    volume: toBigNumber(position.volume),
-    volumeRank: toBigNumber(position.volume_rank),
     updateTime: toBigNumber(position.update_time),
+    tracks,
     socialAccounts: position.social_accounts.map((account) => ({
       provider: account.provider,
       username: account.username,
       displayName: account.display_name,
       profileImageUrl: account.profile_image_url,
     })),
-    qualificationStatus: position.qualification_status,
   };
 }
 
@@ -285,17 +289,26 @@ export function mapIndexerLeaderboardRegistration(
 export function mapIndexerLeaderboardContest(
   contest: IndexerServerLeaderboardContest,
 ): IndexerLeaderboardContest {
+  const startTime = toBigNumber(contest.start_time);
+  const endTime = toBigNumber(contest.end_time);
+
   return {
     contestId: contest.contest_id,
-    startTime: toBigNumber(contest.start_time),
-    endTime: toBigNumber(contest.end_time),
-    period: toBigNumber(contest.timeframe),
+    startTime,
+    endTime,
+    period: endTime.minus(startTime),
     totalParticipants: toBigNumber(contest.count),
-    minRequiredAccountValue: toBigNumber(contest.threshold),
-    minRequiredVolume: toBigNumber(contest.volume_threshold),
     requiredProductIds: contest.product_ids,
     active: contest.active,
     lastUpdated: toBigNumber(contest.last_updated),
+    title: contest.title,
+    description: contest.description,
+    tracks: contest.tracks.map((track) => ({
+      trackId: track.track_id,
+      rankType: track.rank_type,
+      sortOrder: track.sort_order,
+      minRequiredAccountValue: toBigNumber(track.threshold),
+    })),
   };
 }
 

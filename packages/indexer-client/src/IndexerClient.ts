@@ -451,17 +451,14 @@ export class IndexerClient extends IndexerBaseClient {
     const overflowParticipant = baseResponse.participants[requestedLimit];
     let nextCursor: BigNumber | undefined;
     if (overflowParticipant) {
-      switch (params.rankType) {
-        case 'pnl':
-          nextCursor = overflowParticipant.pnlRank;
-          break;
-        case 'roi':
-          nextCursor = overflowParticipant.roiRank;
-          break;
-        case 'volume':
-          nextCursor = overflowParticipant.volumeRank;
-          break;
-      }
+      // If rankType specified, use it directly. Otherwise it's a single-track
+      // contest so grab the rank from the only track present.
+      const trackData = (
+        params.rankType
+          ? overflowParticipant.tracks[params.rankType]
+          : Object.values(overflowParticipant.tracks)[0]
+      )!;
+      nextCursor = trackData.rank;
     }
 
     return {
