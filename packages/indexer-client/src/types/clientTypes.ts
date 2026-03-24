@@ -356,12 +356,14 @@ export interface IndexerOrder {
   subaccount: string;
   productId: number;
   submissionIndex: string;
+  lastFillSubmissionIndex: string;
   amount: BigNumber;
   price: BigNumber;
   expiration: number;
   // Order metadata from appendix
   appendix: OrderAppendix;
   nonce: BigNumber;
+  isolated: boolean;
   // Derived from the nonce
   recvTimeSeconds: number;
   // Fill amounts
@@ -378,12 +380,14 @@ export interface IndexerOrder {
   closedNetEntry: BigNumber;
   // Weighted average margin allocated to the closed amount. Only present for isolated margin orders; null for cross-margin orders
   closedMargin: BigNumber | null;
-  // Position amount right before the order
-  preOrderAmount: BigNumber;
   // Unix timestamp (seconds) of the first fill on the order
   firstFillTimestamp: BigNumber;
   // Unix timestamp (seconds) of the last fill on the order
   lastFillTimestamp: BigNumber;
+  /** Balances before the order was filled */
+  preBalances: IndexerMatchEventBalances;
+  /** Balances after the order was filled */
+  postBalances: IndexerMatchEventBalances;
 }
 
 export type GetIndexerOrdersResponse = IndexerOrder[];

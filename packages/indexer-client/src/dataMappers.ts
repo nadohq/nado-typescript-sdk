@@ -104,11 +104,13 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     expiration: Number(order.expiration),
     appendix,
     nonce: toBigNumber(order.nonce),
+    isolated: order.isolated,
     recvTimeSeconds: getRecvTimeFromOrderNonce(order.nonce) / 1000,
     price: removeDecimals(order.price_x18),
     productId: order.product_id,
     subaccount: order.subaccount,
     submissionIndex: order.submission_idx,
+    lastFillSubmissionIndex: order.last_fill_submission_idx,
     baseFilled: toBigNumber(order.base_filled),
     quoteFilled: toBigNumber(order.quote_filled),
     totalFee: toBigNumber(order.fee),
@@ -117,9 +119,10 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     closedAmount: toBigNumber(order.closed_amount),
     closedNetEntry: toBigNumber(order.closed_net_entry),
     closedMargin: order.closed_margin ? toBigNumber(order.closed_margin) : null,
-    preOrderAmount: toBigNumber(order.prev_position),
     firstFillTimestamp: toBigNumber(order.first_fill_timestamp),
     lastFillTimestamp: toBigNumber(order.last_fill_timestamp),
+    preBalances: mapIndexerMatchEventBalances(order.pre_balance),
+    postBalances: mapIndexerMatchEventBalances(order.post_balance),
   };
 }
 

@@ -181,13 +181,20 @@ export function assertIndexerOrderShape(
   assertString(order.subaccount, `${label}.subaccount`);
   assertNumber(order.productId, `${label}.productId`);
   assertString(order.submissionIndex, `${label}.submissionIndex`);
+  assertString(
+    order.lastFillSubmissionIndex,
+    `${label}.lastFillSubmissionIndex`,
+  );
   assertBigNumberFinite(order.amount, `${label}.amount`);
   assertBigNumberFinite(order.price, `${label}.price`);
   assertNumber(order.expiration, `${label}.expiration`);
   assertDefined(order.appendix, `${label}.appendix`);
+  assertBoolean(order.isolated, `${label}.isolated`);
   assertBigNumberFinite(order.baseFilled, `${label}.baseFilled`);
   assertBigNumberFinite(order.quoteFilled, `${label}.quoteFilled`);
   assertBigNumberFinite(order.totalFee, `${label}.totalFee`);
+  assertDefined(order.preBalances, `${label}.preBalances`);
+  assertDefined(order.postBalances, `${label}.postBalances`);
 }
 
 // ---------------------------------------------------------------------------
