@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/engine-client",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "sideEffects": false,
   "description": "> TODO: description",
@@ -41,7 +41,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "workspace:*",
+    "@nadohq/shared": "^0.5.1",
     "axios": "*",
     "ts-mixer": "*"
   },
@@ -53,5 +53,5 @@
     "bignumber.js": "workspace:*",
     "viem": "workspace:*"
   },
-  "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
+  "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }

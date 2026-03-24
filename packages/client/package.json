@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/client",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "sideEffects": false,
   "description": "> TODO: description",
@@ -41,10 +41,10 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "workspace:*",
-    "@nadohq/indexer-client": "workspace:*",
-    "@nadohq/shared": "workspace:*",
-    "@nadohq/trigger-client": "workspace:*",
+    "@nadohq/engine-client": "^0.5.1",
+    "@nadohq/indexer-client": "^0.5.1",
+    "@nadohq/shared": "^0.5.1",
+    "@nadohq/trigger-client": "^0.5.1",
     "ts-mixer": "*"
   },
   "peerDependencies": {
@@ -55,5 +55,5 @@
     "bignumber.js": "workspace:*",
     "viem": "workspace:*"
   },
-  "gitHead": "6ff36070568c331e8ea400afd4b8a4696e6c495f"
+  "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }
