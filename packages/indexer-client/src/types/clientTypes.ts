@@ -554,7 +554,12 @@ export interface GetIndexerMakerStatisticsResponse {
 
 export interface GetIndexerLeaderboardParams {
   contestId: number;
-  rankType: IndexerLeaderboardRankType;
+  /**
+   * The ranking metric to query by.
+   * Optional for single-track contests (auto-selects the only track).
+   * Required for multi-track contests — omitting it returns an error.
+   */
+  rankType?: IndexerLeaderboardRankType;
   // Min rank inclusive
   startCursor?: string;
   limit?: number;
@@ -569,25 +574,23 @@ export interface IndexerSocialAccountInfo {
   profileImageUrl: string;
 }
 
+export interface IndexerLeaderboardTrackPosition {
+  value: BigNumber;
+  rank: BigNumber;
+  qualificationStatus: 'qualified' | 'insufficient_account_value';
+}
+
 export interface IndexerLeaderboardParticipant {
   subaccount: Subaccount;
   contestId: number;
-  pnl: BigNumber;
-  pnlRank: BigNumber;
-  percentRoi: BigNumber;
-  roiRank: BigNumber;
   // Float indicating the ending account value at the time the snapshot was taken i.e: at updateTime
   accountValue: BigNumber;
-  // Float indicating the trading volume at the time the snapshot was taken i.e: at updateTime.
-  volume: BigNumber;
-  volumeRank: BigNumber;
   // Seconds
   updateTime: BigNumber;
+  tracks: Partial<
+    Record<IndexerLeaderboardRankType, IndexerLeaderboardTrackPosition>
+  >;
   socialAccounts: IndexerSocialAccountInfo[];
-  qualificationStatus?:
-    | 'qualified'
-    | 'insufficient_account_value'
-    | 'insufficient_volume';
 }
 
 export interface GetIndexerLeaderboardResponse {
@@ -645,26 +648,29 @@ export interface GetIndexerLeaderboardContestsParams {
   active?: boolean;
 }
 
+export interface IndexerLeaderboardContestTrack {
+  trackId: number;
+  rankType: IndexerLeaderboardRankType;
+  sortOrder: 'ASC' | 'DESC';
+  // Float indicating the min account value required to qualify for this track e.g: 250.0
+  minRequiredAccountValue: BigNumber;
+}
+
 export interface IndexerLeaderboardContest {
   contestId: number;
-  // NOTE: Start / End times are ignored when `period` is non-zero.
   // Start time in seconds
   startTime: BigNumber;
   // End time in seconds
   endTime: BigNumber;
-  // Contest duration in seconds; when set to 0, contest duration is [startTime,endTime];
-  // Otherwise, contest runs indefinitely in the interval [lastUpdated - period, lastUpdated] if active;
-  period: BigNumber;
-  // Last updated time in Seconds
+  // Last updated time in seconds
   lastUpdated: BigNumber;
   totalParticipants: BigNumber;
-  // Float indicating the min account value required to be eligible for this contest e.g: 250.0
-  minRequiredAccountValue: BigNumber;
-  // Float indicating the min trading volume required to be eligible for this contest e.g: 1000.0
-  minRequiredVolume: BigNumber;
   // For market-specific contests, only the volume from these products will be counted.
   requiredProductIds: number[];
   active: boolean;
+  title: string;
+  description: string;
+  tracks: IndexerLeaderboardContestTrack[];
 }
 
 export interface GetIndexerLeaderboardContestsResponse {

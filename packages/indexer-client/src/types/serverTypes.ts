@@ -172,7 +172,7 @@ export interface IndexerServerMakerStatisticsParams {
 
 export interface IndexerServerLeaderboardParams {
   contest_id: number;
-  rank_type: IndexerLeaderboardRankType;
+  rank_type?: IndexerLeaderboardRankType;
   start?: number | string;
   limit?: number | string;
   order?: 'ASC' | 'DESC';
