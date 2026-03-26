@@ -55,7 +55,10 @@ function assertLeaderboardContestTrackShape(
   assertNumber(track.trackId, `${label}.trackId`);
   assertDefined(track.rankType, `${label}.rankType`);
   assertDefined(track.sortOrder, `${label}.sortOrder`);
-  assertBigNumberFinite(track.minRequiredAccountValue, `${label}.minRequiredAccountValue`);
+  assertBigNumberFinite(
+    track.minRequiredAccountValue,
+    `${label}.minRequiredAccountValue`,
+  );
 }
 
 function assertLeaderboardContestShape(
@@ -65,7 +68,6 @@ function assertLeaderboardContestShape(
   assertNumber(contest.contestId, `${label}.contestId`);
   assertBigNumberFinite(contest.startTime, `${label}.startTime`);
   assertBigNumberFinite(contest.endTime, `${label}.endTime`);
-  assertBigNumberFinite(contest.period, `${label}.period`);
   assertBigNumberFinite(
     contest.totalParticipants,
     `${label}.totalParticipants`,

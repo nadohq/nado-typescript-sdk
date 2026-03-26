@@ -22,7 +22,6 @@ import {
   IndexerFundingRate,
   IndexerLeaderboardContest,
   IndexerLeaderboardParticipant,
-  IndexerLeaderboardRankType,
   IndexerLeaderboardRegistration,
   IndexerMaker,
   IndexerMarketSnapshot,
@@ -252,14 +251,11 @@ export function mapIndexerMakerStatistics(
 export function mapIndexerLeaderboardPosition(
   position: IndexerServerLeaderboardPosition,
 ): IndexerLeaderboardParticipant {
-  const tracks: IndexerLeaderboardParticipant['tracks'] = {};
-  for (const [rankType, trackData] of Object.entries(position.tracks)) {
-    tracks[rankType as IndexerLeaderboardRankType] = {
-      value: toBigNumber(trackData.value),
-      rank: toBigNumber(trackData.rank),
-      qualificationStatus: trackData.qualification_status,
-    };
-  }
+  const tracks = mapValues(position.tracks, (trackData) => ({
+    value: toBigNumber(trackData.value),
+    rank: toBigNumber(trackData.rank),
+    qualificationStatus: trackData.qualification_status,
+  }));
 
   return {
     subaccount: subaccountFromHex(position.subaccount),
@@ -296,7 +292,6 @@ export function mapIndexerLeaderboardContest(
     contestId: contest.contest_id,
     startTime,
     endTime,
-    period: endTime.minus(startTime),
     totalParticipants: toBigNumber(contest.count),
     requiredProductIds: contest.product_ids,
     active: contest.active,

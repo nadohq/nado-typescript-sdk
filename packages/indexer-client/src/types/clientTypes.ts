@@ -662,8 +662,6 @@ export interface IndexerLeaderboardContest {
   startTime: BigNumber;
   // End time in seconds
   endTime: BigNumber;
-  // Convenience field: endTime - startTime in seconds
-  period: BigNumber;
   // Last updated time in seconds
   lastUpdated: BigNumber;
   totalParticipants: BigNumber;
