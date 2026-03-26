@@ -25,6 +25,7 @@ import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_CONTEST_ID,
   TEST_DELAYS,
+  TEST_SINGLE_TRACK_CONTEST_ID,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
 
@@ -144,7 +145,7 @@ void describe(
     void test('getLeaderboard without rankType returns participants for single-track contest', async () => {
       const result = await client.getLeaderboard({
         limit: 5,
-        contestId: TEST_CONTEST_ID,
+        contestId: TEST_SINGLE_TRACK_CONTEST_ID,
       });
 
       debugPrint('Leaderboard (no rankType)', result);
@@ -261,7 +262,7 @@ void describe(
 
     void test('getPaginatedLeaderboard without rankType paginates single-track contest', async () => {
       const firstPage = await client.getPaginatedLeaderboard({
-        contestId: TEST_CONTEST_ID,
+        contestId: TEST_SINGLE_TRACK_CONTEST_ID,
         limit: 5,
       });
 
@@ -278,7 +279,7 @@ void describe(
 
         const secondPage = await client.getPaginatedLeaderboard({
           startCursor: firstPage.meta.nextCursor,
-          contestId: TEST_CONTEST_ID,
+          contestId: TEST_SINGLE_TRACK_CONTEST_ID,
           limit: 5,
         });
 
