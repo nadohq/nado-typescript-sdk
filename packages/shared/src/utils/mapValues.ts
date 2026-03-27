@@ -8,6 +8,22 @@ export function mapValues<
 >(
   obj: Record<TKey, TValue>,
   mapFn: (value: TValue, key: TKey, index: number) => TNewValue,
+): Record<TKey, TNewValue>;
+export function mapValues<
+  TKey extends string | number | symbol,
+  TValue,
+  TNewValue,
+>(
+  obj: Partial<Record<TKey, TValue>>,
+  mapFn: (value: TValue, key: TKey, index: number) => TNewValue,
+): Partial<Record<TKey, TNewValue>>;
+export function mapValues<
+  TKey extends string | number | symbol,
+  TValue,
+  TNewValue,
+>(
+  obj: Record<TKey, TValue>,
+  mapFn: (value: TValue, key: TKey, index: number) => TNewValue,
 ): Record<TKey, TNewValue> {
   return Object.fromEntries(
     Object.entries(obj).map(([key, value], index) => [

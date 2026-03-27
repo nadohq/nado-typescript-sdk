@@ -62,8 +62,8 @@ import {
   GetIndexerLeaderboardParams,
   GetIndexerLeaderboardParticipantParams,
   GetIndexerLeaderboardParticipantResponse,
-  GetIndexerLeaderboardRegistrationParams,
-  GetIndexerLeaderboardRegistrationResponse,
+  GetIndexerLeaderboardRegistrationsParams,
+  GetIndexerLeaderboardRegistrationsResponse,
   GetIndexerLeaderboardResponse,
   GetIndexerLinkedSignerParams,
   GetIndexerLinkedSignerResponse,
@@ -117,8 +117,8 @@ import {
   IndexerSubaccountSnapshot,
   ListIndexerSubaccountsParams,
   ListIndexerSubaccountsResponse,
-  UpdateIndexerLeaderboardRegistrationParams,
-  UpdateIndexerLeaderboardRegistrationResponse,
+  RegisterLeaderboardParams,
+  RegisterLeaderboardResponse,
 } from './types';
 
 export interface IndexerClientOpts {
@@ -664,6 +664,7 @@ export class IndexerBaseClient {
       rank_type: params.rankType,
       start: params.startCursor,
       limit: params.limit,
+      order: params.order,
     });
 
     return {
@@ -692,17 +693,18 @@ export class IndexerBaseClient {
   }
 
   /**
-   * Attempts to update a user's registration to the provided `contestId`. This requires signing.
-   * @param params
+   * Registers a subaccount for one or more contests. Requires EIP-712 signing.
+   *
+   * @param params - Registration parameters including contest IDs and signing config.
    */
-  async updateLeaderboardRegistration(
-    params: UpdateIndexerLeaderboardRegistrationParams,
-  ): Promise<UpdateIndexerLeaderboardRegistrationResponse> {
+  async registerLeaderboard(
+    params: RegisterLeaderboardParams,
+  ): Promise<RegisterLeaderboardResponse> {
     const signatureParams: EIP712LeaderboardAuthenticationParams = {
-      // Default to 90 seconds from now if no recvTime is provided
       expiration: toIntegerString(params.recvTime ?? getDefaultRecvTime()),
       subaccountName: params.subaccountName,
       subaccountOwner: params.subaccountOwner,
+      contestIds: params.contestIds,
     };
 
     const tx = getNadoEIP712Values(
@@ -711,8 +713,8 @@ export class IndexerBaseClient {
     );
     const signature = await this.sign(
       'leaderboard_authentication',
-      params.updateRegistration.verifyingAddr,
-      params.updateRegistration.chainId,
+      params.registration.verifyingAddr,
+      params.registration.chainId,
       signatureParams,
     );
 
@@ -722,40 +724,36 @@ export class IndexerBaseClient {
         signature,
       };
 
-    const baseResponse = await this.query('leaderboard_registration', {
-      subaccount: subaccountToHex({
-        subaccountOwner: params.subaccountOwner,
-        subaccountName: params.subaccountName,
-      }),
-      contest_id: params.contestId,
+    const baseResponse = await this.query('leaderboard_register', {
       update_registration: updateRegistrationTx,
     });
+
     return {
-      registration: baseResponse.registration
-        ? mapIndexerLeaderboardRegistration(baseResponse.registration)
-        : null,
+      registrations: baseResponse.registrations.map(
+        mapIndexerLeaderboardRegistration,
+      ),
     };
   }
 
   /**
-   * Retrieves the registration status for a leaderboard participant for provided `contestId`.
-   * @param params
+   * Retrieves contest registrations for a subaccount. Supports batch lookup
+   * across multiple contests with an optional active filter.
+   *
+   * @param params - Query parameters including subaccount and contest IDs.
    */
-  async getLeaderboardRegistration(
-    params: GetIndexerLeaderboardRegistrationParams,
-  ): Promise<GetIndexerLeaderboardRegistrationResponse> {
-    const baseResponse = await this.query('leaderboard_registration', {
-      subaccount: subaccountToHex({
-        subaccountOwner: params.subaccountOwner,
-        subaccountName: params.subaccountName,
-      }),
-      contest_id: params.contestId,
-      update_registration: null,
+  async getLeaderboardRegistrations(
+    params: GetIndexerLeaderboardRegistrationsParams,
+  ): Promise<GetIndexerLeaderboardRegistrationsResponse> {
+    const baseResponse = await this.query('leaderboard_registrations', {
+      subaccount: subaccountToHex(params.subaccount),
+      contest_ids: params.contestIds,
+      active: params.active,
     });
+
     return {
-      registration: baseResponse.registration
-        ? mapIndexerLeaderboardRegistration(baseResponse.registration)
-        : null,
+      registrations: baseResponse.registrations.map(
+        mapIndexerLeaderboardRegistration,
+      ),
     };
   }
 
@@ -769,6 +767,7 @@ export class IndexerBaseClient {
   ): Promise<GetIndexerLeaderboardContestsResponse> {
     const baseResponse = await this.query('leaderboard_contests', {
       contest_ids: params.contestIds,
+      active: params.active,
     });
 
     return {

@@ -18,7 +18,7 @@ import { getServerError } from '../utils/getServerError';
 import { createTestContext } from '../utils/runWithContext';
 import { assertSubaccountListingShape } from '../utils/shapeAssertions';
 import {
-  TEST_CONTEST_IDS,
+  TEST_CONTEST_ID,
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -79,39 +79,32 @@ void describe(
       assert.ok(subaccounts.length <= 5, 'should return at most limit items');
     });
 
-    void test('updateLeaderboardRegistration succeeds or returns registration', async () => {
+    void test('registerLeaderboard succeeds or returns registrations', async () => {
       try {
-        const result = await client.updateLeaderboardRegistration({
+        const result = await client.registerLeaderboard({
           subaccountName: subaccount.subaccountName,
           subaccountOwner: subaccount.subaccountOwner,
-          contestId: TEST_CONTEST_IDS.REGISTRATION,
-          updateRegistration: {
+          contestIds: [TEST_CONTEST_ID],
+          registration: {
             verifyingAddr: endpointAddr,
             chainId,
           },
         });
 
-        debugPrint('Update leaderboard registration', result);
-        assertDefined(result, 'updateLeaderboardRegistration result');
-        if (result.registration != null) {
-          assertDefined(
-            result.registration.subaccount,
-            'registration.subaccount',
-          );
-          assertNumber(result.registration.contestId, 'registration.contestId');
-          assert.equal(
-            result.registration.contestId,
-            TEST_CONTEST_IDS.REGISTRATION,
-            'contestId should match',
-          );
+        debugPrint('Register leaderboard', result);
+        assertDefined(result, 'registerLeaderboard result');
+        assertArray(result.registrations, 'registrations');
+        for (const registration of result.registrations) {
+          assertDefined(registration.subaccount, 'registration.subaccount');
+          assertNumber(registration.contestId, 'registration.contestId');
           assertBigNumberFinite(
-            result.registration.updateTime,
+            registration.updateTime,
             'registration.updateTime',
           );
         }
       } catch (e: unknown) {
         const serverError = getServerError(e);
-        debugPrint('updateLeaderboardRegistration error', serverError);
+        debugPrint('registerLeaderboard error', serverError);
         assert.ok(
           serverError != null,
           'server error should be present on failure',

@@ -91,6 +91,7 @@ export function getNadoEIP712Types(
         LeaderboardAuthentication: [
           { name: 'sender', type: 'bytes32' },
           { name: 'expiration', type: 'uint64' },
+          { name: 'contestIds', type: 'uint32[]' },
         ],
       };
     case 'mint_nlp':

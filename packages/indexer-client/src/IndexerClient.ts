@@ -6,6 +6,7 @@ import {
   toBigNumber,
   toIntegerString,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 
 import { IndexerBaseClient } from './IndexerBaseClient';
 import {
@@ -447,11 +448,18 @@ export class IndexerClient extends IndexerBaseClient {
       startCursor: params.startCursor,
     });
 
-    // Next cursor is the rank number of the (requestedLimit+1)th item
-    const nextCursor =
-      params.rankType === 'pnl'
-        ? baseResponse.participants[requestedLimit]?.pnlRank
-        : baseResponse.participants[requestedLimit]?.roiRank;
+    const overflowParticipant = baseResponse.participants[requestedLimit];
+    let nextCursor: BigNumber | undefined;
+    if (overflowParticipant) {
+      // If rankType specified, use it directly. Otherwise it's a single-track
+      // contest so grab the rank from the only track present.
+      const trackData = (
+        params.rankType
+          ? overflowParticipant.tracks[params.rankType]
+          : Object.values(overflowParticipant.tracks)[0]
+      )!;
+      nextCursor = trackData.rank;
+    }
 
     return {
       ...baseResponse,

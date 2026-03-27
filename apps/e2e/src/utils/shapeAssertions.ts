@@ -324,12 +324,18 @@ export function assertLeaderboardParticipantShape(
 ): void {
   assertDefined(p.subaccount, `${label}.subaccount`);
   assertNumber(p.contestId, `${label}.contestId`);
-  assertBigNumberFinite(p.pnl, `${label}.pnl`);
-  assertBigNumberFinite(p.pnlRank, `${label}.pnlRank`);
-  assertBigNumberFinite(p.percentRoi, `${label}.percentRoi`);
-  assertBigNumberFinite(p.roiRank, `${label}.roiRank`);
   assertBigNumberFinite(p.accountValue, `${label}.accountValue`);
   assertBigNumberFinite(p.updateTime, `${label}.updateTime`);
+  assertDefined(p.tracks, `${label}.tracks`);
+
+  for (const [rankType, trackData] of Object.entries(p.tracks)) {
+    assertBigNumberFinite(trackData.value, `${label}.tracks.${rankType}.value`);
+    assertBigNumberFinite(trackData.rank, `${label}.tracks.${rankType}.rank`);
+    assertDefined(
+      trackData.qualificationStatus,
+      `${label}.tracks.${rankType}.qualificationStatus`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

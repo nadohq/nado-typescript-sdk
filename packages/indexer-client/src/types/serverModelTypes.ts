@@ -6,6 +6,7 @@ import {
 } from '@nadohq/engine-client';
 import { EIP712OrderValues } from '@nadohq/shared';
 import { IndexerEventType } from './IndexerEventType';
+import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
 import { NadoTx } from './NadoTx';
 
 export interface IndexerServerSnapshotsInterval {
@@ -249,29 +250,48 @@ export interface IndexerServerMaker {
  * Leaderboard
  */
 
+export interface IndexerServerSocialAccount {
+  provider: 'twitter';
+  username: string;
+  display_name: string;
+  profile_image_url: string;
+}
+
+export interface IndexerServerLeaderboardTrackPosition {
+  value: string;
+  rank: string;
+  qualification_status: 'qualified' | 'insufficient_account_value';
+}
+
+export interface IndexerServerLeaderboardContestTrack {
+  track_id: number;
+  rank_type: IndexerLeaderboardRankType;
+  sort_order: 'ASC' | 'DESC';
+  threshold: string;
+}
+
 export interface IndexerServerLeaderboardPosition {
   subaccount: string;
   contest_id: number;
-  pnl: string;
-  pnl_rank: string;
-  roi: string;
-  roi_rank: string;
   account_value: string;
-  volume?: string;
   update_time: string;
+  tracks: Partial<
+    Record<IndexerLeaderboardRankType, IndexerServerLeaderboardTrackPosition>
+  >;
+  social_accounts: IndexerServerSocialAccount[];
 }
 
 export interface IndexerServerLeaderboardContest {
   contest_id: number;
   start_time: string;
   end_time: string;
-  timeframe: string;
   count: string;
-  threshold: string;
-  volume_threshold: string;
-  product_ids: number[];
   last_updated: string;
+  product_ids: number[];
   active: boolean;
+  title: string;
+  description: string;
+  tracks: IndexerServerLeaderboardContestTrack[];
 }
 
 export interface IndexerServerLeaderboardRegistration {
