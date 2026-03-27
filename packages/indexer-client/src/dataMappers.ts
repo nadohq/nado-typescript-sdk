@@ -118,7 +118,9 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     realizedPnl: toBigNumber(order.realized_pnl),
     closedAmount: toBigNumber(order.closed_amount),
     closedNetEntry: toBigNumber(order.closed_net_entry),
-    closedMargin: order.closed_margin ? toBigNumber(order.closed_margin) : null,
+    preCloseMargin: order.closed_margin
+      ? toBigNumber(order.closed_margin)
+      : null,
     firstFillTimestamp: toBigNumber(order.first_fill_timestamp),
     lastFillTimestamp: toBigNumber(order.last_fill_timestamp),
     preBalances: mapIndexerMatchEventBalances(order.pre_balance),

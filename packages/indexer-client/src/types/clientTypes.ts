@@ -378,8 +378,8 @@ export interface IndexerOrder {
   closedAmount: BigNumber;
   // Cumulative realized entry price for the closed amount on an order
   closedNetEntry: BigNumber;
-  // Weighted average margin allocated to the closed amount. Only present for isolated margin orders; null for cross-margin orders
-  closedMargin: BigNumber | null;
+  // Total isolated margin on the position before the close. Only present for isolated margin orders; null for cross-margin orders
+  preCloseMargin: BigNumber | null;
   // Unix timestamp (seconds) of the first fill on the order
   firstFillTimestamp: BigNumber;
   // Unix timestamp (seconds) of the last fill on the order
