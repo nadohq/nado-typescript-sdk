@@ -10,6 +10,7 @@ import {
   EIP712OrderCancellationValues,
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
+  EIP712SocialAuthenticationValues,
   EIP712TransferQuoteValues,
   EIP712WithdrawCollateralValues,
   SignableRequestTypeToEIP712Values,
@@ -28,6 +29,7 @@ import {
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
   EIP712OrderParams,
+  EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
 } from './signatureParamTypes';
@@ -82,6 +84,11 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
     case 'leaderboard_authentication':
       values = getLeaderboardAuthenticationValues(
         params as EIP712LeaderboardAuthenticationParams,
+      );
+      break;
+    case 'social_authentication':
+      values = getSocialAuthenticationValues(
+        params as EIP712SocialAuthenticationParams,
       );
       break;
     case 'mint_nlp':
@@ -223,6 +230,19 @@ function getLeaderboardAuthenticationValues(
     }),
     expiration: toIntegerString(params.expiration),
     contestIds: params.contestIds,
+  };
+}
+
+function getSocialAuthenticationValues(
+  params: EIP712SocialAuthenticationParams,
+): EIP712SocialAuthenticationValues {
+  return {
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    expiration: toIntegerString(params.expiration),
+    provider: params.provider,
   };
 }
 

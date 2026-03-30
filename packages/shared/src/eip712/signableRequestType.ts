@@ -8,6 +8,7 @@ import {
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
   EIP712OrderParams,
+  EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
 } from './signatureParamTypes';
@@ -25,6 +26,7 @@ export interface SignableRequestTypeToParams {
   list_trigger_orders: EIP712ListTriggerOrdersParams;
   mint_nlp: EIP712MintNlpParams;
   place_order: EIP712OrderParams;
+  social_authentication: EIP712SocialAuthenticationParams;
   transfer_quote: EIP712TransferQuoteParams;
   withdraw_collateral: EIP712WithdrawCollateralParams;
 }

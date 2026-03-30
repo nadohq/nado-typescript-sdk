@@ -74,6 +74,11 @@ export interface EIP712LeaderboardAuthenticationParams extends Subaccount {
   contestIds: number[];
 }
 
+export interface EIP712SocialAuthenticationParams extends Subaccount {
+  expiration: BigNumberish;
+  provider: 'twitter';
+}
+
 export interface EIP712MintNlpParams extends Subaccount {
   quoteAmount: BigNumberish;
   nonce: string;
