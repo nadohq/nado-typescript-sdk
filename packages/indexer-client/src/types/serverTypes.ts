@@ -1,5 +1,6 @@
 import {
   EIP712LeaderboardAuthenticationValues,
+  EIP712SocialAuthenticationValues,
   SignedTx,
 } from '@nadohq/shared';
 import { IndexerEventType } from './IndexerEventType';
@@ -21,6 +22,7 @@ import {
   IndexerServerProductPayment,
   IndexerServerProductSnapshot,
   IndexerServerSnapshotsInterval,
+  IndexerServerSocialAccount,
   IndexerServerTx,
 } from './serverModelTypes';
 
@@ -198,6 +200,17 @@ export interface IndexerServerLeaderboardRegisterParams {
   update_registration: SignedTx<EIP712LeaderboardAuthenticationValues>;
 }
 
+export interface IndexerServerSocialConnectParams {
+  update_social_account: SignedTx<EIP712SocialAuthenticationValues>;
+}
+
+export interface IndexerServerListSocialAccountsParams {
+  address: string;
+}
+
+export type IndexerServerRevokeSocialAccountParams =
+  IndexerServerSocialConnectParams;
+
 export interface IndexerServerFastWithdrawalSignatureParams {
   /**
    * The submission index of the WithdrawCollateral tx to be used for fast withdraw.
@@ -255,6 +268,9 @@ export interface IndexerServerQueryRequestByType {
   nlp_snapshots: IndexerServerNlpSnapshotsParams;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceParams;
   nado_points: IndexerServerPointsParams;
+  social_connect: IndexerServerSocialConnectParams;
+  list_social_accounts: IndexerServerListSocialAccountsParams;
+  revoke_social_account: IndexerServerRevokeSocialAccountParams;
 }
 
 export type IndexerServerQueryRequestType =
@@ -458,6 +474,14 @@ export interface IndexerServerPointsResponse {
   all_time_points: IndexerServerAllTimePoints;
 }
 
+export interface IndexerServerSocialConnectResponse {
+  url: string;
+}
+
+export interface IndexerServerSocialAccountsResponse {
+  accounts: IndexerServerSocialAccount[];
+}
+
 // Response
 export interface IndexerServerQueryResponseByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsResponse;
@@ -492,6 +516,9 @@ export interface IndexerServerQueryResponseByType {
   nlp_snapshots: IndexerServerNlpSnapshotsResponse;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceResponse;
   nado_points: IndexerServerPointsResponse;
+  social_connect: IndexerServerSocialConnectResponse;
+  list_social_accounts: IndexerServerSocialAccountsResponse;
+  revoke_social_account: IndexerServerSocialAccountsResponse;
 }
 
 /**

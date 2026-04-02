@@ -1,6 +1,7 @@
 import {
   EIP712LeaderboardAuthenticationParams,
   EIP712LeaderboardAuthenticationValues,
+  EIP712SocialAuthenticationParams,
   getDefaultRecvTime,
   getNadoEIP712Values,
   getSignedTransactionRequest,
@@ -42,6 +43,8 @@ import {
   mapSnapshotsIntervalToServerParams,
 } from './dataMappers';
 import {
+  ConnectSocialAccountParams,
+  ConnectSocialAccountResponse,
   GetIndexerBacklogResponse,
   GetIndexerCandlesticksParams,
   GetIndexerCandlesticksResponse,
@@ -115,10 +118,14 @@ import {
   IndexerServerV2TickersResponse,
   IndexerSnapshotBalance,
   IndexerSubaccountSnapshot,
+  ListIndexerSocialAccountsParams,
+  ListIndexerSocialAccountsResponse,
   ListIndexerSubaccountsParams,
   ListIndexerSubaccountsResponse,
   RegisterLeaderboardParams,
   RegisterLeaderboardResponse,
+  RevokeSocialAccountParams,
+  RevokeSocialAccountResponse,
 } from './types';
 
 export interface IndexerClientOpts {
@@ -713,8 +720,8 @@ export class IndexerBaseClient {
     );
     const signature = await this.sign(
       'leaderboard_authentication',
-      params.registration.verifyingAddr,
-      params.registration.chainId,
+      params.verifyingAddr,
+      params.chainId,
       signatureParams,
     );
 
@@ -888,6 +895,96 @@ export class IndexerBaseClient {
         rank: baseResponse.all_time_points.rank,
         tier: baseResponse.all_time_points.tier,
       },
+    };
+  }
+
+  /**
+   * Initiates a social account connection flow. Returns a URL the user must visit to complete the OAuth flow.
+   * Requires EIP-712 signing.
+   *
+   * @param params - Connection parameters including provider and signing config.
+   */
+  async connectSocialAccount(
+    params: ConnectSocialAccountParams,
+  ): Promise<ConnectSocialAccountResponse> {
+    const signatureParams: EIP712SocialAuthenticationParams = {
+      expiration: toIntegerString(params.recvTime ?? getDefaultRecvTime()),
+      subaccountName: params.subaccountName,
+      subaccountOwner: params.subaccountOwner,
+      provider: params.provider,
+    };
+
+    const tx = getNadoEIP712Values('social_authentication', signatureParams);
+    const signature = await this.sign(
+      'social_authentication',
+      params.verifyingAddr,
+      params.chainId,
+      signatureParams,
+    );
+
+    const baseResponse = await this.query('social_connect', {
+      update_social_account: { tx, signature },
+    });
+
+    return { url: baseResponse.url };
+  }
+
+  /**
+   * Lists linked social accounts for a given address.
+   *
+   * @param params - Query parameters including the wallet address.
+   */
+  async listSocialAccounts(
+    params: ListIndexerSocialAccountsParams,
+  ): Promise<ListIndexerSocialAccountsResponse> {
+    const baseResponse = await this.query('list_social_accounts', {
+      address: params.address,
+    });
+
+    return {
+      accounts: baseResponse.accounts.map((a) => ({
+        provider: a.provider,
+        username: a.username,
+        displayName: a.display_name,
+        profileImageUrl: a.profile_image_url,
+      })),
+    };
+  }
+
+  /**
+   * Revokes a linked social account. Requires EIP-712 signing.
+   *
+   * @param params - Revocation parameters including provider and signing config.
+   */
+  async revokeSocialAccount(
+    params: RevokeSocialAccountParams,
+  ): Promise<RevokeSocialAccountResponse> {
+    const signatureParams: EIP712SocialAuthenticationParams = {
+      expiration: toIntegerString(params.recvTime ?? getDefaultRecvTime()),
+      subaccountName: params.subaccountName,
+      subaccountOwner: params.subaccountOwner,
+      provider: params.provider,
+    };
+
+    const tx = getNadoEIP712Values('social_authentication', signatureParams);
+    const signature = await this.sign(
+      'social_authentication',
+      params.verifyingAddr,
+      params.chainId,
+      signatureParams,
+    );
+
+    const baseResponse = await this.query('revoke_social_account', {
+      update_social_account: { tx, signature },
+    });
+
+    return {
+      accounts: baseResponse.accounts.map((a) => ({
+        provider: a.provider,
+        username: a.username,
+        displayName: a.display_name,
+        profileImageUrl: a.profile_image_url,
+      })),
     };
   }
 

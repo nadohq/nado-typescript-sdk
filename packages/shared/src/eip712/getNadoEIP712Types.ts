@@ -94,6 +94,14 @@ export function getNadoEIP712Types(
           { name: 'contestIds', type: 'uint32[]' },
         ],
       };
+    case 'social_authentication':
+      return {
+        SocialAuthentication: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'expiration', type: 'uint64' },
+          { name: 'provider', type: 'string' },
+        ],
+      };
     case 'mint_nlp':
       return {
         MintNlp: [

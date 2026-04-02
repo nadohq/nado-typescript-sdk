@@ -612,8 +612,7 @@ export interface GetIndexerLeaderboardParticipantResponse {
   participant: Record<string, IndexerLeaderboardParticipant>;
 }
 
-interface LeaderboardSignatureParams {
-  // endpoint address
+interface SignatureParams {
   verifyingAddr: string;
   chainId: number;
 }
@@ -625,9 +624,8 @@ export interface GetIndexerLeaderboardRegistrationsParams {
   active?: boolean;
 }
 
-export interface RegisterLeaderboardParams extends Subaccount {
+export interface RegisterLeaderboardParams extends Subaccount, SignatureParams {
   contestIds: number[];
-  registration: LeaderboardSignatureParams;
   /** In millis, defaults to 90s in the future. */
   recvTime?: BigNumber;
 }
@@ -680,6 +678,32 @@ export interface IndexerLeaderboardContest {
 export interface GetIndexerLeaderboardContestsResponse {
   contests: IndexerLeaderboardContest[];
 }
+
+/**
+ * Social Accounts
+ */
+
+export interface ConnectSocialAccountParams
+  extends Subaccount, SignatureParams {
+  provider: 'twitter';
+  /** In millis, defaults to 90s in the future. */
+  recvTime?: BigNumber;
+}
+
+export interface ConnectSocialAccountResponse {
+  url: string;
+}
+
+export interface ListIndexerSocialAccountsParams {
+  address: Address;
+}
+
+export interface ListIndexerSocialAccountsResponse {
+  accounts: IndexerSocialAccountInfo[];
+}
+
+export type RevokeSocialAccountParams = ConnectSocialAccountParams;
+export type RevokeSocialAccountResponse = ListIndexerSocialAccountsResponse;
 
 export type GetIndexerFastWithdrawalSignatureParams =
   IndexerServerFastWithdrawalSignatureParams;

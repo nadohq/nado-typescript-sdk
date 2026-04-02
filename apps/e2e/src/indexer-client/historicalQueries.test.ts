@@ -85,10 +85,8 @@ void describe(
           subaccountName: subaccount.subaccountName,
           subaccountOwner: subaccount.subaccountOwner,
           contestIds: [TEST_CONTEST_ID],
-          registration: {
-            verifyingAddr: endpointAddr,
-            chainId,
-          },
+          verifyingAddr: endpointAddr,
+          chainId,
         });
 
         debugPrint('Register leaderboard', result);

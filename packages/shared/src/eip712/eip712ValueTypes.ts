@@ -10,6 +10,7 @@ import {
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
   EIP712OrderParams,
+  EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
 } from './signatureParamTypes';
@@ -61,6 +62,9 @@ export type EIP712TransferQuoteValues = Omit<
 export type EIP712LeaderboardAuthenticationValues =
   WithEIP712Sender<EIP712LeaderboardAuthenticationParams>;
 
+export type EIP712SocialAuthenticationValues =
+  WithEIP712Sender<EIP712SocialAuthenticationParams>;
+
 export type EIP712MintNlpValues = WithEIP712Sender<EIP712MintNlpParams>;
 
 export type EIP712BurnNlpValues = WithEIP712Sender<EIP712BurnNlpParams>;
@@ -78,6 +82,7 @@ export interface SignableRequestTypeToEIP712Values {
   list_trigger_orders: EIP712ListTriggerOrdersValues;
   mint_nlp: EIP712MintNlpValues;
   place_order: EIP712OrderValues;
+  social_authentication: EIP712SocialAuthenticationValues;
   transfer_quote: EIP712TransferQuoteValues;
   withdraw_collateral: EIP712WithdrawCollateralValues;
 }
