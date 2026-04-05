@@ -754,7 +754,7 @@ export class IndexerBaseClient {
     const baseResponse = await this.query('leaderboard_registrations', {
       subaccount: subaccountToHex(params.subaccount),
       contest_ids: params.contestIds,
-      active: params.active,
+      active_only: params.activeOnly,
     });
 
     return {
@@ -774,7 +774,7 @@ export class IndexerBaseClient {
   ): Promise<GetIndexerLeaderboardContestsResponse> {
     const baseResponse = await this.query('leaderboard_contests', {
       contest_ids: params.contestIds,
-      active: params.active,
+      active_only: params.activeOnly,
     });
 
     return {

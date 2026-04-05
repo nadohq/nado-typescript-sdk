@@ -229,10 +229,10 @@ void describe(
       }
     });
 
-    void test('getLeaderboardContests with active=false returns only inactive', async () => {
+    void test('getLeaderboardContests with activeOnly=false returns only inactive', async () => {
       const result = await client.getLeaderboardContests({
         contestIds: [],
-        active: false,
+        activeOnly: false,
       });
 
       debugPrint('Inactive Leaderboard Contests', result);
