@@ -195,10 +195,8 @@ void describe(
       );
     });
 
-    void test('getLeaderboardContests with no active filter returns all', async () => {
-      const result = await client.getLeaderboardContests({
-        contestIds: [],
-      });
+    void test('getLeaderboardContests with no filters returns all', async () => {
+      const result = await client.getLeaderboardContests({});
 
       debugPrint('All Leaderboard Contests', result);
       assertDefined(result, 'result');
@@ -212,7 +210,6 @@ void describe(
 
     void test('getLeaderboardContests with active=true returns only active', async () => {
       const result = await client.getLeaderboardContests({
-        contestIds: [],
         active: true,
       });
 
@@ -231,7 +228,6 @@ void describe(
 
     void test('getLeaderboardContests with active=false returns only inactive', async () => {
       const result = await client.getLeaderboardContests({
-        contestIds: [],
         active: false,
       });
 

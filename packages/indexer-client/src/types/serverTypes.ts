@@ -186,13 +186,13 @@ export interface IndexerServerLeaderboardRankParams {
 }
 
 export interface IndexerServerLeaderboardContestsParams {
-  contest_ids: number[];
+  contest_ids?: number[];
   active?: boolean;
 }
 
 export interface IndexerServerLeaderboardRegistrationsParams {
   subaccount: string;
-  contest_ids: number[];
+  contest_ids?: number[];
   active?: boolean;
 }
 

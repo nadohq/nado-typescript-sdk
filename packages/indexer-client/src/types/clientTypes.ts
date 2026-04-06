@@ -619,7 +619,8 @@ interface SignatureParams {
 
 export interface GetIndexerLeaderboardRegistrationsParams {
   subaccount: Subaccount;
-  contestIds: number[];
+  /** Filter by contest IDs. Omit to return all. */
+  contestIds?: number[];
   /** Filter by contest active status. `true` = active only, `false` = inactive only, omit for all. */
   active?: boolean;
 }
@@ -645,7 +646,8 @@ export type RegisterLeaderboardResponse =
   GetIndexerLeaderboardRegistrationsResponse;
 
 export interface GetIndexerLeaderboardContestsParams {
-  contestIds: number[];
+  /** Filter by contest IDs. Omit to return all. */
+  contestIds?: number[];
   /** Filter by contest active status. `true` = active only, `false` = inactive only, omit for all. */
   active?: boolean;
 }
