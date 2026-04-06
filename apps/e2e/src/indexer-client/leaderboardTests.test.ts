@@ -195,12 +195,28 @@ void describe(
       );
     });
 
-    void test('getLeaderboardContests with empty contestIds returns all active', async () => {
+    void test('getLeaderboardContests with no active filter returns all', async () => {
       const result = await client.getLeaderboardContests({
         contestIds: [],
       });
 
-      debugPrint('All Active Leaderboard Contests', result);
+      debugPrint('All Leaderboard Contests', result);
+      assertDefined(result, 'result');
+      assertArray(result.contests, 'contests');
+      assertArrayElements(
+        result.contests,
+        (c, label) => assertLeaderboardContestShape(c, label),
+        'contests',
+      );
+    });
+
+    void test('getLeaderboardContests with active=true returns only active', async () => {
+      const result = await client.getLeaderboardContests({
+        contestIds: [],
+        active: true,
+      });
+
+      debugPrint('Active Leaderboard Contests', result);
       assertDefined(result, 'result');
       assertArray(result.contests, 'contests');
 
@@ -213,20 +229,23 @@ void describe(
       }
     });
 
-    void test('getLeaderboardContests with active=false includes inactive', async () => {
+    void test('getLeaderboardContests with active=false returns only inactive', async () => {
       const result = await client.getLeaderboardContests({
         contestIds: [],
         active: false,
       });
 
-      debugPrint('All Leaderboard Contests (including inactive)', result);
+      debugPrint('Inactive Leaderboard Contests', result);
       assertDefined(result, 'result');
       assertArray(result.contests, 'contests');
-      assertArrayElements(
-        result.contests,
-        (c, label) => assertLeaderboardContestShape(c, label),
-        'contests',
-      );
+
+      for (const contest of result.contests) {
+        assert.equal(
+          contest.active,
+          false,
+          'all returned contests should be inactive',
+        );
+      }
     });
 
     void test('getPaginatedLeaderboard paginates correctly', async () => {
@@ -317,13 +336,47 @@ void describe(
       }
     });
 
-    void test('getLeaderboardRegistrations returns registrations', async () => {
+    void test('getLeaderboardRegistrations returns all registrations by default', async () => {
       const result = await client.getLeaderboardRegistrations({
         subaccount,
         contestIds: [TEST_CONTEST_ID],
       });
 
       debugPrint('Leaderboard registrations result', result);
+      assertDefined(result, 'result');
+      assertArray(result.registrations, 'registrations');
+      assertArrayElements(
+        result.registrations,
+        (r, label) => assertRegistrationShape(r, label),
+        'registrations',
+      );
+    });
+
+    void test('getLeaderboardRegistrations with active=true returns only active', async () => {
+      const result = await client.getLeaderboardRegistrations({
+        subaccount,
+        contestIds: [TEST_CONTEST_ID],
+        active: true,
+      });
+
+      debugPrint('Active leaderboard registrations', result);
+      assertDefined(result, 'result');
+      assertArray(result.registrations, 'registrations');
+      assertArrayElements(
+        result.registrations,
+        (r, label) => assertRegistrationShape(r, label),
+        'registrations',
+      );
+    });
+
+    void test('getLeaderboardRegistrations with active=false returns only inactive', async () => {
+      const result = await client.getLeaderboardRegistrations({
+        subaccount,
+        contestIds: [TEST_CONTEST_ID],
+        active: false,
+      });
+
+      debugPrint('Inactive leaderboard registrations', result);
       assertDefined(result, 'result');
       assertArray(result.registrations, 'registrations');
       assertArrayElements(
