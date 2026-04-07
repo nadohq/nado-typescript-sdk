@@ -335,7 +335,6 @@ void describe(
     void test('getLeaderboardRegistrations returns all registrations by default', async () => {
       const result = await client.getLeaderboardRegistrations({
         subaccount,
-        contestIds: [TEST_CONTEST_ID],
       });
 
       debugPrint('Leaderboard registrations result', result);
@@ -351,7 +350,6 @@ void describe(
     void test('getLeaderboardRegistrations with active=true returns only active', async () => {
       const result = await client.getLeaderboardRegistrations({
         subaccount,
-        contestIds: [TEST_CONTEST_ID],
         active: true,
       });
 
@@ -368,7 +366,6 @@ void describe(
     void test('getLeaderboardRegistrations with active=false returns only inactive', async () => {
       const result = await client.getLeaderboardRegistrations({
         subaccount,
-        contestIds: [TEST_CONTEST_ID],
         active: false,
       });
 
