@@ -51,8 +51,8 @@
     "viem": "^2.41.0"
   },
   "devDependencies": {
-    "bignumber.js": "workspace:*",
-    "viem": "workspace:*"
+    "bignumber.js": "10.0.2",
+    "viem": "2.41.2"
   },
   "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }

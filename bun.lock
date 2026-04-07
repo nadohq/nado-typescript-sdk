@@ -71,8 +71,8 @@
         "ts-mixer": "6.0.4",
       },
       "devDependencies": {
-        "bignumber.js": "workspace:*",
-        "viem": "workspace:*",
+        "bignumber.js": "10.0.2",
+        "viem": "2.41.2",
       },
       "peerDependencies": {
         "bignumber.js": "^10.0.0",
@@ -88,8 +88,8 @@
         "ts-mixer": "6.0.4",
       },
       "devDependencies": {
-        "bignumber.js": "workspace:*",
-        "viem": "workspace:*",
+        "bignumber.js": "10.0.2",
+        "viem": "2.41.2",
       },
       "peerDependencies": {
         "bignumber.js": "^10.0.0",
@@ -106,8 +106,8 @@
         "ts-mixer": "6.0.4",
       },
       "devDependencies": {
-        "bignumber.js": "workspace:*",
-        "viem": "workspace:*",
+        "bignumber.js": "10.0.2",
+        "viem": "2.41.2",
       },
       "peerDependencies": {
         "bignumber.js": "^10.0.0",
@@ -123,7 +123,7 @@
       "devDependencies": {
         "@jest/globals": "30.2.0",
         "bignumber.js": "10.0.2",
-        "viem": "workspace:*",
+        "viem": "2.41.2",
       },
       "peerDependencies": {
         "bignumber.js": "^10.0.0",
