@@ -3,7 +3,7 @@
   "version": "0.9.0",
   "type": "module",
   "sideEffects": false,
-  "description": "> TODO: description",
+  "description": "Nado SDK client — unified API for trading, market data, and collateral management on Nado",
   "author": "Frank Jia <frank@inkfnd.com>",
   "homepage": "",
   "license": "ISC",
@@ -45,15 +45,15 @@
     "@nadohq/indexer-client": "^0.9.0",
     "@nadohq/shared": "^0.9.0",
     "@nadohq/trigger-client": "^0.9.0",
-    "ts-mixer": "*"
+    "ts-mixer": "6.0.4"
   },
   "peerDependencies": {
-    "bignumber.js": "*",
-    "viem": "*"
+    "bignumber.js": "10.0.0",
+    "viem": "2.41.0"
   },
   "devDependencies": {
-    "bignumber.js": "workspace:*",
-    "viem": "workspace:*"
+    "bignumber.js": "10.0.2",
+    "viem": "2.41.2"
   },
   "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }

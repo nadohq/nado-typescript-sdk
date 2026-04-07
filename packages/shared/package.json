@@ -41,16 +41,16 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "abitype": "^1.2.3"
+    "abitype": "1.2.3"
   },
   "peerDependencies": {
-    "bignumber.js": "*",
-    "viem": "*"
+    "bignumber.js": "10.0.0",
+    "viem": "2.41.0"
   },
   "devDependencies": {
-    "@jest/globals": "*",
-    "bignumber.js": "*",
-    "viem": "workspace:*"
+    "@jest/globals": "30.2.0",
+    "bignumber.js": "10.0.2",
+    "viem": "2.41.2"
   },
   "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }

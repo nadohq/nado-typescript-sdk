@@ -3,7 +3,7 @@
   "version": "0.9.0",
   "type": "module",
   "sideEffects": false,
-  "description": "> TODO: description",
+  "description": "HTTP client for the Nado trigger service — stop-loss, take-profit, and TWAP orders",
   "author": "Frank Jia <frank@inkfnd.com>",
   "homepage": "",
   "license": "ISC",
@@ -43,16 +43,16 @@
   "dependencies": {
     "@nadohq/engine-client": "^0.9.0",
     "@nadohq/shared": "^0.9.0",
-    "axios": "*",
-    "ts-mixer": "*"
+    "axios": "1.14.0",
+    "ts-mixer": "6.0.4"
   },
   "peerDependencies": {
-    "bignumber.js": "*",
-    "viem": "*"
+    "bignumber.js": "10.0.0",
+    "viem": "2.41.0"
   },
   "devDependencies": {
-    "bignumber.js": "*",
-    "viem": "*"
+    "bignumber.js": "10.0.2",
+    "viem": "2.41.2"
   },
   "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }
