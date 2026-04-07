@@ -3,7 +3,7 @@
   "version": "0.8.0",
   "type": "module",
   "sideEffects": false,
-  "description": "> TODO: description",
+  "description": "HTTP client for the Nado off-chain matching engine",
   "author": "Frank Jia <frank@inkfnd.com>",
   "homepage": "",
   "license": "ISC",
@@ -41,13 +41,13 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.8.0",
-    "axios": "*",
-    "ts-mixer": "*"
+    "@nadohq/shared": "workspace:*",
+    "axios": "1.14.0",
+    "ts-mixer": "6.0.4"
   },
   "peerDependencies": {
-    "bignumber.js": "*",
-    "viem": "*"
+    "bignumber.js": "^10.0.0",
+    "viem": "^2.41.0"
   },
   "devDependencies": {
     "bignumber.js": "workspace:*",

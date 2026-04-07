@@ -8,6 +8,7 @@ import {
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
+import { Address } from 'viem';
 import {
   assertArray,
   assertArrayElements,
@@ -413,7 +414,7 @@ void describe(
 
     void test('getPoints returns points for the wallet address', async () => {
       const points = await client.getPoints({
-        address: subaccount.subaccountOwner as `0x${string}`,
+        address: subaccount.subaccountOwner as Address,
       });
 
       debugPrint('Points', points);
