@@ -62,7 +62,7 @@
     },
     "packages/client": {
       "name": "@nadohq/client",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/indexer-client": "workspace:*",
@@ -75,13 +75,13 @@
         "viem": "2.41.2",
       },
       "peerDependencies": {
-        "bignumber.js": "^10.0.0",
-        "viem": "^2.41.0",
+        "bignumber.js": "10.0.0",
+        "viem": "2.41.0",
       },
     },
     "packages/engine-client": {
       "name": "@nadohq/engine-client",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "dependencies": {
         "@nadohq/shared": "workspace:*",
         "axios": "1.14.0",
@@ -92,13 +92,13 @@
         "viem": "2.41.2",
       },
       "peerDependencies": {
-        "bignumber.js": "^10.0.0",
-        "viem": "^2.41.0",
+        "bignumber.js": "10.0.0",
+        "viem": "2.41.0",
       },
     },
     "packages/indexer-client": {
       "name": "@nadohq/indexer-client",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
@@ -110,13 +110,13 @@
         "viem": "2.41.2",
       },
       "peerDependencies": {
-        "bignumber.js": "^10.0.0",
-        "viem": "^2.41.0",
+        "bignumber.js": "10.0.0",
+        "viem": "2.41.0",
       },
     },
     "packages/shared": {
       "name": "@nadohq/shared",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "dependencies": {
         "abitype": "1.2.3",
       },
@@ -126,13 +126,13 @@
         "viem": "2.41.2",
       },
       "peerDependencies": {
-        "bignumber.js": "^10.0.0",
-        "viem": "^2.41.0",
+        "bignumber.js": "10.0.0",
+        "viem": "2.41.0",
       },
     },
     "packages/trigger-client": {
       "name": "@nadohq/trigger-client",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "dependencies": {
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
@@ -144,8 +144,8 @@
         "viem": "2.41.2",
       },
       "peerDependencies": {
-        "bignumber.js": "^10.0.0",
-        "viem": "^2.41.0",
+        "bignumber.js": "10.0.0",
+        "viem": "2.41.0",
       },
     },
   },

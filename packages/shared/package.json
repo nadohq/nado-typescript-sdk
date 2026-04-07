@@ -44,8 +44,8 @@
     "abitype": "1.2.3"
   },
   "peerDependencies": {
-    "bignumber.js": "^10.0.0",
-    "viem": "^2.41.0"
+    "bignumber.js": "10.0.0",
+    "viem": "2.41.0"
   },
   "devDependencies": {
     "@jest/globals": "30.2.0",
