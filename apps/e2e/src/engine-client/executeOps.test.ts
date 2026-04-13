@@ -34,7 +34,7 @@ void describe('[engine-client]: execute operations', () => {
   let shortLimitPrice: BigNumber;
 
   before(async () => {
-    await delay(TEST_DELAYS.LONG * 4);
+    await delay(TEST_DELAYS.LONG);
 
     tc = createTestContext();
 
@@ -57,7 +57,7 @@ void describe('[engine-client]: execute operations', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.STANDARD * 4);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   // ---------------------------------------------------------------
@@ -91,6 +91,10 @@ void describe('[engine-client]: execute operations', () => {
     const TRANSFER_AMOUNT = addDecimals(6);
     const TRANSFER_BACK_AMOUNT = addDecimals(5);
 
+    let transferResult: Awaited<ReturnType<typeof tc.engine.transferQuote>>;
+    let balanceBeforeTransfer: BigNumber;
+    let balanceAfterTransfer: BigNumber;
+
     async function getQuoteBalance(subaccountName: string): Promise<BigNumber> {
       const summary = await tc.engine.getSubaccountSummary({
         subaccountOwner: tc.walletClientAddress,
@@ -103,11 +107,10 @@ void describe('[engine-client]: execute operations', () => {
       return quote.amount;
     }
 
-    void test('transfers quote to another subaccount', async () => {
-      const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
-      debugPrint('Default balance before transfer', balanceBefore);
+    before(async () => {
+      balanceBeforeTransfer = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
 
-      const result = await tc.engine.transferQuote({
+      transferResult = await tc.engine.transferQuote({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         recipientSubaccountName: 'default2',
@@ -116,14 +119,21 @@ void describe('[engine-client]: execute operations', () => {
         chainId: tc.chainId,
       });
 
-      debugPrint('Transfer quote result', result);
-      assertDefined(result, 'transferResult');
-      assert.equal(result.status, 'success', 'transferQuote should succeed');
+      balanceAfterTransfer = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+    });
 
-      const balanceAfter = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
-      debugPrint('Default balance after transfer', balanceAfter);
+    void test('transfers quote to another subaccount', () => {
+      debugPrint('Default balance before transfer', balanceBeforeTransfer);
+      debugPrint('Transfer quote result', transferResult);
+      assertDefined(transferResult, 'transferResult');
+      assert.equal(
+        transferResult.status,
+        'success',
+        'transferQuote should succeed',
+      );
 
-      const delta = balanceBefore.minus(balanceAfter);
+      debugPrint('Default balance after transfer', balanceAfterTransfer);
+      const delta = balanceBeforeTransfer.minus(balanceAfterTransfer);
       assert.ok(
         delta.gte(toBigNumber(TRANSFER_AMOUNT)),
         `sender balance should decrease by at least the transfer amount (${TRANSFER_AMOUNT.toString()}), got delta ${delta.toString()}`,
@@ -168,7 +178,7 @@ void describe('[engine-client]: execute operations', () => {
   void describe('cancelAndPlace', () => {
     let orderDigest: string;
 
-    void test('places a limit order to be replaced', async () => {
+    before(async () => {
       const order: EngineOrderParams = {
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -199,8 +209,6 @@ void describe('[engine-client]: execute operations', () => {
     });
 
     void test('cancelAndPlace replaces the order', async () => {
-      assertDefined(orderDigest, 'orderDigest (from prior test)');
-
       const result = await tc.engine.cancelAndPlace({
         cancelOrders: {
           subaccountOwner: tc.walletClientAddress,

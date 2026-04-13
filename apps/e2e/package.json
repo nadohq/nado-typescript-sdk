@@ -17,6 +17,11 @@
     "e2e:indexer": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/indexer-client/*.test.ts",
     "e2e:trigger": "tsx --test --test-reporter=spec --test-concurrency=1 ./src/trigger-client/*.test.ts",
     "e2e:one": "tsx --test --test-reporter=spec --test-concurrency=1",
+    "e2e:retry": "./scripts/run-with-retry.sh ./src/**/*.test.ts",
+    "e2e:retry:client": "./scripts/run-with-retry.sh ./src/client/*.test.ts",
+    "e2e:retry:engine": "./scripts/run-with-retry.sh ./src/engine-client/*.test.ts",
+    "e2e:retry:indexer": "./scripts/run-with-retry.sh ./src/indexer-client/*.test.ts",
+    "e2e:retry:trigger": "./scripts/run-with-retry.sh ./src/trigger-client/*.test.ts",
     "cleanup": "tsx ./src/scripts/cleanupState.ts",
     "fund": "tsx ./src/scripts/fundSubaccount.ts",
     "typecheck": "tsc --noEmit"

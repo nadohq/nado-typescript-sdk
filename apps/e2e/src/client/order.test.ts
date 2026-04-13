@@ -84,20 +84,20 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
     });
 
-    void test('places a spot limit order', async () => {
-      const result = await nadoClient.market.placeOrder({
+    let spotOrderResult: Awaited<
+      ReturnType<typeof nadoClient.market.placeOrder>
+    >;
+    let isoOrderResult: Awaited<
+      ReturnType<typeof nadoClient.market.placeOrder>
+    >;
+
+    before(async () => {
+      spotOrderResult = await nadoClient.market.placeOrder({
         order: makeOrderParams(),
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
 
-      debugPrint('Place order result', result);
-      assertDefined(result, 'spotOrderResult');
-      assert.equal(result.status, 'success', 'spot order should succeed');
-      assertHexString(result.data.digest, 'spotOrderResult.data.digest');
-    });
-
-    void test('places an isolated perp order with custom id', async () => {
-      const result = await nadoClient.market.placeOrder({
+      isoOrderResult = await nadoClient.market.placeOrder({
         id: 100,
         order: {
           ...makeOrderParams(),
@@ -108,11 +108,31 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
         },
         productId: TEST_PRODUCT_IDS.PERP_ETH,
       });
+    });
 
-      debugPrint('Place iso order w/ custom id result', result);
-      assertDefined(result, 'isoOrderResult');
-      assert.equal(result.status, 'success', 'iso order should succeed');
-      assertHexString(result.data.digest, 'isoOrderResult.data.digest');
+    void test('places a spot limit order', () => {
+      debugPrint('Place order result', spotOrderResult);
+      assertDefined(spotOrderResult, 'spotOrderResult');
+      assert.equal(
+        spotOrderResult.status,
+        'success',
+        'spot order should succeed',
+      );
+      assertHexString(
+        spotOrderResult.data.digest,
+        'spotOrderResult.data.digest',
+      );
+    });
+
+    void test('places an isolated perp order with custom id', () => {
+      debugPrint('Place iso order w/ custom id result', isoOrderResult);
+      assertDefined(isoOrderResult, 'isoOrderResult');
+      assert.equal(
+        isoOrderResult.status,
+        'success',
+        'iso order should succeed',
+      );
+      assertHexString(isoOrderResult.data.digest, 'isoOrderResult.data.digest');
     });
 
     void test('getSubaccountOrders returns orders for the spot product', async () => {
@@ -154,7 +174,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   void describe('perp order cancel-and-place', () => {
     let perpOrderDigest: string;
 
-    void test('places a perp limit order', async () => {
+    before(async () => {
       const orderParams: PlaceOrderParams['order'] = {
         subaccountName: TEST_SUBACCOUNT_NAME,
         expiration: getExpiration(),
@@ -181,8 +201,6 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
     });
 
     void test('cancel-and-place replaces the perp order with an IOC order', async () => {
-      assertDefined(perpOrderDigest, 'perpOrderDigest (from prior test)');
-
       const result = await nadoClient.market.cancelAndPlace({
         cancelOrders: {
           digests: [perpOrderDigest],

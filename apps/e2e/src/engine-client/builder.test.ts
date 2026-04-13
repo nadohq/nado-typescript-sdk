@@ -24,7 +24,6 @@ import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { waitForIndexer } from '../utils/retry';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
@@ -45,7 +44,7 @@ const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
   before(async () => {
-    await delay(TEST_DELAYS.LONG);
+    await delay(TEST_DELAYS.LONG * 2);
   });
 
   // ---------------------------------------------------------------
@@ -142,7 +141,7 @@ void describe('[engine-client]: builder', () => {
     void describe('with a configured builder', () => {
       let orderDigest: string;
 
-      void test('places an order with builder info', async () => {
+      before(async () => {
         const order: EngineOrderParams = {
           subaccountOwner: tc.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
@@ -176,10 +175,12 @@ void describe('[engine-client]: builder', () => {
       void test('queries historical order for builder fee', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        const orders = await waitForIndexer(
-          () => indexerClient.getOrders({ digests: [orderDigest], limit: 1 }),
-          (result) => result.length > 0,
-        );
+        await delay(TEST_DELAYS.STANDARD);
+
+        const orders = await indexerClient.getOrders({
+          digests: [orderDigest],
+          limit: 1,
+        });
 
         debugPrint('Order query result', orders);
 

@@ -24,9 +24,6 @@ void describe(
   () => {
     let tc: RunContext;
 
-    /** Stored across tests: burn test reads the amount queried by the preceding test. */
-    let maxBurnAmount: BigNumber;
-
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
@@ -95,21 +92,17 @@ void describe(
     });
 
     void test('getMaxBurnNlpAmount returns the max burnable amount', async () => {
-      maxBurnAmount = await tc.engine.getMaxBurnNlpAmount({
+      const result = await tc.engine.getMaxBurnNlpAmount({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
-      debugPrint('Max burn NLP amount', maxBurnAmount);
-      assertDefined(maxBurnAmount, 'maxBurnNlpAmount');
-      assert.ok(maxBurnAmount.isFinite(), 'maxBurnNlpAmount should be finite');
+      debugPrint('Max burn NLP amount', result);
+      assertDefined(result, 'maxBurnNlpAmount');
+      assert.ok(result.isFinite(), 'maxBurnNlpAmount should be finite');
     });
 
     void test('burnNlp burns available NLP tokens', async () => {
-      if (!maxBurnAmount?.gt(0)) {
-        return;
-      }
-
       const { balanceUnlocked } = await tc.engine.getNlpLockedBalances({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -117,12 +110,16 @@ void describe(
 
       if (balanceUnlocked.balance.lte(0)) {
         console.log(
-          'Skipping NLP burn test - all NLP tokens are currently locked',
+          'Skipping NLP burn test - no unlocked NLP tokens available',
         );
         return;
       }
 
-      const burnAmount = BigNumber.min(maxBurnAmount, balanceUnlocked.balance);
+      // Burn a tiny fixed amount so the test is idempotent across reruns
+      const burnAmount = BigNumber.min(
+        addDecimals(0.001),
+        balanceUnlocked.balance,
+      );
       const result = await tc.engine.burnNlp({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,

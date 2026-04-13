@@ -54,8 +54,12 @@ void describe(
     // Mint, approve, and deposit
     // ---------------------------------------------------------------
     void describe('deposit flow', () => {
-      void test('mints mock ERC20 tokens', async () => {
-        const receipt = await waitForTransaction(
+      let mintReceipt: Awaited<ReturnType<typeof waitForTransaction>>;
+      let approveReceipt: Awaited<ReturnType<typeof waitForTransaction>>;
+      let depositReceipt: Awaited<ReturnType<typeof waitForTransaction>>;
+
+      before(async () => {
+        mintReceipt = await waitForTransaction(
           nadoClient.spot._mintMockERC20({
             amount: MINT_AMOUNT,
             productId: QUOTE_PRODUCT_ID,
@@ -63,12 +67,7 @@ void describe(
           publicClient,
         );
 
-        assertDefined(receipt, 'mintReceipt');
-        assert.equal(receipt.status, 'success', 'mint tx should succeed');
-      });
-
-      void test('approves allowance for the full minted amount', async () => {
-        const receipt = await waitForTransaction(
+        approveReceipt = await waitForTransaction(
           nadoClient.spot.approveAllowance({
             amount: MINT_AMOUNT,
             productId: QUOTE_PRODUCT_ID,
@@ -76,12 +75,7 @@ void describe(
           publicClient,
         );
 
-        assertDefined(receipt, 'approveReceipt');
-        assert.equal(receipt.status, 'success', 'approve tx should succeed');
-      });
-
-      void test('deposits tokens into the default subaccount', async () => {
-        const receipt = await waitForTransaction(
+        depositReceipt = await waitForTransaction(
           nadoClient.spot.deposit({
             subaccountName: TEST_SUBACCOUNT_NAME,
             productId: QUOTE_PRODUCT_ID,
@@ -89,9 +83,29 @@ void describe(
           }),
           publicClient,
         );
+      });
 
-        assertDefined(receipt, 'depositReceipt');
-        assert.equal(receipt.status, 'success', 'deposit tx should succeed');
+      void test('mints mock ERC20 tokens', () => {
+        assertDefined(mintReceipt, 'mintReceipt');
+        assert.equal(mintReceipt.status, 'success', 'mint tx should succeed');
+      });
+
+      void test('approves allowance for the full minted amount', () => {
+        assertDefined(approveReceipt, 'approveReceipt');
+        assert.equal(
+          approveReceipt.status,
+          'success',
+          'approve tx should succeed',
+        );
+      });
+
+      void test('deposits tokens into the default subaccount', () => {
+        assertDefined(depositReceipt, 'depositReceipt');
+        assert.equal(
+          depositReceipt.status,
+          'success',
+          'deposit tx should succeed',
+        );
       });
     });
 
@@ -99,22 +113,32 @@ void describe(
     // Collateral transfers between subaccounts
     // ---------------------------------------------------------------
     void describe('collateral transfers', () => {
-      void test('transfers quote from default to default2', async () => {
-        const result = await nadoClient.spot.transferQuote({
+      let outboundTransferResult: Awaited<
+        ReturnType<typeof nadoClient.spot.transferQuote>
+      >;
+
+      before(async () => {
+        outboundTransferResult = await nadoClient.spot.transferQuote({
           amount: TRANSFER_AMOUNT,
           subaccountName: TEST_SUBACCOUNT_NAME,
           recipientSubaccountName: 'default2',
         });
 
-        debugPrint('Transfer result #1', result);
-        assertDefined(result, 'transferResult1');
-        assert.equal(result.status, 'success', 'transfer #1 should succeed');
+        // Wait for engine to process the outbound transfer
+        await delay(TEST_DELAYS.LONG);
+      });
+
+      void test('transfers quote from default to default2', () => {
+        debugPrint('Transfer result #1', outboundTransferResult);
+        assertDefined(outboundTransferResult, 'transferResult1');
+        assert.equal(
+          outboundTransferResult.status,
+          'success',
+          'transfer #1 should succeed',
+        );
       });
 
       void test('transfers quote back from default2 to default', async () => {
-        // Wait for engine to process the preceding transfer to default2
-        await delay(TEST_DELAYS.LONG);
-
         const result = await nadoClient.spot.transferQuote({
           amount: TRANSFER_BACK_AMOUNT,
           subaccountName: 'default2',

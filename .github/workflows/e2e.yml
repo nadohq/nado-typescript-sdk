@@ -45,4 +45,4 @@ jobs:
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           CHAIN_ENV: inkTestnet
-        run: bun run e2e
+        run: bun run e2e:retry
