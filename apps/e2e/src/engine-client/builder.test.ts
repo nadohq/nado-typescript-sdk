@@ -175,7 +175,7 @@ void describe('[engine-client]: builder', () => {
       void test('queries historical order for builder fee', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        await delay(TEST_DELAYS.INDEXER_PROPAGATION * 3);
+        await delay(TEST_DELAYS.INDEXER_PROPAGATION * 10);
 
         const orders = await indexerClient.getOrders({
           digests: [orderDigest],
