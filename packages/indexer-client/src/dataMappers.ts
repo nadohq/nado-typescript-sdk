@@ -429,6 +429,9 @@ export function mapIndexerV2Symbols(
     maxOpenInterest: symbol.max_open_interest_x18
       ? removeDecimals(symbol.max_open_interest_x18)
       : null,
+    exchangeRate: symbol.exchange_rate_x18
+      ? removeDecimals(symbol.exchange_rate_x18)
+      : null,
     tradingStatus: symbol.trading_status as IndexerV2TradingStatus,
     isolatedOnly: symbol.isolated_only,
     marketHours: symbol.market_hours

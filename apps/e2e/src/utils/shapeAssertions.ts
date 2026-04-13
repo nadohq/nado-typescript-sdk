@@ -388,6 +388,9 @@ export function assertV2SymbolShape(
   if (symbol.marketHours != null) {
     assertBoolean(symbol.marketHours.isOpen, `${label}.marketHours.isOpen`);
   }
+  if (symbol.exchangeRate != null) {
+    assertBigNumberFinite(symbol.exchangeRate, `${label}.exchangeRate`);
+  }
 }
 
 // ---------------------------------------------------------------------------
