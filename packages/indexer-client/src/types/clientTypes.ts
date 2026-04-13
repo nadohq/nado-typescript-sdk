@@ -936,6 +936,10 @@ export interface IndexerV2Symbol {
   longWeightMaintenance: BigNumber;
   /** Maximum open interest cap. Null if uncapped. */
   maxOpenInterest: BigNumber | null;
+  /**
+   * Exchange rate for xStocks. Null if not applicable.
+   */
+  exchangeRate: BigNumber | null;
   /** Current trading status */
   tradingStatus: IndexerV2TradingStatus;
   /** Whether the market only accepts isolated margin orders */

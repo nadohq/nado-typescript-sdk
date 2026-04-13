@@ -572,7 +572,14 @@ export interface IndexerServerV2Symbol {
   taker_fee_rate_x18: string;
   long_weight_initial_x18: string;
   long_weight_maintenance_x18: string;
+  /**
+   * Defined only for perp markets with a max OI cap
+   */
   max_open_interest_x18: string | null;
+  /**
+   * Defined only for xStocks spot markets
+   */
+  exchange_rate_x18: string | null;
   trading_status: string;
   isolated_only: boolean;
   market_hours: IndexerServerV2MarketHours | null;
