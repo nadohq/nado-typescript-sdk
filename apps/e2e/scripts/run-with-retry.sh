@@ -1,23 +1,25 @@
 #!/bin/bash
-# Runs E2E tests with a single automatic retry of failed tests using
-# Node's --test-rerun-failures flag.  On the second invocation only
-# tests that failed in the first run are re-executed (hooks still run).
+# Runs E2E tests with a single automatic retry of failed files.
+# On failure, parses output for failing file paths and reruns only those.
 set -uo pipefail
 
-STATE_FILE="${TMPDIR:-/tmp}/nado-e2e-rerun-state.json"
-rm -f "$STATE_FILE"
+COMMON_ARGS="--test-reporter=spec --test-concurrency=1"
+OUTPUT_FILE="${TMPDIR:-/tmp}/nado-e2e-output.txt"
 
-COMMON_ARGS="--test-reporter=spec --test-concurrency=1 --test-rerun-failures=$STATE_FILE"
-
-tsx --test $COMMON_ARGS "$@"
-EXIT=$?
+tsx --test $COMMON_ARGS "$@" 2>&1 | tee "$OUTPUT_FILE"
+EXIT=${PIPESTATUS[0]}
 
 if [ $EXIT -ne 0 ]; then
-  echo ""
-  echo "--- Retrying failed tests ---"
-  echo ""
-  tsx --test $COMMON_ARGS "$@"
-  EXIT=$?
+  FAILED_FILES=$(sed -n 's/.*test at \([^:]*\).*/\1/p' "$OUTPUT_FILE" | sort -u)
+
+  if [ -n "$FAILED_FILES" ]; then
+    echo ""
+    echo "--- Retrying failed test files: $FAILED_FILES ---"
+    echo ""
+    tsx --test $COMMON_ARGS $FAILED_FILES
+    EXIT=$?
+  fi
 fi
 
+rm -f "$OUTPUT_FILE"
 exit $EXIT

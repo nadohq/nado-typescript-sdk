@@ -23,8 +23,7 @@ const DEFAULT_BACKOFF_FACTOR = 2;
 
 function isRateLimitError(error: unknown): boolean {
   if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return msg.includes('429') || msg.includes('too many requests');
+    return error.message.includes('429');
   }
   return false;
 }
