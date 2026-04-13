@@ -76,12 +76,7 @@ void describe('[engine-client]: signer and orders', () => {
     let perpIsolatedOrderDigest: string;
     let marketPrice: { bid: BigNumber; ask: BigNumber };
 
-    // Spot order result captured in before() for digest-verification test
-    let spotOrderResult: Awaited<ReturnType<typeof tc.engine.placeOrder>>;
-    // Isolated perp order result captured in before()
-    let perpOrderResult: Awaited<ReturnType<typeof tc.engine.placeOrder>>;
-
-    before(async () => {
+    void test('places a spot limit order and verifies its digest', async () => {
       const spotOrder: EngineOrderParams = {
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -91,17 +86,34 @@ void describe('[engine-client]: signer and orders', () => {
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       };
 
-      spotOrderResult = await tc.engine.placeOrder({
+      const result = await tc.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
         chainId: tc.chainId,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         order: spotOrder,
         nonce: getOrderNonce(),
       });
-      spotOrderDigest = spotOrderResult.data.digest;
 
-      await delay(TEST_DELAYS.STANDARD);
+      debugPrint('Spot order result', result);
+      assertDefined(result, 'spotOrderResult');
+      assert.equal(result.status, 'success', 'spot order should succeed');
+      assertHexString(result.data.digest, 'spotOrderResult.data.digest');
 
+      const computedDigest = getOrderDigest({
+        order: result.orderParams,
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+        chainId: tc.chainId,
+      });
+      assert.equal(
+        computedDigest,
+        result.data.digest,
+        'computed and returned order digests should match',
+      );
+
+      spotOrderDigest = result.data.digest;
+    });
+
+    void test('places an isolated perp order and verifies its digest', async () => {
       const isolatedOrder: EngineOrderParams = {
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -116,70 +128,31 @@ void describe('[engine-client]: signer and orders', () => {
         }),
       };
 
-      perpOrderResult = await tc.engine.placeOrder({
+      const result = await tc.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
         chainId: tc.chainId,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         order: isolatedOrder,
         nonce: getOrderNonce(),
       });
-      perpIsolatedOrderDigest = perpOrderResult.data.digest;
 
-      await delay(TEST_DELAYS.STANDARD);
-
-      marketPrice = await tc.engine.getMarketPrice({
-        productId: TEST_PRODUCT_IDS.SPOT_BTC,
-      });
-    });
-
-    void test('places a spot limit order and verifies its digest', () => {
-      debugPrint('Spot order result', spotOrderResult);
-      assertDefined(spotOrderResult, 'spotOrderResult');
-      assert.equal(
-        spotOrderResult.status,
-        'success',
-        'spot order should succeed',
-      );
-      assertHexString(
-        spotOrderResult.data.digest,
-        'spotOrderResult.data.digest',
-      );
+      debugPrint('Isolated perp order result', result);
+      assertDefined(result, 'isolatedOrderResult');
+      assert.equal(result.status, 'success', 'isolated order should succeed');
+      assertHexString(result.data.digest, 'isolatedOrderResult.data.digest');
 
       const computedDigest = getOrderDigest({
-        order: spotOrderResult.orderParams,
-        productId: TEST_PRODUCT_IDS.SPOT_BTC,
-        chainId: tc.chainId,
-      });
-      assert.equal(
-        computedDigest,
-        spotOrderResult.data.digest,
-        'computed and returned order digests should match',
-      );
-    });
-
-    void test('places an isolated perp order and verifies its digest', () => {
-      debugPrint('Isolated perp order result', perpOrderResult);
-      assertDefined(perpOrderResult, 'isolatedOrderResult');
-      assert.equal(
-        perpOrderResult.status,
-        'success',
-        'isolated order should succeed',
-      );
-      assertHexString(
-        perpOrderResult.data.digest,
-        'isolatedOrderResult.data.digest',
-      );
-
-      const computedDigest = getOrderDigest({
-        order: perpOrderResult.orderParams,
+        order: result.orderParams,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         chainId: tc.chainId,
       });
       assert.equal(
         computedDigest,
-        perpOrderResult.data.digest,
+        result.data.digest,
         'computed and returned isolated order digests should match',
       );
+
+      perpIsolatedOrderDigest = result.data.digest;
     });
 
     void test('getSubaccountOrders returns orders for the perp product', async () => {
@@ -230,6 +203,8 @@ void describe('[engine-client]: signer and orders', () => {
       debugPrint('Market price', result);
       assertDefined(result, 'marketPrice');
       assertEngineMarketPriceShape(result, 'marketPrice');
+
+      marketPrice = result;
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
@@ -406,7 +381,7 @@ void describe('[engine-client]: signer and orders', () => {
   // Multi-product order placement and bulk cancellation
   // ---------------------------------------------------------------
   void describe('multi-product order placement and cancellation', () => {
-    before(async () => {
+    void test('places orders for spot and perp products', async () => {
       // Rate-limit delay after the linked signer operations
       await delay(TEST_DELAYS.STANDARD);
 

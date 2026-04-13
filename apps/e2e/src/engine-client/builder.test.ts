@@ -141,7 +141,7 @@ void describe('[engine-client]: builder', () => {
     void describe('with a configured builder', () => {
       let orderDigest: string;
 
-      before(async () => {
+      void test('places an order with builder info', async () => {
         const order: EngineOrderParams = {
           subaccountOwner: tc.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,

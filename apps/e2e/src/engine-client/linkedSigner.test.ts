@@ -30,7 +30,6 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   let tc: RunContext;
   let shortLimitPrice: BigNumber;
   let linkedSignerWalletClient: WalletClientWithAccount;
-  let linkSignerResult: { status: string };
 
   before(async () => {
     await delay(TEST_DELAYS.LONG * 3);
@@ -42,7 +41,24 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
     )!.product.oraclePrice;
     shortLimitPrice = oraclePrice.multipliedBy(1.1).decimalPlaces(0);
+  });
 
+  after(async () => {
+    await cleanupTestState(
+      { engine: tc.engine, trigger: tc.trigger },
+      {
+        subaccountOwner: tc.walletClientAddress,
+        endpointAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      },
+    );
+  });
+
+  beforeEach(async () => {
+    await delay(TEST_DELAYS.STANDARD);
+  });
+
+  void test('creates and links a deterministic signer', async () => {
     const linkedSignerPrivKey = await createDeterministicLinkedSignerPrivateKey(
       {
         chainId: tc.chainId,
@@ -63,7 +79,7 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       linkedSignerWalletClient.account.address,
     );
 
-    linkSignerResult = await tc.engine.linkSigner({
+    const result = await tc.engine.linkSigner({
       chainId: tc.chainId,
       signer: subaccountToHex({
         subaccountOwner: linkedSignerWalletClient.account.address,
@@ -74,34 +90,9 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       verifyingAddr: tc.endpointAddr,
     });
 
-    // Wait for engine to propagate the linked signer before signing with it
-    await delay(TEST_DELAYS.LONG);
-    tc.engine.setLinkedSigner(linkedSignerWalletClient);
-  });
-
-  after(async () => {
-    await cleanupTestState(
-      { engine: tc.engine, trigger: tc.trigger },
-      {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
-      },
-    );
-  });
-
-  beforeEach(async () => {
-    await delay(TEST_DELAYS.STANDARD);
-  });
-
-  void test('creates and links a deterministic signer', () => {
-    debugPrint('Link signer result', linkSignerResult);
-    assertDefined(linkSignerResult, 'linkSignerResult');
-    assert.equal(
-      linkSignerResult.status,
-      'success',
-      'linkSigner should succeed',
-    );
+    debugPrint('Link signer result', result);
+    assertDefined(result, 'linkSignerResult');
+    assert.equal(result.status, 'success', 'linkSigner should succeed');
   });
 
   void test('getLinkedSigner returns the linked signer address', async () => {
@@ -113,6 +104,10 @@ void describe('[engine-client]: linked signer lifecycle', () => {
     debugPrint('Linked signer query', result);
     assertDefined(result, 'linkedSignerQuery');
     assertDefined(result.signer, 'linkedSignerQuery.signer');
+
+    // Wait for engine to propagate before signing with the linked signer
+    await delay(TEST_DELAYS.LONG);
+    tc.engine.setLinkedSigner(linkedSignerWalletClient);
   });
 
   void test('places an isolated position using the linked signer', async () => {
