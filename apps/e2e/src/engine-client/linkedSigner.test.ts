@@ -106,6 +106,8 @@ void describe('[engine-client]: linked signer lifecycle', () => {
     assertDefined(result.signer, 'linkedSignerQuery.signer');
 
     tc.engine.setLinkedSigner(linkedSignerWalletClient);
+
+    await delay(TEST_DELAYS.BETWEEN_SUITES);
   });
 
   void test('places an isolated position using the linked signer', async () => {

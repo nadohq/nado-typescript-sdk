@@ -175,7 +175,7 @@ void describe('[engine-client]: builder', () => {
       void test('queries historical order for builder fee', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        await delay(TEST_DELAYS.INDEXER_PROPAGATION);
+        await delay(TEST_DELAYS.INDEXER_PROPAGATION * 3);
 
         const orders = await indexerClient.getOrders({
           digests: [orderDigest],
@@ -183,6 +183,10 @@ void describe('[engine-client]: builder', () => {
         });
 
         debugPrint('Order query result', orders);
+        assert.ok(
+          orders.length > 0,
+          'getOrders should return at least one order after indexer propagation',
+        );
 
         const order = orders[0];
         assert.equal(order.digest, orderDigest, 'digest should match');

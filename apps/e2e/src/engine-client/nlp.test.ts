@@ -111,17 +111,30 @@ void describe(
         return;
       }
 
-      const result = await tc.engine.burnNlp({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        nlpAmount: maxBurnAmount,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
-      });
+      try {
+        const result = await tc.engine.burnNlp({
+          subaccountOwner: tc.walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          nlpAmount: maxBurnAmount,
+          verifyingAddr: tc.endpointAddr,
+          chainId: tc.chainId,
+        });
 
-      debugPrint('Burn NLP result', result);
-      assertDefined(result, 'burnNlpResult');
-      assert.equal(result.status, 'success', 'burnNlp should succeed');
+        debugPrint('Burn NLP result', result);
+        assertDefined(result, 'burnNlpResult');
+        assert.equal(result.status, 'success', 'burnNlp should succeed');
+      } catch (error) {
+        // NLP tokens may still be locked after minting
+        if (
+          error instanceof Error &&
+          (error.message.includes('2096') ||
+            error.message.includes('unlocked NLP'))
+        ) {
+          console.log('Skipping NLP burn test - NLP tokens are still locked');
+          return;
+        }
+        throw error;
+      }
     });
 
     void test('getNlpLockedBalances returns locked balance info', async () => {

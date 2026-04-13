@@ -15,6 +15,7 @@ import { TriggerClient } from '@nadohq/trigger-client';
 import BigNumber from 'bignumber.js';
 import { delay } from './delay';
 import { getExpiration } from './getExpiration';
+import { retryWithBackoff } from './retry';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_ID_LIST,
@@ -68,22 +69,26 @@ export async function cleanupTestState(
 
   // 1. Cancel all engine + trigger orders in parallel (no queries needed)
   await Promise.all([
-    clients.engine.cancelProductOrders(cancelParams),
-    clients.trigger.cancelProductOrders(cancelParams),
+    retryWithBackoff(() => clients.engine.cancelProductOrders(cancelParams)),
+    retryWithBackoff(() => clients.trigger.cancelProductOrders(cancelParams)),
   ]);
 
   await delay(TEST_DELAYS.BETWEEN_SUITES);
 
   // 2. Query subaccount summary + isolated positions in parallel
   const [subaccountSummary, isolatedPositions] = await Promise.all([
-    clients.engine.getSubaccountSummary({
-      subaccountOwner: opts.subaccountOwner,
-      subaccountName,
-    }),
-    clients.engine.getIsolatedPositions({
-      subaccountOwner: opts.subaccountOwner,
-      subaccountName,
-    }),
+    retryWithBackoff(() =>
+      clients.engine.getSubaccountSummary({
+        subaccountOwner: opts.subaccountOwner,
+        subaccountName,
+      }),
+    ),
+    retryWithBackoff(() =>
+      clients.engine.getIsolatedPositions({
+        subaccountOwner: opts.subaccountOwner,
+        subaccountName,
+      }),
+    ),
   ]);
 
   const crossPerps = subaccountSummary.balances.filter(
@@ -124,7 +129,9 @@ export async function cleanupTestState(
 
   if (closeOrders.length > 0) {
     await delay(TEST_DELAYS.BETWEEN_SUITES);
-    await clients.engine.placeOrders({ orders: closeOrders });
+    await retryWithBackoff(() =>
+      clients.engine.placeOrders({ orders: closeOrders }),
+    );
   }
 }
 

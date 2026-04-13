@@ -112,6 +112,8 @@ void describe(
       });
 
       void test('transfers quote back from default2 to default', async () => {
+        await delay(TEST_DELAYS.BETWEEN_SUITES);
+
         const result = await nadoClient.spot.transferQuote({
           amount: TRANSFER_BACK_AMOUNT,
           subaccountName: 'default2',

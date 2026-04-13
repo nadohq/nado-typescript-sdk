@@ -280,7 +280,9 @@ void describe('[engine-client]: execute operations', () => {
       debugPrint('Link signer result', linkResult);
       assert.equal(linkResult.status, 'success', 'linkSigner should succeed');
 
-      // Set the linked signer on the client
+      // Let the engine propagate the linked signer state before using it
+      await delay(TEST_DELAYS.BETWEEN_SUITES);
+
       tc.engine.setLinkedSigner(linkedSignerWalletClient);
 
       // Verify the linked signer is used by placing an order
