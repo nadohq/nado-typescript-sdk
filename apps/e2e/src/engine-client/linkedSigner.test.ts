@@ -32,7 +32,7 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   let linkedSignerWalletClient: WalletClientWithAccount;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
+    await delay(TEST_DELAYS.LONG * 4);
 
     tc = createTestContext();
 
@@ -55,7 +55,7 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
+    await delay(TEST_DELAYS.STANDARD * 4);
   });
 
   void test('creates and links a deterministic signer', async () => {
@@ -106,8 +106,6 @@ void describe('[engine-client]: linked signer lifecycle', () => {
     assertDefined(result.signer, 'linkedSignerQuery.signer');
 
     tc.engine.setLinkedSigner(linkedSignerWalletClient);
-
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
   });
 
   void test('places an isolated position using the linked signer', async () => {

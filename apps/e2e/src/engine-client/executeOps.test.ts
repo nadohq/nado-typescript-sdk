@@ -34,7 +34,7 @@ void describe('[engine-client]: execute operations', () => {
   let shortLimitPrice: BigNumber;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES * 4);
+    await delay(TEST_DELAYS.LONG * 4);
 
     tc = createTestContext();
 
@@ -57,7 +57,7 @@ void describe('[engine-client]: execute operations', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
+    await delay(TEST_DELAYS.STANDARD * 4);
   });
 
   // ---------------------------------------------------------------
@@ -280,8 +280,8 @@ void describe('[engine-client]: execute operations', () => {
       debugPrint('Link signer result', linkResult);
       assert.equal(linkResult.status, 'success', 'linkSigner should succeed');
 
-      // Let the engine propagate the linked signer state before using it
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      // Wait for engine to propagate the linked signer before signing with it
+      await delay(TEST_DELAYS.LONG);
 
       tc.engine.setLinkedSigner(linkedSignerWalletClient);
 

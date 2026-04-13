@@ -51,7 +51,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   let endpointAddr: string;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
 
     const context = createTestContext();
     walletClientAddress = context.walletClientAddress;
@@ -65,7 +65,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   void test('getTime returns engine server time', async () => {

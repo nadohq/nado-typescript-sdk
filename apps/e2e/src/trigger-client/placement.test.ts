@@ -35,7 +35,7 @@ void describe('[trigger-client]: placement', () => {
   let midPrice: BigNumber;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
 
     tc = createTestContext();
 
@@ -57,7 +57,7 @@ void describe('[trigger-client]: placement', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   void test('places a short stop order via oracle price above', async () => {

@@ -38,7 +38,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   let shortMarketPrice: BigNumber;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
 
     const context = createTestContext();
     walletClientAddress = context.walletClientAddress;
@@ -69,7 +69,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   // ---------------------------------------------------------------

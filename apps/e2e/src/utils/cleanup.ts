@@ -55,7 +55,7 @@ export async function cleanupTestState(
   clients: { engine: EngineClient; trigger: TriggerClient },
   opts: CleanupOptions,
 ): Promise<void> {
-  await delay(TEST_DELAYS.BETWEEN_SUITES);
+  await delay(TEST_DELAYS.LONG);
 
   const subaccountName = opts.subaccountName ?? TEST_SUBACCOUNT_NAME;
 
@@ -73,7 +73,7 @@ export async function cleanupTestState(
     retryWithBackoff(() => clients.trigger.cancelProductOrders(cancelParams)),
   ]);
 
-  await delay(TEST_DELAYS.BETWEEN_SUITES);
+  await delay(TEST_DELAYS.LONG);
 
   // 2. Query subaccount summary + isolated positions in parallel
   const [subaccountSummary, isolatedPositions] = await Promise.all([
@@ -128,7 +128,7 @@ export async function cleanupTestState(
   ];
 
   if (closeOrders.length > 0) {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
     await retryWithBackoff(() =>
       clients.engine.placeOrders({ orders: closeOrders }),
     );

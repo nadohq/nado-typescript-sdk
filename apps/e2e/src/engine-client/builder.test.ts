@@ -24,6 +24,7 @@ import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
+import { waitForIndexer } from '../utils/retry';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
@@ -44,7 +45,7 @@ const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
   });
 
   // ---------------------------------------------------------------
@@ -106,7 +107,7 @@ void describe('[engine-client]: builder', () => {
     let buyPrice: BigNumber;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
       publicClient = tc.publicClient;
@@ -120,7 +121,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     after(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
       await cleanupTestState(
         { engine: tc.engine, trigger: tc.trigger },
         {
@@ -132,7 +133,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     // ---------------------------------------------------------------
@@ -175,18 +176,12 @@ void describe('[engine-client]: builder', () => {
       void test('queries historical order for builder fee', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        await delay(TEST_DELAYS.INDEXER_PROPAGATION * 10);
-
-        const orders = await indexerClient.getOrders({
-          digests: [orderDigest],
-          limit: 1,
-        });
+        const orders = await waitForIndexer(
+          () => indexerClient.getOrders({ digests: [orderDigest], limit: 1 }),
+          (result) => result.length > 0,
+        );
 
         debugPrint('Order query result', orders);
-        assert.ok(
-          orders.length > 0,
-          'getOrders should return at least one order after indexer propagation',
-        );
 
         const order = orders[0];
         assert.equal(order.digest, orderDigest, 'digest should match');

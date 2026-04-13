@@ -105,7 +105,7 @@ void describe(
     let chainId: number;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       const tc = createTestContext();
       client = tc.indexer;
@@ -118,7 +118,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('getLeaderboard returns valid participants', async () => {

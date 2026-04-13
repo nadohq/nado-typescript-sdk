@@ -28,13 +28,13 @@ void describe(
     let maxBurnAmount: BigNumber;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('getMaxMintNlpAmount returns the max mintable amount', async () => {
@@ -107,34 +107,33 @@ void describe(
 
     void test('burnNlp burns available NLP tokens', async () => {
       if (!maxBurnAmount?.gt(0)) {
-        // No NLP available to burn — nothing to test
         return;
       }
 
-      try {
-        const result = await tc.engine.burnNlp({
-          subaccountOwner: tc.walletClientAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          nlpAmount: maxBurnAmount,
-          verifyingAddr: tc.endpointAddr,
-          chainId: tc.chainId,
-        });
+      const { balanceUnlocked } = await tc.engine.getNlpLockedBalances({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
 
-        debugPrint('Burn NLP result', result);
-        assertDefined(result, 'burnNlpResult');
-        assert.equal(result.status, 'success', 'burnNlp should succeed');
-      } catch (error) {
-        // NLP tokens may still be locked after minting
-        if (
-          error instanceof Error &&
-          (error.message.includes('2096') ||
-            error.message.includes('unlocked NLP'))
-        ) {
-          console.log('Skipping NLP burn test - NLP tokens are still locked');
-          return;
-        }
-        throw error;
+      if (balanceUnlocked.balance.lte(0)) {
+        console.log(
+          'Skipping NLP burn test - all NLP tokens are currently locked',
+        );
+        return;
       }
+
+      const burnAmount = BigNumber.min(maxBurnAmount, balanceUnlocked.balance);
+      const result = await tc.engine.burnNlp({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        nlpAmount: burnAmount,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      });
+
+      debugPrint('Burn NLP result', result);
+      assertDefined(result, 'burnNlpResult');
+      assert.equal(result.status, 'success', 'burnNlp should succeed');
     });
 
     void test('getNlpLockedBalances returns locked balance info', async () => {

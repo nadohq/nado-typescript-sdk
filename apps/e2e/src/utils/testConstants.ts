@@ -43,12 +43,12 @@ export const TEST_TIMEOUTS = {
  * @see {@link delay} in `../utils/delay.ts` for background.
  */
 export const TEST_DELAYS = {
-  /** Pause between individual tests within a suite. */
-  BETWEEN_TESTS: 150,
-  /** Pause at the start of each top-level suite to space out suite execution. */
-  BETWEEN_SUITES: 300,
-  /** Wait for the indexer to process and propagate recently submitted data. */
-  INDEXER_PROPAGATION: 300,
+  /** Short pause for rate-limit spacing between sequential API calls. */
+  SHORT: 150,
+  /** Standard pause between tests within a suite for rate-limit compliance. */
+  STANDARD: 300,
+  /** Longer pause for engine/backend state propagation (e.g. linked signer, transfers). */
+  LONG: 500,
 } as const;
 
 /** Status type filters that match all non-terminal trigger order states. */

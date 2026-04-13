@@ -32,7 +32,7 @@ void describe(
     let tc: RunContext;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
 
@@ -136,7 +136,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('lists pending reduce-only orders', async () => {
