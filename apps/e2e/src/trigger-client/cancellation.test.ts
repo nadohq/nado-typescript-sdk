@@ -161,20 +161,6 @@ void describe('[trigger-client]: cancellation', () => {
   });
 
   void describe('post-cancellation queries', () => {
-    before(async () => {
-      // Ensure all trigger orders are cancelled before querying.
-      // This makes the block rerun-safe: if the cancel-operations tests
-      // were skipped on a --test-rerun-failures retry, this hook still
-      // guarantees the expected cancelled state.
-      await tc.trigger.cancelProductOrders({
-        productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_BTC],
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
-      });
-    });
-
     void test('lists orders after cancellation', async () => {
       const result = await tc.trigger.listOrders({
         chainId: tc.chainId,
