@@ -130,6 +130,11 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       debugPrint('Subaccount orders', result);
       assertDefined(result, 'subaccountOrders');
       assertNonEmptyArray(result.orders, 'subaccountOrders.orders');
+
+      await nadoClient.market.cancelProductOrders({
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
+      });
     });
 
     void test('cancels all spot orders', async () => {

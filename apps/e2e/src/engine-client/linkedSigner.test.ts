@@ -32,6 +32,7 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   let linkedSignerWalletClient: WalletClientWithAccount;
 
   before(async () => {
+    // Extra delay to avoid 429 rate-limit errors from preceding test suites
     await delay(TEST_DELAYS.LONG * 3);
 
     tc = createTestContext();
