@@ -4,6 +4,7 @@ import {
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  removeDecimals,
   toBigNumber,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
@@ -70,7 +71,7 @@ void describe('[trigger-client]: cancellation', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: toBigNumber(99999),
+          triggerPrice: removeDecimals(toBigNumber(99999)),
         },
       },
       verifyingAddr,
@@ -104,6 +105,9 @@ void describe('[trigger-client]: cancellation', () => {
     ethDigest = r1.data.digest;
     btcDigest = r2.data.digest;
     ethDigest2 = r3.data.digest;
+
+    // Allow trigger service to index the placed orders before cancel tests
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   after(async () => {

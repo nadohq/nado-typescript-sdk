@@ -4,6 +4,7 @@ import {
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  removeDecimals,
   toBigNumber,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
@@ -85,7 +86,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: midPrice,
+          triggerPrice: removeDecimals(midPrice),
         },
       },
       verifyingAddr,
@@ -126,7 +127,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_below',
-          triggerPrice: toBigNumber(60000),
+          triggerPrice: removeDecimals(toBigNumber(60000)),
         },
       },
       verifyingAddr,
@@ -167,7 +168,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_above',
-          triggerPrice: midPrice.multipliedBy(2),
+          triggerPrice: removeDecimals(midPrice.multipliedBy(2)),
         },
       },
       verifyingAddr,
@@ -209,7 +210,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_above',
-          triggerPrice: midPrice.multipliedBy(1.5),
+          triggerPrice: removeDecimals(midPrice.multipliedBy(1.5)),
         },
       },
       verifyingAddr,
@@ -249,7 +250,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_below',
-          triggerPrice: midPrice.multipliedBy(0.8),
+          triggerPrice: removeDecimals(midPrice.multipliedBy(0.8)),
         },
       },
       verifyingAddr,
@@ -346,7 +347,7 @@ void describe('[trigger-client]: placement', () => {
           type: 'price',
           criteria: {
             type: 'oracle_price_below',
-            triggerPrice: toBigNumber(3100),
+            triggerPrice: removeDecimals(toBigNumber(3100)),
           },
         },
         verifyingAddr,
@@ -361,7 +362,7 @@ void describe('[trigger-client]: placement', () => {
           type: 'price',
           criteria: {
             type: 'oracle_price_below',
-            triggerPrice: toBigNumber(3200),
+            triggerPrice: removeDecimals(toBigNumber(3200)),
           },
         },
         verifyingAddr,

@@ -2,6 +2,7 @@ import {
   addDecimals,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  removeDecimals,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import { after, before, beforeEach, describe, test } from 'node:test';
@@ -62,7 +63,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'mid_price_above',
-            triggerPrice: midPrice.multipliedBy(1.5),
+            triggerPrice: removeDecimals(midPrice.multipliedBy(1.5)),
           },
         },
         verifyingAddr,
@@ -110,7 +111,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'oracle_price_above',
-            triggerPrice: midPrice,
+            triggerPrice: removeDecimals(midPrice),
           },
         },
         verifyingAddr,
