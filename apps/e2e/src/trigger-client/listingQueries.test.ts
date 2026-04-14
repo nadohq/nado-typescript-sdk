@@ -40,7 +40,9 @@ void describe(
       const marketPrice = await tc.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
-      const midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
+      const midPrice = removeDecimals(
+        marketPrice.ask.plus(marketPrice.bid).div(2),
+      );
       const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);
 
       const reduceOnlyOrder: TriggerPlaceOrderParams = {
@@ -63,7 +65,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'mid_price_above',
-            triggerPrice: removeDecimals(midPrice.multipliedBy(1.5)),
+            triggerPrice: midPrice.multipliedBy(1.19),
           },
         },
         verifyingAddr,
@@ -111,7 +113,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'oracle_price_above',
-            triggerPrice: removeDecimals(midPrice),
+            triggerPrice: midPrice.multipliedBy(1.19),
           },
         },
         verifyingAddr,

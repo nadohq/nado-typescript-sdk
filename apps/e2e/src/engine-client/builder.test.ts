@@ -176,16 +176,22 @@ void describe('[engine-client]: builder', () => {
       void test('queries historical order for builder fee', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        await delay(TEST_DELAYS.STANDARD);
+        let order:
+          | Awaited<ReturnType<typeof indexerClient.getOrders>>[number]
+          | undefined;
+        const maxAttempts = 5;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          await delay(TEST_DELAYS.LONG);
+          const orders = await indexerClient.getOrders({
+            digests: [orderDigest],
+            limit: 1,
+          });
+          debugPrint(`Order query attempt ${attempt}`, orders);
+          order = orders[0];
+          if (order) break;
+        }
 
-        const orders = await indexerClient.getOrders({
-          digests: [orderDigest],
-          limit: 1,
-        });
-
-        debugPrint('Order query result', orders);
-
-        const order = orders[0];
+        assertDefined(order, 'order should be indexed');
         assert.equal(order.digest, orderDigest, 'digest should match');
         assertDefined(order.totalFee, 'order.totalFee');
         assertDefined(order.builderFee, 'order.builderFee');
