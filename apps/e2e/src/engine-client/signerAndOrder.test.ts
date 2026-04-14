@@ -382,9 +382,6 @@ void describe('[engine-client]: signer and orders', () => {
   // ---------------------------------------------------------------
   void describe('multi-product order placement and cancellation', () => {
     void test('places orders for spot and perp products', async () => {
-      // Rate-limit delay after the linked signer operations
-      await delay(TEST_DELAYS.STANDARD);
-
       for (const productId of [
         TEST_PRODUCT_IDS.SPOT_BTC,
         TEST_PRODUCT_IDS.PERP_BTC,

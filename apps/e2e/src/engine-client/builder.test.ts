@@ -44,6 +44,7 @@ const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
   before(async () => {
+    // Extra delay to avoid 429 rate-limit errors from preceding test suites
     await delay(TEST_DELAYS.LONG * 2);
   });
 

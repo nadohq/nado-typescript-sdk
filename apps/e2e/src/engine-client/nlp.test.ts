@@ -103,23 +103,18 @@ void describe(
     });
 
     void test('burnNlp burns available NLP tokens', async () => {
-      const { balanceUnlocked } = await tc.engine.getNlpLockedBalances({
+      const maxBurnable = await tc.engine.getMaxBurnNlpAmount({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
-      if (balanceUnlocked.balance.lte(0)) {
-        console.log(
-          'Skipping NLP burn test - no unlocked NLP tokens available',
-        );
+      if (!maxBurnable.gt(0)) {
+        console.log('Skipping NLP burn test - no burnable NLP available');
         return;
       }
 
-      // Burn a tiny fixed amount so the test is idempotent across reruns
-      const burnAmount = BigNumber.min(
-        addDecimals(0.001),
-        balanceUnlocked.balance,
-      );
+      // Burn a tiny fixed amount capped by max burnable (accounts for health)
+      const burnAmount = BigNumber.min(addDecimals(0.001), maxBurnable);
       const result = await tc.engine.burnNlp({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
