@@ -15,7 +15,7 @@ import { TriggerClient } from '@nadohq/trigger-client';
 import BigNumber from 'bignumber.js';
 import { delay } from './delay';
 import { getExpiration } from './getExpiration';
-import { retryWithBackoff } from './retry';
+import { retryWithBackoff } from './retryWithBackoff';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_ID_LIST,

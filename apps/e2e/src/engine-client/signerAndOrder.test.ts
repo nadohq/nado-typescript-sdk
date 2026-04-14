@@ -83,32 +83,6 @@ void describe('[engine-client]: signer and orders', () => {
       };
     }
 
-    function makePerpOrder(
-      opts?: Partial<{
-        amount: EngineOrderParams['amount'];
-        isolated: boolean;
-      }>,
-    ): EngineOrderParams {
-      const amount = opts?.amount ?? addDecimals(-0.01);
-      const appendix = opts?.isolated
-        ? packOrderAppendix({
-            orderExecutionType: 'default',
-            isolated: {
-              margin: addDecimals(shortLimitPrice.multipliedBy(0.03).div(10)),
-            },
-          })
-        : packOrderAppendix({ orderExecutionType: 'default' });
-
-      return {
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        amount,
-        expiration: getExpiration(),
-        price: shortLimitPrice,
-        appendix,
-      };
-    }
-
     async function placeAndGetDigest(
       productId: number,
       order: EngineOrderParams,
@@ -164,10 +138,19 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('places an isolated perp order and verifies its digest', async () => {
-      const isolatedOrder = makePerpOrder({
+      const isolatedOrder: EngineOrderParams = {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.03),
-        isolated: true,
-      });
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({
+          orderExecutionType: 'default',
+          isolated: {
+            margin: addDecimals(shortLimitPrice.multipliedBy(0.03).div(10)),
+          },
+        }),
+      };
 
       const result = await tc.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
@@ -195,7 +178,14 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getSubaccountOrders returns orders for the perp product', async () => {
-      await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, makePerpOrder());
+      await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.01),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      });
 
       const result = await tc.engine.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.PERP_BTC,
@@ -359,10 +349,19 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getOrder retrieves the placed isolated perp order by digest', async () => {
-      const { digest } = await placeAndGetDigest(
-        TEST_PRODUCT_IDS.PERP_BTC,
-        makePerpOrder({ amount: addDecimals(-0.03), isolated: true }),
-      );
+      const { digest } = await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.03),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({
+          orderExecutionType: 'default',
+          isolated: {
+            margin: addDecimals(shortLimitPrice.multipliedBy(0.03).div(10)),
+          },
+        }),
+      });
 
       const result = await tc.engine.getOrder({
         digest,
@@ -377,7 +376,14 @@ void describe('[engine-client]: signer and orders', () => {
 
     void test('getSubaccountMultiProductOrders returns orders across products', async () => {
       await placeAndGetDigest(TEST_PRODUCT_IDS.SPOT_BTC, makeSpotOrder());
-      await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, makePerpOrder());
+      await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.01),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      });
 
       const result = await tc.engine.getSubaccountMultiProductOrders({
         subaccountOwner: tc.walletClientAddress,
@@ -397,7 +403,14 @@ void describe('[engine-client]: signer and orders', () => {
       );
       const { digest: perpDigest } = await placeAndGetDigest(
         TEST_PRODUCT_IDS.PERP_BTC,
-        makePerpOrder(),
+        {
+          subaccountOwner: tc.walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          amount: addDecimals(-0.01),
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+        },
       );
 
       const result = await tc.engine.cancelOrders({
