@@ -181,6 +181,8 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
     });
 
     void test('cancel-and-place replaces the perp order with an IOC order', async () => {
+      assertDefined(perpOrderDigest, 'perpOrderDigest (from prior test)');
+
       const result = await nadoClient.market.cancelAndPlace({
         cancelOrders: {
           digests: [perpOrderDigest],

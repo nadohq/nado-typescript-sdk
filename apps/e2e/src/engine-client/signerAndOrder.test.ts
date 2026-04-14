@@ -243,6 +243,8 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxOrderSize returns a valid order size', async () => {
+      assertDefined(marketPrice, 'marketPrice (from prior test)');
+
       const result = await tc.engine.getMaxOrderSize({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -257,6 +259,8 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxOrderSize supports reduce-only mode', async () => {
+      assertDefined(marketPrice, 'marketPrice (from prior test)');
+
       const result = await tc.engine.getMaxOrderSize({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -295,6 +299,8 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getOrder retrieves the placed spot order by digest', async () => {
+      assertDefined(spotOrderDigest, 'spotOrderDigest (from prior test)');
+
       const result = await tc.engine.getOrder({
         digest: spotOrderDigest,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
@@ -307,6 +313,11 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getOrder retrieves the placed isolated perp order by digest', async () => {
+      assertDefined(
+        perpIsolatedOrderDigest,
+        'perpIsolatedOrderDigest (from prior test)',
+      );
+
       const result = await tc.engine.getOrder({
         digest: perpIsolatedOrderDigest,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
@@ -335,6 +346,12 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('cancelOrders cancels the placed spot and perp orders', async () => {
+      assertDefined(spotOrderDigest, 'spotOrderDigest (from prior test)');
+      assertDefined(
+        perpIsolatedOrderDigest,
+        'perpIsolatedOrderDigest (from prior test)',
+      );
+
       const result = await tc.engine.cancelOrders({
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: tc.walletClientAddress,

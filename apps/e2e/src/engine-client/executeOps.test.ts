@@ -199,6 +199,8 @@ void describe('[engine-client]: execute operations', () => {
     });
 
     void test('cancelAndPlace replaces the order', async () => {
+      assertDefined(orderDigest, 'orderDigest (from prior test)');
+
       const result = await tc.engine.cancelAndPlace({
         cancelOrders: {
           subaccountOwner: tc.walletClientAddress,
