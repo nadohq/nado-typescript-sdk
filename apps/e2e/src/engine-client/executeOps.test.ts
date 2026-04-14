@@ -166,40 +166,34 @@ void describe('[engine-client]: execute operations', () => {
   // cancelAndPlace — atomic cancel-and-replace
   // ---------------------------------------------------------------
   void describe('cancelAndPlace', () => {
-    let orderDigest: string;
-
-    void test('places a limit order to be replaced', async () => {
-      const order: EngineOrderParams = {
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        amount: addDecimals(-0.01),
-        expiration: getExpiration(),
-        price: shortLimitPrice,
-        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
-      };
-
-      const result = await tc.engine.placeOrder({
+    void test('cancelAndPlace replaces the order', async () => {
+      const placeResult = await tc.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
         chainId: tc.chainId,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
-        order,
+        order: {
+          subaccountOwner: tc.walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          amount: addDecimals(-0.01),
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+        },
         nonce: getOrderNonce(),
       });
 
-      debugPrint('Initial order for cancel-and-place', result);
-      assertDefined(result, 'initialOrder');
-      assert.equal(result.status, 'success', 'initial order should succeed');
-      assertHexString(result.data.digest, 'initialOrder.data.digest');
+      assertDefined(placeResult, 'initialOrder');
+      assert.equal(
+        placeResult.status,
+        'success',
+        'initial order should succeed',
+      );
 
-      orderDigest = getOrderDigest({
-        order: result.orderParams,
+      const orderDigest = getOrderDigest({
+        order: placeResult.orderParams,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         chainId: tc.chainId,
       });
-    });
-
-    void test('cancelAndPlace replaces the order', async () => {
-      assertDefined(orderDigest, 'orderDigest (from prior test)');
 
       const result = await tc.engine.cancelAndPlace({
         cancelOrders: {
