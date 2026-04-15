@@ -2,6 +2,7 @@ import {
   addDecimals,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  removeDecimals,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import { after, before, beforeEach, describe, test } from 'node:test';
@@ -32,14 +33,16 @@ void describe(
     let tc: RunContext;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
 
       const marketPrice = await tc.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
-      const midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
+      const midPrice = removeDecimals(
+        marketPrice.ask.plus(marketPrice.bid).div(2),
+      );
       const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);
 
       const reduceOnlyOrder: TriggerPlaceOrderParams = {
@@ -62,7 +65,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'mid_price_above',
-            triggerPrice: midPrice.multipliedBy(1.5),
+            triggerPrice: midPrice.multipliedBy(1.19),
           },
         },
         verifyingAddr,
@@ -110,7 +113,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'oracle_price_above',
-            triggerPrice: midPrice,
+            triggerPrice: midPrice.multipliedBy(1.19),
           },
         },
         verifyingAddr,
@@ -136,7 +139,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('lists pending reduce-only orders', async () => {

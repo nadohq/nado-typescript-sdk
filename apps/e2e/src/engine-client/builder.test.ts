@@ -44,7 +44,8 @@ const INVALID_BUILDER_ID = 999_999;
 
 void describe('[engine-client]: builder', () => {
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    // Extra delay to avoid 429 rate-limit errors from preceding test suites
+    await delay(TEST_DELAYS.LONG * 2);
   });
 
   // ---------------------------------------------------------------
@@ -106,7 +107,7 @@ void describe('[engine-client]: builder', () => {
     let buyPrice: BigNumber;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
       publicClient = tc.publicClient;
@@ -120,7 +121,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     after(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
       await cleanupTestState(
         { engine: tc.engine, trigger: tc.trigger },
         {
@@ -132,7 +133,7 @@ void describe('[engine-client]: builder', () => {
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     // ---------------------------------------------------------------
@@ -175,16 +176,22 @@ void describe('[engine-client]: builder', () => {
       void test('queries historical order for builder fee', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        await delay(TEST_DELAYS.INDEXER_PROPAGATION);
+        let order:
+          | Awaited<ReturnType<typeof indexerClient.getOrders>>[number]
+          | undefined;
+        const maxAttempts = 5;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          await delay(TEST_DELAYS.LONG);
+          const orders = await indexerClient.getOrders({
+            digests: [orderDigest],
+            limit: 1,
+          });
+          debugPrint(`Order query attempt ${attempt}`, orders);
+          order = orders[0];
+          if (order) break;
+        }
 
-        const orders = await indexerClient.getOrders({
-          digests: [orderDigest],
-          limit: 1,
-        });
-
-        debugPrint('Order query result', orders);
-
-        const order = orders[0];
+        assertDefined(order, 'order should be indexed');
         assert.equal(order.digest, orderDigest, 'digest should match');
         assertDefined(order.totalFee, 'order.totalFee');
         assertDefined(order.builderFee, 'order.builderFee');

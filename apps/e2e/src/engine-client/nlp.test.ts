@@ -24,17 +24,14 @@ void describe(
   () => {
     let tc: RunContext;
 
-    /** Stored across tests: burn test reads the amount queried by the preceding test. */
-    let maxBurnAmount: BigNumber;
-
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('getMaxMintNlpAmount returns the max mintable amount', async () => {
@@ -95,26 +92,33 @@ void describe(
     });
 
     void test('getMaxBurnNlpAmount returns the max burnable amount', async () => {
-      maxBurnAmount = await tc.engine.getMaxBurnNlpAmount({
+      const result = await tc.engine.getMaxBurnNlpAmount({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
-      debugPrint('Max burn NLP amount', maxBurnAmount);
-      assertDefined(maxBurnAmount, 'maxBurnNlpAmount');
-      assert.ok(maxBurnAmount.isFinite(), 'maxBurnNlpAmount should be finite');
+      debugPrint('Max burn NLP amount', result);
+      assertDefined(result, 'maxBurnNlpAmount');
+      assert.ok(result.isFinite(), 'maxBurnNlpAmount should be finite');
     });
 
     void test('burnNlp burns available NLP tokens', async () => {
-      if (!maxBurnAmount?.gt(0)) {
-        // No NLP available to burn — nothing to test
+      const maxBurnable = await tc.engine.getMaxBurnNlpAmount({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
+
+      if (!maxBurnable.gt(0)) {
+        console.log('Skipping NLP burn test - no burnable NLP available');
         return;
       }
 
+      // Burn a tiny fixed amount capped by max burnable (accounts for health)
+      const burnAmount = BigNumber.min(addDecimals(0.001), maxBurnable);
       const result = await tc.engine.burnNlp({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        nlpAmount: maxBurnAmount,
+        nlpAmount: burnAmount,
         verifyingAddr: tc.endpointAddr,
         chainId: tc.chainId,
       });

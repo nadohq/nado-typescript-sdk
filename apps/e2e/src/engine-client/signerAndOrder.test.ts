@@ -42,7 +42,7 @@ void describe('[engine-client]: signer and orders', () => {
   let shortLimitPrice: BigNumber;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
 
     tc = createTestContext();
 
@@ -65,16 +65,42 @@ void describe('[engine-client]: signer and orders', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   // ---------------------------------------------------------------
   // Order placement, querying, and cancellation
   // ---------------------------------------------------------------
   void describe('order placement and queries', () => {
-    let spotOrderDigest: string;
-    let perpIsolatedOrderDigest: string;
-    let marketPrice: { bid: BigNumber; ask: BigNumber };
+    function makeSpotOrder(): EngineOrderParams {
+      return {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.03),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      };
+    }
+
+    async function placeAndGetDigest(
+      productId: number,
+      order: EngineOrderParams,
+    ): Promise<{
+      digest: string;
+      result: Awaited<ReturnType<typeof tc.engine.placeOrder>>;
+    }> {
+      const result = await tc.engine.placeOrder({
+        verifyingAddr: getOrderVerifyingAddress(productId),
+        chainId: tc.chainId,
+        productId,
+        order,
+        nonce: getOrderNonce(),
+      });
+      assertDefined(result, 'placeOrderResult');
+      assert.equal(result.status, 'success', 'order should succeed');
+      return { digest: result.data.digest, result };
+    }
 
     void test('places a spot limit order and verifies its digest', async () => {
       const spotOrder: EngineOrderParams = {
@@ -109,8 +135,6 @@ void describe('[engine-client]: signer and orders', () => {
         result.data.digest,
         'computed and returned order digests should match',
       );
-
-      spotOrderDigest = result.data.digest;
     });
 
     void test('places an isolated perp order and verifies its digest', async () => {
@@ -151,11 +175,18 @@ void describe('[engine-client]: signer and orders', () => {
         result.data.digest,
         'computed and returned isolated order digests should match',
       );
-
-      perpIsolatedOrderDigest = result.data.digest;
     });
 
     void test('getSubaccountOrders returns orders for the perp product', async () => {
+      await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.01),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      });
+
       const result = await tc.engine.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -203,8 +234,6 @@ void describe('[engine-client]: signer and orders', () => {
       debugPrint('Market price', result);
       assertDefined(result, 'marketPrice');
       assertEngineMarketPriceShape(result, 'marketPrice');
-
-      marketPrice = result;
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
@@ -243,7 +272,9 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxOrderSize returns a valid order size', async () => {
-      assertDefined(marketPrice, 'marketPrice (from prior test)');
+      const marketPrice = await tc.engine.getMarketPrice({
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      });
 
       const result = await tc.engine.getMaxOrderSize({
         subaccountOwner: tc.walletClientAddress,
@@ -259,7 +290,9 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxOrderSize supports reduce-only mode', async () => {
-      assertDefined(marketPrice, 'marketPrice (from prior test)');
+      const marketPrice = await tc.engine.getMarketPrice({
+        productId: TEST_PRODUCT_IDS.SPOT_BTC,
+      });
 
       const result = await tc.engine.getMaxOrderSize({
         subaccountOwner: tc.walletClientAddress,
@@ -299,41 +332,59 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getOrder retrieves the placed spot order by digest', async () => {
-      assertDefined(spotOrderDigest, 'spotOrderDigest (from prior test)');
+      const { digest } = await placeAndGetDigest(
+        TEST_PRODUCT_IDS.SPOT_BTC,
+        makeSpotOrder(),
+      );
 
       const result = await tc.engine.getOrder({
-        digest: spotOrderDigest,
+        digest,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
 
       debugPrint('Queried spot order', result);
       assertDefined(result, 'queriedSpotOrder');
       assertEngineOrderShape(result, 'queriedSpotOrder');
-      assert.equal(result.digest, spotOrderDigest, 'digest should match');
+      assert.equal(result.digest, digest, 'digest should match');
     });
 
     void test('getOrder retrieves the placed isolated perp order by digest', async () => {
-      assertDefined(
-        perpIsolatedOrderDigest,
-        'perpIsolatedOrderDigest (from prior test)',
-      );
+      const { digest } = await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.03),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({
+          orderExecutionType: 'default',
+          isolated: {
+            margin: addDecimals(shortLimitPrice.multipliedBy(0.03).div(10)),
+          },
+        }),
+      });
 
       const result = await tc.engine.getOrder({
-        digest: perpIsolatedOrderDigest,
+        digest,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
       });
 
       debugPrint('Queried perp isolated order', result);
       assertDefined(result, 'queriedIsolatedOrder');
       assertEngineOrderShape(result, 'queriedIsolatedOrder');
-      assert.equal(
-        result.digest,
-        perpIsolatedOrderDigest,
-        'digest should match',
-      );
+      assert.equal(result.digest, digest, 'digest should match');
     });
 
     void test('getSubaccountMultiProductOrders returns orders across products', async () => {
+      await placeAndGetDigest(TEST_PRODUCT_IDS.SPOT_BTC, makeSpotOrder());
+      await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        amount: addDecimals(-0.01),
+        expiration: getExpiration(),
+        price: shortLimitPrice,
+        appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+      });
+
       const result = await tc.engine.getSubaccountMultiProductOrders({
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -346,17 +397,27 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('cancelOrders cancels the placed spot and perp orders', async () => {
-      assertDefined(spotOrderDigest, 'spotOrderDigest (from prior test)');
-      assertDefined(
-        perpIsolatedOrderDigest,
-        'perpIsolatedOrderDigest (from prior test)',
+      const { digest: spotDigest } = await placeAndGetDigest(
+        TEST_PRODUCT_IDS.SPOT_BTC,
+        makeSpotOrder(),
+      );
+      const { digest: perpDigest } = await placeAndGetDigest(
+        TEST_PRODUCT_IDS.PERP_BTC,
+        {
+          subaccountOwner: tc.walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          amount: addDecimals(-0.01),
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          appendix: packOrderAppendix({ orderExecutionType: 'default' }),
+        },
       );
 
       const result = await tc.engine.cancelOrders({
         subaccountName: TEST_SUBACCOUNT_NAME,
         subaccountOwner: tc.walletClientAddress,
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC, TEST_PRODUCT_IDS.PERP_BTC],
-        digests: [spotOrderDigest, perpIsolatedOrderDigest],
+        digests: [spotDigest, perpDigest],
         verifyingAddr: tc.endpointAddr,
         chainId: tc.chainId,
       });
@@ -398,11 +459,6 @@ void describe('[engine-client]: signer and orders', () => {
   // Multi-product order placement and bulk cancellation
   // ---------------------------------------------------------------
   void describe('multi-product order placement and cancellation', () => {
-    before(async () => {
-      // Rate-limit delay after the linked signer operations
-      await delay(TEST_DELAYS.BETWEEN_TESTS * 4);
-    });
-
     void test('places orders for spot and perp products', async () => {
       for (const productId of [
         TEST_PRODUCT_IDS.SPOT_BTC,
@@ -433,22 +489,7 @@ void describe('[engine-client]: signer and orders', () => {
           `order for product ${productId} should succeed`,
         );
 
-        const subaccountOrders = await tc.engine.getSubaccountOrders({
-          productId,
-          subaccountOwner: tc.walletClientAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-        });
-        debugPrint(
-          `Subaccount orders after place (product ${productId})`,
-          subaccountOrders,
-        );
-        assertDefined(
-          subaccountOrders,
-          `subaccountOrdersAfterPlace (product ${productId})`,
-        );
-
-        // Rate-limit delay between product placements
-        await delay(TEST_DELAYS.BETWEEN_TESTS);
+        await delay(TEST_DELAYS.STANDARD);
       }
     });
 

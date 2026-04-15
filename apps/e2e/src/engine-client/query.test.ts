@@ -45,13 +45,13 @@ void describe(
     let tc: RunContext;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       tc = createTestContext();
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('getSymbols returns market symbols', async () => {

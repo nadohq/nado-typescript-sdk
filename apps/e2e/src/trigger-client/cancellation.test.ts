@@ -4,7 +4,6 @@ import {
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
-  toBigNumber,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
@@ -32,7 +31,7 @@ void describe('[trigger-client]: cancellation', () => {
   let ethDigest2: string;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
 
     tc = createTestContext();
 
@@ -70,7 +69,7 @@ void describe('[trigger-client]: cancellation', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: toBigNumber(99999),
+          triggerPrice: 99999,
         },
       },
       verifyingAddr,
@@ -104,6 +103,9 @@ void describe('[trigger-client]: cancellation', () => {
     ethDigest = r1.data.digest;
     btcDigest = r2.data.digest;
     ethDigest2 = r3.data.digest;
+
+    // Allow trigger service to index the placed orders before cancel tests
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   after(async () => {
@@ -118,7 +120,7 @@ void describe('[trigger-client]: cancellation', () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   void describe('cancel operations', () => {

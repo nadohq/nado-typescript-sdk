@@ -38,7 +38,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   let shortMarketPrice: BigNumber;
 
   before(async () => {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
+    await delay(TEST_DELAYS.LONG);
 
     const context = createTestContext();
     walletClientAddress = context.walletClientAddress;
@@ -69,7 +69,7 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   });
 
   beforeEach(async () => {
-    await delay(TEST_DELAYS.BETWEEN_TESTS);
+    await delay(TEST_DELAYS.STANDARD);
   });
 
   // ---------------------------------------------------------------
@@ -116,6 +116,11 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
     });
 
     void test('getSubaccountOrders returns orders for the spot product', async () => {
+      await nadoClient.market.placeOrder({
+        order: makeOrderParams(),
+        productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      });
+
       const result = await nadoClient.context.engineClient.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         subaccountName: TEST_SUBACCOUNT_NAME,
@@ -125,21 +130,22 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
       debugPrint('Subaccount orders', result);
       assertDefined(result, 'subaccountOrders');
       assertNonEmptyArray(result.orders, 'subaccountOrders.orders');
+
+      await nadoClient.market.cancelProductOrders({
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
+      });
     });
 
     void test('cancels all spot orders', async () => {
-      const ordersResult =
-        await nadoClient.context.engineClient.getSubaccountOrders({
-          productId: TEST_PRODUCT_IDS.SPOT_ETH,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner: walletClientAddress,
-        });
-      assertNonEmptyArray(ordersResult.orders, 'ordersToCancel');
+      await nadoClient.market.placeOrder({
+        order: makeOrderParams(),
+        productId: TEST_PRODUCT_IDS.SPOT_ETH,
+      });
 
-      const result = await nadoClient.market.cancelOrders({
-        digests: ordersResult.orders.map((order) => order.digest),
-        productIds: ordersResult.orders.map((order) => order.productId),
+      const result = await nadoClient.market.cancelProductOrders({
         subaccountName: TEST_SUBACCOUNT_NAME,
+        productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
       });
 
       debugPrint('Cancel order result', result);
@@ -152,36 +158,26 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
   // Perp order placement with cancel-and-place
   // ---------------------------------------------------------------
   void describe('perp order cancel-and-place', () => {
-    let perpOrderDigest: string;
-
-    void test('places a perp limit order', async () => {
-      const orderParams: PlaceOrderParams['order'] = {
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        expiration: getExpiration(),
-        price: shortLimitPrice,
-        amount: addDecimals(-3.5),
-        appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
-      };
-
-      const result = await nadoClient.market.placeOrder({
-        order: orderParams,
+    void test('cancel-and-place replaces the perp order with an IOC order', async () => {
+      const placeResult = await nadoClient.market.placeOrder({
+        order: {
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          expiration: getExpiration(),
+          price: shortLimitPrice,
+          amount: addDecimals(-3.5),
+          appendix: packOrderAppendix({ orderExecutionType: 'post_only' }),
+        },
         productId: TEST_PRODUCT_IDS.PERP_ETH,
       });
 
-      debugPrint('Place perp order result', result);
-      assertDefined(result, 'perpOrderResult');
-      assert.equal(result.status, 'success', 'perp order should succeed');
-      assertHexString(result.data.digest, 'perpOrderResult.data.digest');
+      assertDefined(placeResult, 'perpOrderResult');
+      assert.equal(placeResult.status, 'success', 'perp order should succeed');
 
-      perpOrderDigest = getOrderDigest({
-        order: result.orderParams,
+      const perpOrderDigest = getOrderDigest({
+        order: placeResult.orderParams,
         chainId: chainId,
         productId: TEST_PRODUCT_IDS.PERP_ETH,
       });
-    });
-
-    void test('cancel-and-place replaces the perp order with an IOC order', async () => {
-      assertDefined(perpOrderDigest, 'perpOrderDigest (from prior test)');
 
       const result = await nadoClient.market.cancelAndPlace({
         cancelOrders: {

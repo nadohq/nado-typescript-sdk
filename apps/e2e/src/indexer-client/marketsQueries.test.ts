@@ -37,14 +37,14 @@ void describe(
     let client: IndexerClient;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       const tc = createTestContext();
       client = tc.indexer;
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('getFundingRate returns a valid funding rate', async () => {

@@ -36,7 +36,7 @@ void describe(
     let walletClientAddress: string;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       const context = createTestContext();
       publicClient = context.publicClient;
@@ -47,7 +47,7 @@ void describe(
       });
     });
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     // ---------------------------------------------------------------
@@ -112,6 +112,8 @@ void describe(
       });
 
       void test('transfers quote back from default2 to default', async () => {
+        // Wait for engine to process the outbound transfer
+        await delay(TEST_DELAYS.LONG);
         const result = await nadoClient.spot.transferQuote({
           amount: TRANSFER_BACK_AMOUNT,
           subaccountName: 'default2',

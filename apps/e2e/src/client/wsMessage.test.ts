@@ -32,7 +32,7 @@ void describe(
     let walletClientAddress: string;
 
     before(async () => {
-      await delay(TEST_DELAYS.BETWEEN_SUITES);
+      await delay(TEST_DELAYS.LONG);
 
       const context = createTestContext();
       chainId = context.chainId;
@@ -45,7 +45,7 @@ void describe(
     });
 
     beforeEach(async () => {
-      await delay(TEST_DELAYS.BETWEEN_TESTS);
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     // ---------------------------------------------------------------

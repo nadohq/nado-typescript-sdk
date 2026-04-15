@@ -15,6 +15,7 @@ import { TriggerClient } from '@nadohq/trigger-client';
 import BigNumber from 'bignumber.js';
 import { delay } from './delay';
 import { getExpiration } from './getExpiration';
+import { retryWithBackoff } from './retryWithBackoff';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_ID_LIST,
@@ -54,7 +55,7 @@ export async function cleanupTestState(
   clients: { engine: EngineClient; trigger: TriggerClient },
   opts: CleanupOptions,
 ): Promise<void> {
-  await delay(TEST_DELAYS.BETWEEN_SUITES);
+  await delay(TEST_DELAYS.LONG);
 
   const subaccountName = opts.subaccountName ?? TEST_SUBACCOUNT_NAME;
 
@@ -68,22 +69,26 @@ export async function cleanupTestState(
 
   // 1. Cancel all engine + trigger orders in parallel (no queries needed)
   await Promise.all([
-    clients.engine.cancelProductOrders(cancelParams),
-    clients.trigger.cancelProductOrders(cancelParams),
+    retryWithBackoff(() => clients.engine.cancelProductOrders(cancelParams)),
+    retryWithBackoff(() => clients.trigger.cancelProductOrders(cancelParams)),
   ]);
 
-  await delay(TEST_DELAYS.BETWEEN_SUITES);
+  await delay(TEST_DELAYS.LONG);
 
   // 2. Query subaccount summary + isolated positions in parallel
   const [subaccountSummary, isolatedPositions] = await Promise.all([
-    clients.engine.getSubaccountSummary({
-      subaccountOwner: opts.subaccountOwner,
-      subaccountName,
-    }),
-    clients.engine.getIsolatedPositions({
-      subaccountOwner: opts.subaccountOwner,
-      subaccountName,
-    }),
+    retryWithBackoff(() =>
+      clients.engine.getSubaccountSummary({
+        subaccountOwner: opts.subaccountOwner,
+        subaccountName,
+      }),
+    ),
+    retryWithBackoff(() =>
+      clients.engine.getIsolatedPositions({
+        subaccountOwner: opts.subaccountOwner,
+        subaccountName,
+      }),
+    ),
   ]);
 
   const crossPerps = subaccountSummary.balances.filter(
@@ -123,8 +128,10 @@ export async function cleanupTestState(
   ];
 
   if (closeOrders.length > 0) {
-    await delay(TEST_DELAYS.BETWEEN_SUITES);
-    await clients.engine.placeOrders({ orders: closeOrders });
+    await delay(TEST_DELAYS.LONG);
+    await retryWithBackoff(() =>
+      clients.engine.placeOrders({ orders: closeOrders }),
+    );
   }
 }
 
