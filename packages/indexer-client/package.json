@@ -47,12 +47,12 @@
     "ts-mixer": "6.0.4"
   },
   "peerDependencies": {
-    "bignumber.js": "10.0.0",
-    "viem": "2.41.0"
+    "bignumber.js": "10.0.2",
+    "viem": "2.45.3"
   },
   "devDependencies": {
     "bignumber.js": "10.0.2",
-    "viem": "2.41.2"
+    "viem": "2.45.3"
   },
   "gitHead": "63b6e169f6fa4330ca4789821b977e286801a943"
 }
