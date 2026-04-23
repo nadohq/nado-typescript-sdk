@@ -391,6 +391,15 @@ export function assertV2SymbolShape(
   if (symbol.exchangeRate != null) {
     assertBigNumberFinite(symbol.exchangeRate, `${label}.exchangeRate`);
   }
+  if (symbol.boostType != null) {
+    assertNumber(symbol.boostType, `${label}.boostType`);
+  }
+  if (symbol.takerMultiplier != null) {
+    assertNumber(symbol.takerMultiplier, `${label}.takerMultiplier`);
+  }
+  if (symbol.makerMultiplier != null) {
+    assertNumber(symbol.makerMultiplier, `${label}.makerMultiplier`);
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -437,5 +437,8 @@ export function mapIndexerV2Symbols(
     marketHours: symbol.market_hours
       ? mapIndexerV2MarketHours(symbol.market_hours)
       : null,
+    boostType: symbol.boost_type ?? null,
+    takerMultiplier: symbol.taker_multiplier ?? null,
+    makerMultiplier: symbol.maker_multiplier ?? null,
   };
 }

@@ -946,6 +946,15 @@ export interface IndexerV2Symbol {
   isolatedOnly: boolean;
   /** Market hours information. Null for 24/7 markets. */
   marketHours: IndexerV2MarketHours | null;
+  /**
+   * Boost tier for products with rewards boosts. Null for non-boosted products.
+   * 0 = none, 1 = taker 4x / maker 4x, 2 = taker 3x / maker 4x
+   */
+  boostType: number | null;
+  /** Taker rewards multiplier. Null for non-boosted products. */
+  takerMultiplier: number | null;
+  /** Maker rewards multiplier. Null for non-boosted products. */
+  makerMultiplier: number | null;
 }
 
 /**
