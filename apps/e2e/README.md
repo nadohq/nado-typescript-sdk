@@ -6,7 +6,7 @@ Before running any tests, make sure to configure your environment and set up the
 
 1. Copy `.env.example` into `.env` and fill out any appropriate values
 
-2. Run the `bun account-setup` to mint and deposit tokens for the test account
+2. Run `bun fund` to mint and deposit tokens for the test account. From the repository root, run `bun --cwd apps/e2e fund`.
 
 ## E2E Tests
 
