@@ -134,6 +134,8 @@ export interface IndexerClientOpts {
   v2Url?: string;
   // Wallet Client for EIP712 signing
   walletClient?: WalletClientWithAccount;
+  // Linked signer registered through the engine, if provided, execute requests will use this signer
+  linkedSignerWalletClient?: WalletClientWithAccount;
 }
 
 type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
@@ -154,6 +156,17 @@ export class IndexerBaseClient {
       validateStatus: () => true,
     });
     this.v2Url = opts.v2Url ? opts.v2Url : opts.url.replace('v1', 'v2');
+  }
+
+  /**
+   * Sets the linked signer for execute requests
+   *
+   * @param linkedSignerWalletClient The linkedSigner to use for all signatures. Set to null to revert to the chain signer
+   */
+  public setLinkedSigner(
+    linkedSignerWalletClient: WalletClientWithAccount | null,
+  ) {
+    this.opts.linkedSignerWalletClient = linkedSignerWalletClient ?? undefined;
   }
 
   /**
@@ -1051,7 +1064,8 @@ export class IndexerBaseClient {
     chainId: number,
     params: SignableRequestTypeToParams[T],
   ) {
-    const walletClient = this.opts.walletClient;
+    const walletClient =
+      this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
 
     if (!walletClient) {
       throw new WalletNotProvidedError();

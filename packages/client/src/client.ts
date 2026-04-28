@@ -31,6 +31,7 @@ export class NadoClient {
     this.context.linkedSignerWalletClient =
       linkedSignerWalletClient ?? undefined;
     this.context.engineClient.setLinkedSigner(linkedSignerWalletClient);
+    this.context.indexerClient.setLinkedSigner(linkedSignerWalletClient);
     this.context.triggerClient.setLinkedSigner(linkedSignerWalletClient);
   }
 

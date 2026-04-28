@@ -135,6 +135,7 @@ export function createClientContext(
     indexerClient: new IndexerClient({
       url: indexerEndpoint,
       walletClient,
+      linkedSignerWalletClient,
     }),
     triggerClient: new TriggerClient({
       url: triggerEndpoint,
