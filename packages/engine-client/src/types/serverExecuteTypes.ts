@@ -82,7 +82,9 @@ export type EngineServerCancelOrdersParams = SignedTx<
     // number[] is technically assignable to "Bytes", so we need to override the ByteFieldsToHex result here
     productIds: number[];
   }
->;
+> & {
+  required_unfilled_amount?: string;
+};
 
 export type EngineServiceCancelAndPlaceParams = Omit<
   EngineServerCancelOrdersParams,
@@ -91,6 +93,7 @@ export type EngineServiceCancelAndPlaceParams = Omit<
   cancel_tx: EngineServerCancelOrdersParams['tx'];
   cancel_signature: EngineServerCancelOrdersParams['signature'];
   place_order: EngineServerPlaceOrderParams;
+  place_requires_unfilled?: boolean;
 };
 
 type WithSpotLeverage<T> = T & {

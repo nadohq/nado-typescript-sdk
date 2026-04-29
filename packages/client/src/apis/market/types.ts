@@ -10,6 +10,7 @@ import {
   TriggerListOrdersParams,
   TriggerPlaceOrderParams,
 } from '@nadohq/trigger-client';
+import BigNumber from 'bignumber.js';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
 type ClientOrderParams<T extends { order: EngineOrderParams }> = Omit<
@@ -40,6 +41,16 @@ export type CancelProductOrdersParams = OptionalSignatureParams<
 export interface CancelAndPlaceOrderParams {
   placeOrder: PlaceOrderParams;
   cancelOrders: CancelOrdersParams;
+  /**
+   * The current unfilled amount of the order being cancelled. If provided, the cancel will
+   * fail if the order's unfilled amount does not match this value.
+   */
+  requiredUnfilledAmount?: BigNumber;
+  /**
+   * If `true`, the cancel_and_place operation will fail if the order being cancelled has been
+   * partially filled.
+   */
+  placeRequiresUnfilled?: boolean;
 }
 
 export type PlaceTriggerOrderParams =

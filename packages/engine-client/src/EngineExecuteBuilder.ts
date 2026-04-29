@@ -4,6 +4,7 @@ import {
   getOrderNonce,
   SignableRequestType,
   SignableRequestTypeToParams,
+  toIntegerString,
 } from '@nadohq/shared';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
@@ -187,6 +188,9 @@ export class EngineExecuteBuilder {
     return {
       tx,
       signature: clientParams.signature,
+      required_unfilled_amount: clientParams.requiredUnfilledAmount
+        ? toIntegerString(clientParams.requiredUnfilledAmount)
+        : undefined,
     };
   }
 

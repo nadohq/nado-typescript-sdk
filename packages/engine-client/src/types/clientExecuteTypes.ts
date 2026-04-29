@@ -9,6 +9,7 @@ import {
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
 } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import { EngineServerExecuteSuccessResult } from './serverExecuteTypes';
 
 /**
@@ -61,12 +62,29 @@ export type EngineWithdrawCollateralParams = WithBaseEngineExecuteParams<
 >;
 
 export type EngineCancelOrdersParams =
-  WithBaseEngineExecuteParams<EIP712CancelOrdersParams>;
+  WithBaseEngineExecuteParams<EIP712CancelOrdersParams> & {
+    /**
+     * The current unfilled amount of the order. If provided, the cancel will fail if the
+     * order's unfilled amount does not match this value. Used to prevent race conditions
+     * where a fill occurs at the same time as a cancel.
+     */
+    requiredUnfilledAmount?: BigNumber;
+  };
 
-export type EngineCancelAndPlaceParams = {
+export interface EngineCancelAndPlaceParams {
   cancelOrders: EngineCancelOrdersParams;
   placeOrder: EnginePlaceOrderParams;
-};
+  /**
+   * The current unfilled amount of the order being cancelled. If provided, the cancel will
+   * fail if the order's unfilled amount does not match this value.
+   */
+  requiredUnfilledAmount?: BigNumber;
+  /**
+   * If `true`, the cancel_and_place operation will fail if the order being cancelled has been
+   * partially filled.
+   */
+  placeRequiresUnfilled?: boolean;
+}
 
 export type EngineCancelProductOrdersParams =
   WithBaseEngineExecuteParams<EIP712CancelProductOrdersParams>;

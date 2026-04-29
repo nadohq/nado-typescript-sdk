@@ -105,6 +105,8 @@ export class MarketExecuteAPI extends BaseNadoAPI {
         spotLeverage,
         nonce,
       },
+      requiredUnfilledAmount: params.requiredUnfilledAmount,
+      placeRequiresUnfilled: params.placeRequiresUnfilled,
     });
   }
 

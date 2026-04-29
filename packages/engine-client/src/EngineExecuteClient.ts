@@ -1,3 +1,4 @@
+import { toIntegerString } from '@nadohq/shared';
 import { EngineBaseClient, EngineClientOpts } from './EngineBaseClient';
 import { EngineExecuteBuilder } from './EngineExecuteBuilder';
 import {
@@ -70,6 +71,10 @@ export class EngineExecuteClient extends EngineBaseClient {
       cancel_tx: cancelOrdersPayload.tx,
       cancel_signature: cancelOrdersPayload.signature,
       place_order: placeOrderPayload.payload,
+      required_unfilled_amount: params.requiredUnfilledAmount
+        ? toIntegerString(params.requiredUnfilledAmount)
+        : undefined,
+      place_requires_unfilled: params.placeRequiresUnfilled,
     });
   }
 
