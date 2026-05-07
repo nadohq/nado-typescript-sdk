@@ -1,9 +1,12 @@
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineServerIpBlockResponse,
+  GetEngineCountryCodeResponse,
   GetEngineIpBlockStatusResponse,
   GetEngineTimeResponse,
 } from './types';
+
+const COUNTRY_HEADER = 'x-nado-country';
 
 /**
  * Queries that talk directly to web, _not_ the engine. Placing here in the `engine-client` as we don't have enough
@@ -16,7 +19,7 @@ export class EngineWebClient extends EngineBaseClient {
   async getIpBlockStatus(): Promise<GetEngineIpBlockStatusResponse> {
     return (
       this.axiosInstance
-        // Use the /time endpoint and listen to 403 responses
+        // Use the /ip endpoint and listen to 403 responses
         .get(`${this.opts.url}/ip`, {
           // IP checks go through Cloudflare, which uses allow-origin as *, so withCredentials needs to be false
           withCredentials: false,
@@ -34,6 +37,23 @@ export class EngineWebClient extends EngineBaseClient {
           return resData.reason === 'ip_query_only' ? 'query_only' : 'blocked';
         })
     );
+  }
+
+  /**
+   * Retrieves the caller's country code as detected by the gateway, sourced
+   * from the `x-nado-country` response header on `/ip`. Returns `null` when
+   * the gateway does not provide it (e.g. local environments).
+   *
+   * Useful for region-based UI gating such as geoblocking trading competitions.
+   */
+  async getCountryCode(): Promise<GetEngineCountryCodeResponse> {
+    const res = await this.axiosInstance.get(`${this.opts.url}/ip`, {
+      // IP checks go through Cloudflare, which uses allow-origin as *, so withCredentials needs to be false
+      withCredentials: false,
+    });
+
+    const rawCountry = res.headers?.[COUNTRY_HEADER] as string | undefined;
+    return rawCountry ?? null;
   }
 
   /**
