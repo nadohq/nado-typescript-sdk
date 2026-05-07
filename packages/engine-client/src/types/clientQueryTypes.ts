@@ -256,6 +256,14 @@ export type GetEngineInsuranceResponse = BigNumber;
  */
 export type GetEngineIpBlockStatusResponse = 'query_only' | 'blocked' | null;
 
+/**
+ * ISO 3166-1 alpha-2 country code detected by the gateway (e.g. `'US'`, `'NO'`),
+ * or `null` if the gateway did not provide one (e.g. local environments).
+ *
+ * Suitable for region-based UI gating such as geoblocking trading competitions.
+ */
+export type GetEngineCountryCodeResponse = string | null;
+
 export interface GetEngineMaxMintNlpAmountParams extends Subaccount {
   // If not given, engine defaults to true (leverage/borrow enabled)
   spotLeverage?: boolean;
