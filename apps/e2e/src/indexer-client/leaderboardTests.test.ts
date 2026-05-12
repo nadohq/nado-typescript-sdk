@@ -77,7 +77,11 @@ function assertLeaderboardContestShape(
   assertBoolean(contest.active, `${label}.active`);
   assertBigNumberFinite(contest.lastUpdated, `${label}.lastUpdated`);
   assertString(contest.title, `${label}.title`);
-  assertString(contest.description, `${label}.description`);
+  assert.equal(
+    typeof contest.description,
+    'string',
+    `${label}.description should be a string`,
+  );
   assertArray(contest.tracks, `${label}.tracks`);
   assertArrayElements(
     contest.tracks,
