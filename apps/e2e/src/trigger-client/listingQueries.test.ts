@@ -14,7 +14,7 @@ import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { triggerPriceHuman } from '../utils/helpers';
+import { alignPriceTick } from '../utils/helpers';
 import { createTestContext } from '../utils/runWithContext';
 import { assertTriggerOrderInfoShape } from '../utils/shapeAssertions';
 import {
@@ -63,7 +63,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'mid_price_above',
-            triggerPrice: triggerPriceHuman(midPrice.multipliedBy(1.19)),
+            triggerPrice: alignPriceTick(midPrice.multipliedBy(1.19)),
           },
         },
         verifyingAddr,
@@ -111,7 +111,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'oracle_price_above',
-            triggerPrice: triggerPriceHuman(midPrice.multipliedBy(1.19)),
+            triggerPrice: alignPriceTick(midPrice.multipliedBy(1.19)),
           },
         },
         verifyingAddr,
