@@ -75,6 +75,21 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertDefined(time, 'engineTime');
   });
 
+  void test('getCountryCode returns ISO country code or null', async () => {
+    const country = await nadoClient.context.engineClient.getCountryCode();
+
+    debugPrint('Engine country code', country);
+
+    if (country !== null) {
+      assert.equal(typeof country, 'string', 'country should be a string');
+      assert.match(
+        country,
+        /^[A-Z]{2}$/,
+        'country should be a 2-letter ISO 3166-1 alpha-2 code',
+      );
+    }
+  });
+
   void test('getAllMarkets returns product definitions', async () => {
     const allMarkets = await nadoClient.market.getAllMarkets();
 
