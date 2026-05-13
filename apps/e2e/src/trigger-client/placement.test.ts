@@ -21,7 +21,6 @@ import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
-import { alignPriceTick } from '../utils/helpers';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
@@ -67,7 +66,7 @@ void describe('[trigger-client]: placement', () => {
     const order: EngineOrderParams = {
       amount: addDecimals(0.1),
       expiration: getExpiration(),
-      price: alignPriceTick(midPrice.multipliedBy(1.05)),
+      price: midPrice.multipliedBy(1.05).dp(0),
       subaccountName: TEST_SUBACCOUNT_NAME,
       subaccountOwner: tc.walletClientAddress,
       appendix: packOrderAppendix({
@@ -85,7 +84,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: alignPriceTick(midPrice.multipliedBy(1.1)),
+          triggerPrice: midPrice.multipliedBy(1.1).dp(0),
         },
       },
       verifyingAddr,
@@ -125,7 +124,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_below',
-          triggerPrice: alignPriceTick(midPrice.multipliedBy(0.9)),
+          triggerPrice: midPrice.multipliedBy(0.9).dp(0),
         },
       },
       verifyingAddr,
@@ -166,7 +165,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_above',
-          triggerPrice: alignPriceTick(midPrice.multipliedBy(1.1)),
+          triggerPrice: midPrice.multipliedBy(1.1).dp(0),
         },
       },
       verifyingAddr,
@@ -208,7 +207,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_above',
-          triggerPrice: alignPriceTick(midPrice.multipliedBy(1.1)),
+          triggerPrice: midPrice.multipliedBy(1.1).dp(0),
         },
       },
       verifyingAddr,
@@ -248,7 +247,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_below',
-          triggerPrice: alignPriceTick(midPrice.multipliedBy(0.9)),
+          triggerPrice: midPrice.multipliedBy(0.9).dp(0),
         },
       },
       verifyingAddr,

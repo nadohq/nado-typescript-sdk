@@ -14,9 +14,9 @@ import {
   assertBigNumberFinite,
   assertBoolean,
   assertDefined,
+  assertNonEmptyString,
   assertNumber,
   assertPaginatedResponse,
-  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
@@ -76,7 +76,7 @@ function assertLeaderboardContestShape(
   assertArray(contest.requiredProductIds, `${label}.requiredProductIds`);
   assertBoolean(contest.active, `${label}.active`);
   assertBigNumberFinite(contest.lastUpdated, `${label}.lastUpdated`);
-  assertString(contest.title, `${label}.title`);
+  assertNonEmptyString(contest.title, `${label}.title`);
   assert.equal(
     typeof contest.description,
     'string',

@@ -133,12 +133,24 @@ export function assertNumber(value: unknown, label: string): void {
 }
 
 /**
- * Asserts that a value is a non-empty string.
+ * Asserts that a value is a string. Empty strings are accepted; use
+ * {@link assertNonEmptyString} when a non-empty value is required.
  *
  * @param value - The value to check.
  * @param label - Human-readable label included in the failure message.
  */
 export function assertString(value: unknown, label: string): void {
+  assert.equal(typeof value, 'string', `${label} should be a string`);
+  assert.ok((value as string).length > 0, `${label} should not be empty`);
+}
+
+/**
+ * Asserts that a value is a non-empty string.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertNonEmptyString(value: unknown, label: string): void {
   assert.equal(typeof value, 'string', `${label} should be a string`);
   assert.ok((value as string).length > 0, `${label} should not be empty`);
 }
