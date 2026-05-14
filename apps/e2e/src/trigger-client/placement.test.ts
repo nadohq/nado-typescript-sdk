@@ -4,7 +4,6 @@ import {
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
-  removeDecimals,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import BigNumber from 'bignumber.js';
@@ -42,7 +41,7 @@ void describe('[trigger-client]: placement', () => {
     const marketPrice = await tc.engine.getMarketPrice({
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
     });
-    midPrice = removeDecimals(marketPrice.ask.plus(marketPrice.bid).div(2));
+    midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
   });
 
   after(async () => {
@@ -67,7 +66,7 @@ void describe('[trigger-client]: placement', () => {
     const order: EngineOrderParams = {
       amount: addDecimals(0.1),
       expiration: getExpiration(),
-      price: midPrice.multipliedBy(1.05),
+      price: midPrice.multipliedBy(1.05).dp(0),
       subaccountName: TEST_SUBACCOUNT_NAME,
       subaccountOwner: tc.walletClientAddress,
       appendix: packOrderAppendix({
@@ -85,7 +84,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_above',
-          triggerPrice: midPrice.multipliedBy(1.1),
+          triggerPrice: midPrice.multipliedBy(1.1).dp(0),
         },
       },
       verifyingAddr,
@@ -125,7 +124,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'oracle_price_below',
-          triggerPrice: midPrice.multipliedBy(0.9),
+          triggerPrice: midPrice.multipliedBy(0.9).dp(0),
         },
       },
       verifyingAddr,
@@ -166,7 +165,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_above',
-          triggerPrice: midPrice.multipliedBy(1.1),
+          triggerPrice: midPrice.multipliedBy(1.1).dp(0),
         },
       },
       verifyingAddr,
@@ -208,7 +207,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_above',
-          triggerPrice: midPrice.multipliedBy(1.1),
+          triggerPrice: midPrice.multipliedBy(1.1).dp(0),
         },
       },
       verifyingAddr,
@@ -248,7 +247,7 @@ void describe('[trigger-client]: placement', () => {
         type: 'price',
         criteria: {
           type: 'mid_price_below',
-          triggerPrice: midPrice.multipliedBy(0.9),
+          triggerPrice: midPrice.multipliedBy(0.9).dp(0),
         },
       },
       verifyingAddr,

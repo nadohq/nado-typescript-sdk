@@ -2,7 +2,6 @@ import {
   addDecimals,
   getOrderVerifyingAddress,
   packOrderAppendix,
-  removeDecimals,
 } from '@nadohq/shared';
 import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import { after, before, beforeEach, describe, test } from 'node:test';
@@ -40,9 +39,7 @@ void describe(
       const marketPrice = await tc.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
-      const midPrice = removeDecimals(
-        marketPrice.ask.plus(marketPrice.bid).div(2),
-      );
+      const midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
       const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);
 
       const reduceOnlyOrder: TriggerPlaceOrderParams = {
@@ -65,7 +62,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'mid_price_above',
-            triggerPrice: midPrice.multipliedBy(1.19),
+            triggerPrice: midPrice.multipliedBy(1.19).dp(0),
           },
         },
         verifyingAddr,
@@ -113,7 +110,7 @@ void describe(
           type: 'price',
           criteria: {
             type: 'oracle_price_above',
-            triggerPrice: midPrice.multipliedBy(1.19),
+            triggerPrice: midPrice.multipliedBy(1.19).dp(0),
           },
         },
         verifyingAddr,
