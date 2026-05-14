@@ -87,6 +87,9 @@ export interface EngineServerMaxOrderSizeQueryParams {
   sender: string;
   product_id: number;
   price_x18: string;
+  // Optional average execution price in x18 units.
+  // If not given, engine uses `price_x18` for both health stress and cost basis.
+  avg_price_x18: string | null;
   // Note: When `reduce_only` is true, `direction` must be opposite of the current position, otherwise it returns 0.
   direction: 'long' | 'short';
   // If not given, engine defaults to true (leverage/borrow enabled)
