@@ -213,6 +213,9 @@ export interface GetEngineMarketPricesResponse {
 
 export interface GetEngineMaxOrderSizeParams extends Subaccount {
   price: BigNumber;
+  // Optional average execution price for multi-price orders
+  // For longs, must be >= `price`; for shorts, <= `price`. Defaults to `price` when omitted.
+  avgPrice?: BigNumber;
   productId: number;
   // Note: When `reduceOnly` is true, `side` must be opposite of the current position, otherwise it returns 0.
   side: BalanceSide;

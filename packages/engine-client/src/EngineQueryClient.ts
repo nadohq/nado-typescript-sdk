@@ -450,6 +450,10 @@ export class EngineQueryClient extends EngineBaseClient {
     const baseResponse = await this.query('max_order_size', {
       direction: params.side,
       price_x18: toIntegerString(addDecimals(params.price)),
+      avg_price_x18:
+        params.avgPrice != null
+          ? toIntegerString(addDecimals(params.avgPrice))
+          : null,
       product_id: params.productId,
       sender: subaccountToHex({
         subaccountOwner: params.subaccountOwner,
