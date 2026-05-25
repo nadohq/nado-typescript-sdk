@@ -59,16 +59,16 @@ Note our packages should have legacy 'main', 'module', and 'types', 'react-nativ
 
 This repository includes agent instruction files for LLM-based development tools:
 
-- `AGENT.md` - Master instructions file
-- `CLAUDE.md` - Automatically symlinked to `AGENT.md` (managed by the repository)
-- `.github/copilot-instructions.md` - Automatically symlinked to `AGENT.md` for GitHub Copilot
+- `AGENTS.md` - Master instructions file
+- `CLAUDE.md` - Automatically symlinked to `AGENTS.md` (managed by the repository)
+- `.github/copilot-instructions.md` - Automatically symlinked to `AGENTS.md` for GitHub Copilot
 
 For other LLM agents (Qwen, Gemini, etc.), you can manually create symlinks:
 
 ```bash
 # For Qwen
-ln -sf AGENT.md QWEN.md
+ln -sf AGENTS.md QWEN.md
 
 # For Gemini
-ln -sf AGENT.md GEMINI.md
+ln -sf AGENTS.md GEMINI.md
 ```
