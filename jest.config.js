@@ -3,7 +3,7 @@ const config = {
   testEnvironment: 'node',
   testMatch: ['**/*.test.ts'],
   transform: {
-    '^.+.tsx?$': ['ts-jest', { useESM: true, }],
+    '^.+.tsx?$': ['ts-jest', { useESM: true }],
   },
   testPathIgnorePatterns: [
     'apps/e2e',
