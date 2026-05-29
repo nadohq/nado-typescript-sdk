@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/client",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "type": "module",
   "sideEffects": false,
   "description": "Nado SDK client — unified API for trading, market data, and collateral management on Nado",
@@ -41,10 +41,10 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "^0.17.0",
-    "@nadohq/indexer-client": "^0.17.0",
-    "@nadohq/shared": "^0.17.0",
-    "@nadohq/trigger-client": "^0.17.0",
+    "@nadohq/engine-client": "^0.18.0",
+    "@nadohq/indexer-client": "^0.18.0",
+    "@nadohq/shared": "^0.18.0",
+    "@nadohq/trigger-client": "^0.18.0",
     "ts-mixer": "6.0.4"
   },
   "peerDependencies": {
