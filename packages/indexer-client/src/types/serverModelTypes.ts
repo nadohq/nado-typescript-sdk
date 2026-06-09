@@ -260,7 +260,11 @@ export interface IndexerServerSocialAccount {
 export interface IndexerServerLeaderboardTrackPosition {
   value: string;
   rank: string;
-  qualification_status: 'qualified' | 'insufficient_account_value';
+  qualification_status:
+    | 'qualified'
+    | 'insufficient_account_value'
+    | 'insufficient_volume'
+    | 'insufficient_account_value_and_volume';
 }
 
 export interface IndexerServerLeaderboardContestTrack {
