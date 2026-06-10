@@ -264,15 +264,93 @@ void describe(
         assertDefined(result, 'fundingPaymentSubscriptionMessage');
       });
 
-      void test('builds a list subscriptions message', () => {
+      void test('builds a funding_rate subscription for all products', () => {
+        const stream = nadoClient.ws.subscription.buildSubscriptionParams(
+          'funding_rate',
+          {},
+        );
         const result = nadoClient.ws.subscription.buildSubscriptionMessage(
           9,
+          'subscribe',
+          stream,
+        );
+
+        debugPrint(
+          'Funding rate (all products) subscription WS request',
+          result,
+        );
+        assert.deepEqual(result, {
+          id: 9,
+          method: 'subscribe',
+          stream: { type: 'funding_rate' },
+        });
+      });
+
+      void test('builds an all_bbo subscription message', () => {
+        const stream = nadoClient.ws.subscription.buildSubscriptionParams(
+          'all_bbo',
+          {},
+        );
+        const result = nadoClient.ws.subscription.buildSubscriptionMessage(
+          10,
+          'subscribe',
+          stream,
+        );
+
+        debugPrint('All BBO subscription WS request', result);
+        assert.deepEqual(result, {
+          id: 10,
+          method: 'subscribe',
+          stream: { type: 'all_bbo' },
+        });
+      });
+
+      void test('builds a list subscriptions message', () => {
+        const result = nadoClient.ws.subscription.buildSubscriptionMessage(
+          11,
           'list',
           {},
         );
 
         debugPrint('List subscriptions WS request', result);
         assertDefined(result, 'listSubscriptionsMessage');
+      });
+
+      void test('builds a ping control message with client_time', () => {
+        const result = nadoClient.ws.subscription.buildSubscriptionMessage(
+          12,
+          'ping',
+          { client_time: '1780000000000' },
+        );
+
+        debugPrint('Ping control WS request', result);
+        assert.deepEqual(result, {
+          id: 12,
+          method: 'ping',
+          client_time: '1780000000000',
+        });
+      });
+
+      void test('builds a ping control message without client_time', () => {
+        const result = nadoClient.ws.subscription.buildSubscriptionMessage(
+          13,
+          'ping',
+          {},
+        );
+
+        debugPrint('Ping control WS request (no client_time)', result);
+        assert.deepEqual(result, { id: 13, method: 'ping' });
+      });
+
+      void test('builds a time control message', () => {
+        const result = nadoClient.ws.subscription.buildSubscriptionMessage(
+          14,
+          'time',
+          {},
+        );
+
+        debugPrint('Time control WS request', result);
+        assert.deepEqual(result, { id: 14, method: 'time' });
       });
     });
   },

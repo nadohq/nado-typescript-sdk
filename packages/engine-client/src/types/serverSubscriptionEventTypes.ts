@@ -27,7 +27,9 @@ export type EngineServerSubscriptionEventType =
   | 'order_update'
   | 'liquidation'
   | 'latest_candlestick'
-  | 'funding_payment';
+  | 'funding_payment'
+  | 'funding_rate'
+  | 'all_bbo';
 
 export interface EngineServerSubscriptionBaseEvent<
   T extends EngineServerSubscriptionEventType =
@@ -161,6 +163,49 @@ export interface EngineServerSubscriptionFundingPaymentEvent extends EngineServe
 }
 
 /**
+ * Event from subscribing to a `funding_rate` stream.
+ */
+export interface EngineServerSubscriptionFundingRateEvent extends EngineServerSubscriptionBaseEvent<'funding_rate'> {
+  /** Nanosecond timestamp when this event was emitted */
+  timestamp: string;
+  /**
+   * Current 24-hour funding rate (x18). E.g. "50000000000000000" = 5% annualized.
+   * Positive means longs pay shorts.
+   */
+  funding_rate_x18: string;
+  /** Unix timestamp (seconds) when the rate was calculated */
+  update_time: string;
+}
+
+/**
+ * Top-of-book entry for a single product within an `all_bbo` snapshot.
+ */
+export interface EngineServerAllBboEntry {
+  /** Best bid price (x18). "0" if no bids exist. */
+  bid: string;
+  /** Best ask price (x18). MAX_I128 if no asks exist. */
+  ask: string;
+}
+
+/**
+ * Event from subscribing to an `all_bbo` stream.
+ *
+ * Unlike other events, this is a full-market snapshot pushed on a fixed ~300ms
+ * cadence and therefore carries no `product_id`.
+ */
+export interface EngineServerSubscriptionAllBboEvent {
+  type: 'all_bbo';
+  /** Snapshot time in milliseconds (note: not nanoseconds like other events) */
+  time: string;
+  /**
+   * Map of `product_id` (string key) to its top-of-book entry. Only includes
+   * products with a cached BBO, so it may be empty or partial right after
+   * subscribing.
+   */
+  bbos: Record<string, EngineServerAllBboEntry>;
+}
+
+/**
  * Union type for all engine server subscription events.
  */
 export type EngineServerSubscriptionEvent =
@@ -172,4 +217,6 @@ export type EngineServerSubscriptionEvent =
   | EngineServerSubscriptionOrderUpdateEvent
   | EngineServerSubscriptionLiquidationEvent
   | EngineServerSubscriptionLatestCandlestickEvent
-  | EngineServerSubscriptionFundingPaymentEvent;
+  | EngineServerSubscriptionFundingPaymentEvent
+  | EngineServerSubscriptionFundingRateEvent
+  | EngineServerSubscriptionAllBboEvent;
