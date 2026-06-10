@@ -193,8 +193,16 @@ export interface EngineServerAllBboEntry {
  * Unlike other events, this is a full-market snapshot pushed on a fixed ~300ms
  * cadence and therefore carries no `product_id`.
  */
-export interface EngineServerSubscriptionAllBboEvent {
-  type: 'all_bbo';
+export interface EngineServerSubscriptionAllBboEvent extends Omit<
+  EngineServerSubscriptionBaseEvent<'all_bbo'>,
+  'product_id'
+> {
+  /**
+   * Not applicable to the full-market snapshot - always `undefined`. Overridden
+   * from the base event so that `product_id` is still accessible across the
+   * {@link EngineServerSubscriptionEvent} union without first narrowing on `type`.
+   */
+  product_id?: undefined;
   /** Snapshot time in milliseconds (note: not nanoseconds like other events) */
   time: string;
   /**
