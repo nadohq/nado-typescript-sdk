@@ -307,3 +307,57 @@ export interface NlpPool {
 export interface GetEngineNlpPoolInfoResponse {
   nlpPools: NlpPool[];
 }
+
+/**
+ * Params for the cached (`edge`) market prices query. Unlike the live
+ * {@link GetEngineMarketPricesParams}, `productIds` is optional — omit it to return every
+ * product currently in the cache.
+ */
+export interface GetEngineCachedMarketPricesParams {
+  productIds?: number[];
+}
+
+export interface GetEngineCachedBboHistoryParams {
+  productIds?: number[];
+  // Down-sampling stride in ms. Default 500, must be >= 500, rounded up to a multiple of 500
+  intervalMs?: number;
+  // Upper time bound (epoch ms). Omit for the most recent samples
+  maxTimeMs?: number;
+  // Max samples per product. Default 500, capped at 3600
+  limit?: number;
+}
+
+export interface EngineBboHistorySample {
+  productId: number;
+  // Sample time, epoch milliseconds
+  timestamp: number;
+  bid: BigNumber;
+  ask: BigNumber;
+}
+
+export interface GetEngineCachedBboHistoryResponse {
+  // The effective (normalized) sampling stride applied
+  intervalMs: number;
+  // The effective per-product sample cap applied
+  limit: number;
+  // Samples sorted ascending by (timestamp, productId)
+  history: EngineBboHistorySample[];
+}
+
+export interface EnginePingParams {
+  id?: number;
+  // If provided, echoed back so the caller can measure round-trip latency / clock offset
+  clientTime?: number;
+}
+
+export interface EnginePingResponse {
+  id?: number;
+  // Epoch ms
+  serverTime: number;
+  // Epoch ms, echoed from the request (only present when provided in the request)
+  clientTime?: number;
+}
+
+export interface EngineCachedTimeParams {
+  id?: number;
+}

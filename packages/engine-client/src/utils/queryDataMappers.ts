@@ -16,6 +16,7 @@ import {
   EngineNlpLockedBalance,
   EngineOrder,
   EnginePriceTickLiquidity,
+  EngineServerCachedBboHistoryResponse,
   EngineServerIsolatedPositionsResponse,
   EngineServerMarketPrice,
   EngineServerNlpLockedBalancesResponse,
@@ -30,6 +31,7 @@ import {
   EngineServerSymbolsResponse,
   EngineSymbol,
   EngineSymbolsResponse,
+  GetEngineCachedBboHistoryResponse,
   GetEngineIsolatedPositionsResponse,
   GetEngineNlpLockedBalancesResponse,
   GetEngineNlpPoolInfoResponse,
@@ -314,6 +316,21 @@ export function mapEngineMarketPrice(
     ask: removeDecimals(baseResponse.ask_x18),
     bid: removeDecimals(baseResponse.bid_x18),
     productId: baseResponse.product_id,
+  };
+}
+
+export function mapEngineBboHistory(
+  baseResponse: EngineServerCachedBboHistoryResponse,
+): GetEngineCachedBboHistoryResponse {
+  return {
+    intervalMs: baseResponse.interval_ms,
+    limit: baseResponse.limit,
+    history: baseResponse.history.map((item) => ({
+      productId: item.product_id,
+      timestamp: Number(item.timestamp),
+      bid: removeDecimals(item.bid),
+      ask: removeDecimals(item.ask),
+    })),
   };
 }
 

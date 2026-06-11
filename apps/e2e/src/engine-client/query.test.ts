@@ -233,5 +233,119 @@ void describe(
         'marketPrices.marketPrices',
       );
     });
+
+    // ---------------------------------------------------------------
+    // Edge (gateway-cached) queries
+    // ---------------------------------------------------------------
+
+    void test('getCachedMarketPrices returns cached prices', async () => {
+      const result = await tc.engine.getCachedMarketPrices({
+        productIds: [TEST_PRODUCT_IDS.SPOT_BTC, TEST_PRODUCT_IDS.PERP_BTC],
+      });
+
+      debugPrint('Cached market prices', result);
+      assertDefined(result, 'cachedMarketPrices');
+      // Cache may omit products with no cached BBO yet, so only assert the shape of what is returned
+      assertArrayElements(
+        result.marketPrices,
+        assertEngineMarketPriceShape,
+        'cachedMarketPrices.marketPrices',
+      );
+    });
+
+    void test('getCachedSymbols returns cached symbols', async () => {
+      const result = await tc.engine.getCachedSymbols({});
+
+      debugPrint('Cached symbols', result);
+      assertDefined(result, 'cachedSymbols');
+      assertRecord(result.symbols, 'cachedSymbols.symbols');
+      for (const [symbolName, symbol] of Object.entries(result.symbols)) {
+        assertString(symbolName, 'cached symbol key');
+        assertNumber(
+          symbol.productId,
+          `cachedSymbols[${symbolName}].productId`,
+        );
+        assertBigNumberFinite(
+          symbol.priceIncrement,
+          `cachedSymbols[${symbolName}].priceIncrement`,
+        );
+      }
+    });
+
+    void test('getCachedAllMarkets returns market shapes', async () => {
+      const result = await tc.engine.getCachedAllMarkets();
+
+      debugPrint('Cached all markets', result);
+      assertNonEmptyArray(result, 'cachedAllMarkets');
+      assertArrayElements(
+        result,
+        assertMarketWithProductShape,
+        'cachedAllMarkets',
+      );
+    });
+
+    void test('getCachedEdgeAllMarkets returns markets grouped by chain id', async () => {
+      const result = await tc.engine.getCachedEdgeAllMarkets();
+
+      debugPrint('Cached edge all markets', result);
+      assertRecord(result, 'cachedEdgeAllMarkets');
+      for (const [chainIdKey, markets] of Object.entries(result)) {
+        assert.ok(Number(chainIdKey) > 0, 'chain id should be positive');
+        assertArrayElements(
+          markets,
+          assertMarketWithProductShape,
+          `cachedEdgeAllMarkets[${chainIdKey}]`,
+        );
+      }
+    });
+
+    void test('getCachedStatus returns engine status', async () => {
+      const status = await tc.engine.getCachedStatus();
+
+      debugPrint('Cached engine status', status);
+      assertEnumMember(status, ENGINE_SERVER_STATUS_VALUES, 'cachedStatus');
+    });
+
+    void test('getCachedBboHistory returns ascending BBO samples', async () => {
+      const result = await tc.engine.getCachedBboHistory({
+        productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
+        intervalMs: 1000,
+        limit: 10,
+      });
+
+      debugPrint('Cached BBO history', result);
+      assertDefined(result, 'cachedBboHistory');
+      assertNumber(result.intervalMs, 'cachedBboHistory.intervalMs');
+      assert.ok(
+        result.intervalMs >= 500,
+        'interval should be normalized to >= 500',
+      );
+      assertNumber(result.limit, 'cachedBboHistory.limit');
+      for (const sample of result.history) {
+        assertNumber(sample.productId, 'cachedBboHistory sample.productId');
+        assertNumber(sample.timestamp, 'cachedBboHistory sample.timestamp');
+        assertBigNumberFinite(sample.bid, 'cachedBboHistory sample.bid');
+        assertBigNumberFinite(sample.ask, 'cachedBboHistory sample.ask');
+      }
+    });
+
+    void test('ping returns finite server and client times', async () => {
+      const clientTime = Date.now();
+      const result = await tc.engine.ping({ id: 1, clientTime });
+
+      debugPrint('Edge ping', result);
+      assertDefined(result, 'ping');
+      assertNumber(result.serverTime, 'ping.serverTime');
+      assert.ok(result.serverTime > 0, 'ping.serverTime should be positive');
+      assert.equal(result.clientTime, clientTime, 'ping echoes clientTime');
+    });
+
+    void test('getEdgeControlTime returns a finite epoch-ms server time', async () => {
+      const serverTime = await tc.engine.getEdgeControlTime();
+
+      debugPrint('Edge time', serverTime);
+      assertNumber(serverTime, 'edgeControlTime');
+      assert.ok(serverTime > 0, 'edgeControlTime should be positive');
+    });
   },
 );
