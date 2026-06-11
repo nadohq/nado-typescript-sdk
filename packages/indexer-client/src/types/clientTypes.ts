@@ -581,7 +581,11 @@ export interface IndexerSocialAccountInfo {
 export interface IndexerLeaderboardTrackPosition {
   value: BigNumber;
   rank: BigNumber;
-  qualificationStatus: 'qualified' | 'insufficient_account_value';
+  qualificationStatus:
+    | 'qualified'
+    | 'insufficient_account_value'
+    | 'insufficient_volume'
+    | 'insufficient_account_value_and_volume';
 }
 
 export interface IndexerLeaderboardParticipant {
