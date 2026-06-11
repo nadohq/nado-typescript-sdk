@@ -11,18 +11,18 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
 
 ### Development
 
-- `bun build` - Build all packages in the monorepo using Lerna
-- `bun clean` - Clean all packages
-- `bun dev` - Run development mode for all packages
-- `bun run test` - Run Jest unit tests (packages only)
+- `bun run build` - Build all packages in the monorepo using Lerna
+- `bun run clean` - Clean all packages
+- `bun run dev` - Run development mode for all packages
+- `bun run test:unit` - Run Jest unit tests (packages only)
 - `bun run test:e2e` - Build and run all E2E tests (node:test in apps/e2e)
-- `bun lint` - Run ESLint with auto-fix and Prettier formatting
-- `bun typecheck` - Run TypeScript type checking for all packages
-- `bun gen-typedoc` - Generate TypeDoc documentation for all packages
+- `bun run lint` - Run ESLint with auto-fix and Prettier formatting
+- `bun run typecheck` - Run TypeScript type checking for all packages
+- `bun run gen-typedoc` - Generate TypeDoc documentation for all packages
 
 ### Testing
 
-- **Unit tests (Jest)**: `bun run test`
+- **Unit tests (Jest)**: `bun run test:unit`
 - **E2E tests (node:test in apps/e2e)** — each command runs `bun run build` first:
   - `bun run test:e2e` - Run all E2E tests
   - `bun run test:e2e:client` - Client E2E tests
@@ -33,19 +33,19 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
 
 ### Package Management
 
-- `bun publish-all` - Clean, build, and publish all packages via Lerna
-- `bun depcruise:all` - Analyze package dependencies and detect circular dependencies
+- `bun run publish-all` - Clean, build, and publish all packages via Lerna
+- `bun run depcruise:all` - Analyze package dependencies and detect circular dependencies
 
 ### Individual Package Scripts
 
 Each package in `packages/` has these common scripts:
 
-- `bun build` - Build the specific package
-- `bun clean` - Clean build artifacts
-- `bun dev` - Watch mode for development
-- `bun lint` - Check linting rules only
-- `bun lint:fix` - Fix linting issues automatically
-- `bun typecheck` - Type check without emitting files
+- `bun run build` - Build the specific package
+- `bun run clean` - Clean build artifacts
+- `bun run dev` - Watch mode for development
+- `bun run lint` - Check linting rules only
+- `bun run lint:fix` - Fix linting issues automatically
+- `bun run typecheck` - Type check without emitting files
 
 ## Architecture
 
@@ -81,19 +81,19 @@ The project follows a monorepo pattern with these core packages:
 After making edits, **ALWAYS** run the following verification sequence:
 
 1. **Type Check**
-    - Run `bun typecheck` to verify all TypeScript types are correct across all packages
+    - Run `bun run typecheck` to verify all TypeScript types are correct across all packages
 2. **Lint Check**
-    - Run `bun lint` to run ESLint with auto-fix and Prettier formatting
+    - Run `bun run lint` to run ESLint with auto-fix and Prettier formatting
 3. **Build**
-    - Run `bun build` to build all packages before running any tests
+    - Run `bun run build` to build all packages before running any tests
 4. **Tests**
-    - Run `bun run test` for Jest unit tests; run `bun run test:e2e` for E2E tests (builds first)
+    - Run `bun run test:unit` for Jest unit tests; run `bun run test:e2e` for E2E tests (builds first)
 
 ### Requirements
 
 - **All commands must pass** before considering a task complete
 - **Fix errors immediately** - If any command fails, address issues and re-run the full sequence
-- **Build before adding E2E tests** - Always run `bun build` before E2E testing to ensure packages are properly built
+- **Build before adding E2E tests** - Always run `bun run build` before E2E testing to ensure packages are properly built
 - **Add basic sanity E2E tests** - Never skip writing E2E tests for new features, client APIs, or user flows
 - **Do NOT write unit tests** - any unit tests should be written manually
 
