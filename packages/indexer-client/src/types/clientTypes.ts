@@ -660,8 +660,8 @@ export interface IndexerLeaderboardContestTrack {
   trackId: number;
   rankType: IndexerLeaderboardRankType;
   sortOrder: 'ASC' | 'DESC';
-  // Float indicating the min account value required to qualify for this track e.g: 250.0
-  minRequiredAccountValue: BigNumber;
+  // Float indicating the min value required to qualify for this track e.g: 250.0
+  threshold: BigNumber;
 }
 
 export interface IndexerLeaderboardContest {
