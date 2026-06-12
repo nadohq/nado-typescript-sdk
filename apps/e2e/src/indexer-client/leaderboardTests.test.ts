@@ -56,10 +56,7 @@ function assertLeaderboardContestTrackShape(
   assertNumber(track.trackId, `${label}.trackId`);
   assertDefined(track.rankType, `${label}.rankType`);
   assertDefined(track.sortOrder, `${label}.sortOrder`);
-  assertBigNumberFinite(
-    track.minRequiredAccountValue,
-    `${label}.minRequiredAccountValue`,
-  );
+  assertBigNumberFinite(track.threshold, `${label}.threshold`);
 }
 
 function assertLeaderboardContestShape(
