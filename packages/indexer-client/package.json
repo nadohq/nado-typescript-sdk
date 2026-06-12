@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/indexer-client",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nado indexer — historical data, events, and analytics queries",
@@ -41,8 +41,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "^0.21.0",
-    "@nadohq/shared": "^0.21.0",
+    "@nadohq/engine-client": "^0.21.1",
+    "@nadohq/shared": "^0.21.1",
     "axios": "1.16.1",
     "ts-mixer": "6.0.4"
   },
