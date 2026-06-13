@@ -661,7 +661,9 @@ export interface IndexerLeaderboardContestTrack {
   rankType: IndexerLeaderboardRankType;
   sortOrder: 'ASC' | 'DESC';
   // Float indicating the min value required to qualify for this track e.g: 250.0
-  threshold: BigNumber;
+  accountValueThreshold: BigNumber;
+  // Float indicating the min volume required to qualify for this track e.g: 1000.0
+  volumeThreshold: BigNumber;
 }
 
 export interface IndexerLeaderboardContest {
