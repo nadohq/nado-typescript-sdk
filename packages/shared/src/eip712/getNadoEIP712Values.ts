@@ -12,6 +12,7 @@ import {
   EIP712ProductOrdersCancellationValues,
   EIP712SocialAuthenticationValues,
   EIP712TransferQuoteValues,
+  EIP712WithdrawCollateralV2Values,
   EIP712WithdrawCollateralValues,
   SignableRequestTypeToEIP712Values,
 } from './eip712ValueTypes';
@@ -32,6 +33,7 @@ import {
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
+  EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
 
 /**
@@ -52,6 +54,11 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
     case 'withdraw_collateral':
       values = getWithdrawCollateralValues(
         params as EIP712WithdrawCollateralParams,
+      );
+      break;
+    case 'withdraw_collateral_v2':
+      values = getWithdrawCollateralV2Values(
+        params as EIP712WithdrawCollateralV2Params,
       );
       break;
     case 'place_order':
@@ -115,6 +122,22 @@ function getWithdrawCollateralValues(
     productId: params.productId,
     amount: toIntegerString(params.amount),
     nonce: params.nonce,
+  };
+}
+
+function getWithdrawCollateralV2Values(
+  params: EIP712WithdrawCollateralV2Params,
+): EIP712WithdrawCollateralV2Values {
+  return {
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    productId: params.productId,
+    amount: toIntegerString(params.amount),
+    nonce: params.nonce,
+    sendTo: params.sendTo,
+    appendix: toIntegerString(params.appendix),
   };
 }
 

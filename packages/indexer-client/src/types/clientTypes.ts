@@ -14,7 +14,11 @@ import { Address, Hex } from 'viem';
 import { CandlestickPeriod } from './CandlestickPeriod';
 import { IndexerEventType } from './IndexerEventType';
 import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
-import { NadoTx, NadoWithdrawCollateralTx } from './NadoTx';
+import {
+  NadoTx,
+  NadoWithdrawCollateralTx,
+  NadoWithdrawCollateralV2Tx,
+} from './NadoTx';
 import {
   IndexerServerFastWithdrawalSignatureParams,
   IndexerServerListSubaccountsParams,
@@ -717,6 +721,8 @@ export type GetIndexerFastWithdrawalSignatureParams =
 export interface GetIndexerFastWithdrawalSignatureResponse {
   idx: bigint;
   tx: NadoWithdrawCollateralTx['withdraw_collateral'];
+  // Present only for `WithdrawCollateralV2` withdrawals.
+  txV2?: NadoWithdrawCollateralV2Tx['withdraw_collateral_v2'];
   txBytes: Hex;
   signatures: Hex[];
 }

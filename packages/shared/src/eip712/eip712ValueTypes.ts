@@ -13,6 +13,7 @@ import {
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
+  EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
 
 type WithEIP712Sender<
@@ -24,6 +25,9 @@ type WithEIP712Sender<
 
 export type EIP712WithdrawCollateralValues =
   WithEIP712Sender<EIP712WithdrawCollateralParams>;
+
+export type EIP712WithdrawCollateralV2Values =
+  WithEIP712Sender<EIP712WithdrawCollateralV2Params>;
 
 export type EIP712LiquidateSubaccountValues = Omit<
   WithEIP712Sender<EIP712LiquidateSubaccountParams>,
@@ -85,4 +89,5 @@ export interface SignableRequestTypeToEIP712Values {
   social_authentication: EIP712SocialAuthenticationValues;
   transfer_quote: EIP712TransferQuoteValues;
   withdraw_collateral: EIP712WithdrawCollateralValues;
+  withdraw_collateral_v2: EIP712WithdrawCollateralV2Values;
 }

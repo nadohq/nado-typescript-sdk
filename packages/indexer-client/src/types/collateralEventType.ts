@@ -1,4 +1,9 @@
-export type CollateralEventType =
+import { IndexerEventType } from './IndexerEventType';
+
+export type CollateralEventType = Extract<
+  IndexerEventType,
   | 'deposit_collateral'
   | 'withdraw_collateral'
-  | 'transfer_quote';
+  | 'withdraw_collateral_v2'
+  | 'transfer_quote'
+>;

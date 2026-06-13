@@ -85,6 +85,33 @@ void describe('[engine-client]: execute operations', () => {
   });
 
   // ---------------------------------------------------------------
+  // withdrawCollateralV2 — fast engine withdrawal with custom recipient
+  // ---------------------------------------------------------------
+  void describe('withdrawCollateralV2', () => {
+    void test('withdraws a small amount of quote to the owner via the engine', async () => {
+      const result = await tc.engine.withdrawCollateralV2({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: QUOTE_PRODUCT_ID,
+        amount: addDecimals(1, 6),
+        // Zero address sends funds to the subaccount owner.
+        sendTo: zeroAddress,
+        appendix: 0,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      });
+
+      debugPrint('Withdraw collateral v2 result', result);
+      assertDefined(result, 'withdrawV2Result');
+      assert.equal(
+        result.status,
+        'success',
+        'withdrawCollateralV2 should succeed',
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------
   // transferQuote — quote transfer between subaccounts
   // ---------------------------------------------------------------
   void describe('transferQuote', () => {

@@ -23,6 +23,17 @@ export function getNadoEIP712Types(
           { name: 'nonce', type: 'uint64' },
         ],
       };
+    case 'withdraw_collateral_v2':
+      return {
+        WithdrawCollateralV2: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'productId', type: 'uint32' },
+          { name: 'amount', type: 'uint128' },
+          { name: 'nonce', type: 'uint64' },
+          { name: 'sendTo', type: 'address' },
+          { name: 'appendix', type: 'uint128' },
+        ],
+      };
     case 'place_order':
       return {
         Order: [
