@@ -272,6 +272,7 @@ export interface IndexerServerLeaderboardContestTrack {
   rank_type: IndexerLeaderboardRankType;
   sort_order: 'ASC' | 'DESC';
   threshold: string;
+  volume_threshold: string;
 }
 
 export interface IndexerServerLeaderboardPosition {

@@ -307,7 +307,8 @@ export function mapIndexerLeaderboardContest(
       trackId: track.track_id,
       rankType: track.rank_type,
       sortOrder: track.sort_order,
-      threshold: toBigNumber(track.threshold),
+      accountValueThreshold: toBigNumber(track.threshold),
+      volumeThreshold: toBigNumber(track.volume_threshold),
     })),
   };
 }
