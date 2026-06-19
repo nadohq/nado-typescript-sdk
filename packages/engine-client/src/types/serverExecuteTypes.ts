@@ -8,6 +8,7 @@ import {
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
   EIP712TransferQuoteValues,
+  EIP712WithdrawCollateralV2Values,
   EIP712WithdrawCollateralValues,
   SignedTx,
 } from '@nadohq/shared';
@@ -36,6 +37,7 @@ export interface EngineServerExecuteResponseDataByType {
   place_orders: EngineServerPlaceOrdersResponse;
   transfer_quote: null;
   withdraw_collateral: null;
+  withdraw_collateral_v2: null;
 }
 
 export interface EngineServerExecuteSuccessResult<
@@ -125,6 +127,9 @@ export interface EngineServerExecuteRequestByType {
   transfer_quote: SignedTx<EIP712TransferQuoteValues>;
   withdraw_collateral: WithSpotLeverage<
     SignedTx<EIP712WithdrawCollateralValues>
+  >;
+  withdraw_collateral_v2: WithSpotLeverage<
+    SignedTx<EIP712WithdrawCollateralV2Values>
   >;
 }
 

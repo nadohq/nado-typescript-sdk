@@ -18,6 +18,13 @@ export interface EIP712WithdrawCollateralParams extends Subaccount {
   nonce: string;
 }
 
+export interface EIP712WithdrawCollateralV2Params extends EIP712WithdrawCollateralParams {
+  // 20-byte recipient address. The zero address sends funds to the subaccount owner.
+  sendTo: Address;
+  // Reserved uint128 for forward-compatible withdrawal features.
+  appendix: BigNumberish;
+}
+
 export interface EIP712LiquidateSubaccountParams extends Subaccount {
   // Subaccount being liquidated
   liquidateeOwner: string;

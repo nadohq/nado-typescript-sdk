@@ -2,6 +2,7 @@ export type IndexerEventType =
   | 'liquidate_subaccount'
   | 'deposit_collateral'
   | 'withdraw_collateral'
+  | 'withdraw_collateral_v2'
   | 'settle_pnl'
   | 'match_orders'
   | 'transfer_quote'

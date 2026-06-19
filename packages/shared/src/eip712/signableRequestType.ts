@@ -11,6 +11,7 @@ import {
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
+  EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
 
 /**
@@ -29,6 +30,7 @@ export interface SignableRequestTypeToParams {
   social_authentication: EIP712SocialAuthenticationParams;
   transfer_quote: EIP712TransferQuoteParams;
   withdraw_collateral: EIP712WithdrawCollateralParams;
+  withdraw_collateral_v2: EIP712WithdrawCollateralV2Params;
 }
 
 export type SignableRequestType = keyof SignableRequestTypeToParams;

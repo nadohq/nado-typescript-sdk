@@ -37,6 +37,19 @@ export class WebSocketExecuteAPI extends BaseNadoAPI {
   }
 
   /**
+   * Builds ws message for the `withdraw_collateral_v2` execute action.
+   * @param params WithdrawCollateralV2 params.
+   * @returns `withdraw_collateral_v2` execute message
+   */
+  async buildWithdrawCollateralV2Message(
+    params: EngineExecuteRequestParamsByType['withdraw_collateral_v2'],
+  ) {
+    return this.context.engineClient.payloadBuilder.buildWithdrawCollateralV2Payload(
+      params,
+    );
+  }
+
+  /**
    * Builds ws message for the `place_order` execute action.
    * @param params PlaceOrder params.
    * @returns `place_order` execute message

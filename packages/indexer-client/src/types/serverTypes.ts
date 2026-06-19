@@ -5,7 +5,7 @@ import {
 } from '@nadohq/shared';
 import { IndexerEventType } from './IndexerEventType';
 import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
-import { NadoWithdrawCollateralTx } from './NadoTx';
+import { NadoWithdrawCollateralTx, NadoWithdrawCollateralV2Tx } from './NadoTx';
 import {
   IndexerServerCandlestick,
   IndexerServerEvent,
@@ -419,6 +419,8 @@ export interface IndexerServerLeaderboardContestsResponse {
 export interface IndexerServerFastWithdrawalSignatureResponse {
   idx: string;
   tx: NadoWithdrawCollateralTx['withdraw_collateral'];
+  // Present only for `WithdrawCollateralV2` withdrawals.
+  tx_v2?: NadoWithdrawCollateralV2Tx['withdraw_collateral_v2'];
   tx_bytes: string;
   signatures: string[];
 }

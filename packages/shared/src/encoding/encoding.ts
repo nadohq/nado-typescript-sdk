@@ -19,6 +19,7 @@ export enum SlowModeTxType {
   WithdrawCollateral = 2,
   LinkSigner = 13,
   ClaimBuilderFee = 31,
+  WithdrawCollateralV2 = 32,
 }
 
 export function encodeSignedWithdrawCollateralTx(

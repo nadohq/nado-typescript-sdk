@@ -807,6 +807,7 @@ export class IndexerBaseClient {
     return {
       idx: toBigInt(baseResponse.idx),
       tx: baseResponse.tx,
+      txV2: baseResponse.tx_v2,
       txBytes: getValidatedHex(baseResponse.tx_bytes),
       signatures: baseResponse.signatures.map(getValidatedHex),
     };

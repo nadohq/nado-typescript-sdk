@@ -8,6 +8,7 @@ import {
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
+  EIP712WithdrawCollateralV2Params,
 } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { EngineServerExecuteSuccessResult } from './serverExecuteTypes';
@@ -59,6 +60,10 @@ export type EngineLiquidateSubaccountParams =
 
 export type EngineWithdrawCollateralParams = WithBaseEngineExecuteParams<
   WithSpotLeverage<EIP712WithdrawCollateralParams>
+>;
+
+export type EngineWithdrawCollateralV2Params = WithBaseEngineExecuteParams<
+  WithSpotLeverage<EIP712WithdrawCollateralV2Params>
 >;
 
 export type EngineCancelOrdersParams =
@@ -123,6 +128,7 @@ export interface EngineExecuteRequestParamsByType {
   place_orders: EnginePlaceOrdersParams;
   transfer_quote: EngineTransferQuoteParams;
   withdraw_collateral: EngineWithdrawCollateralParams;
+  withdraw_collateral_v2: EngineWithdrawCollateralV2Params;
 }
 
 export type EnginePlaceOrderResult =

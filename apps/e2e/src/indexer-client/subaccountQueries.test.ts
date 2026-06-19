@@ -120,7 +120,11 @@ void describe(
 
     void test('getEvents returns deposit/withdraw collateral events', async () => {
       const events = await client.getEvents({
-        eventTypes: ['deposit_collateral', 'withdraw_collateral'],
+        eventTypes: [
+          'deposit_collateral',
+          'withdraw_collateral',
+          'withdraw_collateral_v2',
+        ],
         limit: {
           type: 'txs',
           value: 1,
@@ -292,7 +296,7 @@ void describe(
           maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
           subaccountName: subaccount.subaccountName,
           subaccountOwner: subaccount.subaccountOwner,
-          eventTypes: ['withdraw_collateral'],
+          eventTypes: ['withdraw_collateral', 'withdraw_collateral_v2'],
         });
 
       debugPrint('Paginated withdrawal events', withdrawEvents);
@@ -331,7 +335,7 @@ void describe(
             maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
             subaccountName: subaccount.subaccountName,
             subaccountOwner: subaccount.subaccountOwner,
-            eventTypes: ['withdraw_collateral'],
+            eventTypes: ['withdraw_collateral', 'withdraw_collateral_v2'],
           });
 
         if (withdrawEvents.events.length === 0) {
@@ -383,7 +387,7 @@ void describe(
 
     void test('getFastWithdrawalSignature returns a signature for a recent withdrawal', async () => {
       const latestWithdrawal = await client.getEvents({
-        eventTypes: ['withdraw_collateral'],
+        eventTypes: ['withdraw_collateral_v2'],
         // Query an older event such that the fast withdrawal signature is available
         maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
         limit: {

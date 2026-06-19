@@ -31,6 +31,19 @@ export interface NadoWithdrawCollateralTx {
   };
 }
 
+export interface NadoWithdrawCollateralV2Tx {
+  withdraw_collateral_v2: {
+    sender: string;
+    product_id: number;
+    amount: string;
+    nonce: number;
+    // 20-byte recipient address; zero address sends to the subaccount owner
+    send_to: string;
+    // Reserved uint128 for forward-compatible withdrawal features
+    appendix: string;
+  };
+}
+
 export interface NadoDepositCollateralTx {
   deposit_collateral: {
     sender: string;
@@ -55,6 +68,7 @@ export type NadoTx =
   | NadoDepositCollateralTx
   | NadoTransferQuoteTx
   | NadoWithdrawCollateralTx
+  | NadoWithdrawCollateralV2Tx
   | {
       // TODO: Populate all types
       [key: string]: never;

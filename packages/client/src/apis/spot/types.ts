@@ -3,6 +3,7 @@ import {
   EngineMintNlpParams,
   EngineTransferQuoteParams,
   EngineWithdrawCollateralParams,
+  EngineWithdrawCollateralV2Params,
 } from '@nadohq/engine-client';
 import { BigNumberish } from '@nadohq/shared';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
@@ -29,6 +30,10 @@ export type GetTokenAllowanceParams = TokenQueryParams;
 
 export type WithdrawCollateralParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineWithdrawCollateralParams>
+>;
+
+export type WithdrawCollateralV2Params = OptionalSignatureParams<
+  OptionalSubaccountOwner<EngineWithdrawCollateralV2Params>
 >;
 
 export type TransferQuoteParams = OptionalSignatureParams<
