@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/engine-client",
-  "version": "0.22.1",
+  "version": "0.22.2",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nado off-chain matching engine",
@@ -41,7 +41,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.22.1",
+    "@nadohq/shared": "^0.22.2",
     "axios": "1.16.1",
     "ts-mixer": "6.0.4"
   },
