@@ -262,8 +262,14 @@ export class EngineBaseClient {
     params: SignableRequestTypeToParams[T],
   ) {
     // Use the linked signer if provided, otherwise use the default signer provided to the engine
-    const walletClient =
-      this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
+    // However, always use wallet signer for withdraw_collateral_v2 as linked signers are not allowed for different
+    // withdrawal addresses
+    const walletClient = (() => {
+      if (requestType === 'withdraw_collateral_v2') {
+        return this.opts.walletClient;
+      }
+      return this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
+    })();
 
     if (!walletClient) {
       throw new WalletNotProvidedError();
