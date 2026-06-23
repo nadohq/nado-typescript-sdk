@@ -7,6 +7,7 @@ export type PositionChangeReason =
   | 'deposit_collateral'
   | 'match_orders'
   | 'withdraw_collateral'
+  | 'withdraw_collateral_v2'
   | 'transfer_quote'
   | 'settle_pnl'
   | 'mint_nlp'
