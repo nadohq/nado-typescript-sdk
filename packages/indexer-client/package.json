@@ -48,11 +48,11 @@
   },
   "peerDependencies": {
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "devDependencies": {
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "gitHead": "c7606b994e819a25e1bd8df874463ecb4bbfc689"
 }
