@@ -19,6 +19,8 @@ import {
   Candlestick,
   IndexerEvent,
   IndexerEventWithTx,
+  IndexerFoundationTakerGlobalRewardsForProduct,
+  IndexerFoundationTakerRewardsWeek,
   IndexerFundingRate,
   IndexerLeaderboardContest,
   IndexerLeaderboardParticipant,
@@ -34,6 +36,7 @@ import {
   IndexerServerBalance,
   IndexerServerCandlestick,
   IndexerServerEvent,
+  IndexerServerFoundationTakerRewardsWeek,
   IndexerServerFundingRate,
   IndexerServerLeaderboardContest,
   IndexerServerLeaderboardPosition,
@@ -53,6 +56,7 @@ import {
   IndexerServerV2TickerResponse,
   IndexerSnapshotsIntervalParams,
   IndexerSpotBalance,
+  IndexerSubaccountFoundationTakerRewardsForProduct,
   IndexerV2MarketHours,
   IndexerV2Symbol,
   IndexerV2TickerResponse,
@@ -441,5 +445,35 @@ export function mapIndexerV2Symbols(
     boostType: symbol.boost_type ?? null,
     takerMultiplier: symbol.taker_multiplier ?? null,
     makerMultiplier: symbol.maker_multiplier ?? null,
+  };
+}
+
+export function mapIndexerFoundationTakerRewardsWeek(
+  week: IndexerServerFoundationTakerRewardsWeek,
+): IndexerFoundationTakerRewardsWeek {
+  return {
+    week: week.week,
+    period: toBigNumber(week.period),
+    startTime: toBigNumber(week.start_time),
+    addressRewards: week.address_rewards.map(
+      (reward): IndexerSubaccountFoundationTakerRewardsForProduct => {
+        return {
+          productId: reward.product_id,
+          takerFee: toBigNumber(reward.taker_fee),
+          takerTokens: toBigNumber(reward.taker_tokens),
+          takerVolume: toBigNumber(reward.taker_volume),
+        };
+      },
+    ),
+    globalRewards: week.global_rewards.map(
+      (reward): IndexerFoundationTakerGlobalRewardsForProduct => {
+        return {
+          productId: reward.product_id,
+          takerFees: toBigNumber(reward.taker_fees),
+          takerTokens: toBigNumber(reward.taker_tokens),
+          takerVolumes: toBigNumber(reward.taker_volumes),
+        };
+      },
+    ),
   };
 }

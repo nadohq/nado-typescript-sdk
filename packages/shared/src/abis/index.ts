@@ -1,6 +1,7 @@
 export * from './Clearinghouse';
 export * from './Endpoint';
 export * from './ERC20';
+export * from './FoundationRewardsAirdrop';
 export * from './MockERC20';
 export * from './nadoAbis';
 export * from './PerpEngine';

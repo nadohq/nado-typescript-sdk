@@ -26,6 +26,7 @@ import {
   mapIndexerCandlesticks,
   mapIndexerEvent,
   mapIndexerEventWithTx,
+  mapIndexerFoundationTakerRewardsWeek,
   mapIndexerFundingRate,
   mapIndexerLeaderboardContest,
   mapIndexerLeaderboardPosition,
@@ -48,6 +49,8 @@ import {
   GetIndexerBacklogResponse,
   GetIndexerCandlesticksParams,
   GetIndexerCandlesticksResponse,
+  GetIndexerClaimFoundationRewardsMerkleProofsParams,
+  GetIndexerClaimFoundationRewardsMerkleProofsResponse,
   GetIndexerEdgeCandlesticksParams,
   GetIndexerEdgeCandlesticksResponse,
   GetIndexerEdgeMarketSnapshotResponse,
@@ -56,6 +59,8 @@ import {
   GetIndexerEventsResponse,
   GetIndexerFastWithdrawalSignatureParams,
   GetIndexerFastWithdrawalSignatureResponse,
+  GetIndexerFoundationTakerRewardsParams,
+  GetIndexerFoundationTakerRewardsResponse,
   GetIndexerFundingRateParams,
   GetIndexerFundingRateResponse,
   GetIndexerInterestFundingPaymentsParams,
@@ -910,6 +915,48 @@ export class IndexerBaseClient {
         tier: baseResponse.all_time_points.tier,
       },
     };
+  }
+
+  /**
+   * Retrieves estimated / past foundation taker rewards for an address
+   * Example of foundation taker rewards: ARB rewards on Arbitrum
+   *
+   * @param params
+   */
+  async getFoundationTakerRewards(
+    params: GetIndexerFoundationTakerRewardsParams,
+  ): Promise<GetIndexerFoundationTakerRewardsResponse> {
+    const baseResponse = await this.query('foundation_taker_rewards', {
+      address: params.address,
+    });
+
+    return {
+      weeks: baseResponse.foundation_taker_rewards.map(
+        mapIndexerFoundationTakerRewardsWeek,
+      ),
+      updateTime: toBigNumber(baseResponse.update_time),
+    };
+  }
+
+  /**
+   * Retrieve the merkle proofs & total amounts claimable for the address for all weeks
+   *
+   * @param params
+   */
+  async getClaimFoundationRewardsMerkleProofs(
+    params: GetIndexerClaimFoundationRewardsMerkleProofsParams,
+  ): Promise<GetIndexerClaimFoundationRewardsMerkleProofsResponse> {
+    const baseResponse = await this.query(
+      'foundation_rewards_merkle_proofs',
+      params,
+    );
+
+    return baseResponse.merkle_proofs.map((proof) => {
+      return {
+        proof: proof.proof.map(getValidatedHex),
+        totalAmount: toBigNumber(proof.total_amount),
+      };
+    });
   }
 
   /**

@@ -1,5 +1,6 @@
 import { CLEARINGHOUSE_ABI } from './Clearinghouse';
 import { ENDPOINT_ABI } from './Endpoint';
+import { FOUNDATION_REWARDS_AIRDROP_ABI } from './FoundationRewardsAirdrop';
 import { PERP_ENGINE_ABI } from './PerpEngine';
 import { QUERIER_ABI } from './Querier';
 import { SPOT_ENGINE_ABI } from './SpotEngine';
@@ -11,6 +12,7 @@ export const NADO_ABIS = {
   clearinghouse: CLEARINGHOUSE_ABI,
   spotEngine: SPOT_ENGINE_ABI,
   perpEngine: PERP_ENGINE_ABI,
+  foundationRewardsAirdrop: FOUNDATION_REWARDS_AIRDROP_ABI,
   withdrawPool: WITHDRAW_POOL_ABI,
 } as const;
 

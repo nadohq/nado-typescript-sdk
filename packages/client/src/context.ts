@@ -119,6 +119,12 @@ export function createClientContext(
         walletClient,
         publicClient,
       }),
+      foundationRewardsAirdrop: getNadoContract({
+        contractAddresses,
+        contractName: 'foundationRewardsAirdrop',
+        walletClient,
+        publicClient,
+      }),
       withdrawPool: getNadoContract({
         contractAddresses,
         contractName: 'withdrawPool',

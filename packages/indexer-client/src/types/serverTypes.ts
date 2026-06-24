@@ -9,6 +9,7 @@ import { NadoWithdrawCollateralTx, NadoWithdrawCollateralV2Tx } from './NadoTx';
 import {
   IndexerServerCandlestick,
   IndexerServerEvent,
+  IndexerServerFoundationTakerRewardsWeek,
   IndexerServerLeaderboardContest,
   IndexerServerLeaderboardPosition,
   IndexerServerLeaderboardRegistration,
@@ -16,6 +17,7 @@ import {
   IndexerServerMarketSnapshot,
   IndexerServerMarketSnapshotInterval,
   IndexerServerMatchEvent,
+  IndexerServerMerkleProof,
   IndexerServerNlpSnapshot,
   IndexerServerOraclePrice,
   IndexerServerOrder,
@@ -48,6 +50,14 @@ export interface IndexerServerMultiSubaccountSnapshotsParams {
 
 export interface IndexerServerReferralCodeParams {
   subaccount: string;
+}
+
+export interface IndexerServerFoundationTakerRewardsParams {
+  address: string;
+}
+
+export interface IndexerServerClaimFoundationRewardsMerkleProofsParams {
+  address: string;
 }
 
 export interface IndexerServerFundingRateParams {
@@ -244,6 +254,8 @@ export interface IndexerServerQueryRequestByType {
   edge_market_snapshots: IndexerEdgeServerMarketSnapshotsParams;
   events: IndexerServerEventsParams;
   fast_withdrawal_signature: IndexerServerFastWithdrawalSignatureParams;
+  foundation_rewards_merkle_proofs: IndexerServerClaimFoundationRewardsMerkleProofsParams;
+  foundation_taker_rewards: IndexerServerFoundationTakerRewardsParams;
   funding_rate: IndexerServerFundingRateParams;
   funding_rates: IndexerServerFundingRatesParams;
   interest_and_funding: IndexerServerInterestFundingParams;
@@ -416,6 +428,15 @@ export interface IndexerServerLeaderboardContestsResponse {
   contests: IndexerServerLeaderboardContest[];
 }
 
+export interface IndexerServerFoundationTakerRewardsResponse {
+  foundation_taker_rewards: IndexerServerFoundationTakerRewardsWeek[];
+  update_time: string;
+}
+
+export interface IndexerServerClaimFoundationRewardsMerkleProofsResponse {
+  merkle_proofs: IndexerServerMerkleProof[];
+}
+
 export interface IndexerServerFastWithdrawalSignatureResponse {
   idx: string;
   tx: NadoWithdrawCollateralTx['withdraw_collateral'];
@@ -494,6 +515,8 @@ export interface IndexerServerQueryResponseByType {
   edge_market_snapshots: IndexerEdgeServerMarketSnapshotsResponse;
   events: IndexerServerEventsResponse;
   fast_withdrawal_signature: IndexerServerFastWithdrawalSignatureResponse;
+  foundation_rewards_merkle_proofs: IndexerServerClaimFoundationRewardsMerkleProofsResponse;
+  foundation_taker_rewards: IndexerServerFoundationTakerRewardsResponse;
   funding_rate: IndexerServerFundingRateResponse;
   funding_rates: IndexerServerFundingRatesResponse;
   interest_and_funding: IndexerServerInterestFundingResponse;

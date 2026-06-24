@@ -777,6 +777,53 @@ export interface GetIndexerSubaccountDDAResponse {
 }
 
 /**
+ * Foundation taker rewards
+ */
+
+export interface IndexerMerkleProof {
+  proof: Hex[];
+  totalAmount: BigNumber;
+}
+
+export interface GetIndexerClaimFoundationRewardsMerkleProofsParams {
+  address: string;
+}
+
+export type GetIndexerClaimFoundationRewardsMerkleProofsResponse =
+  IndexerMerkleProof[];
+
+export interface GetIndexerFoundationTakerRewardsParams {
+  address: string;
+}
+
+export interface IndexerSubaccountFoundationTakerRewardsForProduct {
+  productId: number;
+  takerVolume: BigNumber;
+  takerFee: BigNumber;
+  takerTokens: BigNumber;
+}
+
+export interface IndexerFoundationTakerGlobalRewardsForProduct {
+  productId: number;
+  takerFees: BigNumber;
+  takerTokens: BigNumber;
+  takerVolumes: BigNumber;
+}
+
+export interface IndexerFoundationTakerRewardsWeek {
+  week: number;
+  startTime: BigNumber;
+  period: BigNumber;
+  addressRewards: IndexerSubaccountFoundationTakerRewardsForProduct[];
+  globalRewards: IndexerFoundationTakerGlobalRewardsForProduct[];
+}
+
+export interface GetIndexerFoundationTakerRewardsResponse {
+  weeks: IndexerFoundationTakerRewardsWeek[];
+  updateTime: BigNumber;
+}
+
+/**
  * Private Alpha Choice
  */
 

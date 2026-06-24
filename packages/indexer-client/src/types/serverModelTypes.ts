@@ -321,3 +321,38 @@ export interface IndexerServerNlpSnapshot {
   timestamp: string;
   tvl: string;
 }
+
+/**
+ * Foundation token rewards
+ */
+
+export interface IndexerServerFoundationTakerRewardsForProduct {
+  product_id: number;
+  taker_volume: string;
+  taker_fee: string;
+  taker_tokens: string;
+}
+
+export interface IndexerServerFoundationTakerGlobalRewardsForProduct {
+  product_id: number;
+  taker_volumes: string;
+  taker_fees: string;
+  taker_tokens: string;
+}
+
+/**
+ * Merkle proof
+ */
+
+export interface IndexerServerMerkleProof {
+  total_amount: string;
+  proof: string[];
+}
+
+export interface IndexerServerFoundationTakerRewardsWeek {
+  week: number;
+  start_time: string;
+  period: string;
+  address_rewards: IndexerServerFoundationTakerRewardsForProduct[];
+  global_rewards: IndexerServerFoundationTakerGlobalRewardsForProduct[];
+}

@@ -32,6 +32,9 @@ function validateDeployment(
   return {
     clearinghouse: getValidatedAddress(deployment.clearinghouse),
     endpoint: getValidatedAddress(deployment.endpoint),
+    foundationRewardsAirdrop: getValidatedAddress(
+      deployment.foundationRewardsAirdrop,
+    ),
     perpEngine: getValidatedAddress(deployment.perpEngine),
     querier: getValidatedAddress(deployment.querier),
     spotEngine: getValidatedAddress(deployment.spotEngine),
