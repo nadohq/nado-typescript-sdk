@@ -17,6 +17,7 @@ import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import {
   assertCandlestickShape,
+  assertFundingRateHistoryEntryShape,
   assertFundingRateShape,
   assertMarketSnapshotShape,
   assertPerpPricesShape,
@@ -67,6 +68,59 @@ void describe(
       assertRecord(fundingRates, 'fundingRates');
       for (const rate of Object.values(fundingRates)) {
         assertFundingRateShape(rate, 'fundingRates entry');
+      }
+    });
+
+    void test('getFundingRateHistory returns ascending historical rates', async () => {
+      const limit = 5;
+      const fundingRateHistory = await client.getFundingRateHistory({
+        productId: TEST_PRODUCT_IDS.PERP_BTC,
+        limit,
+      });
+
+      debugPrint('Funding rate history', fundingRateHistory);
+      assertArray(fundingRateHistory, 'fundingRateHistory');
+      assert.ok(
+        fundingRateHistory.length <= limit,
+        'should return at most limit entries',
+      );
+      assertArrayElements(
+        fundingRateHistory,
+        assertFundingRateHistoryEntryShape,
+        'fundingRateHistory',
+      );
+
+      for (let i = 1; i < fundingRateHistory.length; i++) {
+        assert.ok(
+          fundingRateHistory[i].timestamp.gte(
+            fundingRateHistory[i - 1].timestamp,
+          ),
+          'entries should be ordered ascending by timestamp',
+        );
+      }
+    });
+
+    void test('getFundingRateHistory supports a start time window', async () => {
+      const startTimeInclusive = nowInSeconds() - TimeInSeconds.DAY * 7;
+      const fundingRateHistory = await client.getFundingRateHistory({
+        productId: TEST_PRODUCT_IDS.PERP_BTC,
+        startTimeInclusive,
+        limit: 5,
+      });
+
+      debugPrint('Funding rate history (windowed)', fundingRateHistory);
+      assertArray(fundingRateHistory, 'fundingRateHistory');
+      assertArrayElements(
+        fundingRateHistory,
+        assertFundingRateHistoryEntryShape,
+        'fundingRateHistory',
+      );
+
+      for (const entry of fundingRateHistory) {
+        assert.ok(
+          entry.timestamp.gte(startTimeInclusive),
+          'entries should not predate startTimeInclusive',
+        );
       }
     });
 

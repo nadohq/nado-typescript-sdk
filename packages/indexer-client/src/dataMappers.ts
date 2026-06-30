@@ -20,6 +20,7 @@ import {
   IndexerEvent,
   IndexerEventWithTx,
   IndexerFundingRate,
+  IndexerFundingRateHistoryEntry,
   IndexerLeaderboardContest,
   IndexerLeaderboardParticipant,
   IndexerLeaderboardRegistration,
@@ -35,6 +36,7 @@ import {
   IndexerServerCandlestick,
   IndexerServerEvent,
   IndexerServerFundingRate,
+  IndexerServerFundingRateHistoryEntry,
   IndexerServerLeaderboardContest,
   IndexerServerLeaderboardPosition,
   IndexerServerLeaderboardRegistration,
@@ -231,6 +233,16 @@ export function mapIndexerFundingRate(
     fundingRate: removeDecimals(fundingRate.funding_rate_x18),
     updateTime: toBigNumber(fundingRate.update_time),
     productId: fundingRate.product_id,
+  };
+}
+
+export function mapIndexerFundingRateHistory(
+  entry: IndexerServerFundingRateHistoryEntry,
+): IndexerFundingRateHistoryEntry {
+  return {
+    productId: entry.product_id,
+    timestamp: toBigNumber(entry.timestamp),
+    fundingRateFrac: removeDecimals(entry.funding_rate_frac_x18),
   };
 }
 

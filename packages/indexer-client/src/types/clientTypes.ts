@@ -195,6 +195,44 @@ export type GetIndexerMultiProductFundingRatesResponse = Record<
 >;
 
 /**
+ * Funding rate history
+ */
+
+export interface GetIndexerFundingRateHistoryParams {
+  productId: number;
+  /**
+   * Unix epoch in seconds, inclusive lower bound. Only rates with `timestamp >= startTimeInclusive`
+   * are returned, paging forward from that time. When omitted, the most recent `limit` rates are returned.
+   */
+  startTimeInclusive?: number;
+  /**
+   * Unix epoch in seconds, inclusive upper bound. Only rates with `timestamp <= endTimeInclusive`
+   * are returned. Defaults to the current time.
+   */
+  endTimeInclusive?: number;
+  /** Max number of rates to return. Defaults to 100, max 1000. */
+  limit?: number;
+}
+
+export interface IndexerFundingRateHistoryEntry {
+  productId: number;
+  // Seconds
+  timestamp: BigNumber;
+  /**
+   * Realized hourly funding rate at this tick, where 1 = 100%.
+   * Multiply by 24 for the daily equivalent.
+   */
+  fundingRateFrac: BigNumber;
+}
+
+/**
+ * Entries are always ordered ascending by `timestamp`. To paginate forward,
+ * pass the last entry's `timestamp + 1` as the next request's `startTimeInclusive`.
+ */
+export type GetIndexerFundingRateHistoryResponse =
+  IndexerFundingRateHistoryEntry[];
+
+/**
  * Candlesticks
  */
 

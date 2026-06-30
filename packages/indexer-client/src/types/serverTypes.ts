@@ -58,6 +58,14 @@ export interface IndexerServerFundingRatesParams {
   product_ids: number[];
 }
 
+export interface IndexerServerFundingRateHistoryParams {
+  product_id: number;
+  start_time?: number | string;
+  end_time?: number | string;
+  // Max number of rates to return. Defaults to 100, max 1000.
+  limit?: number;
+}
+
 export interface IndexerServerPriceParams {
   product_id: number;
 }
@@ -245,6 +253,7 @@ export interface IndexerServerQueryRequestByType {
   events: IndexerServerEventsParams;
   fast_withdrawal_signature: IndexerServerFastWithdrawalSignatureParams;
   funding_rate: IndexerServerFundingRateParams;
+  funding_rate_history: IndexerServerFundingRateHistoryParams;
   funding_rates: IndexerServerFundingRatesParams;
   interest_and_funding: IndexerServerInterestFundingParams;
   leaderboard: IndexerServerLeaderboardParams;
@@ -313,6 +322,19 @@ export type IndexerServerFundingRatesResponse = Record<
   string,
   IndexerServerFundingRate
 >;
+
+export interface IndexerServerFundingRateHistoryEntry {
+  product_id: number;
+  // Epoch time in seconds of the settlement tick this funding rate was recorded at.
+  timestamp: string;
+  // Realized hourly funding rate at this tick, multiplied by 10^18 (% = rate * 100).
+  funding_rate_frac_x18: string;
+}
+
+export interface IndexerServerFundingRateHistoryResponse {
+  // Always ascending by timestamp.
+  funding_rates: IndexerServerFundingRateHistoryEntry[];
+}
 
 export interface IndexerServerPerpPrices {
   product_id: number;
@@ -493,6 +515,7 @@ export interface IndexerServerQueryResponseByType {
   events: IndexerServerEventsResponse;
   fast_withdrawal_signature: IndexerServerFastWithdrawalSignatureResponse;
   funding_rate: IndexerServerFundingRateResponse;
+  funding_rate_history: IndexerServerFundingRateHistoryResponse;
   funding_rates: IndexerServerFundingRatesResponse;
   interest_and_funding: IndexerServerInterestFundingResponse;
   leaderboard: IndexerServerLeaderboardResponse;

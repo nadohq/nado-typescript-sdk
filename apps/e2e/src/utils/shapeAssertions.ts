@@ -274,6 +274,18 @@ export function assertFundingRateShape(
   assertBigNumberFinite(rate.updateTime, `${label}.updateTime`);
 }
 
+/**
+ * Validates the shape of a historical funding rate entry.
+ */
+export function assertFundingRateHistoryEntryShape(
+  entry: { productId: number; timestamp: unknown; fundingRateFrac: unknown },
+  label: string,
+): void {
+  assertNumber(entry.productId, `${label}.productId`);
+  assertBigNumberFinite(entry.timestamp, `${label}.timestamp`);
+  assertBigNumberFinite(entry.fundingRateFrac, `${label}.fundingRateFrac`);
+}
+
 // ---------------------------------------------------------------------------
 // Market snapshot shape
 // ---------------------------------------------------------------------------
