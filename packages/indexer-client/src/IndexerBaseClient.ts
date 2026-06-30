@@ -27,6 +27,7 @@ import {
   mapIndexerEvent,
   mapIndexerEventWithTx,
   mapIndexerFundingRate,
+  mapIndexerFundingRateHistory,
   mapIndexerLeaderboardContest,
   mapIndexerLeaderboardPosition,
   mapIndexerLeaderboardRegistration,
@@ -56,6 +57,8 @@ import {
   GetIndexerEventsResponse,
   GetIndexerFastWithdrawalSignatureParams,
   GetIndexerFastWithdrawalSignatureResponse,
+  GetIndexerFundingRateHistoryParams,
+  GetIndexerFundingRateHistoryResponse,
   GetIndexerFundingRateParams,
   GetIndexerFundingRateResponse,
   GetIndexerInterestFundingPaymentsParams,
@@ -285,6 +288,28 @@ export class IndexerBaseClient {
     });
 
     return mapValues(baseResponse, mapIndexerFundingRate);
+  }
+
+  /**
+   * Retrieves a perp product's historical (realized hourly) funding rates,
+   * ordered ascending by timestamp, where 1 = 100%.
+   *
+   * To paginate forward, pass the last entry's `timestamp + 1` as the next
+   * request's `startTimeInclusive`.
+   *
+   * @param params
+   */
+  async getFundingRateHistory(
+    params: GetIndexerFundingRateHistoryParams,
+  ): Promise<GetIndexerFundingRateHistoryResponse> {
+    const baseResponse = await this.query('funding_rate_history', {
+      product_id: params.productId,
+      start_time: params.startTimeInclusive,
+      end_time: params.endTimeInclusive,
+      limit: params.limit,
+    });
+
+    return baseResponse.funding_rates.map(mapIndexerFundingRateHistory);
   }
 
   /**
