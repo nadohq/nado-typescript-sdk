@@ -242,7 +242,7 @@ export function mapIndexerFundingRateHistory(
   return {
     productId: entry.product_id,
     timestamp: toBigNumber(entry.timestamp),
-    fundingRateFrac: removeDecimals(entry.funding_rate_frac_x18),
+    fundingRateFrac: removeDecimals(entry.funding_rate_x18),
   };
 }
 

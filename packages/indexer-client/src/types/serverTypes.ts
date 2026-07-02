@@ -328,7 +328,7 @@ export interface IndexerServerFundingRateHistoryEntry {
   // Epoch time in seconds of the settlement tick this funding rate was recorded at.
   timestamp: string;
   // Realized hourly funding rate at this tick, multiplied by 10^18 (% = rate * 100).
-  funding_rate_frac_x18: string;
+  funding_rate_x18: string;
 }
 
 export interface IndexerServerFundingRateHistoryResponse {
