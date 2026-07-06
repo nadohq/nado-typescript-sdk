@@ -110,6 +110,8 @@ import {
   GetIndexerV2SymbolsResponse,
   GetIndexerV2TickersParams,
   GetIndexerV2TickersResponse,
+  GetIndexerXPointsParams,
+  GetIndexerXPointsResponse,
   IndexerEventWithTx,
   IndexerMatchEvent,
   IndexerOraclePrice,
@@ -933,6 +935,44 @@ export class IndexerBaseClient {
         points: toBigNumber(baseResponse.all_time_points.points),
         rank: baseResponse.all_time_points.rank,
         tier: baseResponse.all_time_points.tier,
+      },
+    };
+  }
+
+  /**
+   * Retrieves xPoints information (Nado x xStocks points program) for a given address,
+   * including per-epoch points, all-time points, and per-quest breakdowns.
+   * @param params
+   */
+  async getXPoints(
+    params: GetIndexerXPointsParams,
+  ): Promise<GetIndexerXPointsResponse> {
+    const baseResponse = await this.query('nado_xpoints', {
+      address: params.address,
+    });
+
+    const mapQuests = (
+      quests: typeof baseResponse.all_time_points.quests,
+    ): GetIndexerXPointsResponse['allTimePoints']['quests'] =>
+      quests.map((quest) => ({
+        questType: quest.quest_type,
+        points: toBigNumber(quest.points),
+      }));
+
+    return {
+      pointsPerEpoch: baseResponse.points_per_epoch.map((epoch) => ({
+        epoch: epoch.epoch,
+        description: epoch.description,
+        startTime: toBigNumber(epoch.start_time),
+        endTime: toBigNumber(epoch.end_time),
+        totalPoints: toBigNumber(epoch.total_points),
+        rank: epoch.rank,
+        quests: mapQuests(epoch.quests),
+      })),
+      allTimePoints: {
+        totalPoints: toBigNumber(baseResponse.all_time_points.total_points),
+        rank: baseResponse.all_time_points.rank,
+        quests: mapQuests(baseResponse.all_time_points.quests),
       },
     };
   }

@@ -57,7 +57,7 @@ const trades = await indexer.getPaginatedSubaccountMatchEvents({ ... });
 
 ### Leaderboards & Analytics
 
-`getLeaderboard`, `getLeaderboardParticipant`, `getMakerStatistics`, `getPoints`, `getReferralCode`.
+`getLeaderboard`, `getLeaderboardParticipant`, `getMakerStatistics`, `getPoints`, `getXPoints`, `getReferralCode`.
 
 ### NLP
 

@@ -242,6 +242,10 @@ export interface IndexerServerPointsParams {
   address: string;
 }
 
+export interface IndexerServerXPointsParams {
+  address: string;
+}
+
 // Request
 export interface IndexerServerQueryRequestByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsParams;
@@ -277,6 +281,7 @@ export interface IndexerServerQueryRequestByType {
   nlp_snapshots: IndexerServerNlpSnapshotsParams;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceParams;
   nado_points: IndexerServerPointsParams;
+  nado_xpoints: IndexerServerXPointsParams;
   social_connect: IndexerServerSocialConnectParams;
   list_social_accounts: IndexerServerListSocialAccountsParams;
   revoke_social_account: IndexerServerRevokeSocialAccountParams;
@@ -498,6 +503,32 @@ export interface IndexerServerPointsResponse {
   all_time_points: IndexerServerAllTimePoints;
 }
 
+export interface IndexerServerXPointsQuest {
+  quest_type: string;
+  points: string;
+}
+
+export interface IndexerServerXPointsEpoch {
+  epoch: number;
+  description: string;
+  start_time: string;
+  end_time: string;
+  total_points: string;
+  rank: number;
+  quests: IndexerServerXPointsQuest[];
+}
+
+export interface IndexerServerXPointsAllTime {
+  total_points: string;
+  rank: number;
+  quests: IndexerServerXPointsQuest[];
+}
+
+export interface IndexerServerXPointsResponse {
+  points_per_epoch: IndexerServerXPointsEpoch[];
+  all_time_points: IndexerServerXPointsAllTime;
+}
+
 export interface IndexerServerSocialConnectResponse {
   url: string;
 }
@@ -541,6 +572,7 @@ export interface IndexerServerQueryResponseByType {
   nlp_snapshots: IndexerServerNlpSnapshotsResponse;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceResponse;
   nado_points: IndexerServerPointsResponse;
+  nado_xpoints: IndexerServerXPointsResponse;
   social_connect: IndexerServerSocialConnectResponse;
   list_social_accounts: IndexerServerSocialAccountsResponse;
   revoke_social_account: IndexerServerSocialAccountsResponse;
