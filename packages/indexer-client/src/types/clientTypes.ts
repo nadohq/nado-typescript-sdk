@@ -861,6 +861,41 @@ export interface GetIndexerPointsResponse {
 }
 
 /**
+ * Nado XPoints (Nado x xStocks points program)
+ */
+
+export interface GetIndexerXPointsParams {
+  address: Address;
+}
+
+export interface IndexerXPointsQuest {
+  /** Quest identifier, e.g. `ProtocolDepositBoost` or `ProtocolTieredVolumeBoost` */
+  questType: string;
+  points: BigNumber;
+}
+
+export interface IndexerXPointsEpoch {
+  epoch: number;
+  description: string;
+  startTime: BigNumber;
+  endTime: BigNumber;
+  totalPoints: BigNumber;
+  rank: number;
+  quests: IndexerXPointsQuest[];
+}
+
+export interface IndexerXPointsAllTime {
+  totalPoints: BigNumber;
+  rank: number;
+  quests: IndexerXPointsQuest[];
+}
+
+export interface GetIndexerXPointsResponse {
+  pointsPerEpoch: IndexerXPointsEpoch[];
+  allTimePoints: IndexerXPointsAllTime;
+}
+
+/**
  * V2 Tickers
  */
 

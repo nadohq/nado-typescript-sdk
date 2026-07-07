@@ -440,5 +440,51 @@ void describe(
         'points.pointsPerEpoch',
       );
     });
+
+    void test('getXPoints returns xPoints for the wallet address', async () => {
+      const xPoints = await client.getXPoints({
+        address: subaccount.subaccountOwner as Address,
+      });
+
+      debugPrint('XPoints', xPoints);
+      assertDefined(xPoints, 'xPoints');
+      assertDefined(xPoints.allTimePoints, 'xPoints.allTimePoints');
+      assertBigNumberFinite(
+        xPoints.allTimePoints.totalPoints,
+        'xPoints.allTimePoints.totalPoints',
+      );
+      assertNumber(xPoints.allTimePoints.rank, 'xPoints.allTimePoints.rank');
+      assertArray(xPoints.allTimePoints.quests, 'xPoints.allTimePoints.quests');
+      assertArrayElements(
+        xPoints.allTimePoints.quests,
+        (quest, label) => {
+          assertString(quest.questType, `${label}.questType`);
+          assertBigNumberFinite(quest.points, `${label}.points`);
+        },
+        'xPoints.allTimePoints.quests',
+      );
+      assertArray(xPoints.pointsPerEpoch, 'xPoints.pointsPerEpoch');
+      assertArrayElements(
+        xPoints.pointsPerEpoch,
+        (epoch, label) => {
+          assertNumber(epoch.epoch, `${label}.epoch`);
+          assertString(epoch.description, `${label}.description`);
+          assertBigNumberFinite(epoch.startTime, `${label}.startTime`);
+          assertBigNumberFinite(epoch.endTime, `${label}.endTime`);
+          assertBigNumberFinite(epoch.totalPoints, `${label}.totalPoints`);
+          assertNumber(epoch.rank, `${label}.rank`);
+          assertArray(epoch.quests, `${label}.quests`);
+          assertArrayElements(
+            epoch.quests,
+            (quest, questLabel) => {
+              assertString(quest.questType, `${questLabel}.questType`);
+              assertBigNumberFinite(quest.points, `${questLabel}.points`);
+            },
+            `${label}.quests`,
+          );
+        },
+        'xPoints.pointsPerEpoch',
+      );
+    });
   },
 );
