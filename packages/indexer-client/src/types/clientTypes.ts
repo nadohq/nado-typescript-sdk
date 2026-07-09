@@ -896,6 +896,52 @@ export interface GetIndexerXPointsResponse {
 }
 
 /**
+ * Cash Incentives (platform volume and unlocked rewards)
+ */
+
+export interface GetIndexerCashIncentivesParams {
+  address: Address;
+}
+
+export interface IndexerCashIncentivesEventMetadata {
+  eventId: number;
+  description: string;
+  /** Unix timestamp in seconds */
+  epochStart: BigNumber;
+  /** Unix timestamp in seconds */
+  epochEnd: BigNumber;
+  maxVolume: BigNumber;
+  maxReward: BigNumber;
+  minVolume: BigNumber;
+  minReward: BigNumber;
+}
+
+export interface IndexerCashIncentivesEventPlatform {
+  platformVolume: BigNumber;
+  unlockedReward: BigNumber;
+}
+
+export interface IndexerCashIncentivesEventWallet {
+  reward: BigNumber;
+}
+
+export interface IndexerCashIncentivesEvent {
+  metadata: IndexerCashIncentivesEventMetadata;
+  platform: IndexerCashIncentivesEventPlatform;
+  wallet: IndexerCashIncentivesEventWallet;
+}
+
+export interface IndexerCashIncentivesWalletSummary {
+  totalReward: BigNumber;
+  claimableReward: BigNumber;
+}
+
+export interface GetIndexerCashIncentivesResponse {
+  events: IndexerCashIncentivesEvent[];
+  walletSummary: IndexerCashIncentivesWalletSummary;
+}
+
+/**
  * V2 Tickers
  */
 

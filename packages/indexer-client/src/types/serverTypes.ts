@@ -246,6 +246,10 @@ export interface IndexerServerXPointsParams {
   address: string;
 }
 
+export interface IndexerServerCashIncentivesParams {
+  wallet_address: string;
+}
+
 // Request
 export interface IndexerServerQueryRequestByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsParams;
@@ -282,6 +286,7 @@ export interface IndexerServerQueryRequestByType {
   private_alpha_choice: IndexerServerPrivateAlphaChoiceParams;
   nado_points: IndexerServerPointsParams;
   nado_xpoints: IndexerServerXPointsParams;
+  cash_incentives: IndexerServerCashIncentivesParams;
   social_connect: IndexerServerSocialConnectParams;
   list_social_accounts: IndexerServerListSocialAccountsParams;
   revoke_social_account: IndexerServerRevokeSocialAccountParams;
@@ -529,6 +534,53 @@ export interface IndexerServerXPointsResponse {
   all_time_points: IndexerServerXPointsAllTime;
 }
 
+export interface IndexerServerCashIncentivesEventMetadata {
+  event_id: number;
+  description: string;
+  // UNIX timestamp in seconds
+  epoch_start: string;
+  // UNIX timestamp in seconds
+  epoch_end: string;
+  // x18 string
+  max_volume: string;
+  // x18 string
+  max_reward: string;
+  // x18 string
+  min_volume: string;
+  // x18 string
+  min_reward: string;
+}
+
+export interface IndexerServerCashIncentivesEventPlatform {
+  // x18 string
+  platform_volume: string;
+  // x18 string
+  unlocked_reward: string;
+}
+
+export interface IndexerServerCashIncentivesEventWallet {
+  // x18 string
+  reward: string;
+}
+
+export interface IndexerServerCashIncentivesEvent {
+  metadata: IndexerServerCashIncentivesEventMetadata;
+  platform: IndexerServerCashIncentivesEventPlatform;
+  wallet: IndexerServerCashIncentivesEventWallet;
+}
+
+export interface IndexerServerCashIncentivesWalletSummary {
+  // x18 string
+  total_reward: string;
+  // x18 string
+  claimable_reward: string;
+}
+
+export interface IndexerServerCashIncentivesResponse {
+  events: IndexerServerCashIncentivesEvent[];
+  wallet_summary: IndexerServerCashIncentivesWalletSummary;
+}
+
 export interface IndexerServerSocialConnectResponse {
   url: string;
 }
@@ -573,6 +625,7 @@ export interface IndexerServerQueryResponseByType {
   private_alpha_choice: IndexerServerPrivateAlphaChoiceResponse;
   nado_points: IndexerServerPointsResponse;
   nado_xpoints: IndexerServerXPointsResponse;
+  cash_incentives: IndexerServerCashIncentivesResponse;
   social_connect: IndexerServerSocialConnectResponse;
   list_social_accounts: IndexerServerSocialAccountsResponse;
   revoke_social_account: IndexerServerSocialAccountsResponse;
