@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/trigger-client",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nado trigger service — stop-loss, take-profit, and TWAP orders",
@@ -41,8 +41,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "^0.24.0",
-    "@nadohq/shared": "^0.24.0",
+    "@nadohq/engine-client": "^0.25.0",
+    "@nadohq/shared": "^0.25.0",
     "axios": "1.16.1",
     "ts-mixer": "6.0.4"
   },
