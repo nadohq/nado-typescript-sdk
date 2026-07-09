@@ -486,5 +486,81 @@ void describe(
         'xPoints.pointsPerEpoch',
       );
     });
+
+    void test('getCashIncentives returns platform volume and rewards per event', async () => {
+      const cashIncentives = await client.getCashIncentives({
+        address: subaccount.subaccountOwner as Address,
+      });
+
+      debugPrint('CashIncentives', cashIncentives);
+      assertDefined(cashIncentives, 'cashIncentives');
+
+      assertArray(cashIncentives.events, 'cashIncentives.events');
+      assertArrayElements(
+        cashIncentives.events,
+        (event, label) => {
+          assertDefined(event.metadata, `${label}.metadata`);
+          assertNumber(event.metadata.eventId, `${label}.metadata.eventId`);
+          assertString(
+            event.metadata.description,
+            `${label}.metadata.description`,
+          );
+          assertBigNumberFinite(
+            event.metadata.epochStart,
+            `${label}.metadata.epochStart`,
+          );
+          assertBigNumberFinite(
+            event.metadata.epochEnd,
+            `${label}.metadata.epochEnd`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.maxVolume,
+            `${label}.metadata.maxVolume`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.maxReward,
+            `${label}.metadata.maxReward`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.minVolume,
+            `${label}.metadata.minVolume`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.minReward,
+            `${label}.metadata.minReward`,
+          );
+
+          assertDefined(event.platform, `${label}.platform`);
+          assertBigNumberNonNegative(
+            event.platform.platformVolume,
+            `${label}.platform.platformVolume`,
+          );
+          assertBigNumberNonNegative(
+            event.platform.unlockedReward,
+            `${label}.platform.unlockedReward`,
+          );
+
+          assertDefined(event.wallet, `${label}.wallet`);
+          assertBigNumberNonNegative(
+            event.wallet.reward,
+            `${label}.wallet.reward`,
+          );
+        },
+        'cashIncentives.events',
+      );
+
+      assertDefined(
+        cashIncentives.walletSummary,
+        'cashIncentives.walletSummary',
+      );
+      assertBigNumberNonNegative(
+        cashIncentives.walletSummary.totalReward,
+        'cashIncentives.walletSummary.totalReward',
+      );
+      assertBigNumberNonNegative(
+        cashIncentives.walletSummary.claimableReward,
+        'cashIncentives.walletSummary.claimableReward',
+      );
+    });
   },
 );

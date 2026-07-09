@@ -49,6 +49,8 @@ import {
   GetIndexerBacklogResponse,
   GetIndexerCandlesticksParams,
   GetIndexerCandlesticksResponse,
+  GetIndexerCashIncentivesParams,
+  GetIndexerCashIncentivesResponse,
   GetIndexerEdgeCandlesticksParams,
   GetIndexerEdgeCandlesticksResponse,
   GetIndexerEdgeMarketSnapshotResponse,
@@ -973,6 +975,47 @@ export class IndexerBaseClient {
         totalPoints: toBigNumber(baseResponse.all_time_points.total_points),
         rank: baseResponse.all_time_points.rank,
         quests: mapQuests(baseResponse.all_time_points.quests),
+      },
+    };
+  }
+
+  /**
+   * Retrieves cash incentives information (platform volume and unlocked rewards) for a given wallet address.
+   * If no `eventId` is provided, the latest event is returned.
+   * @param params
+   */
+  async getCashIncentives(
+    params: GetIndexerCashIncentivesParams,
+  ): Promise<GetIndexerCashIncentivesResponse> {
+    const baseResponse = await this.query('cash_incentives', {
+      wallet_address: params.address,
+    });
+
+    return {
+      events: baseResponse.events.map((event) => ({
+        metadata: {
+          eventId: event.metadata.event_id,
+          description: event.metadata.description,
+          epochStart: toBigNumber(event.metadata.epoch_start),
+          epochEnd: toBigNumber(event.metadata.epoch_end),
+          maxVolume: removeDecimals(event.metadata.max_volume),
+          maxReward: removeDecimals(event.metadata.max_reward),
+          minVolume: removeDecimals(event.metadata.min_volume),
+          minReward: removeDecimals(event.metadata.min_reward),
+        },
+        platform: {
+          platformVolume: removeDecimals(event.platform.platform_volume),
+          unlockedReward: removeDecimals(event.platform.unlocked_reward),
+        },
+        wallet: {
+          reward: removeDecimals(event.wallet.reward),
+        },
+      })),
+      walletSummary: {
+        totalReward: removeDecimals(baseResponse.wallet_summary.total_reward),
+        claimableReward: removeDecimals(
+          baseResponse.wallet_summary.claimable_reward,
+        ),
       },
     };
   }
