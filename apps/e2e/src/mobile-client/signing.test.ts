@@ -24,6 +24,8 @@ const FIXED_VERIFYING_ADDR = '0x0000000000000000000000000000000000000001';
 const PINNED_HASHES = {
   claim_username:
     '0xcfbe9e0a546f43f6d68f86b38cf260ffe079af1915800c0e6df8724ddb6f2dff',
+  update_username:
+    '0x92c3831d30de8206f9ee9d4cf29ed2a2fb1612a3b818e2e46121fc1d5eb4edb6',
   set_private_mode:
     '0x4d12a06234d751e6ddcc01d8f70836bb5b7e207e573641d1efb5aaf2b0f30d10',
   self_identity:
@@ -39,6 +41,15 @@ void describe('[mobile-client]: signing (offline)', () => {
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       assert.equal(hash, PINNED_HASHES.claim_username);
+    });
+
+    void test('update_username', () => {
+      const inner: MobileSignedInner = {
+        type: 'update_username',
+        display_name: 'Alice.Two',
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      assert.equal(hash, PINNED_HASHES.update_username);
     });
 
     void test('set_private_mode', () => {

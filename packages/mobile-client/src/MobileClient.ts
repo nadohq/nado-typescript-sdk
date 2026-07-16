@@ -101,8 +101,8 @@ export class MobileClient {
   /**
    * Looks up a subaccount's public profile by username.
    *
-   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the profile is absent, private,
-   * or the username is invalid.
+   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if no identity has claimed the
+   * username or it is invalid. Private Mode does not hide the profile itself, only the account's activity.
    */
   async getPublicProfile(
     params: GetPublicProfileParams,

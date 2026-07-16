@@ -14,7 +14,7 @@ export class MobileServerFailureError extends Error {
    */
   readonly errorCode: number;
   /**
-   * The request type that failed, e.g. `profile`, `claim_username`.
+   * The request type that failed, e.g. `public_query_profile`, `execute_claim_username`.
    */
   readonly requestType: string;
 
