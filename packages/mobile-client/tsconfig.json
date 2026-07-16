@@ -10,18 +10,6 @@
   "references": [
     {
       "path": "../shared"
-    },
-    {
-      "path": "../engine-client"
-    },
-    {
-      "path": "../indexer-client"
-    },
-    {
-      "path": "../trigger-client"
-    },
-    {
-      "path": "../mobile-client"
     }
   ]
 }

@@ -25,6 +25,7 @@
     "test:e2e:engine": "bun run build && bun --cwd apps/e2e e2e:engine",
     "test:e2e:indexer": "bun run build && bun --cwd apps/e2e e2e:indexer",
     "test:e2e:trigger": "bun run build && bun --cwd apps/e2e e2e:trigger",
+    "test:e2e:mobile": "bun run build && bun --cwd apps/e2e e2e:mobile",
     "typecheck": "lerna run typecheck",
     "unlink-local": "UNLINK=true ./setup-links.sh",
     "depcruise:all": "depcruise packages/* apps/*"
