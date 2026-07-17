@@ -1,5 +1,4 @@
 import {
-  DISPLAY_NAME_PATTERN,
   MOBILE_ERROR_CODE,
   MobileServerFailureError,
   MobileSignedRequestParams,
@@ -21,6 +20,9 @@ import {
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
+
+// Mirrors the backend display-name rules (3–20 ASCII, alphanumeric boundaries, `_`/`.` in the middle).
+const DISPLAY_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.]{1,18}[A-Za-z0-9]$/;
 
 void describe(
   '[mobile-client]: identity',
