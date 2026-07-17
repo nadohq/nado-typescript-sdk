@@ -107,6 +107,8 @@ void describe(
         throw error;
       }
 
+      await delay(TEST_DELAYS.STANDARD);
+
       const claimedIdentity = await tc.mobile.getSelfIdentity(identityParams);
       debugPrint('Identity after claim', claimedIdentity);
 
