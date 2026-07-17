@@ -125,7 +125,8 @@ export interface MobileServerNotificationCategoryPreference {
  * the `notification_preferences` query response.
  */
 export interface MobileServerNotificationPreferences {
-  schema_version: number;
+  /** Only `1` is accepted by the backend for the MVP. */
+  schema_version: 1;
   categories: MobileServerNotificationCategoryPreference[];
 }
 

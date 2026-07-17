@@ -6,10 +6,22 @@ import {
 
 /**
  * A subaccount's claimed identity on the mobile service API.
+ *
+ * `username` and `displayName` are two representations of the same claimed name: `displayName` is what the
+ * user entered (preserving casing, e.g. `Alice.One`), while `username` is the canonical, lowercased handle
+ * derived from it (e.g. `alice.one`). `username` is the unique key used for profile lookups
+ * ({@link MobilePublicProfile}); `displayName` is only for presentation.
  */
 export interface MobileIdentity {
   subaccount: Hex;
+  /**
+   * Canonical, lowercased handle derived from {@link MobileIdentity.displayName}, unique per identity and
+   * used for profile lookups.
+   */
   username: string;
+  /**
+   * User-facing name as claimed, preserving original casing. Validated against `DISPLAY_NAME_PATTERN`.
+   */
   displayName: string;
   privateMode: boolean;
 }
@@ -53,7 +65,8 @@ export interface MobileNotificationCategoryPreference {
  * `schemaVersion` of 1.
  */
 export interface MobileNotificationPreferences {
-  schemaVersion: number;
+  /** Only `1` is accepted by the backend for the MVP. */
+  schemaVersion: 1;
   categories: MobileNotificationCategoryPreference[];
 }
 
