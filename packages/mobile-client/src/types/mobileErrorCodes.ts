@@ -1,5 +1,5 @@
 /**
- * Numeric error codes returned by the Mobile Identity API. Identity codes (61xx) and notification codes
+ * Numeric error codes returned by the mobile service API. Identity codes (61xx) and notification codes
  * (62xx) are mobile-specific; the remaining codes are shared cross-service codes from the backend's common
  * error enum.
  */
@@ -21,7 +21,7 @@ export const MOBILE_ERROR_CODE = {
 } as const;
 
 /**
- * Union of all known Mobile Identity API error codes.
+ * Union of all known mobile service API error codes.
  */
 export type MobileErrorCode =
   (typeof MOBILE_ERROR_CODE)[keyof typeof MOBILE_ERROR_CODE];

@@ -25,7 +25,7 @@ export const NADO_AUTHENTICATION_TYPES = {
 } as const;
 
 /**
- * Unsigned inner payloads that can be authenticated against the Mobile Identity API. `type` must come first
+ * Unsigned inner payloads that can be authenticated against the mobile service API. `type` must come first
  * in each literal so msgpack serializes it deterministically (see {@link canonicalizeMobileInner}).
  */
 export type MobileSignedInner =
@@ -138,7 +138,7 @@ export function getMobilePayloadHash(inner: MobileSignedInner): Hex {
 let nonceCounter = 0n;
 
 /**
- * Generates a `nonce` for a signed Mobile Identity API request. The server reads `nonce / 1_000_000` as a
+ * Generates a `nonce` for a signed mobile service API request. The server reads `nonce / 1_000_000` as a
  * millisecond receive deadline, which must be later than server time and no more than 100s ahead — hence the
  * 30s deadline window here. The low six digits are a per-process counter so nonces generated within the same
  * millisecond stay distinct.
@@ -151,7 +151,7 @@ export function getMobileNonce(): bigint {
 }
 
 /**
- * A signed Mobile Identity API request body: the inner payload flattened with its signature, sender, and
+ * A signed mobile service API request body: the inner payload flattened with its signature, sender, and
  * nonce (unlike the engine client, which wraps params under a `{ [type]: params }` key).
  */
 export type MobileSignedRequest<
@@ -175,7 +175,7 @@ export interface BuildSignedMobileRequestParams extends MobileSignedRequestParam
 }
 
 /**
- * Builds and signs a Mobile Identity API request: canonicalizes the inner payload, derives `sender` from the
+ * Builds and signs a mobile service API request: canonicalizes the inner payload, derives `sender` from the
  * subaccount owner (never the signer), computes the EIP-712 `payloadHash`, signs the `NadoAuthentication`
  * typed data, and returns the flattened signed body ready to POST.
  */

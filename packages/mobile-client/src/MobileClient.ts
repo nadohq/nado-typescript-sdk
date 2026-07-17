@@ -54,7 +54,7 @@ import {
  */
 export interface MobileClientOpts {
   /**
-   * Base URL of the Mobile Identity API, e.g. {@link MOBILE_CLIENT_ENDPOINTS}.
+   * Base URL of the mobile service API, e.g. {@link MOBILE_CLIENT_ENDPOINTS}.
    */
   url: string;
   /**

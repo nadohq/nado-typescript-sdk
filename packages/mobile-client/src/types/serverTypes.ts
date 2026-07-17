@@ -147,7 +147,7 @@ export interface MobileServerExecuteResponse {
 }
 
 /**
- * Failure envelope returned by any Mobile Identity API route. A response missing this envelope shape
+ * Failure envelope returned by any mobile service API route. A response missing this envelope shape
  * (e.g. a malformed body, or a non-JSON response) is a transport-level error, not a domain error.
  */
 export interface MobileServerFailureResponse {
@@ -158,7 +158,7 @@ export interface MobileServerFailureResponse {
 }
 
 /**
- * Narrows an unknown response body to the Mobile Identity API failure envelope.
+ * Narrows an unknown response body to the mobile service API failure envelope.
  */
 export function isMobileServerFailureResponse(
   data: unknown,
@@ -171,7 +171,7 @@ export function isMobileServerFailureResponse(
 }
 
 /**
- * Narrows an unknown response body to a successful Mobile Identity API envelope.
+ * Narrows an unknown response body to a successful mobile service API envelope.
  */
 export function isMobileServerSuccessResponse<T extends { status: 'success' }>(
   data: unknown,

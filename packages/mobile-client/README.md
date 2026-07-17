@@ -1,7 +1,7 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado Mobile API. Manages username claims, public profile lookups, privacy settings, and push
-notification devices/preferences, using EIP-712 + msgpack signed authentication.
+HTTP client for the Nado mobile service API. Manages username claims, public profile lookups, privacy settings, and
+push notification devices/preferences, using EIP-712 + msgpack signed authentication.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -12,7 +12,7 @@ npm install @nadohq/mobile-client @nadohq/shared viem bignumber.js
 ```
 
 Most apps should use `@nadohq/client` instead, which includes this package. Install `@nadohq/mobile-client` directly
-when integrating only the mobile identity service.
+when integrating only the mobile service.
 
 ## Usage
 

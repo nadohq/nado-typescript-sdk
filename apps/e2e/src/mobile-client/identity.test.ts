@@ -216,7 +216,7 @@ function getIdentityParams(tc: RunContext): MobileSignedRequestParams {
 
 /**
  * Asserts that the given operation rejects with a {@link MobileServerFailureError} carrying the expected
- * Mobile Identity API error code.
+ * mobile service API error code.
  */
 async function assertRejectsWithErrorCode(
   operation: () => Promise<unknown>,

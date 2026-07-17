@@ -5,7 +5,7 @@ import {
 } from './serverTypes';
 
 /**
- * A subaccount's claimed identity on the Mobile Identity API.
+ * A subaccount's claimed identity on the mobile service API.
  */
 export interface MobileIdentity {
   subaccount: Hex;
