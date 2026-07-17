@@ -1,4 +1,8 @@
 import { Hex } from 'viem';
+import {
+  MobileNotificationCategory,
+  MobileNotificationPlatform,
+} from './serverTypes';
 
 /**
  * A subaccount's claimed identity on the Mobile Identity API.
@@ -25,6 +29,46 @@ export interface MobilePublicProfile {
 export interface MobileUsernameAvailability {
   username: string;
   available: boolean;
+}
+
+/**
+ * Scope limiting a notification category preference. Scopes are part of the wire format but rejected by the
+ * backend for the MVP — `scopes` must be empty.
+ */
+export type MobilePreferenceScope =
+  | { type: 'subaccount'; subaccount: Hex }
+  | { type: 'product'; productId: number };
+
+/**
+ * A per-category push notification preference.
+ */
+export interface MobileCategoryPreference {
+  category: MobileNotificationCategory;
+  enabled: boolean;
+  scopes: MobilePreferenceScope[];
+}
+
+/**
+ * A wallet's push notification preferences. The backend requires exactly one entry per known category and
+ * `schemaVersion` of 1.
+ */
+export interface MobileNotificationPreferences {
+  schemaVersion: number;
+  categories: MobileCategoryPreference[];
+}
+
+/**
+ * A device registered for push notifications.
+ */
+export interface MobileRegisteredDevice {
+  platform: MobileNotificationPlatform;
+  locale: string | null;
+  appVersion: string | null;
+  tokenFingerprintPrefix: string;
+  /**
+   * Unix timestamp (milliseconds) of the device's last registration refresh.
+   */
+  lastSeenAt: number;
 }
 
 /**
@@ -76,3 +120,46 @@ export interface UpdateMobileUsernameParams extends MobileSignedRequestParams {
 export interface SetMobilePrivateModeParams extends MobileSignedRequestParams {
   privateMode: boolean;
 }
+
+/**
+ * Params for {@link MobileClient.registerExpoToken}.
+ */
+export interface RegisterMobileExpoTokenParams extends MobileSignedRequestParams {
+  /**
+   * Expo push token, e.g. `ExponentPushToken[...]`.
+   */
+  expoToken: string;
+  platform: MobileNotificationPlatform;
+  /**
+   * BCP-47 locale tag, max 35 chars.
+   */
+  locale?: string;
+  /**
+   * App version string, max 64 chars.
+   */
+  appVersion?: string;
+}
+
+/**
+ * Params for {@link MobileClient.unregisterExpoToken}.
+ */
+export interface UnregisterMobileExpoTokenParams extends MobileSignedRequestParams {
+  expoToken: string;
+}
+
+/**
+ * Params for {@link MobileClient.updateNotificationPreferences}.
+ */
+export interface UpdateMobileNotificationPreferencesParams extends MobileSignedRequestParams {
+  preferences: MobileNotificationPreferences;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationPreferences}.
+ */
+export type GetMobileNotificationPreferencesParams = MobileSignedRequestParams;
+
+/**
+ * Params for {@link MobileClient.getRegisteredDevices}.
+ */
+export type GetMobileRegisteredDevicesParams = MobileSignedRequestParams;

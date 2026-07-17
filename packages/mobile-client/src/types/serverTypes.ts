@@ -69,8 +69,78 @@ export interface MobileServerSelfIdentityResponse {
 }
 
 /**
+ * Platform of a device registered for push notifications.
+ */
+export type MobileNotificationPlatform = 'ios' | 'android';
+
+/**
+ * Category of push notification.
+ */
+export type MobileNotificationCategory =
+  | 'order_fill'
+  | 'order_update'
+  | 'liquidation'
+  | 'funding'
+  | 'product_listing'
+  | 'announcement';
+
+/**
+ * Server-side scope limiting a notification category preference. Scopes are rejected by the backend for the
+ * MVP (`scopes` must be empty) but are part of the wire format.
+ */
+export type MobileServerPreferenceScope =
+  | { type: 'subaccount'; subaccount: Hex }
+  | { type: 'product'; product_id: number };
+
+/**
+ * Server-side per-category notification preference (snake_case).
+ */
+export interface MobileServerCategoryPreference {
+  category: MobileNotificationCategory;
+  enabled: boolean;
+  scopes: MobileServerPreferenceScope[];
+}
+
+/**
+ * Server-side notification preferences shape (snake_case), used in both the `update_preferences` execute and
+ * the `notification_preferences` query response.
+ */
+export interface MobileServerNotificationPreferences {
+  schema_version: number;
+  categories: MobileServerCategoryPreference[];
+}
+
+/**
+ * Successful response for the signed `notification_preferences` query.
+ */
+export interface MobileServerNotificationPreferencesResponse {
+  status: 'success';
+  preferences: MobileServerNotificationPreferences;
+}
+
+/**
+ * Server-side registered push device shape (snake_case).
+ */
+export interface MobileServerRegisteredDevice {
+  platform: MobileNotificationPlatform;
+  locale: string | null;
+  app_version: string | null;
+  token_fingerprint_prefix: string;
+  last_seen_at: number;
+}
+
+/**
+ * Successful response for the signed `registered_devices` query.
+ */
+export interface MobileServerRegisteredDevicesResponse {
+  status: 'success';
+  devices: MobileServerRegisteredDevice[];
+}
+
+/**
  * Successful response shape shared by all signed `execute` operations (`claim_username`, `update_username`,
- * `set_private_mode`) — they carry no additional data beyond the success envelope.
+ * `set_private_mode`, `register_expo_token`, `unregister_expo_token`, `update_preferences`) — they carry no
+ * additional data beyond the success envelope.
  */
 export interface MobileServerExecuteResponse {
   status: 'success';

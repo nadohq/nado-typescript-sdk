@@ -1,7 +1,7 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado Mobile Identity API. Manages username claims, public profile lookups, and privacy settings for
-subaccounts, using EIP-712 + msgpack signed authentication.
+HTTP client for the Nado Mobile API. Manages username claims, public profile lookups, privacy settings, and push
+notification devices/preferences, using EIP-712 + msgpack signed authentication.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -62,11 +62,12 @@ await mobile.claimUsername({
 
 ### Signed Queries
 
-`getSelfIdentity`.
+`getSelfIdentity`, `getNotificationPreferences`, `getRegisteredDevices`.
 
 ### Signed Executes
 
-`claimUsername`, `updateUsername`, `setPrivateMode`.
+`claimUsername`, `updateUsername`, `setPrivateMode`, `registerExpoToken`, `unregisterExpoToken`,
+`updateNotificationPreferences`.
 
 ### Linked Signers
 

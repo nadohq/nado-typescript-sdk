@@ -6,6 +6,10 @@ import {
 } from '@nadohq/shared';
 import { Hex, keccak256 } from 'viem';
 import { MobileSignedRequestParams } from './types/clientTypes';
+import {
+  MobileNotificationPlatform,
+  MobileServerNotificationPreferences,
+} from './types/serverTypes';
 
 /**
  * EIP-712 types for the `NadoAuthentication` primary type, used to sign every request to the Mobile
@@ -28,7 +32,23 @@ export type MobileSignedInner =
   | { type: 'claim_username'; display_name: string }
   | { type: 'update_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }
-  | { type: 'self_identity' };
+  | { type: 'self_identity' }
+  | {
+      type: 'register_expo_token';
+      expo_token: string;
+      platform: MobileNotificationPlatform;
+      // Optional on the wire, but always present (null when unset) so the msgpack payload hash matches the
+      // backend, which serializes `Option::None` as nil under the same key.
+      locale: string | null;
+      app_version: string | null;
+    }
+  | { type: 'unregister_expo_token'; expo_token: string }
+  | {
+      type: 'update_preferences';
+      preferences: MobileServerNotificationPreferences;
+    }
+  | { type: 'notification_preferences' }
+  | { type: 'registered_devices' };
 
 /**
  * EIP-712 `method` string for each signed inner payload type.
@@ -39,6 +59,11 @@ export const MOBILE_METHOD_BY_TYPE: Record<MobileSignedInner['type'], string> =
     update_username: 'mobile:execute_update_username',
     set_private_mode: 'mobile:execute_set_private_mode',
     self_identity: 'mobile:query_self_identity',
+    register_expo_token: 'mobile:execute_register_expo_token',
+    unregister_expo_token: 'mobile:execute_unregister_expo_token',
+    update_preferences: 'mobile:execute_update_preferences',
+    notification_preferences: 'mobile:query_notification_preferences',
+    registered_devices: 'mobile:query_registered_devices',
   };
 
 /**
@@ -58,7 +83,47 @@ export function canonicalizeMobileInner(
       return { type: 'set_private_mode', private_mode: inner.private_mode };
     case 'self_identity':
       return { type: 'self_identity' };
+    case 'register_expo_token':
+      return {
+        type: 'register_expo_token',
+        expo_token: inner.expo_token,
+        platform: inner.platform,
+        locale: inner.locale,
+        app_version: inner.app_version,
+      };
+    case 'unregister_expo_token':
+      return { type: 'unregister_expo_token', expo_token: inner.expo_token };
+    case 'update_preferences':
+      return {
+        type: 'update_preferences',
+        preferences: canonicalizeNotificationPreferences(inner.preferences),
+      };
+    case 'notification_preferences':
+      return { type: 'notification_preferences' };
+    case 'registered_devices':
+      return { type: 'registered_devices' };
   }
+}
+
+/**
+ * Rebuilds notification preferences with keys in the backend's struct declaration order, so the msgpack
+ * encoding matches the backend's `rmp_serde::to_vec_named` output field-for-field.
+ */
+function canonicalizeNotificationPreferences(
+  preferences: MobileServerNotificationPreferences,
+): MobileServerNotificationPreferences {
+  return {
+    schema_version: preferences.schema_version,
+    categories: preferences.categories.map((category) => ({
+      category: category.category,
+      enabled: category.enabled,
+      scopes: category.scopes.map((scope) =>
+        scope.type === 'subaccount'
+          ? { type: 'subaccount', subaccount: scope.subaccount }
+          : { type: 'product', product_id: scope.product_id },
+      ),
+    })),
+  };
 }
 
 /**

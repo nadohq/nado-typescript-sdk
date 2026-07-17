@@ -3,7 +3,13 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { mapMobileIdentity, mapMobilePublicProfile } from './dataMappers';
+import {
+  mapMobileIdentity,
+  mapMobileNotificationPreferences,
+  mapMobileNotificationPreferencesToServer,
+  mapMobilePublicProfile,
+  mapMobileRegisteredDevice,
+} from './dataMappers';
 import { stringifyMobileRequest } from './jsonSerializer';
 import {
   buildSignedMobileRequest,
@@ -12,14 +18,21 @@ import {
 } from './signing';
 import {
   ClaimMobileUsernameParams,
+  GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
+  GetMobileRegisteredDevicesParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
   MobileIdentity,
+  MobileNotificationPreferences,
   MobilePublicProfile,
+  MobileRegisteredDevice,
   MobileSignedRequestParams,
   MobileUsernameAvailability,
+  RegisterMobileExpoTokenParams,
   SetMobilePrivateModeParams,
+  UnregisterMobileExpoTokenParams,
+  UpdateMobileNotificationPreferencesParams,
   UpdateMobileUsernameParams,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
@@ -27,8 +40,10 @@ import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
   MobileServerExecuteResponse,
+  MobileServerNotificationPreferencesResponse,
   MobileServerProfileRequest,
   MobileServerProfileResponse,
+  MobileServerRegisteredDevicesResponse,
   MobileServerSelfIdentityResponse,
   MobileServerUsernameAvailabilityRequest,
   MobileServerUsernameAvailabilityResponse,
@@ -53,7 +68,8 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado Mobile Identity API: username claims, public profile lookups, and privacy settings.
+ * Client for the Nado Mobile API: username claims, public profile lookups, privacy settings, and push
+ * notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -134,6 +150,37 @@ export class MobileClient {
     return data.identity ? mapMobileIdentity(data.identity) : null;
   }
 
+  /**
+   * Fetches a wallet's push notification preferences. Falls back to the backend's defaults if the wallet has
+   * never updated its preferences.
+   */
+  async getNotificationPreferences(
+    params: GetMobileNotificationPreferencesParams,
+  ): Promise<MobileNotificationPreferences> {
+    const signedRequest = await this.buildSigned(params, {
+      type: 'notification_preferences',
+    });
+    const data =
+      await this.query<MobileServerNotificationPreferencesResponse>(
+        signedRequest,
+      );
+    return mapMobileNotificationPreferences(data.preferences);
+  }
+
+  /**
+   * Fetches the devices registered for push notifications for a wallet.
+   */
+  async getRegisteredDevices(
+    params: GetMobileRegisteredDevicesParams,
+  ): Promise<MobileRegisteredDevice[]> {
+    const signedRequest = await this.buildSigned(params, {
+      type: 'registered_devices',
+    });
+    const data =
+      await this.query<MobileServerRegisteredDevicesResponse>(signedRequest);
+    return data.devices.map(mapMobileRegisteredDevice);
+  }
+
   /*
   Signed executes
    */
@@ -167,6 +214,56 @@ export class MobileClient {
     const signedRequest = await this.buildSigned(params, {
       type: 'set_private_mode',
       private_mode: params.privateMode,
+    });
+    await this.execute(signedRequest);
+  }
+
+  /**
+   * Registers an Expo push token for the wallet, transferring active ownership of the token if another
+   * wallet had registered it. Idempotent per `(wallet, token)`.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is not a valid Expo
+   * push token, or `INVALID_DEVICE_METADATA` if `locale` (max 35 chars) or `appVersion` (max 64 chars) is
+   * too long.
+   */
+  async registerExpoToken(
+    params: RegisterMobileExpoTokenParams,
+  ): Promise<void> {
+    const signedRequest = await this.buildSigned(params, {
+      type: 'register_expo_token',
+      expo_token: params.expoToken,
+      platform: params.platform,
+      locale: params.locale ?? null,
+      app_version: params.appVersion ?? null,
+    });
+    await this.execute(signedRequest);
+  }
+
+  /**
+   * Unregisters an Expo push token for the wallet. Idempotent — unregistering an unknown token succeeds.
+   */
+  async unregisterExpoToken(
+    params: UnregisterMobileExpoTokenParams,
+  ): Promise<void> {
+    const signedRequest = await this.buildSigned(params, {
+      type: 'unregister_expo_token',
+      expo_token: params.expoToken,
+    });
+    await this.execute(signedRequest);
+  }
+
+  /**
+   * Replaces the wallet's push notification preferences. The backend requires `schemaVersion` of 1, exactly
+   * one entry per known category, and empty `scopes` on every entry.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_PREFERENCES` if those rules are violated.
+   */
+  async updateNotificationPreferences(
+    params: UpdateMobileNotificationPreferencesParams,
+  ): Promise<void> {
+    const signedRequest = await this.buildSigned(params, {
+      type: 'update_preferences',
+      preferences: mapMobileNotificationPreferencesToServer(params.preferences),
     });
     await this.execute(signedRequest);
   }
