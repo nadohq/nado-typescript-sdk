@@ -1,36 +1,57 @@
 import { Hex } from 'viem';
 
 /**
+ * Params for each unsigned `public_query`, keyed by request `type`.
+ */
+export interface MobileServerPublicQueryParamsByType {
+  username_availability: { display_name: string };
+  profile: { username: string };
+}
+
+export type MobileServerPublicQueryType =
+  keyof MobileServerPublicQueryParamsByType;
+
+/**
+ * Unsigned `public_query` request body: a `type` discriminant flattened with its params, matching the engine
+ * client's `{ type, ...params }` request convention (e.g. `EngineServerQueryRequest`).
+ */
+export type MobileServerPublicQueryRequest<
+  T extends MobileServerPublicQueryType = MobileServerPublicQueryType,
+> = {
+  [K in MobileServerPublicQueryType]: {
+    type: K;
+  } & MobileServerPublicQueryParamsByType[K];
+}[T];
+
+/**
  * Request body for the `username_availability` public query.
  */
-export interface MobileServerUsernameAvailabilityRequest {
-  type: 'username_availability';
-  display_name: string;
-}
+export type MobileServerUsernameAvailabilityRequest =
+  MobileServerPublicQueryRequest<'username_availability'>;
 
 /**
  * Request body for the `profile` public query.
  */
-export interface MobileServerProfileRequest {
-  type: 'profile';
-  username: string;
-}
+export type MobileServerProfileRequest =
+  MobileServerPublicQueryRequest<'profile'>;
 
 /**
- * Union of all unsigned `public_query` request bodies.
+ * Successful mobile service API envelope, mirroring the engine client's success/failure discriminant on
+ * `status` (e.g. `EngineServerExecuteSuccessResult`). Payload fields are inlined alongside `status`
+ * rather than nested under a `data` key, matching the mobile backend's wire format.
  */
-export type MobileServerPublicQueryRequest =
-  | MobileServerUsernameAvailabilityRequest
-  | MobileServerProfileRequest;
+export type MobileServerSuccessResponse<TData extends object = object> = {
+  status: 'success';
+} & TData;
 
 /**
  * Successful response for the `username_availability` public query.
  */
-export interface MobileServerUsernameAvailabilityResponse {
-  status: 'success';
-  username: string;
-  available: boolean;
-}
+export type MobileServerUsernameAvailabilityResponse =
+  MobileServerSuccessResponse<{
+    username: string;
+    available: boolean;
+  }>;
 
 /**
  * Server-side public profile shape (snake_case).
@@ -44,10 +65,9 @@ export interface MobileServerProfile {
 /**
  * Successful response for the `profile` public query.
  */
-export interface MobileServerProfileResponse {
-  status: 'success';
+export type MobileServerProfileResponse = MobileServerSuccessResponse<{
   profile: MobileServerProfile;
-}
+}>;
 
 /**
  * Server-side identity shape (snake_case) returned by the signed `self_identity` query.
@@ -63,10 +83,9 @@ export interface MobileServerIdentity {
  * Successful response for the signed `self_identity` query. A `null` identity means the subaccount has not
  * claimed a username yet — this is normal data, not an error.
  */
-export interface MobileServerSelfIdentityResponse {
-  status: 'success';
+export type MobileServerSelfIdentityResponse = MobileServerSuccessResponse<{
   identity: MobileServerIdentity | null;
-}
+}>;
 
 /**
  * Platform of a device registered for push notifications.
@@ -113,10 +132,10 @@ export interface MobileServerNotificationPreferences {
 /**
  * Successful response for the signed `notification_preferences` query.
  */
-export interface MobileServerNotificationPreferencesResponse {
-  status: 'success';
-  preferences: MobileServerNotificationPreferences;
-}
+export type MobileServerNotificationPreferencesResponse =
+  MobileServerSuccessResponse<{
+    preferences: MobileServerNotificationPreferences;
+  }>;
 
 /**
  * Server-side registered push device shape (snake_case).
@@ -132,19 +151,17 @@ export interface MobileServerRegisteredDevice {
 /**
  * Successful response for the signed `registered_devices` query.
  */
-export interface MobileServerRegisteredDevicesResponse {
-  status: 'success';
-  devices: MobileServerRegisteredDevice[];
-}
+export type MobileServerRegisteredDevicesResponse =
+  MobileServerSuccessResponse<{
+    devices: MobileServerRegisteredDevice[];
+  }>;
 
 /**
  * Successful response shape shared by all signed `execute` operations (`claim_username`, `update_username`,
  * `set_private_mode`, `register_expo_token`, `unregister_expo_token`, `update_preferences`) — they carry no
  * additional data beyond the success envelope.
  */
-export interface MobileServerExecuteResponse {
-  status: 'success';
-}
+export type MobileServerExecuteResponse = MobileServerSuccessResponse;
 
 /**
  * Failure envelope returned by any mobile service API route. A response missing this envelope shape
