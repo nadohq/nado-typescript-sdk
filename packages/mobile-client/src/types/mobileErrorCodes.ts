@@ -1,10 +1,12 @@
 /**
- * Numeric error codes returned by the Mobile Identity API. The Mobile service owns the 6000-6999 range.
+ * Numeric error codes returned by the Mobile Identity API. Identity codes (61xx) and notification codes
+ * (62xx) are mobile-specific; the remaining codes are shared cross-service codes from the backend's common
+ * error enum.
  */
 export const MOBILE_ERROR_CODE = {
-  UNSUPPORTED_VARIANT: 6000,
-  INVALID_SIGNATURE: 6001,
-  SERVICE_NOT_READY: 6002,
+  NOT_IMPLEMENTED: 4001,
+  INVALID_SIGNER: 2028,
+  SERVICE_UNAVAILABLE: 1006,
   INVALID_DISPLAY_NAME: 6100,
   USERNAME_UNAVAILABLE: 6101,
   IDENTITY_ALREADY_CLAIMED: 6102,
@@ -15,7 +17,7 @@ export const MOBILE_ERROR_CODE = {
   INVALID_EXPO_TOKEN: 6200,
   INVALID_DEVICE_METADATA: 6201,
   INVALID_PREFERENCES: 6202,
-  INTERNAL_ERROR: 6999,
+  INTERNAL_ERROR: 5000,
 } as const;
 
 /**
