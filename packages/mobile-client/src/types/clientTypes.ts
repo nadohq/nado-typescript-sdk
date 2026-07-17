@@ -3,7 +3,7 @@ import { Hex } from 'viem';
 /**
  * A subaccount's claimed identity on the Mobile Identity API.
  */
-export interface Identity {
+export interface MobileIdentity {
   subaccount: Hex;
   username: string;
   displayName: string;
@@ -13,7 +13,7 @@ export interface Identity {
 /**
  * A subaccount's public profile, as returned by an unsigned profile lookup.
  */
-export interface PublicProfile {
+export interface MobilePublicProfile {
   subaccount: Hex;
   username: string;
   displayName: string;
@@ -22,7 +22,7 @@ export interface PublicProfile {
 /**
  * Result of a username availability check.
  */
-export interface UsernameAvailability {
+export interface MobileUsernameAvailability {
   username: string;
   available: boolean;
 }
@@ -40,39 +40,39 @@ export interface MobileSignedRequestParams {
 /**
  * Params for {@link MobileClient.getUsernameAvailability}.
  */
-export interface GetUsernameAvailabilityParams {
+export interface GetMobileUsernameAvailabilityParams {
   displayName: string;
 }
 
 /**
  * Params for {@link MobileClient.getPublicProfile}.
  */
-export interface GetPublicProfileParams {
+export interface GetMobilePublicProfileParams {
   username: string;
 }
 
 /**
  * Params for {@link MobileClient.getSelfIdentity}.
  */
-export type GetSelfIdentityParams = MobileSignedRequestParams;
+export type GetMobileSelfIdentityParams = MobileSignedRequestParams;
 
 /**
  * Params for {@link MobileClient.claimUsername}.
  */
-export interface ClaimUsernameParams extends MobileSignedRequestParams {
+export interface ClaimMobileUsernameParams extends MobileSignedRequestParams {
   displayName: string;
 }
 
 /**
  * Params for {@link MobileClient.updateUsername}.
  */
-export interface UpdateUsernameParams extends MobileSignedRequestParams {
+export interface UpdateMobileUsernameParams extends MobileSignedRequestParams {
   displayName: string;
 }
 
 /**
  * Params for {@link MobileClient.setPrivateMode}.
  */
-export interface SetPrivateModeParams extends MobileSignedRequestParams {
+export interface SetMobilePrivateModeParams extends MobileSignedRequestParams {
   privateMode: boolean;
 }

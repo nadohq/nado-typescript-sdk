@@ -11,16 +11,16 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
-  ClaimUsernameParams,
-  GetPublicProfileParams,
-  GetSelfIdentityParams,
-  GetUsernameAvailabilityParams,
-  Identity,
+  ClaimMobileUsernameParams,
+  GetMobilePublicProfileParams,
+  GetMobileSelfIdentityParams,
+  GetMobileUsernameAvailabilityParams,
+  MobileIdentity,
+  MobilePublicProfile,
   MobileSignedRequestParams,
-  PublicProfile,
-  SetPrivateModeParams,
-  UpdateUsernameParams,
-  UsernameAvailability,
+  MobileUsernameAvailability,
+  SetMobilePrivateModeParams,
+  UpdateMobileUsernameParams,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import {
@@ -87,8 +87,8 @@ export class MobileClient {
    * Checks whether a username derived from the given display name is available to claim.
    */
   async getUsernameAvailability(
-    params: GetUsernameAvailabilityParams,
-  ): Promise<UsernameAvailability> {
+    params: GetMobileUsernameAvailabilityParams,
+  ): Promise<MobileUsernameAvailability> {
     const body: MobileServerUsernameAvailabilityRequest = {
       type: 'username_availability',
       display_name: params.displayName,
@@ -105,8 +105,8 @@ export class MobileClient {
    * username or it is invalid. Private Mode does not hide the profile itself, only the account's activity.
    */
   async getPublicProfile(
-    params: GetPublicProfileParams,
-  ): Promise<PublicProfile> {
+    params: GetMobilePublicProfileParams,
+  ): Promise<MobilePublicProfile> {
     const body: MobileServerProfileRequest = {
       type: 'profile',
       username: params.username,
@@ -124,8 +124,8 @@ export class MobileClient {
    * username yet — this is normal data, not an error.
    */
   async getSelfIdentity(
-    params: GetSelfIdentityParams,
-  ): Promise<Identity | null> {
+    params: GetMobileSelfIdentityParams,
+  ): Promise<MobileIdentity | null> {
     const signedRequest = await this.buildSigned(params, {
       type: 'self_identity',
     });
@@ -141,7 +141,7 @@ export class MobileClient {
   /**
    * Claims a username for a subaccount, derived from the given display name.
    */
-  async claimUsername(params: ClaimUsernameParams): Promise<void> {
+  async claimUsername(params: ClaimMobileUsernameParams): Promise<void> {
     const signedRequest = await this.buildSigned(params, {
       type: 'claim_username',
       display_name: params.displayName,
@@ -152,7 +152,7 @@ export class MobileClient {
   /**
    * Updates the display name for a subaccount's already-claimed identity.
    */
-  async updateUsername(params: UpdateUsernameParams): Promise<void> {
+  async updateUsername(params: UpdateMobileUsernameParams): Promise<void> {
     const signedRequest = await this.buildSigned(params, {
       type: 'update_username',
       display_name: params.displayName,
@@ -163,7 +163,7 @@ export class MobileClient {
   /**
    * Sets whether a subaccount's profile is private.
    */
-  async setPrivateMode(params: SetPrivateModeParams): Promise<void> {
+  async setPrivateMode(params: SetMobilePrivateModeParams): Promise<void> {
     const signedRequest = await this.buildSigned(params, {
       type: 'set_private_mode',
       private_mode: params.privateMode,

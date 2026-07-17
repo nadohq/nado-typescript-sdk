@@ -35,7 +35,7 @@ const mobile = new MobileClient({
 
 // Unsigned public lookups
 const availability = await mobile.getUsernameAvailability({ displayName: 'Alice.One' });
-const profile = await mobile.getPublicProfile({ username: 'alice-one' });
+const profile = await mobile.getPublicProfile({ username: 'alice.one' });
 
 // Signed operations
 const identity = await mobile.getSelfIdentity({

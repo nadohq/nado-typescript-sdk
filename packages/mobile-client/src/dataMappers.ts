@@ -1,10 +1,12 @@
-import { Identity, PublicProfile } from './types/clientTypes';
+import { MobileIdentity, MobilePublicProfile } from './types/clientTypes';
 import { MobileServerIdentity, MobileServerProfile } from './types/serverTypes';
 
 /**
  * Maps a server-side identity (snake_case) to its client-side (camelCase) representation.
  */
-export function mapMobileIdentity(server: MobileServerIdentity): Identity {
+export function mapMobileIdentity(
+  server: MobileServerIdentity,
+): MobileIdentity {
   return {
     subaccount: server.subaccount,
     username: server.username,
@@ -18,7 +20,7 @@ export function mapMobileIdentity(server: MobileServerIdentity): Identity {
  */
 export function mapMobilePublicProfile(
   server: MobileServerProfile,
-): PublicProfile {
+): MobilePublicProfile {
   return {
     subaccount: server.subaccount,
     username: server.username,
