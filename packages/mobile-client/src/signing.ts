@@ -51,6 +51,15 @@ export type MobileSignedInner =
   | { type: 'registered_devices' };
 
 /**
+ * Type-specific payload fields for a signed inner request of a given `type` (the inner payload without its
+ * `type` tag). Derived from {@link MobileSignedInner} so the two never drift apart.
+ */
+export type MobileSignedInnerParams<T extends MobileSignedInner['type']> = Omit<
+  Extract<MobileSignedInner, { type: T }>,
+  'type'
+>;
+
+/**
  * EIP-712 `method` string for each signed inner payload type.
  */
 export const MOBILE_METHOD_BY_TYPE: Record<MobileSignedInner['type'], string> =

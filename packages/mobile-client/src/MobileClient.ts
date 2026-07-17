@@ -14,6 +14,7 @@ import { stringifyMobileRequest } from './jsonSerializer';
 import {
   buildSignedMobileRequest,
   MobileSignedInner,
+  MobileSignedInnerParams,
   MobileSignedRequest,
 } from './signing';
 import {
@@ -142,9 +143,11 @@ export class MobileClient {
   async getSelfIdentity(
     params: GetMobileSelfIdentityParams,
   ): Promise<MobileIdentity | null> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'self_identity',
-    });
+    const signedRequest = await this.getSignedRequest(
+      'self_identity',
+      params,
+      {},
+    );
     const data =
       await this.query<MobileServerSelfIdentityResponse>(signedRequest);
     return data.identity ? mapMobileIdentity(data.identity) : null;
@@ -157,9 +160,11 @@ export class MobileClient {
   async getNotificationPreferences(
     params: GetMobileNotificationPreferencesParams,
   ): Promise<MobileNotificationPreferences> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'notification_preferences',
-    });
+    const signedRequest = await this.getSignedRequest(
+      'notification_preferences',
+      params,
+      {},
+    );
     const data =
       await this.query<MobileServerNotificationPreferencesResponse>(
         signedRequest,
@@ -173,9 +178,11 @@ export class MobileClient {
   async getRegisteredDevices(
     params: GetMobileRegisteredDevicesParams,
   ): Promise<MobileRegisteredDevice[]> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'registered_devices',
-    });
+    const signedRequest = await this.getSignedRequest(
+      'registered_devices',
+      params,
+      {},
+    );
     const data =
       await this.query<MobileServerRegisteredDevicesResponse>(signedRequest);
     return data.devices.map(mapMobileRegisteredDevice);
@@ -191,10 +198,13 @@ export class MobileClient {
   async claimUsername(
     params: ClaimMobileUsernameParams,
   ): Promise<MobileServerExecuteResponse> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'claim_username',
-      display_name: params.displayName,
-    });
+    const signedRequest = await this.getSignedRequest(
+      'claim_username',
+      params,
+      {
+        display_name: params.displayName,
+      },
+    );
     return this.execute(signedRequest);
   }
 
@@ -204,10 +214,11 @@ export class MobileClient {
   async updateUsername(
     params: UpdateMobileUsernameParams,
   ): Promise<MobileServerExecuteResponse> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'update_username',
-      display_name: params.displayName,
-    });
+    const signedRequest = await this.getSignedRequest(
+      'update_username',
+      params,
+      { display_name: params.displayName },
+    );
     return this.execute(signedRequest);
   }
 
@@ -217,10 +228,11 @@ export class MobileClient {
   async setPrivateMode(
     params: SetMobilePrivateModeParams,
   ): Promise<MobileServerExecuteResponse> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'set_private_mode',
-      private_mode: params.privateMode,
-    });
+    const signedRequest = await this.getSignedRequest(
+      'set_private_mode',
+      params,
+      { private_mode: params.privateMode },
+    );
     return this.execute(signedRequest);
   }
 
@@ -235,13 +247,16 @@ export class MobileClient {
   async registerExpoToken(
     params: RegisterMobileExpoTokenParams,
   ): Promise<MobileServerExecuteResponse> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'register_expo_token',
-      expo_token: params.expoToken,
-      platform: params.platform,
-      locale: params.locale ?? null,
-      app_version: params.appVersion ?? null,
-    });
+    const signedRequest = await this.getSignedRequest(
+      'register_expo_token',
+      params,
+      {
+        expo_token: params.expoToken,
+        platform: params.platform,
+        locale: params.locale ?? null,
+        app_version: params.appVersion ?? null,
+      },
+    );
     return this.execute(signedRequest);
   }
 
@@ -251,10 +266,11 @@ export class MobileClient {
   async unregisterExpoToken(
     params: UnregisterMobileExpoTokenParams,
   ): Promise<MobileServerExecuteResponse> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'unregister_expo_token',
-      expo_token: params.expoToken,
-    });
+    const signedRequest = await this.getSignedRequest(
+      'unregister_expo_token',
+      params,
+      { expo_token: params.expoToken },
+    );
     return this.execute(signedRequest);
   }
 
@@ -267,10 +283,15 @@ export class MobileClient {
   async updateNotificationPreferences(
     params: UpdateMobileNotificationPreferencesParams,
   ): Promise<MobileServerExecuteResponse> {
-    const signedRequest = await this.buildSigned(params, {
-      type: 'update_preferences',
-      preferences: mapMobileNotificationPreferencesToServer(params.preferences),
-    });
+    const signedRequest = await this.getSignedRequest(
+      'update_preferences',
+      params,
+      {
+        preferences: mapMobileNotificationPreferencesToServer(
+          params.preferences,
+        ),
+      },
+    );
     return this.execute(signedRequest);
   }
 
@@ -278,10 +299,11 @@ export class MobileClient {
   Base fns
    */
 
-  private async buildSigned<T extends MobileSignedInner>(
+  private async getSignedRequest<T extends MobileSignedInner['type']>(
+    type: T,
     params: MobileSignedRequestParams,
-    inner: T,
-  ): Promise<MobileSignedRequest<T>> {
+    innerParams: MobileSignedInnerParams<T>,
+  ): Promise<MobileSignedRequest> {
     // Use the linked signer if provided, otherwise use the default signer provided to the client
     const walletClient =
       this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
@@ -290,6 +312,7 @@ export class MobileClient {
       throw new WalletNotProvidedError();
     }
 
+    const inner = { type, ...innerParams } as MobileSignedInner;
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
