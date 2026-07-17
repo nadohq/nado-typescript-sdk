@@ -58,7 +58,7 @@ The project follows a monorepo pattern with these core packages:
 2. **`@nadohq/engine-client`** - Handles off-chain matching engine communication
 3. **`@nadohq/indexer-client`** - Provides indexer queries for historical data
 4. **`@nadohq/trigger-client`** - Manages trigger service for stop orders
-5. **`@nadohq/mobile-client`** - Client for the Mobile Identity API (usernames, profiles, private mode)
+5. **`@nadohq/mobile-client`** - Client for the mobile service API (usernames, profiles, private mode, push notification devices & preferences)
 6. **`@nadohq/shared`** - Contract utilities, ABIs, and on-chain interactions. Also includes common utilities, such as
    bignumber.js for mathematical operations.
 

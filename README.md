@@ -25,7 +25,7 @@ Exports queries and executes that talk to the trigger service (used for stop & T
 
 ### `@nadohq/mobile-client`
 
-Client for the mobile service — identity, usernames, and privacy settings.
+Client for the mobile service — identity, usernames, privacy settings, and push notification devices & preferences.
 
 ### `@nadohq/shared`
 
