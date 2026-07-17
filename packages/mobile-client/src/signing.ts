@@ -12,8 +12,8 @@ import {
 } from './types/serverTypes';
 
 /**
- * EIP-712 types for the `NadoAuthentication` primary type, used to sign every request to the Mobile
- * Identity API's `query` and `execute` routes.
+ * EIP-712 types for the `NadoAuthentication` primary type, used to sign every request to the mobile
+ * service API's `query` and `execute` routes.
  */
 export const NADO_AUTHENTICATION_TYPES = {
   NadoAuthentication: [
