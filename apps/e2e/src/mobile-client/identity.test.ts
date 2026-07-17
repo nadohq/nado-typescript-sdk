@@ -1,6 +1,6 @@
 import {
   DISPLAY_NAME_PATTERN,
-  MOBILE_ERROR_CODE,
+  MOBILE_ERROR_CODES,
   MobileServerFailureError,
   MobileSignedRequestParams,
 } from '@nadohq/mobile-client';
@@ -51,7 +51,7 @@ void describe(
     void test('rejects a malformed display name with INVALID_DISPLAY_NAME', async () => {
       await assertRejectsWithErrorCode(
         () => tc.mobile.getUsernameAvailability({ displayName: '!!' }),
-        MOBILE_ERROR_CODE.INVALID_DISPLAY_NAME,
+        MOBILE_ERROR_CODES.INVALID_DISPLAY_NAME,
       );
     });
 
@@ -71,7 +71,7 @@ void describe(
       const username = `nonexistent-e2e-${Date.now()}`;
       await assertRejectsWithErrorCode(
         () => tc.mobile.getPublicProfile({ username }),
-        MOBILE_ERROR_CODE.PROFILE_NOT_FOUND,
+        MOBILE_ERROR_CODES.PROFILE_NOT_FOUND,
       );
     });
 
@@ -97,7 +97,7 @@ void describe(
       } catch (error) {
         if (
           error instanceof MobileServerFailureError &&
-          error.errorCode === MOBILE_ERROR_CODE.IDENTITY_ALREADY_CLAIMED
+          error.errorCode === MOBILE_ERROR_CODES.IDENTITY_ALREADY_CLAIMED
         ) {
           // Another process claimed the identity between our check and this call — an acceptable race, not a failure.
           return;
@@ -126,7 +126,7 @@ void describe(
               ...identityParams,
               displayName: `E2E_${Date.now()}`,
             }),
-          MOBILE_ERROR_CODE.IDENTITY_REQUIRED,
+          MOBILE_ERROR_CODES.IDENTITY_REQUIRED,
         );
         return;
       }
@@ -170,7 +170,7 @@ void describe(
               ...identityParams,
               privateMode: true,
             }),
-          MOBILE_ERROR_CODE.IDENTITY_REQUIRED,
+          MOBILE_ERROR_CODES.IDENTITY_REQUIRED,
         );
         return;
       }

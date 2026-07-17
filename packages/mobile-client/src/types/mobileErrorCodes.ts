@@ -3,7 +3,7 @@
  * (62xx) are mobile-specific; the remaining codes are shared cross-service codes from the backend's common
  * error enum.
  */
-export const MOBILE_ERROR_CODE = {
+export const MOBILE_ERROR_CODES = {
   NOT_IMPLEMENTED: 4001,
   INVALID_SIGNER: 2028,
   SERVICE_UNAVAILABLE: 1006,
@@ -24,7 +24,7 @@ export const MOBILE_ERROR_CODE = {
  * Union of all known mobile service API error codes.
  */
 export type MobileErrorCode =
-  (typeof MOBILE_ERROR_CODE)[keyof typeof MOBILE_ERROR_CODE];
+  (typeof MOBILE_ERROR_CODES)[keyof typeof MOBILE_ERROR_CODES];
 
 /**
  * Validates a display name: 3-20 ASCII characters, alphanumeric boundaries, `_`/`.` allowed in the middle.

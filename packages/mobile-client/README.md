@@ -3,8 +3,6 @@
 HTTP client for the Nado mobile service API. Manages username claims, public profile lookups, privacy settings, and
 push notification devices/preferences, using EIP-712 + msgpack signed authentication.
 
-[Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
-
 ## Installation
 
 ```bash

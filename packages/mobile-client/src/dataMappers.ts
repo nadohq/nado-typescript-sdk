@@ -1,14 +1,14 @@
 import {
   MobileIdentity,
+  MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
-  MobilePreferenceScope,
   MobilePublicProfile,
   MobileRegisteredDevice,
 } from './types/clientTypes';
 import {
   MobileServerIdentity,
+  MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
-  MobileServerPreferenceScope,
   MobileServerProfile,
   MobileServerRegisteredDevice,
 } from './types/serverTypes';
@@ -51,14 +51,14 @@ export function mapMobileNotificationPreferences(
     categories: server.categories.map((category) => ({
       category: category.category,
       enabled: category.enabled,
-      scopes: category.scopes.map(mapMobilePreferenceScope),
+      scopes: category.scopes.map(mapMobileNotificationPreferenceScope),
     })),
   };
 }
 
-function mapMobilePreferenceScope(
-  server: MobileServerPreferenceScope,
-): MobilePreferenceScope {
+function mapMobileNotificationPreferenceScope(
+  server: MobileServerNotificationPreferenceScope,
+): MobileNotificationPreferenceScope {
   if (server.type === 'subaccount') {
     return { type: 'subaccount', subaccount: server.subaccount };
   }
@@ -76,14 +76,14 @@ export function mapMobileNotificationPreferencesToServer(
     categories: preferences.categories.map((category) => ({
       category: category.category,
       enabled: category.enabled,
-      scopes: category.scopes.map(mapMobilePreferenceScopeToServer),
+      scopes: category.scopes.map(mapMobileNotificationPreferenceScopeToServer),
     })),
   };
 }
 
-function mapMobilePreferenceScopeToServer(
-  scope: MobilePreferenceScope,
-): MobileServerPreferenceScope {
+function mapMobileNotificationPreferenceScopeToServer(
+  scope: MobileNotificationPreferenceScope,
+): MobileServerNotificationPreferenceScope {
   if (scope.type === 'subaccount') {
     return { type: 'subaccount', subaccount: scope.subaccount };
   }

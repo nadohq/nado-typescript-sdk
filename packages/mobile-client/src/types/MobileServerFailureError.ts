@@ -10,7 +10,7 @@ export class MobileServerFailureError extends Error {
    */
   readonly httpStatus: number;
   /**
-   * Numeric mobile service API error code, see {@link MOBILE_ERROR_CODE}.
+   * Numeric mobile service API error code, see {@link MOBILE_ERROR_CODES}.
    */
   readonly errorCode: number;
   /**

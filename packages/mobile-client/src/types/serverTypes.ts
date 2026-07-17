@@ -88,17 +88,17 @@ export type MobileNotificationCategory =
  * Server-side scope limiting a notification category preference. Scopes are rejected by the backend for the
  * MVP (`scopes` must be empty) but are part of the wire format.
  */
-export type MobileServerPreferenceScope =
+export type MobileServerNotificationPreferenceScope =
   | { type: 'subaccount'; subaccount: Hex }
   | { type: 'product'; product_id: number };
 
 /**
  * Server-side per-category notification preference (snake_case).
  */
-export interface MobileServerCategoryPreference {
+export interface MobileServerNotificationCategoryPreference {
   category: MobileNotificationCategory;
   enabled: boolean;
-  scopes: MobileServerPreferenceScope[];
+  scopes: MobileServerNotificationPreferenceScope[];
 }
 
 /**
@@ -107,7 +107,7 @@ export interface MobileServerCategoryPreference {
  */
 export interface MobileServerNotificationPreferences {
   schema_version: number;
-  categories: MobileServerCategoryPreference[];
+  categories: MobileServerNotificationCategoryPreference[];
 }
 
 /**

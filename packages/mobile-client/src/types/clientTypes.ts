@@ -35,17 +35,17 @@ export interface MobileUsernameAvailability {
  * Scope limiting a notification category preference. Scopes are part of the wire format but rejected by the
  * backend for the MVP — `scopes` must be empty.
  */
-export type MobilePreferenceScope =
+export type MobileNotificationPreferenceScope =
   | { type: 'subaccount'; subaccount: Hex }
   | { type: 'product'; productId: number };
 
 /**
  * A per-category push notification preference.
  */
-export interface MobileCategoryPreference {
+export interface MobileNotificationCategoryPreference {
   category: MobileNotificationCategory;
   enabled: boolean;
-  scopes: MobilePreferenceScope[];
+  scopes: MobileNotificationPreferenceScope[];
 }
 
 /**
@@ -54,7 +54,7 @@ export interface MobileCategoryPreference {
  */
 export interface MobileNotificationPreferences {
   schemaVersion: number;
-  categories: MobileCategoryPreference[];
+  categories: MobileNotificationCategoryPreference[];
 }
 
 /**
