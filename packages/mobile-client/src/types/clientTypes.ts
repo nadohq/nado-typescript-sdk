@@ -74,9 +74,16 @@ export interface MobileNotificationPreferences {
  * A device registered for push notifications.
  */
 export interface MobileRegisteredDevice {
+  /** Push platform the device registered under. */
   platform: MobileNotificationPlatform;
+  /** BCP-47 locale tag reported at registration, or `null` if none was provided. */
   locale: string | null;
+  /** App version string reported at registration, or `null` if none was provided. */
   appVersion: string | null;
+  /**
+   * First 8 hex chars of `keccak256` over the bracket-stripped Expo token — a stable, non-reversible
+   * identifier for the device's push token. The raw token is never returned by the backend.
+   */
   tokenFingerprintPrefix: string;
   /**
    * Unix timestamp (milliseconds) of the device's last registration refresh.
