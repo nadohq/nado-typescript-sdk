@@ -135,19 +135,16 @@ export function getMobilePayloadHash(inner: MobileSignedInner): Hex {
   return keccak256(encode(inner));
 }
 
-let nonceCounter = 0n;
-
 /**
  * Generates a `nonce` for a signed mobile service API request. The server reads `nonce / 1_000_000` as a
  * millisecond receive deadline, which must be later than server time and no more than 100s ahead — hence the
- * 30s deadline window here. The low six digits are a per-process counter so nonces generated within the same
- * millisecond stay distinct.
+ * 30s deadline window here. The low six digits are randomized so nonces generated within the same
+ * millisecond stay distinct, mirroring the random low-bits approach in `getOrderNonce`.
  */
 export function getMobileNonce(): bigint {
   const deadlineMs = BigInt(Date.now() + 30_000);
-  const nonce = deadlineMs * 1_000_000n + nonceCounter;
-  nonceCounter = (nonceCounter + 1n) % 1_000_000n;
-  return nonce;
+  const random = BigInt(Math.floor(Math.random() * 1_000_000));
+  return deadlineMs * 1_000_000n + random;
 }
 
 /**
