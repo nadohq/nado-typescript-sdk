@@ -129,5 +129,14 @@ export function getNadoEIP712Types(
           { name: 'nonce', type: 'uint64' },
         ],
       };
+    case 'nado_authentication':
+      return {
+        NadoAuthentication: [
+          { name: 'method', type: 'string' },
+          { name: 'sender', type: 'bytes32' },
+          { name: 'payloadHash', type: 'bytes32' },
+          { name: 'nonce', type: 'uint64' },
+        ],
+      };
   }
 }

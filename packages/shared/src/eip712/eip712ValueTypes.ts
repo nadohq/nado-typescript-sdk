@@ -9,6 +9,7 @@ import {
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
+  EIP712NadoAuthenticationParams,
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
@@ -73,6 +74,13 @@ export type EIP712MintNlpValues = WithEIP712Sender<EIP712MintNlpParams>;
 
 export type EIP712BurnNlpValues = WithEIP712Sender<EIP712BurnNlpParams>;
 
+// `sender` is already bytes32-encoded by the caller, so the values mirror the params exactly. Written as a
+// mapped type (not `= EIP712NadoAuthenticationParams`) so it gains an implicit index signature and stays
+// assignable to viem's `signTypedData` message (`Record<string, unknown>`), which interfaces do not.
+export type EIP712NadoAuthenticationValues = {
+  [K in keyof EIP712NadoAuthenticationParams]: EIP712NadoAuthenticationParams[K];
+};
+
 /**
  * All possible requests to be signed, to the EIP712 value interface
  */
@@ -85,6 +93,7 @@ export interface SignableRequestTypeToEIP712Values {
   liquidate_subaccount: EIP712LiquidateSubaccountValues;
   list_trigger_orders: EIP712ListTriggerOrdersValues;
   mint_nlp: EIP712MintNlpValues;
+  nado_authentication: EIP712NadoAuthenticationValues;
   place_order: EIP712OrderValues;
   social_authentication: EIP712SocialAuthenticationValues;
   transfer_quote: EIP712TransferQuoteValues;

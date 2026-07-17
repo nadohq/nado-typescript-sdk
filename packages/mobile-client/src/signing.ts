@@ -1,6 +1,6 @@
 import { encode } from '@msgpack/msgpack';
 import {
-  getNadoEIP712Domain,
+  getSignedTransactionRequest,
   subaccountToHex,
   WalletClientWithAccount,
 } from '@nadohq/shared';
@@ -10,19 +10,6 @@ import {
   MobileNotificationPlatform,
   MobileServerNotificationPreferences,
 } from './types/serverTypes';
-
-/**
- * EIP-712 types for the `NadoAuthentication` primary type, used to sign every request to the mobile
- * service API's `query` and `execute` routes.
- */
-export const NADO_AUTHENTICATION_TYPES = {
-  NadoAuthentication: [
-    { name: 'method', type: 'string' },
-    { name: 'sender', type: 'bytes32' },
-    { name: 'payloadHash', type: 'bytes32' },
-    { name: 'nonce', type: 'uint64' },
-  ],
-} as const;
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API. `type` must come first
@@ -211,11 +198,12 @@ export async function buildSignedMobileRequest<T extends MobileSignedInner>(
   const nonce = params.nonce ?? getMobileNonce();
   const method = MOBILE_METHOD_BY_TYPE[canonicalInner.type];
 
-  const signature = await walletClient.signTypedData({
-    domain: getNadoEIP712Domain(verifyingAddr, chainId),
-    types: NADO_AUTHENTICATION_TYPES,
-    primaryType: 'NadoAuthentication',
-    message: { method, sender, payloadHash, nonce },
+  const signature = await getSignedTransactionRequest({
+    requestType: 'nado_authentication',
+    requestParams: { method, sender, payloadHash, nonce: nonce.toString() },
+    chainId,
+    verifyingContract: verifyingAddr,
+    walletClient,
   });
 
   return {

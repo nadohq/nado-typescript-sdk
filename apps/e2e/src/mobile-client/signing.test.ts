@@ -4,10 +4,14 @@ import {
   getMobileNonce,
   getMobilePayloadHash,
   MobileSignedInner,
-  NADO_AUTHENTICATION_TYPES,
   stringifyMobileRequest,
 } from '@nadohq/mobile-client';
-import { getNadoEIP712Domain, subaccountToHex } from '@nadohq/shared';
+import {
+  getNadoEIP712Domain,
+  getNadoEIP712PrimaryType,
+  getNadoEIP712Types,
+  subaccountToHex,
+} from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
@@ -261,8 +265,8 @@ void describe('[mobile-client]: signing (offline)', () => {
     );
     const recoveredAddress = await recoverTypedDataAddress({
       domain: getNadoEIP712Domain(verifyingAddr, chainId),
-      types: NADO_AUTHENTICATION_TYPES,
-      primaryType: 'NadoAuthentication',
+      types: getNadoEIP712Types('nado_authentication'),
+      primaryType: getNadoEIP712PrimaryType('nado_authentication'),
       message: {
         method: 'mobile:execute_set_private_mode',
         sender: signedRequest.sender,
