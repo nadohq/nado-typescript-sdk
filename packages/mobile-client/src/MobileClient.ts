@@ -188,34 +188,40 @@ export class MobileClient {
   /**
    * Claims a username for a subaccount, derived from the given display name.
    */
-  async claimUsername(params: ClaimMobileUsernameParams): Promise<void> {
+  async claimUsername(
+    params: ClaimMobileUsernameParams,
+  ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.buildSigned(params, {
       type: 'claim_username',
       display_name: params.displayName,
     });
-    await this.execute(signedRequest);
+    return this.execute(signedRequest);
   }
 
   /**
    * Updates the display name for a subaccount's already-claimed identity.
    */
-  async updateUsername(params: UpdateMobileUsernameParams): Promise<void> {
+  async updateUsername(
+    params: UpdateMobileUsernameParams,
+  ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.buildSigned(params, {
       type: 'update_username',
       display_name: params.displayName,
     });
-    await this.execute(signedRequest);
+    return this.execute(signedRequest);
   }
 
   /**
    * Sets whether a subaccount's profile is private.
    */
-  async setPrivateMode(params: SetMobilePrivateModeParams): Promise<void> {
+  async setPrivateMode(
+    params: SetMobilePrivateModeParams,
+  ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.buildSigned(params, {
       type: 'set_private_mode',
       private_mode: params.privateMode,
     });
-    await this.execute(signedRequest);
+    return this.execute(signedRequest);
   }
 
   /**
@@ -228,7 +234,7 @@ export class MobileClient {
    */
   async registerExpoToken(
     params: RegisterMobileExpoTokenParams,
-  ): Promise<void> {
+  ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.buildSigned(params, {
       type: 'register_expo_token',
       expo_token: params.expoToken,
@@ -236,7 +242,7 @@ export class MobileClient {
       locale: params.locale ?? null,
       app_version: params.appVersion ?? null,
     });
-    await this.execute(signedRequest);
+    return this.execute(signedRequest);
   }
 
   /**
@@ -244,12 +250,12 @@ export class MobileClient {
    */
   async unregisterExpoToken(
     params: UnregisterMobileExpoTokenParams,
-  ): Promise<void> {
+  ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.buildSigned(params, {
       type: 'unregister_expo_token',
       expo_token: params.expoToken,
     });
-    await this.execute(signedRequest);
+    return this.execute(signedRequest);
   }
 
   /**
@@ -260,12 +266,12 @@ export class MobileClient {
    */
   async updateNotificationPreferences(
     params: UpdateMobileNotificationPreferencesParams,
-  ): Promise<void> {
+  ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.buildSigned(params, {
       type: 'update_preferences',
       preferences: mapMobileNotificationPreferencesToServer(params.preferences),
     });
-    await this.execute(signedRequest);
+    return this.execute(signedRequest);
   }
 
   /*
