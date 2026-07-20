@@ -8,13 +8,11 @@ import {
 import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
-import {
-  buildSignedMobileRequest,
-  canonicalizeMobileInner,
-  getMobileNonce,
-  getMobilePayloadHash,
-  MobileSignedInner,
-} from './signing';
+import { buildSignedMobileRequest } from './buildSignedMobileRequest';
+import { canonicalizeMobileInner } from './canonicalize';
+import { getMobileNonce } from './nonce';
+import { getMobilePayloadHash } from './payloadHash';
+import { MobileSignedInner } from './types';
 
 // Fixed test key — these tests are offline (no network I/O) and only exercise local signing/hashing logic.
 const FIXED_PRIVATE_KEY =
