@@ -39,6 +39,11 @@ export function canonicalizeMobileInner(
       return { type: 'notification_preferences' };
     case 'registered_devices':
       return { type: 'registered_devices' };
+    default: {
+      throw new Error(
+        `canonicalizeMobileInner: unhandled inner payload type: ${JSON.stringify(inner)}`,
+      );
+    }
   }
 }
 
