@@ -4,7 +4,6 @@ import {
   getMobileNonce,
   getMobilePayloadHash,
   MobileSignedInner,
-  stringifyMobileRequest,
 } from '@nadohq/mobile-client';
 import {
   getNadoEIP712Domain,
@@ -17,7 +16,6 @@ import { describe, test } from 'node:test';
 import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
-import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 
 // Fixed test key — these tests are offline (no network I/O) and only exercise local signing/hashing logic.
@@ -181,46 +179,6 @@ void describe('[mobile-client]: signing (offline)', () => {
     });
   });
 
-  void test('stringifyMobileRequest serializes the bigint nonce as an unquoted decimal token', () => {
-    // Beyond Number.MAX_SAFE_INTEGER (2^53 - 1) to prove the nonce never passes through `Number`.
-    const nonce = 30123456789012345678n;
-    const body = {
-      type: 'claim_username' as const,
-      display_name: 'Ünïcödé_日本語',
-      signature: '0xdeadbeef',
-      sender: '0x00',
-      nonce,
-    };
-
-    const json = stringifyMobileRequest(body);
-
-    assert.match(
-      json,
-      /"nonce":\d+\}$/,
-      'nonce should be an unquoted trailing integer',
-    );
-    assert.doesNotMatch(json, /"nonce":"\d+"/, 'nonce should not be quoted');
-
-    const nonceDigits = /"nonce":(\d+)\}$/.exec(json)?.[1];
-    assertDefined(nonceDigits, 'nonceDigits');
-    assert.equal(
-      nonceDigits,
-      nonce.toString(),
-      'manually extracting the trailing digits should recover the exact nonce',
-    );
-
-    const withoutNonceJson = `${json.slice(0, json.lastIndexOf(',"nonce":'))}}`;
-    const parsed = JSON.parse(withoutNonceJson) as Omit<typeof body, 'nonce'>;
-    assert.equal(parsed.type, body.type);
-    assert.equal(
-      parsed.display_name,
-      body.display_name,
-      'unicode display_name should survive serialization',
-    );
-    assert.equal(parsed.signature, body.signature);
-    assert.equal(parsed.sender, body.sender);
-  });
-
   void test('signs a request that recovers to the expected signer with a correctly flattened body', async () => {
     const account = privateKeyToAccount(FIXED_PRIVATE_KEY);
     const walletClient = createWalletClient({
@@ -248,7 +206,7 @@ void describe('[mobile-client]: signing (offline)', () => {
 
     assert.equal(signedRequest.type, 'set_private_mode');
     assert.equal(signedRequest.private_mode, true);
-    assert.equal(signedRequest.nonce, nonce);
+    assert.equal(signedRequest.nonce, nonce.toString());
 
     const expectedSender = subaccountToHex({
       subaccountOwner,

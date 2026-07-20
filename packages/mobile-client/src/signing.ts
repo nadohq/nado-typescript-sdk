@@ -157,7 +157,7 @@ export type MobileSignedRequest<
 > = T & {
   signature: Hex;
   sender: Hex;
-  nonce: bigint;
+  nonce: string;
 };
 
 /**
@@ -210,6 +210,6 @@ export async function buildSignedMobileRequest<T extends MobileSignedInner>(
     ...canonicalInner,
     signature,
     sender,
-    nonce,
+    nonce: nonce.toString(),
   };
 }

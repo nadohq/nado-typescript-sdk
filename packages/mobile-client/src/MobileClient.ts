@@ -10,7 +10,6 @@ import {
   mapMobilePublicProfile,
   mapMobileRegisteredDevice,
 } from './dataMappers';
-import { stringifyMobileRequest } from './jsonSerializer';
 import {
   buildSignedMobileRequest,
   MobileSignedInner,
@@ -331,8 +330,7 @@ export class MobileClient {
   ): Promise<TResponse> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/query`,
-      stringifyMobileRequest(body),
-      { headers: { 'Content-Type': 'application/json' } },
+      body,
     );
     return this.extractSuccessData<TResponse>(response);
   }
@@ -342,8 +340,7 @@ export class MobileClient {
   ): Promise<MobileServerExecuteResponse> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/execute`,
-      stringifyMobileRequest(body),
-      { headers: { 'Content-Type': 'application/json' } },
+      body,
     );
     return this.extractSuccessData<MobileServerExecuteResponse>(response);
   }
