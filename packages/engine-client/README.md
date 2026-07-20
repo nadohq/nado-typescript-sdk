@@ -4,14 +4,6 @@ HTTP client for the Nado off-chain matching engine. Provides typed queries and E
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
-## Installation
-
-```bash
-npm install @nadohq/engine-client @nadohq/shared viem bignumber.js
-```
-
-Most apps should use `@nadohq/client` instead, which includes this package. Install `@nadohq/engine-client` directly when you only need engine interactions without the full client.
-
 ## Usage
 
 ```ts

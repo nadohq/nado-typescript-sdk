@@ -4,14 +4,6 @@ Shared utilities, types, and contract helpers for the Nado SDK. Provides ABIs, d
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
-## Installation
-
-```bash
-npm install @nadohq/shared viem bignumber.js
-```
-
-Most apps should use `@nadohq/client` instead, which includes this package. Install `@nadohq/shared` directly when you need low-level access to contract ABIs, EIP-712 signing, or type definitions without pulling in the HTTP clients.
-
 ## Modules
 
 ### `abis`

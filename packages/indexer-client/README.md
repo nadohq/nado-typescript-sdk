@@ -4,14 +4,6 @@ HTTP client for the Nado indexer. Provides typed queries for historical data inc
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
-## Installation
-
-```bash
-npm install @nadohq/indexer-client @nadohq/engine-client @nadohq/shared viem bignumber.js
-```
-
-Most apps should use `@nadohq/client` instead, which includes this package. Install `@nadohq/indexer-client` directly for analytics services or read-heavy backends that only need indexer queries.
-
 ## Usage
 
 ```ts
