@@ -1,22 +1,20 @@
-import {
-  buildSignedMobileRequest,
-  canonicalizeMobileInner,
-  getMobileNonce,
-  getMobilePayloadHash,
-  MobileSignedInner,
-} from '@nadohq/mobile-client';
+import { describe, expect, it } from '@jest/globals';
 import {
   getNadoEIP712Domain,
   getNadoEIP712PrimaryType,
   getNadoEIP712Types,
   subaccountToHex,
 } from '@nadohq/shared';
-import assert from 'node:assert/strict';
-import { describe, test } from 'node:test';
 import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
-import { debugPrint } from '../utils/debugPrint';
+import {
+  buildSignedMobileRequest,
+  canonicalizeMobileInner,
+  getMobileNonce,
+  getMobilePayloadHash,
+  MobileSignedInner,
+} from './signing';
 
 // Fixed test key — these tests are offline (no network I/O) and only exercise local signing/hashing logic.
 const FIXED_PRIVATE_KEY =
@@ -45,42 +43,42 @@ const PINNED_HASHES = {
     '0xe77b42e32d27f054f86d5ed52c9aac7b3eed857eb6209ee883c92f01b84d3334',
 } as const;
 
-void describe('[mobile-client]: signing (offline)', () => {
-  void describe('pinned payload hashes', () => {
-    void test('claim_username', () => {
+describe('[mobile-client]: signing (offline)', () => {
+  describe('pinned payload hashes', () => {
+    it('claim_username', () => {
       const inner: MobileSignedInner = {
         type: 'claim_username',
         display_name: 'Alice.One',
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.claim_username);
+      expect(hash).toBe(PINNED_HASHES.claim_username);
     });
 
-    void test('update_username', () => {
+    it('update_username', () => {
       const inner: MobileSignedInner = {
         type: 'update_username',
         display_name: 'Alice.Two',
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.update_username);
+      expect(hash).toBe(PINNED_HASHES.update_username);
     });
 
-    void test('set_private_mode', () => {
+    it('set_private_mode', () => {
       const inner: MobileSignedInner = {
         type: 'set_private_mode',
         private_mode: true,
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.set_private_mode);
+      expect(hash).toBe(PINNED_HASHES.set_private_mode);
     });
 
-    void test('self_identity', () => {
+    it('self_identity', () => {
       const inner: MobileSignedInner = { type: 'self_identity' };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.self_identity);
+      expect(hash).toBe(PINNED_HASHES.self_identity);
     });
 
-    void test('register_expo_token', () => {
+    it('register_expo_token', () => {
       const inner: MobileSignedInner = {
         type: 'register_expo_token',
         expo_token: 'ExponentPushToken[abcdef1234567890abcdef]',
@@ -89,19 +87,19 @@ void describe('[mobile-client]: signing (offline)', () => {
         app_version: '1.2.3',
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.register_expo_token);
+      expect(hash).toBe(PINNED_HASHES.register_expo_token);
     });
 
-    void test('unregister_expo_token', () => {
+    it('unregister_expo_token', () => {
       const inner: MobileSignedInner = {
         type: 'unregister_expo_token',
         expo_token: 'ExponentPushToken[abcdef1234567890abcdef]',
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.unregister_expo_token);
+      expect(hash).toBe(PINNED_HASHES.unregister_expo_token);
     });
 
-    void test('update_preferences', () => {
+    it('update_preferences', () => {
       const inner: MobileSignedInner = {
         type: 'update_preferences',
         preferences: {
@@ -110,23 +108,23 @@ void describe('[mobile-client]: signing (offline)', () => {
         },
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.update_preferences);
+      expect(hash).toBe(PINNED_HASHES.update_preferences);
     });
 
-    void test('notification_preferences', () => {
+    it('notification_preferences', () => {
       const inner: MobileSignedInner = { type: 'notification_preferences' };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.notification_preferences);
+      expect(hash).toBe(PINNED_HASHES.notification_preferences);
     });
 
-    void test('registered_devices', () => {
+    it('registered_devices', () => {
       const inner: MobileSignedInner = { type: 'registered_devices' };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      assert.equal(hash, PINNED_HASHES.registered_devices);
+      expect(hash).toBe(PINNED_HASHES.registered_devices);
     });
   });
 
-  void test('canonicalizes msgpack key order regardless of input key order', () => {
+  it('canonicalizes msgpack key order regardless of input key order', () => {
     // Deliberately construct the inner payload with `type` last — canonicalizeMobileInner must rebuild it
     // with `type` first so the msgpack encoding (and therefore the payload hash) is deterministic.
     const outOfOrderInner = {
@@ -135,10 +133,10 @@ void describe('[mobile-client]: signing (offline)', () => {
     } as MobileSignedInner;
 
     const hash = getMobilePayloadHash(canonicalizeMobileInner(outOfOrderInner));
-    assert.equal(hash, PINNED_HASHES.set_private_mode);
+    expect(hash).toBe(PINNED_HASHES.set_private_mode);
   });
 
-  void test('canonicalizes nested preference key order regardless of input key order', () => {
+  it('canonicalizes nested preference key order regardless of input key order', () => {
     // Nested preference objects must also be rebuilt in the backend's struct declaration order
     // (schema_version, categories; category, enabled, scopes) for the msgpack hash to be deterministic.
     const outOfOrderInner = {
@@ -150,36 +148,30 @@ void describe('[mobile-client]: signing (offline)', () => {
     } as unknown as MobileSignedInner;
 
     const hash = getMobilePayloadHash(canonicalizeMobileInner(outOfOrderInner));
-    assert.equal(hash, PINNED_HASHES.update_preferences);
+    expect(hash).toBe(PINNED_HASHES.update_preferences);
   });
 
-  void describe('nonce generation', () => {
-    void test('encodes a ~30s-ahead receive deadline as a bigint', () => {
+  describe('nonce generation', () => {
+    it('encodes a ~30s-ahead receive deadline as a bigint', () => {
       const before = Date.now();
       const nonce = getMobileNonce();
       const after = Date.now();
 
-      assert.equal(typeof nonce, 'bigint');
+      expect(typeof nonce).toBe('bigint');
 
       const deadlineMs = nonce / 1_000_000n;
-      assert.ok(
-        deadlineMs >= BigInt(before + 29_000),
-        `deadline ${deadlineMs} should be at least ~29s ahead of ${before}`,
-      );
-      assert.ok(
-        deadlineMs <= BigInt(after + 30_000),
-        `deadline ${deadlineMs} should be at most ~30s ahead of ${after}`,
-      );
+      expect(deadlineMs >= BigInt(before + 29_000)).toBe(true);
+      expect(deadlineMs <= BigInt(after + 30_000)).toBe(true);
     });
 
-    void test('produces distinct nonces on successive calls', () => {
+    it('produces distinct nonces on successive calls', () => {
       const a = getMobileNonce();
       const b = getMobileNonce();
-      assert.notEqual(a, b);
+      expect(a).not.toBe(b);
     });
   });
 
-  void test('signs a request that recovers to the expected signer with a correctly flattened body', async () => {
+  it('signs a request that recovers to the expected signer with a correctly flattened body', async () => {
     const account = privateKeyToAccount(FIXED_PRIVATE_KEY);
     const walletClient = createWalletClient({
       account,
@@ -202,21 +194,16 @@ void describe('[mobile-client]: signing (offline)', () => {
       inner: { type: 'set_private_mode', private_mode: true },
       nonce,
     });
-    debugPrint('Signed mobile request', signedRequest);
 
-    assert.equal(signedRequest.type, 'set_private_mode');
-    assert.equal(signedRequest.private_mode, true);
-    assert.equal(signedRequest.nonce, nonce.toString());
+    expect(signedRequest.type).toBe('set_private_mode');
+    expect(signedRequest.private_mode).toBe(true);
+    expect(signedRequest.nonce).toBe(nonce.toString());
 
     const expectedSender = subaccountToHex({
       subaccountOwner,
       subaccountName,
     }).toLowerCase();
-    assert.equal(
-      signedRequest.sender,
-      expectedSender,
-      'sender should derive from the owner, not the signer',
-    );
+    expect(signedRequest.sender).toBe(expectedSender);
 
     const payloadHash = getMobilePayloadHash(
       canonicalizeMobileInner({ type: 'set_private_mode', private_mode: true }),
@@ -234,6 +221,6 @@ void describe('[mobile-client]: signing (offline)', () => {
       signature: signedRequest.signature,
     });
 
-    assert.equal(recoveredAddress.toLowerCase(), account.address.toLowerCase());
+    expect(recoveredAddress.toLowerCase()).toBe(account.address.toLowerCase());
   });
 });

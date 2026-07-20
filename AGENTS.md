@@ -97,7 +97,6 @@ After making edits, **ALWAYS** run the following verification sequence:
 - **Fix errors immediately** - If any command fails, address issues and re-run the full sequence
 - **Build before adding E2E tests** - Always run `bun run build` before E2E testing to ensure packages are properly built
 - **Add basic sanity E2E tests** - Never skip writing E2E tests for new features, client APIs, or user flows
-- **Do NOT write unit tests** - any unit tests should be written manually
 
 ## TypeScript SDK Style Guide
 
