@@ -2,9 +2,11 @@ import { MobileServerNotificationPreferences } from '../types/serverTypes';
 import { MobileSignedInner } from './types';
 
 /**
- * Rebuilds an inner payload as a literal with `type` first. msgpack encodes object keys in insertion order,
- * and the payload hash must be reproducible regardless of how the caller constructed the object, so every
- * inner payload is canonicalized before hashing.
+ * Rebuilds an inner payload with its keys in the backend's struct declaration order (`type` first, then the
+ * remaining fields in the exact order the backend serializes them). msgpack encodes object keys in insertion
+ * order and the payload hash must be reproducible regardless of how the caller constructed the object, so
+ * every inner payload — and each of its sub-types — is canonicalized here before hashing. This function (with
+ * {@link canonicalizeNotificationPreferences} for nested preferences) is the source of truth for that order.
  */
 export function canonicalizeMobileInner(
   inner: MobileSignedInner,

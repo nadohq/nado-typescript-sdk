@@ -7,8 +7,13 @@ import {
 } from '../types/serverTypes';
 
 /**
- * Unsigned inner payloads that can be authenticated against the mobile service API. `type` must come first
- * in each literal so msgpack serializes it deterministically (see {@link canonicalizeMobileInner}).
+ * Unsigned inner payloads that can be authenticated against the mobile service API.
+ *
+ * Key order is significant: the payload hash is `keccak256(msgpack(inner))`, and msgpack encodes object keys
+ * in insertion order, so every field of every sub-type must be serialized in the exact order the backend
+ * declares its structs — `type` first, then the remaining fields — or the hash won't match and signature
+ * verification fails. This type only describes the shape; the authoritative runtime key order is enforced by
+ * {@link canonicalizeMobileInner}, which is the source of truth. Keep the field order here in sync with it.
  */
 export type MobileSignedInner =
   | { type: 'claim_username'; display_name: string }
