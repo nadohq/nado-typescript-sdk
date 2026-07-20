@@ -1,7 +1,6 @@
 import {
   MobileNotificationPreferences,
   MobileServerFailureError,
-  MobileSignedRequestParams,
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
@@ -9,12 +8,9 @@ import { keccak256, stringToBytes } from 'viem';
 import { assertDefined, assertString } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
-import {
-  TEST_DELAYS,
-  TEST_SUBACCOUNT_NAME,
-  TEST_TIMEOUTS,
-} from '../utils/testConstants';
+import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 // Mirrors the backend's preferences MVP rules: schema_version 1 and one entry per known category.
@@ -33,7 +29,7 @@ void describe(
     });
 
     void test('registers, lists, and unregisters an Expo push token', async () => {
-      const signedParams = getSignedParams(tc);
+      const signedParams = getMobileSignedParams(tc);
       // Unique per run so parallel/failed runs don't collide on the same token row.
       const expoTokenInner = `e2e-device-${Date.now()}`;
       const expoToken = `ExponentPushToken[${expoTokenInner}]`;
@@ -85,7 +81,7 @@ void describe(
     void test('rejects a malformed Expo push token', async () => {
       await assert.rejects(
         tc.mobile.registerExpoToken({
-          ...getSignedParams(tc),
+          ...getMobileSignedParams(tc),
           expoToken: 'not-an-expo-token',
           platform: 'android',
         }),
@@ -101,7 +97,7 @@ void describe(
 
     void test('fetches default-shaped notification preferences', async () => {
       const preferences = await tc.mobile.getNotificationPreferences(
-        getSignedParams(tc),
+        getMobileSignedParams(tc),
       );
       debugPrint('Notification preferences', preferences);
 
@@ -109,7 +105,7 @@ void describe(
     });
 
     void test('toggles a category preference and restores the original', async () => {
-      const signedParams = getSignedParams(tc);
+      const signedParams = getMobileSignedParams(tc);
 
       const original = await tc.mobile.getNotificationPreferences(signedParams);
       assertPreferencesShape(original);
@@ -150,19 +146,6 @@ void describe(
     });
   },
 );
-
-/**
- * Builds the signed-request params for the shared E2E test subaccount. Notification state is keyed by the
- * owning wallet, so any subaccount of the wallet authenticates the same data.
- */
-function getSignedParams(tc: RunContext): MobileSignedRequestParams {
-  return {
-    subaccountOwner: tc.walletClientAddress,
-    subaccountName: TEST_SUBACCOUNT_NAME,
-    chainId: tc.chainId,
-    verifyingAddr: tc.endpointAddr,
-  };
-}
 
 /**
  * Asserts the backend's preferences MVP invariants: current schema version, one entry per known category,

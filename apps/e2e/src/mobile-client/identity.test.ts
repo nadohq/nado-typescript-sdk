@@ -2,7 +2,6 @@ import {
   MOBILE_DISPLAY_NAME_PATTERN,
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
-  MobileSignedRequestParams,
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
@@ -14,12 +13,9 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
-import {
-  TEST_DELAYS,
-  TEST_SUBACCOUNT_NAME,
-  TEST_TIMEOUTS,
-} from '../utils/testConstants';
+import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 void describe(
@@ -56,7 +52,9 @@ void describe(
     });
 
     void test('fetches self identity without throwing', async () => {
-      const identity = await tc.mobile.getSelfIdentity(getIdentityParams(tc));
+      const identity = await tc.mobile.getSelfIdentity(
+        getMobileSignedParams(tc),
+      );
       debugPrint('Self identity result', identity);
 
       if (identity !== null) {
@@ -76,7 +74,7 @@ void describe(
     });
 
     void test('claims a username only if unclaimed, tolerating a race to IDENTITY_ALREADY_CLAIMED', async () => {
-      const identityParams = getIdentityParams(tc);
+      const identityParams = getMobileSignedParams(tc);
 
       const existingIdentity = await tc.mobile.getSelfIdentity(identityParams);
       debugPrint('Existing identity before claim attempt', existingIdentity);
@@ -115,7 +113,7 @@ void describe(
     });
 
     void test('updates the display name and restores the original', async () => {
-      const identityParams = getIdentityParams(tc);
+      const identityParams = getMobileSignedParams(tc);
 
       const identity = await tc.mobile.getSelfIdentity(identityParams);
 
@@ -159,7 +157,7 @@ void describe(
     });
 
     void test('toggles private mode and restores the original value', async () => {
-      const identityParams = getIdentityParams(tc);
+      const identityParams = getMobileSignedParams(tc);
 
       const identity = await tc.mobile.getSelfIdentity(identityParams);
 
@@ -201,18 +199,6 @@ void describe(
     });
   },
 );
-
-/**
- * Builds the signed-request params for the shared E2E test subaccount.
- */
-function getIdentityParams(tc: RunContext): MobileSignedRequestParams {
-  return {
-    subaccountOwner: tc.walletClientAddress,
-    subaccountName: TEST_SUBACCOUNT_NAME,
-    chainId: tc.chainId,
-    verifyingAddr: tc.endpointAddr,
-  };
-}
 
 /**
  * Asserts that the given operation rejects with a {@link MobileServerFailureError} carrying the expected
