@@ -18,23 +18,23 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
-  ClaimMobileUsernameParams,
   GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
   GetMobileRegisteredDevicesParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
+  MobileClaimUsernameParams,
   MobileIdentity,
   MobileNotificationPreferences,
   MobilePublicProfile,
   MobileRegisteredDevice,
+  MobileRegisterExpoTokenParams,
+  MobileSetPrivateModeParams,
   MobileSignedRequestParams,
+  MobileUnregisterExpoTokenParams,
+  MobileUpdateNotificationPreferencesParams,
+  MobileUpdateUsernameParams,
   MobileUsernameAvailability,
-  RegisterMobileExpoTokenParams,
-  SetMobilePrivateModeParams,
-  UnregisterMobileExpoTokenParams,
-  UpdateMobileNotificationPreferencesParams,
-  UpdateMobileUsernameParams,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import {
@@ -196,7 +196,7 @@ export class MobileClient {
    * Claims a username for a subaccount, derived from the given display name.
    */
   async claimUsername(
-    params: ClaimMobileUsernameParams,
+    params: MobileClaimUsernameParams,
   ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.getSignedRequest(
       'claim_username',
@@ -212,7 +212,7 @@ export class MobileClient {
    * Updates the display name for a subaccount's already-claimed identity.
    */
   async updateUsername(
-    params: UpdateMobileUsernameParams,
+    params: MobileUpdateUsernameParams,
   ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.getSignedRequest(
       'update_username',
@@ -226,7 +226,7 @@ export class MobileClient {
    * Sets whether a subaccount's profile is private.
    */
   async setPrivateMode(
-    params: SetMobilePrivateModeParams,
+    params: MobileSetPrivateModeParams,
   ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.getSignedRequest(
       'set_private_mode',
@@ -245,7 +245,7 @@ export class MobileClient {
    * too long.
    */
   async registerExpoToken(
-    params: RegisterMobileExpoTokenParams,
+    params: MobileRegisterExpoTokenParams,
   ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.getSignedRequest(
       'register_expo_token',
@@ -264,7 +264,7 @@ export class MobileClient {
    * Unregisters an Expo push token for the wallet. Idempotent — unregistering an unknown token succeeds.
    */
   async unregisterExpoToken(
-    params: UnregisterMobileExpoTokenParams,
+    params: MobileUnregisterExpoTokenParams,
   ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.getSignedRequest(
       'unregister_expo_token',
@@ -281,7 +281,7 @@ export class MobileClient {
    * @throws {MobileServerFailureError} With error code `INVALID_PREFERENCES` if those rules are violated.
    */
   async updateNotificationPreferences(
-    params: UpdateMobileNotificationPreferencesParams,
+    params: MobileUpdateNotificationPreferencesParams,
   ): Promise<MobileServerExecuteResponse> {
     const signedRequest = await this.getSignedRequest(
       'update_preferences',

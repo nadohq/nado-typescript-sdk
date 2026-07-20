@@ -20,7 +20,7 @@ export interface MobileIdentity {
    */
   username: string;
   /**
-   * User-facing name as claimed, preserving original casing. Validated against `DISPLAY_NAME_PATTERN`.
+   * User-facing name as claimed, preserving original casing. Validated against `MOBILE_DISPLAY_NAME_PATTERN`.
    */
   displayName: string;
   privateMode: boolean;
@@ -123,28 +123,28 @@ export type GetMobileSelfIdentityParams = MobileSignedRequestParams;
 /**
  * Params for {@link MobileClient.claimUsername}.
  */
-export interface ClaimMobileUsernameParams extends MobileSignedRequestParams {
+export interface MobileClaimUsernameParams extends MobileSignedRequestParams {
   displayName: string;
 }
 
 /**
  * Params for {@link MobileClient.updateUsername}.
  */
-export interface UpdateMobileUsernameParams extends MobileSignedRequestParams {
+export interface MobileUpdateUsernameParams extends MobileSignedRequestParams {
   displayName: string;
 }
 
 /**
  * Params for {@link MobileClient.setPrivateMode}.
  */
-export interface SetMobilePrivateModeParams extends MobileSignedRequestParams {
+export interface MobileSetPrivateModeParams extends MobileSignedRequestParams {
   privateMode: boolean;
 }
 
 /**
  * Params for {@link MobileClient.registerExpoToken}.
  */
-export interface RegisterMobileExpoTokenParams extends MobileSignedRequestParams {
+export interface MobileRegisterExpoTokenParams extends MobileSignedRequestParams {
   /**
    * Expo push token, e.g. `ExponentPushToken[...]`.
    */
@@ -163,14 +163,14 @@ export interface RegisterMobileExpoTokenParams extends MobileSignedRequestParams
 /**
  * Params for {@link MobileClient.unregisterExpoToken}.
  */
-export interface UnregisterMobileExpoTokenParams extends MobileSignedRequestParams {
+export interface MobileUnregisterExpoTokenParams extends MobileSignedRequestParams {
   expoToken: string;
 }
 
 /**
  * Params for {@link MobileClient.updateNotificationPreferences}.
  */
-export interface UpdateMobileNotificationPreferencesParams extends MobileSignedRequestParams {
+export interface MobileUpdateNotificationPreferencesParams extends MobileSignedRequestParams {
   preferences: MobileNotificationPreferences;
 }
 

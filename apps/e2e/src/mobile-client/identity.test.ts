@@ -1,5 +1,5 @@
 import {
-  DISPLAY_NAME_PATTERN,
+  MOBILE_DISPLAY_NAME_PATTERN,
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
   MobileSignedRequestParams,
@@ -37,7 +37,7 @@ void describe(
       const displayName = `Probe${Date.now()}`;
       assert.match(
         displayName,
-        DISPLAY_NAME_PATTERN,
+        MOBILE_DISPLAY_NAME_PATTERN,
         'test display name should satisfy the 3-20 char display name rules',
       );
       const result = await tc.mobile.getUsernameAvailability({ displayName });
@@ -133,7 +133,7 @@ void describe(
 
       const originalDisplayName = identity.displayName;
       const tempDisplayName = `E2E_${Date.now()}`;
-      assert.match(tempDisplayName, DISPLAY_NAME_PATTERN);
+      assert.match(tempDisplayName, MOBILE_DISPLAY_NAME_PATTERN);
 
       await tc.mobile.updateUsername({
         ...identityParams,
