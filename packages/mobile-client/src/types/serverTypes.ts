@@ -12,8 +12,7 @@ export type MobileServerPublicQueryType =
   keyof MobileServerPublicQueryParamsByType;
 
 /**
- * Unsigned `public_query` request body: a `type` discriminant flattened with its params, matching the engine
- * client's `{ type, ...params }` request convention (e.g. `EngineServerQueryRequest`).
+ * Unsigned `public_query` request body: a `type` discriminant flattened with its params.
  */
 export type MobileServerPublicQueryRequest<
   T extends MobileServerPublicQueryType = MobileServerPublicQueryType,
@@ -36,9 +35,19 @@ export type MobileServerProfileRequest =
   MobileServerPublicQueryRequest<'profile'>;
 
 /**
- * Successful mobile service API envelope, mirroring the engine client's success/failure discriminant on
- * `status` (e.g. `EngineServerExecuteSuccessResult`). Payload fields are inlined alongside `status`
- * rather than nested under a `data` key, matching the mobile backend's wire format.
+ * Wire `request_type` the backend echoes on failure envelopes, prefixed by route (`public_query_*`,
+ * `query_*`, `execute_*`, e.g. `execute_claim_username`). Public-query types are enumerated; signed
+ * query/execute names are kept as a `${prefix}_${string}` template to avoid duplicating the signed-type
+ * tags declared in `signing.ts`.
+ */
+export type MobileServerRequestType =
+  | `public_query_${MobileServerPublicQueryType}`
+  | `query_${string}`
+  | `execute_${string}`;
+
+/**
+ * Successful mobile service API envelope, discriminated on `status`. Payload fields are inlined alongside
+ * `status` rather than nested under a `data` key, matching the mobile backend's wire format.
  */
 export type MobileServerSuccessResponse<TData extends object = object> = {
   status: 'success';
@@ -158,11 +167,22 @@ export type MobileServerRegisteredDevicesResponse =
   }>;
 
 /**
- * Successful response shape shared by all signed `execute` operations (`claim_username`, `update_username`,
- * `set_private_mode`, `register_expo_token`, `unregister_expo_token`, `update_preferences`) — they carry no
- * additional data beyond the success envelope.
+ * Successful `execute` result. Mobile execute routes return no payload beyond the success discriminant, so
+ * this is just the success envelope.
  */
-export type MobileServerExecuteResponse = MobileServerSuccessResponse;
+export type MobileServerExecuteSuccessResult = MobileServerSuccessResponse;
+
+/**
+ * Failed `execute` result. The mobile backend uses one uniform failure envelope across all routes.
+ */
+export type MobileServerExecuteFailureResult = MobileServerFailureResponse;
+
+/**
+ * Discriminated `execute` result union of the success and failure envelopes.
+ */
+export type MobileServerExecuteResult =
+  | MobileServerExecuteSuccessResult
+  | MobileServerExecuteFailureResult;
 
 /**
  * Failure envelope returned by any mobile service API route. A response missing this envelope shape
@@ -172,7 +192,7 @@ export interface MobileServerFailureResponse {
   status: 'failure';
   error: string;
   error_code: number;
-  request_type: string;
+  request_type: MobileServerRequestType;
 }
 
 /**

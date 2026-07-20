@@ -1,4 +1,7 @@
-import { MobileServerFailureResponse } from './serverTypes';
+import {
+  MobileServerFailureResponse,
+  MobileServerRequestType,
+} from './serverTypes';
 
 /**
  * Error thrown when the mobile service API returns a failure envelope, either as a non-2xx HTTP response
@@ -16,7 +19,7 @@ export class MobileServerFailureError extends Error {
   /**
    * The request type that failed, e.g. `public_query_profile`, `execute_claim_username`.
    */
-  readonly requestType: string;
+  readonly requestType: MobileServerRequestType;
 
   constructor(
     readonly responseData: MobileServerFailureResponse,
