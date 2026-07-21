@@ -73,8 +73,8 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado Mobile API: username claims, public profile lookups, privacy settings, and push
- * notification device/preference management.
+ * Client for the Nado mobile service API: username claims, public profile lookups, privacy settings, and
+ * push notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -300,10 +300,10 @@ export class MobileClient {
   }
 
   /*
-  Base fns
+  Base Fns
    */
 
-  private async getSignedRequest<T extends MobileSignedInner['type']>(
+  protected async getSignedRequest<T extends MobileSignedInner['type']>(
     type: T,
     params: MobileSignedRequestParams,
     innerParams: MobileSignedInnerParams<T>,
@@ -320,44 +320,49 @@ export class MobileClient {
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
-  private async publicQuery<TResponse extends { status: 'success' }>(
+  protected async publicQuery<TResponse extends { status: 'success' }>(
     body: object,
   ): Promise<TResponse> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/public_query`,
       body,
     );
-    return this.extractSuccessData<TResponse>(response);
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
+    return response.data as TResponse;
   }
 
-  private async query<TResponse extends { status: 'success' }>(
+  protected async query<TResponse extends { status: 'success' }>(
     body: MobileSignedRequest,
   ): Promise<TResponse> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/query`,
       body,
     );
-    return this.extractSuccessData<TResponse>(response);
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
+    return response.data as TResponse;
   }
 
-  private async execute(
+  protected async execute(
     body: MobileSignedRequest,
   ): Promise<MobileServerExecuteSuccessResult> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/mobile/execute`,
       body,
     );
-    return this.extractSuccessData<MobileServerExecuteSuccessResult>(response);
-  }
 
-  private extractSuccessData<TResponse extends { status: 'success' }>(
-    response: AxiosResponse<unknown>,
-  ): TResponse {
     this.checkResponseStatus(response);
     this.checkServerStatus(response);
 
-    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as TResponse;
+    // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
+    return response.data as MobileServerExecuteSuccessResult;
   }
 
   /**
