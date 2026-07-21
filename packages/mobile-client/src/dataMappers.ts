@@ -11,7 +11,7 @@ import {
   MobileServerNotificationPreferences,
   MobileServerProfile,
   MobileServerRegisteredDevice,
-} from './types/serverTypes';
+} from './types/serverModelTypes';
 
 /**
  * Maps a server-side identity (snake_case) to its client-side (camelCase) representation.

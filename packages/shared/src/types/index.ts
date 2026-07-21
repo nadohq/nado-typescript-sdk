@@ -7,5 +7,6 @@ export * from './nadoContractTypes';
 export * from './orderAppendixTypes';
 export * from './OrderExecutionType';
 export * from './productTypes';
+export * from './signatureTypes';
 export * from './subaccountTypes';
 export * from './viemTypes';

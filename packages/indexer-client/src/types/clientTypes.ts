@@ -5,6 +5,7 @@ import {
   PerpBalance,
   PerpMarket,
   ProductEngineType,
+  SignatureParams,
   SpotBalance,
   SpotMarket,
   Subaccount,
@@ -656,11 +657,6 @@ export interface GetIndexerLeaderboardParticipantResponse {
   // If the subaccount is not eligible for a given contest, it would not be included in the response.
   // contestId -> IndexerLeaderboardParticipant
   participant: Record<string, IndexerLeaderboardParticipant>;
-}
-
-interface SignatureParams {
-  verifyingAddr: string;
-  chainId: number;
 }
 
 export interface GetIndexerLeaderboardRegistrationsParams {

@@ -1,4 +1,4 @@
-import { MobileServerNotificationPreferences } from '../types/serverTypes';
+import { MobileServerNotificationPreferences } from '../types/serverModelTypes';
 import { MobileSignedInner } from './types';
 
 /**

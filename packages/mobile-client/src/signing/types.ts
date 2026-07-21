@@ -4,7 +4,7 @@ import { MobileSignedRequestParams } from '../types/clientTypes';
 import {
   MobileNotificationPlatform,
   MobileServerNotificationPreferences,
-} from '../types/serverTypes';
+} from '../types/serverModelTypes';
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.

@@ -1,8 +1,9 @@
+import { SignatureParams, Subaccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import {
   MobileNotificationCategory,
   MobileNotificationPlatform,
-} from './serverTypes';
+} from './serverModelTypes';
 
 /**
  * A subaccount's claimed identity on the mobile service API.
@@ -94,12 +95,8 @@ export interface MobileRegisteredDevice {
 /**
  * Common params for signed requests that authenticate as a given subaccount.
  */
-export interface MobileSignedRequestParams {
-  subaccountOwner: string;
-  subaccountName: string;
-  chainId: number;
-  verifyingAddr: string;
-}
+export interface MobileSignedRequestParams
+  extends Subaccount, SignatureParams {}
 
 /**
  * Params for {@link MobileClient.getUsernameAvailability}.

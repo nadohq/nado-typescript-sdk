@@ -298,13 +298,15 @@ function getBurnNlpValues(params: EIP712BurnNlpParams): EIP712BurnNlpValues {
   };
 }
 
-// `sender`, `payloadHash`, and `method` are precomputed by the caller, so this is a passthrough.
 function getNadoAuthenticationValues(
   params: EIP712NadoAuthenticationParams,
 ): EIP712NadoAuthenticationValues {
   return {
     method: params.method,
-    sender: params.sender,
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
     payloadHash: params.payloadHash,
     nonce: params.nonce,
   };

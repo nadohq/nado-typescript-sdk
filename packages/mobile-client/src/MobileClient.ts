@@ -37,10 +37,10 @@ import {
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import {
-  isMobileServerFailureResponse,
-  isMobileServerSuccessResponse,
   MobileServerExecuteResult,
   MobileServerExecuteSuccessResult,
+} from './types/serverExecuteTypes';
+import {
   MobileServerNotificationPreferencesResponse,
   MobileServerProfileRequest,
   MobileServerProfileResponse,
@@ -48,7 +48,11 @@ import {
   MobileServerSelfIdentityResponse,
   MobileServerUsernameAvailabilityRequest,
   MobileServerUsernameAvailabilityResponse,
-} from './types/serverTypes';
+} from './types/serverQueryTypes';
+import {
+  isMobileServerFailureResponse,
+  isMobileServerSuccessResponse,
+} from './utils/serverResponseGuards';
 
 /**
  * Options for constructing a {@link MobileClient}.
@@ -349,22 +353,40 @@ export class MobileClient {
   private extractSuccessData<TResponse extends { status: 'success' }>(
     response: AxiosResponse<unknown>,
   ): TResponse {
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
+    return response.data as TResponse;
+  }
+
+  /**
+   * Validates the HTTP status before interpreting the body. Unlike the engine, the mobile backend returns
+   * failure envelopes with non-2xx statuses (e.g. 404 for `PROFILE_NOT_FOUND`), so a non-2xx response with a
+   * failure envelope still throws the typed error; anything else is a transport-level error.
+   */
+  private checkResponseStatus(response: AxiosResponse<unknown>) {
+    if (response.status >= 200 && response.status < 300) {
+      return;
+    }
+    if (isMobileServerFailureResponse(response.data)) {
+      throw new MobileServerFailureError(response.data, response.status);
+    }
+    throw new Error(
+      `Unexpected response from mobile service: ${response.status} ${response.statusText}. Data: ${JSON.stringify(response.data)}`,
+    );
+  }
+
+  private checkServerStatus(response: AxiosResponse<unknown>) {
     const { data } = response;
 
     if (isMobileServerFailureResponse(data)) {
       throw new MobileServerFailureError(data, response.status);
     }
-    if (response.status < 200 || response.status >= 300) {
-      throw new Error(
-        `Unexpected response from mobile service: ${response.status} ${response.statusText}. Data: ${JSON.stringify(data)}`,
-      );
-    }
-    if (!isMobileServerSuccessResponse<TResponse>(data)) {
+    if (!isMobileServerSuccessResponse(data)) {
       throw new Error(
         `Unexpected response from mobile service: missing success envelope. Data: ${JSON.stringify(data)}`,
       );
     }
-
-    return data;
   }
 }

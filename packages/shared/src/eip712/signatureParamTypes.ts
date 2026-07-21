@@ -97,15 +97,11 @@ export interface EIP712BurnNlpParams extends Subaccount {
 }
 
 /**
- * Params for the mobile service API's `NadoAuthentication` envelope. Unlike the on-chain action requests,
- * `sender`, `payloadHash`, and `method` are precomputed by the caller, so these are the final signed values
- * rather than a subaccount to be encoded.
+ * Params for the mobile service API's `NadoAuthentication` envelope.
  */
-export interface EIP712NadoAuthenticationParams {
+export interface EIP712NadoAuthenticationParams extends Subaccount {
   // Namespaced method string, e.g. `mobile:execute_set_private_mode`.
   method: string;
-  // bytes32-encoded subaccount.
-  sender: Hex;
   // keccak256 of the msgpack-encoded request payload.
   payloadHash: Hex;
   nonce: string;

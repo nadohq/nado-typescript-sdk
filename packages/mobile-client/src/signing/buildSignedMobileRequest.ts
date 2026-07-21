@@ -1,5 +1,4 @@
 import { getSignedTransactionRequest, subaccountToHex } from '@nadohq/shared';
-import { Hex } from 'viem';
 import { canonicalizeMobileInner } from './canonicalize';
 import { MOBILE_EIP712_METHOD_BY_TYPE } from './eip712MethodByType';
 import { getMobileNonce } from './nonce';
@@ -31,14 +30,20 @@ export async function buildSignedMobileRequest<T extends MobileSignedInner>(
   const sender = subaccountToHex({
     subaccountOwner,
     subaccountName,
-  }).toLowerCase() as Hex;
+  });
   const payloadHash = getMobilePayloadHash(canonicalInner);
   const nonce = params.nonce ?? getMobileNonce();
   const method = MOBILE_EIP712_METHOD_BY_TYPE[canonicalInner.type];
 
   const signature = await getSignedTransactionRequest({
     requestType: 'nado_authentication',
-    requestParams: { method, sender, payloadHash, nonce: nonce.toString() },
+    requestParams: {
+      method,
+      subaccountOwner,
+      subaccountName,
+      payloadHash,
+      nonce: nonce.toString(),
+    },
     chainId,
     verifyingContract: verifyingAddr,
     walletClient,
