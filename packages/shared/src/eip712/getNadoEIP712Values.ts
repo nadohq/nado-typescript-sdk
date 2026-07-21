@@ -12,6 +12,7 @@ import {
   EIP712ProductOrdersCancellationValues,
   EIP712SocialAuthenticationValues,
   EIP712TransferQuoteValues,
+  EIP712UpdateDependencyValues,
   EIP712WithdrawCollateralV2Values,
   EIP712WithdrawCollateralValues,
   SignableRequestTypeToEIP712Values,
@@ -32,6 +33,7 @@ import {
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
+  EIP712UpdateDependencyParams,
   EIP712WithdrawCollateralParams,
   EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
@@ -67,6 +69,11 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
     case 'list_trigger_orders':
       values = getListTriggerOrdersValues(
         params as EIP712ListTriggerOrdersParams,
+      );
+      break;
+    case 'update_dependency':
+      values = getUpdateDependencyValues(
+        params as EIP712UpdateDependencyParams,
       );
       break;
     case 'cancel_orders':
@@ -164,6 +171,20 @@ function getListTriggerOrdersValues(
       subaccountOwner: params.subaccountOwner,
       subaccountName: params.subaccountName,
     }),
+  };
+}
+
+function getUpdateDependencyValues(
+  params: EIP712UpdateDependencyParams,
+): EIP712UpdateDependencyValues {
+  return {
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    oldDigest: params.oldDigest,
+    newDigest: params.newDigest,
+    nonce: params.nonce,
   };
 }
 

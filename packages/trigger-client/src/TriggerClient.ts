@@ -3,6 +3,7 @@ import {
   EIP712CancelProductOrdersParams,
   EIP712ListTriggerOrdersParams,
   EIP712OrderParams,
+  EIP712UpdateDependencyParams,
   getDefaultRecvTime,
   getNadoEIP712Values,
   getOrderNonce,
@@ -38,6 +39,7 @@ import {
   TriggerServerQueryResponse,
   TriggerServerQueryResponseByType,
   TriggerServerQuerySuccessResponse,
+  TriggerUpdateDependencyParams,
   TwapExecutionInfo,
 } from './types';
 import { TriggerServerFailureError } from './types/TriggerServerFailureError';
@@ -149,6 +151,30 @@ export class TriggerClient {
       };
 
     return this.execute('cancel_product_orders', executeParams);
+  }
+
+  async updateTriggerDependency(params: TriggerUpdateDependencyParams) {
+    const updateDependencyParams: EIP712UpdateDependencyParams = {
+      oldDigest: params.oldDigest,
+      newDigest: params.newDigest,
+      nonce: params.nonce ?? getOrderNonce(),
+      subaccountName: params.subaccountName,
+      subaccountOwner: params.subaccountOwner,
+    };
+    const tx = getNadoEIP712Values('update_dependency', updateDependencyParams);
+
+    const executeParams: TriggerServerExecuteRequestByType['update_dependency'] =
+      {
+        signature: await this.sign(
+          'update_dependency',
+          params.verifyingAddr,
+          params.chainId,
+          updateDependencyParams,
+        ),
+        tx,
+      };
+
+    return this.execute('update_dependency', executeParams);
   }
 
   /*

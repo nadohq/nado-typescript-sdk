@@ -5,6 +5,7 @@ import {
 import {
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
+  EIP712UpdateDependencyParams,
   OrderAppendix,
   Subaccount,
 } from '@nadohq/shared';
@@ -58,6 +59,9 @@ export type TriggerCancelOrdersParams = SignatureParams &
 
 export type TriggerCancelProductOrdersParams = SignatureParams &
   WithOptionalNonce<EIP712CancelProductOrdersParams>;
+
+export type TriggerUpdateDependencyParams = SignatureParams &
+  WithOptionalNonce<EIP712UpdateDependencyParams>;
 
 /**
  * Queries

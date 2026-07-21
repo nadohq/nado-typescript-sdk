@@ -52,6 +52,15 @@ export function getNadoEIP712Types(
           { name: 'recvTime', type: 'uint64' },
         ],
       };
+    case 'update_dependency':
+      return {
+        DependencyUpdate: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'oldDigest', type: 'bytes32' },
+          { name: 'newDigest', type: 'bytes32' },
+          { name: 'nonce', type: 'uint64' },
+        ],
+      };
     case 'cancel_orders':
       return {
         Cancellation: [
