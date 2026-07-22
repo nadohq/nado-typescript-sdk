@@ -36,10 +36,8 @@ import {
   MobileUsernameAvailability,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
-import {
-  MobileServerExecuteResult,
-  MobileServerExecuteSuccessResult,
-} from './types/serverExecuteTypes';
+import { MobileServerSuccessResponse } from './types/serverBaseTypes';
+import { MobileServerExecuteResult } from './types/serverExecuteTypes';
 import {
   MobileServerNotificationPreferencesResponse,
   MobileServerProfileRequest,
@@ -201,7 +199,7 @@ export class MobileClient {
    */
   async claimUsername(
     params: MobileClaimUsernameParams,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const signedRequest = await this.getSignedRequest(
       'claim_username',
       params,
@@ -217,7 +215,7 @@ export class MobileClient {
    */
   async updateUsername(
     params: MobileUpdateUsernameParams,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const signedRequest = await this.getSignedRequest(
       'update_username',
       params,
@@ -231,7 +229,7 @@ export class MobileClient {
    */
   async setPrivateMode(
     params: MobileSetPrivateModeParams,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const signedRequest = await this.getSignedRequest(
       'set_private_mode',
       params,
@@ -250,7 +248,7 @@ export class MobileClient {
    */
   async registerExpoToken(
     params: MobileRegisterExpoTokenParams,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const signedRequest = await this.getSignedRequest(
       'register_expo_token',
       params,
@@ -269,7 +267,7 @@ export class MobileClient {
    */
   async unregisterExpoToken(
     params: MobileUnregisterExpoTokenParams,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const signedRequest = await this.getSignedRequest(
       'unregister_expo_token',
       params,
@@ -286,7 +284,7 @@ export class MobileClient {
    */
   async updateNotificationPreferences(
     params: MobileUpdateNotificationPreferencesParams,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const signedRequest = await this.getSignedRequest(
       'update_preferences',
       params,
@@ -352,7 +350,7 @@ export class MobileClient {
 
   protected async execute(
     body: MobileSignedRequest,
-  ): Promise<MobileServerExecuteSuccessResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/mobile/execute`,
       body,
@@ -362,7 +360,7 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
-    return response.data as MobileServerExecuteSuccessResult;
+    return response.data as MobileServerSuccessResponse;
   }
 
   /**
