@@ -3,6 +3,7 @@ import {
   INDEXER_CLIENT_ENDPOINTS,
   IndexerClient,
 } from '@nadohq/indexer-client';
+import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
 import {
   ChainEnv,
   NADO_ABIS,
@@ -31,6 +32,7 @@ export interface NadoClientContext {
   engineClient: EngineClient;
   indexerClient: IndexerClient;
   triggerClient: TriggerClient;
+  mobileClient: MobileClient;
 }
 
 /**
@@ -41,6 +43,7 @@ interface NadoClientContextOpts {
   engineEndpoint: string;
   indexerEndpoint: string;
   triggerEndpoint: string;
+  mobileEndpoint: string;
 }
 
 /**
@@ -68,6 +71,7 @@ export function createClientContext(
     engineEndpoint,
     indexerEndpoint,
     triggerEndpoint,
+    mobileEndpoint,
   } = ((): NadoClientContextOpts => {
     // Custom options
     if (typeof opts === 'object') {
@@ -80,6 +84,7 @@ export function createClientContext(
       engineEndpoint: ENGINE_CLIENT_ENDPOINTS[chainEnv],
       indexerEndpoint: INDEXER_CLIENT_ENDPOINTS[chainEnv],
       triggerEndpoint: TRIGGER_CLIENT_ENDPOINTS[chainEnv],
+      mobileEndpoint: MOBILE_CLIENT_ENDPOINTS[chainEnv],
     };
   })();
   const { publicClient, walletClient, linkedSignerWalletClient } = accountOpts;
@@ -139,6 +144,11 @@ export function createClientContext(
     }),
     triggerClient: new TriggerClient({
       url: triggerEndpoint,
+      walletClient,
+      linkedSignerWalletClient,
+    }),
+    mobileClient: new MobileClient({
+      url: mobileEndpoint,
       walletClient,
       linkedSignerWalletClient,
     }),

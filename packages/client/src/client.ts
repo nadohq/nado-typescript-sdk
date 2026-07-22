@@ -33,6 +33,7 @@ export class NadoClient {
     this.context.engineClient.setLinkedSigner(linkedSignerWalletClient);
     this.context.indexerClient.setLinkedSigner(linkedSignerWalletClient);
     this.context.triggerClient.setLinkedSigner(linkedSignerWalletClient);
+    this.context.mobileClient.setLinkedSigner(linkedSignerWalletClient);
   }
 
   /**
@@ -46,6 +47,7 @@ export class NadoClient {
         engineEndpoint: this.context.engineClient.opts.url,
         indexerEndpoint: this.context.indexerClient.opts.url,
         triggerEndpoint: this.context.triggerClient.opts.url,
+        mobileEndpoint: this.context.mobileClient.opts.url,
       },
       {
         walletClient,

@@ -17,3 +17,4 @@ Before running any tests, make sure to configure your environment and set up the
 | bun e2e:engine  | Runs all engine-client E2E tests  |
 | bun e2e:indexer | Runs all indexer-client E2E tests |
 | bun e2e:trigger | Runs all trigger-client E2E tests |
+| bun e2e:mobile  | Runs all mobile-client E2E tests  |

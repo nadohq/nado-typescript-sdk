@@ -1,0 +1,57 @@
+{
+  "name": "@nadohq/mobile-client",
+  "version": "0.26.0",
+  "type": "module",
+  "sideEffects": false,
+  "description": "HTTP client for the Nado mobile service API — username claims, profiles, privacy settings, and push notification devices & preferences",
+  "author": "Frank Jia <frank@inkfnd.com>",
+  "homepage": "",
+  "license": "ISC",
+  "source": "./src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": "https://github.com/nadohq/nado-typescript-sdk",
+  "scripts": {
+    "clean": "rm -rf dist && rm -f tsconfig.tsbuildinfo",
+    "build": "tsdown",
+    "dev": "tsc -w",
+    "lint": "eslint --cache './**/*.{ts,tsx}'",
+    "lint:fix": "eslint --cache --fix './**/*.{ts,tsx}'",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "react-native": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@msgpack/msgpack": "3.1.3",
+    "@nadohq/shared": "^0.26.0",
+    "axios": "1.16.1"
+  },
+  "peerDependencies": {
+    "bignumber.js": "11.1.1",
+    "viem": "2.52.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "30.4.1",
+    "bignumber.js": "11.1.1",
+    "viem": "2.52.0"
+  }
+}

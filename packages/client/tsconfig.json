@@ -19,6 +19,9 @@
     },
     {
       "path": "../trigger-client"
+    },
+    {
+      "path": "../mobile-client"
     }
   ]
 }

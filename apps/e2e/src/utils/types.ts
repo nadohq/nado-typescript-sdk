@@ -1,5 +1,6 @@
 import { EngineClient } from '@nadohq/engine-client';
 import { IndexerClient } from '@nadohq/indexer-client';
+import { MobileClient } from '@nadohq/mobile-client';
 import {
   ChainEnv,
   NadoDeploymentAddresses,
@@ -24,9 +25,11 @@ export interface RunContext {
     engine: string;
     trigger: string;
     indexer: string;
+    mobile: string;
   };
   contracts: NadoDeploymentAddresses;
   engine: EngineClient;
   indexer: IndexerClient;
   trigger: TriggerClient;
+  mobile: MobileClient;
 }

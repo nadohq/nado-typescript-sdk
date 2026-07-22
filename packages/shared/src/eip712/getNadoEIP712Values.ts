@@ -7,6 +7,7 @@ import {
   EIP712LiquidateSubaccountValues,
   EIP712ListTriggerOrdersValues,
   EIP712MintNlpValues,
+  EIP712NadoAuthenticationValues,
   EIP712OrderCancellationValues,
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
@@ -30,6 +31,7 @@ import {
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
+  EIP712NadoAuthenticationParams,
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
@@ -110,6 +112,11 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
       break;
     case 'burn_nlp':
       values = getBurnNlpValues(params as EIP712BurnNlpParams);
+      break;
+    case 'nado_authentication':
+      values = getNadoAuthenticationValues(
+        params as EIP712NadoAuthenticationParams,
+      );
       break;
     default:
       throw new Error(`Unsupported request type: ${requestType}`);
@@ -308,6 +315,20 @@ function getBurnNlpValues(params: EIP712BurnNlpParams): EIP712BurnNlpValues {
       subaccountName: params.subaccountName,
     }),
     nlpAmount: toIntegerString(params.nlpAmount),
+    nonce: params.nonce,
+  };
+}
+
+function getNadoAuthenticationValues(
+  params: EIP712NadoAuthenticationParams,
+): EIP712NadoAuthenticationValues {
+  return {
+    method: params.method,
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    payloadHash: params.payloadHash,
     nonce: params.nonce,
   };
 }

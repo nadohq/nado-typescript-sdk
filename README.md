@@ -23,6 +23,10 @@ Exports queries that talk to the indexer.
 
 Exports queries and executes that talk to the trigger service (used for stop & TP/SL orders).
 
+### `@nadohq/mobile-client`
+
+Client for the mobile service — identity, usernames, privacy settings, and push notification devices & preferences.
+
 ### `@nadohq/shared`
 
 Base utilities, contract interfaces, and EIP712 signing logic. This also includes [

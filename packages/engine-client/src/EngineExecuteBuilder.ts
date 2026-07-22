@@ -11,7 +11,7 @@ import {
   EngineExecuteRequestParamsByType,
   EngineServerExecutePlaceOrderPayload,
   EngineServerExecuteRequestByType,
-  SignatureParams,
+  SignatureParamsOrSignature,
   WithBaseEngineExecuteParams,
   WithSignature,
 } from './types';
@@ -338,7 +338,8 @@ export class EngineExecuteBuilder {
 
   protected async getSignatureIfNeeded<T extends SignableRequestType>(
     requestType: T,
-    paramsWithNonce: SignatureParams & SignableRequestTypeToParams[T],
+    paramsWithNonce: SignatureParamsOrSignature &
+      SignableRequestTypeToParams[T],
   ) {
     if ('signature' in paramsWithNonce) {
       return paramsWithNonce.signature;

@@ -43,6 +43,7 @@
   "dependencies": {
     "@nadohq/engine-client": "^0.26.0",
     "@nadohq/indexer-client": "^0.26.0",
+    "@nadohq/mobile-client": "^0.26.0",
     "@nadohq/shared": "^0.26.0",
     "@nadohq/trigger-client": "^0.26.0",
     "ts-mixer": "6.0.4"

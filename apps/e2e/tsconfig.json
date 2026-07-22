@@ -23,6 +23,9 @@
     },
     {
       "path": "../../packages/trigger-client"
+    },
+    {
+      "path": "../../packages/mobile-client"
     }
   ]
 }

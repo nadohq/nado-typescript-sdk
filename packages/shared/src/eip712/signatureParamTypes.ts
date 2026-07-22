@@ -1,4 +1,4 @@
-import { Address } from 'viem';
+import { Address, Hex } from 'viem';
 import { Subaccount } from '../types/subaccountTypes';
 import { BigNumberish } from '../utils';
 
@@ -101,5 +101,16 @@ export interface EIP712MintNlpParams extends Subaccount {
 
 export interface EIP712BurnNlpParams extends Subaccount {
   nlpAmount: BigNumberish;
+  nonce: string;
+}
+
+/**
+ * Params for the mobile service API's `NadoAuthentication` envelope.
+ */
+export interface EIP712NadoAuthenticationParams extends Subaccount {
+  // Namespaced method string, e.g. `mobile:execute_set_private_mode`.
+  method: string;
+  // keccak256 of the msgpack-encoded request payload.
+  payloadHash: Hex;
   nonce: string;
 }

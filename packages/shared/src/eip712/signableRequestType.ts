@@ -7,6 +7,7 @@ import {
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
+  EIP712NadoAuthenticationParams,
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
@@ -27,6 +28,7 @@ export interface SignableRequestTypeToParams {
   liquidate_subaccount: EIP712LiquidateSubaccountParams;
   list_trigger_orders: EIP712ListTriggerOrdersParams;
   mint_nlp: EIP712MintNlpParams;
+  nado_authentication: EIP712NadoAuthenticationParams;
   place_order: EIP712OrderParams;
   social_authentication: EIP712SocialAuthenticationParams;
   transfer_quote: EIP712TransferQuoteParams;

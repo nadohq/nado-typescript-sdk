@@ -39,6 +39,7 @@
         "@nadohq/client": "workspace:*",
         "@nadohq/engine-client": "workspace:*",
         "@nadohq/indexer-client": "workspace:*",
+        "@nadohq/mobile-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
         "@nadohq/trigger-client": "workspace:*",
         "bignumber.js": "11.1.1",
@@ -59,12 +60,13 @@
     },
     "packages/client": {
       "name": "@nadohq/client",
-      "version": "0.21.2",
+      "version": "0.25.0",
       "dependencies": {
-        "@nadohq/engine-client": "^0.21.2",
-        "@nadohq/indexer-client": "^0.21.2",
-        "@nadohq/shared": "^0.21.2",
-        "@nadohq/trigger-client": "^0.21.2",
+        "@nadohq/engine-client": "^0.25.0",
+        "@nadohq/indexer-client": "^0.25.0",
+        "@nadohq/mobile-client": "^0.25.0",
+        "@nadohq/shared": "^0.25.0",
+        "@nadohq/trigger-client": "^0.25.0",
         "ts-mixer": "6.0.4",
       },
       "devDependencies": {
@@ -78,9 +80,9 @@
     },
     "packages/engine-client": {
       "name": "@nadohq/engine-client",
-      "version": "0.21.2",
+      "version": "0.25.0",
       "dependencies": {
-        "@nadohq/shared": "^0.21.2",
+        "@nadohq/shared": "^0.25.0",
         "axios": "1.16.1",
         "ts-mixer": "6.0.4",
       },
@@ -95,10 +97,10 @@
     },
     "packages/indexer-client": {
       "name": "@nadohq/indexer-client",
-      "version": "0.21.2",
+      "version": "0.25.0",
       "dependencies": {
-        "@nadohq/engine-client": "^0.21.2",
-        "@nadohq/shared": "^0.21.2",
+        "@nadohq/engine-client": "^0.25.0",
+        "@nadohq/shared": "^0.25.0",
         "axios": "1.16.1",
         "ts-mixer": "6.0.4",
       },
@@ -111,9 +113,27 @@
         "viem": "2.52.0",
       },
     },
+    "packages/mobile-client": {
+      "name": "@nadohq/mobile-client",
+      "version": "0.25.0",
+      "dependencies": {
+        "@msgpack/msgpack": "3.1.3",
+        "@nadohq/shared": "^0.25.0",
+        "axios": "1.16.1",
+      },
+      "devDependencies": {
+        "@jest/globals": "30.4.1",
+        "bignumber.js": "11.1.1",
+        "viem": "2.52.0",
+      },
+      "peerDependencies": {
+        "bignumber.js": "11.1.1",
+        "viem": "2.52.0",
+      },
+    },
     "packages/shared": {
       "name": "@nadohq/shared",
-      "version": "0.21.2",
+      "version": "0.25.0",
       "dependencies": {
         "abitype": "1.2.4",
       },
@@ -129,10 +149,10 @@
     },
     "packages/trigger-client": {
       "name": "@nadohq/trigger-client",
-      "version": "0.21.2",
+      "version": "0.25.0",
       "dependencies": {
-        "@nadohq/engine-client": "^0.21.2",
-        "@nadohq/shared": "^0.21.2",
+        "@nadohq/engine-client": "^0.25.0",
+        "@nadohq/shared": "^0.25.0",
         "axios": "1.16.1",
         "ts-mixer": "6.0.4",
       },
@@ -435,11 +455,15 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
+    "@msgpack/msgpack": ["@msgpack/msgpack@3.1.3", "", {}, "sha512-47XIizs9XZXvuJgoaJUIE2lFoID8ugvc0jzSHP+Ptfk8nTbnR8g788wv48N03Kx0UkAv559HWRQ3yzOgzlRNUA=="],
+
     "@nadohq/client": ["@nadohq/client@workspace:packages/client"],
 
     "@nadohq/engine-client": ["@nadohq/engine-client@workspace:packages/engine-client"],
 
     "@nadohq/indexer-client": ["@nadohq/indexer-client@workspace:packages/indexer-client"],
+
+    "@nadohq/mobile-client": ["@nadohq/mobile-client@workspace:packages/mobile-client"],
 
     "@nadohq/shared": ["@nadohq/shared@workspace:packages/shared"],
 

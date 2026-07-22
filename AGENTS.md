@@ -29,7 +29,8 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
   - `bun run test:e2e:engine` - Engine-client E2E tests
   - `bun run test:e2e:indexer` - Indexer-client E2E tests
   - `bun run test:e2e:trigger` - Trigger-client E2E tests
-- Without building first (if already built): `bun --cwd apps/e2e e2e` and `e2e:client`, `e2e:engine`, `e2e:indexer`, `e2e:trigger`
+  - `bun run test:e2e:mobile` - Mobile-client E2E tests
+- Without building first (if already built): `bun --cwd apps/e2e e2e` and `e2e:client`, `e2e:engine`, `e2e:indexer`, `e2e:trigger`, `e2e:mobile`
 
 ### Package Management
 
@@ -57,7 +58,8 @@ The project follows a monorepo pattern with these core packages:
 2. **`@nadohq/engine-client`** - Handles off-chain matching engine communication
 3. **`@nadohq/indexer-client`** - Provides indexer queries for historical data
 4. **`@nadohq/trigger-client`** - Manages trigger service for stop orders
-5. **`@nadohq/shared`** - Contract utilities, ABIs, and on-chain interactions. Also includes common utilities, such as
+5. **`@nadohq/mobile-client`** - Client for the mobile service API (usernames, profiles, private mode, push notification devices & preferences)
+6. **`@nadohq/shared`** - Contract utilities, ABIs, and on-chain interactions. Also includes common utilities, such as
    bignumber.js for mathematical operations.
 
 ### Client Architecture
@@ -95,7 +97,6 @@ After making edits, **ALWAYS** run the following verification sequence:
 - **Fix errors immediately** - If any command fails, address issues and re-run the full sequence
 - **Build before adding E2E tests** - Always run `bun run build` before E2E testing to ensure packages are properly built
 - **Add basic sanity E2E tests** - Never skip writing E2E tests for new features, client APIs, or user flows
-- **Do NOT write unit tests** - any unit tests should be written manually
 
 ## TypeScript SDK Style Guide
 
