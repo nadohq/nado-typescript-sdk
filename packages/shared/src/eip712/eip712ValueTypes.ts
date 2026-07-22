@@ -13,6 +13,7 @@ import {
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
+  EIP712UpdateDependencyParams,
   EIP712WithdrawCollateralParams,
   EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
@@ -47,6 +48,9 @@ export type EIP712OrderValues = Omit<
 
 export type EIP712ListTriggerOrdersValues =
   WithEIP712Sender<EIP712ListTriggerOrdersParams>;
+
+export type EIP712UpdateDependencyValues =
+  WithEIP712Sender<EIP712UpdateDependencyParams>;
 
 export type EIP712OrderCancellationValues =
   WithEIP712Sender<EIP712CancelOrdersParams>;
@@ -93,6 +97,7 @@ export interface SignableRequestTypeToEIP712Values {
   place_order: EIP712OrderValues;
   social_authentication: EIP712SocialAuthenticationValues;
   transfer_quote: EIP712TransferQuoteValues;
+  update_dependency: EIP712UpdateDependencyValues;
   withdraw_collateral: EIP712WithdrawCollateralValues;
   withdraw_collateral_v2: EIP712WithdrawCollateralV2Values;
 }

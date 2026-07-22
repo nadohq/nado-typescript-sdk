@@ -54,6 +54,14 @@ export interface EIP712ListTriggerOrdersParams extends Subaccount {
   recvTime: BigNumberish;
 }
 
+export interface EIP712UpdateDependencyParams extends Subaccount {
+  // Digest (bytes32 hex string) of the order the trigger orders currently depend on
+  oldDigest: string;
+  // Digest (bytes32 hex string) of the replacement order the trigger orders should depend on
+  newDigest: string;
+  nonce: string;
+}
+
 export interface EIP712CancelOrdersParams extends Subaccount {
   productIds: number[];
   digests: string[];

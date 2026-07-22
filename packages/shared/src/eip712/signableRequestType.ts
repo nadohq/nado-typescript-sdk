@@ -11,6 +11,7 @@ import {
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
+  EIP712UpdateDependencyParams,
   EIP712WithdrawCollateralParams,
   EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
@@ -31,6 +32,7 @@ export interface SignableRequestTypeToParams {
   place_order: EIP712OrderParams;
   social_authentication: EIP712SocialAuthenticationParams;
   transfer_quote: EIP712TransferQuoteParams;
+  update_dependency: EIP712UpdateDependencyParams;
   withdraw_collateral: EIP712WithdrawCollateralParams;
   withdraw_collateral_v2: EIP712WithdrawCollateralV2Params;
 }

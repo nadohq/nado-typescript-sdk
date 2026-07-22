@@ -37,7 +37,7 @@ await trigger.cancelTriggerOrders({ ... });
 
 ### Executes
 
-`placeTriggerOrder`, `placeTriggerOrders`, `cancelTriggerOrders`, `cancelProductOrders`.
+`placeTriggerOrder`, `placeTriggerOrders`, `cancelTriggerOrders`, `cancelProductOrders`, `updateTriggerDependency`.
 
 ### Queries
 
