@@ -4,6 +4,20 @@
 export interface MobileServerPublicQueryParamsByType {
   username_availability: { display_name: string };
   profile: { username: string };
+  feed: {
+    /**
+     * Minimum notional as a whole-dollar JSON integer (NOT an x18 string), at least $1,000. Omitted or
+     * `null` means unfiltered.
+     */
+    minimum_notional?: number;
+    /** Page size, 1–50; the backend defaults to `MOBILE_FEED_MAX_PAGE_SIZE` (50) when omitted. */
+    limit?: number;
+    /**
+     * Opaque keyset cursor from a prior page's `next_cursor`. Bound to the exact `minimum_notional` it was
+     * issued for (including the unfiltered state) — reusing it with a different filter fails.
+     */
+    cursor?: string;
+  };
 }
 
 /**

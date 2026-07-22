@@ -4,6 +4,7 @@ import {
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
+  mapMobileFeedPage,
   mapMobileIdentity,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
@@ -17,12 +18,14 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
+  GetMobileFeedParams,
   GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
   GetMobileRegisteredDevicesParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
   MobileClaimUsernameParams,
+  MobileFeedPage,
   MobileIdentity,
   MobileNotificationPreferences,
   MobilePublicProfile,
@@ -39,6 +42,8 @@ import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
 import { MobileServerExecuteResult } from './types/serverExecuteTypes';
 import {
+  MobileServerFeedRequest,
+  MobileServerFeedResponse,
   MobileServerNotificationPreferencesResponse,
   MobileServerProfileRequest,
   MobileServerProfileResponse,
@@ -132,6 +137,30 @@ export class MobileClient {
     };
     const data = await this.publicQuery<MobileServerProfileResponse>(body);
     return mapMobilePublicProfile(data.profile);
+  }
+
+  /**
+   * Fetches a page of the global trade feed: public, named, perpetual trades, newest first, optionally
+   * filtered by a whole-dollar minimum notional (omitted means unfiltered). The feed is best-effort rather
+   * than authoritative history, and pagination is live (not snapshot), so deduplicate pages by
+   * {@link MobileFeedTrade.orderDigest}.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_FEED_FILTER` if `minimumNotional` or
+   * `limit` is outside its allowed domain (fix the request; do not retry unchanged), or
+   * `INVALID_FEED_CURSOR` if the cursor is malformed or was issued for a different `minimumNotional`
+   * (discard the cursor and restart from the first page).
+   */
+  async getFeed(params: GetMobileFeedParams = {}): Promise<MobileFeedPage> {
+    const body: MobileServerFeedRequest = {
+      type: 'feed',
+      ...(params.minimumNotional != null && {
+        minimum_notional: params.minimumNotional,
+      }),
+      ...(params.limit != null && { limit: params.limit }),
+      ...(params.cursor != null && { cursor: params.cursor }),
+    };
+    const data = await this.publicQuery<MobileServerFeedResponse>(body);
+    return mapMobileFeedPage(data);
   }
 
   /*

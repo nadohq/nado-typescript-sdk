@@ -1,4 +1,7 @@
 import {
+  MobileFeedMargin,
+  MobileFeedPage,
+  MobileFeedTrade,
   MobileIdentity,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
@@ -6,12 +9,15 @@ import {
   MobileRegisteredDevice,
 } from './types/clientTypes';
 import {
+  MobileServerFeedMargin,
+  MobileServerFeedTrade,
   MobileServerIdentity,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
   MobileServerRegisteredDevice,
 } from './types/serverModelTypes';
+import { MobileServerFeedResponse } from './types/serverQueryTypes';
 
 /**
  * Maps a server-side identity (snake_case) to its client-side (camelCase) representation.
@@ -88,6 +94,49 @@ function mapMobileNotificationPreferenceScopeToServer(
     return { type: 'subaccount', subaccount: scope.subaccount };
   }
   return { type: 'product', product_id: scope.productId };
+}
+
+function mapMobileFeedMargin(server: MobileServerFeedMargin): MobileFeedMargin {
+  if (server.mode === 'cross') {
+    return { mode: 'cross' };
+  }
+  // Preserve the omitted-when-unavailable semantics instead of introducing an explicit `undefined` key
+  return server.estimated_leverage !== undefined
+    ? { mode: 'isolated', estimatedLeverage: server.estimated_leverage }
+    : { mode: 'isolated' };
+}
+
+/**
+ * Maps a server-side feed trade (snake_case) to its client-side (camelCase) representation.
+ */
+function mapMobileFeedTrade(server: MobileServerFeedTrade): MobileFeedTrade {
+  return {
+    orderDigest: server.order_digest,
+    subaccount: server.subaccount,
+    username: server.username,
+    displayName: server.display_name,
+    avatarUrl: server.avatar_url,
+    productId: server.product_id,
+    quantity: server.quantity,
+    notional: server.notional,
+    averagePrice: server.average_price,
+    margin: mapMobileFeedMargin(server.margin),
+    position: server.position,
+    realizedPnl: server.realized_pnl,
+    filledAtMillis: server.filled_at_ms,
+  };
+}
+
+/**
+ * Maps a server-side feed response to a client-side {@link MobileFeedPage}.
+ */
+export function mapMobileFeedPage(
+  server: MobileServerFeedResponse,
+): MobileFeedPage {
+  return {
+    trades: server.trades.map(mapMobileFeedTrade),
+    nextCursor: server.next_cursor,
+  };
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   MobileServerSuccessResponse,
 } from './serverBaseTypes';
 import {
+  MobileServerFeedTrade,
   MobileServerIdentity,
   MobileServerNotificationPreferences,
   MobileServerProfile,
@@ -34,6 +35,11 @@ export type MobileServerProfileRequest =
   MobileServerPublicQueryRequest<'profile'>;
 
 /**
+ * Request body for the `feed` public query.
+ */
+export type MobileServerFeedRequest = MobileServerPublicQueryRequest<'feed'>;
+
+/**
  * Successful response for the `username_availability` public query.
  */
 export type MobileServerUsernameAvailabilityResponse =
@@ -47,6 +53,16 @@ export type MobileServerUsernameAvailabilityResponse =
  */
 export type MobileServerProfileResponse = MobileServerSuccessResponse<{
   profile: MobileServerProfile;
+}>;
+
+/**
+ * Successful response for the `feed` public query. `next_cursor` is `null` when there was no additional
+ * candidate at query time; a page may contain fewer than `limit` trades (or none) with a non-null cursor
+ * because invalid enrichment rows are omitted and pagination is live rather than snapshot.
+ */
+export type MobileServerFeedResponse = MobileServerSuccessResponse<{
+  trades: MobileServerFeedTrade[];
+  next_cursor: string | null;
 }>;
 
 /**
