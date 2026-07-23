@@ -1,17 +1,20 @@
-import { NADO_ERROR_CODES } from '@nadohq/shared';
+import { ENGINE_ERROR_CODES } from '@nadohq/engine-client';
 
 /**
- * Numeric error codes returned by the trigger service API. Codes shared across all Nado backend
- * services (see {@link NADO_ERROR_CODES}) are inlined via spread; trigger-specific codes belong
- * in the trigger's own range and should be added here as the backend enumerates them.
+ * Numeric error codes returned by the trigger service API.
+ *
+ * The trigger service shares the same `ResponseError` enum as the engine (see
+ * `nado-utils/src/error.rs`), so the 2xxx query/execute codes are identical. This map re-exports
+ * {@link ENGINE_ERROR_CODES} for ergonomic access from `@nadohq/trigger-client` consumers —
+ * e.g. `TRIGGER_ERROR_CODES.TRIGGER_ORDER_NOT_FOUND` instead of importing from the engine
+ * package.
  *
  * The trigger failure envelope is returned for both `/query` and `/execute` routes — see
  * {@link TriggerServerQueryFailureResponse} and `EngineServerExecuteFailureResult` (the trigger
  * service reuses the engine's execute failure shape).
  */
 export const TRIGGER_ERROR_CODES = {
-  ...NADO_ERROR_CODES,
-  // Trigger-specific codes (3xxx range). Populate as the backend's error enum is finalized.
+  ...ENGINE_ERROR_CODES,
 } as const;
 
 /**
