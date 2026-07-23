@@ -1,5 +1,6 @@
 export * from './clientExecuteTypes';
 export * from './clientQueryTypes';
+export * from './engineErrorCodes';
 export * from './EngineServerFailureError';
 export * from './serverEdgeQueryTypes';
 export * from './serverExecuteTypes';
