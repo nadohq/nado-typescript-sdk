@@ -46,13 +46,14 @@ export interface MobileUsernameAvailability {
 }
 
 /**
- * Margin of a feed trade, tagged on `mode`. Branch on `mode` — do not infer isolated state from leverage
- * presence: `estimatedLeverage` (a rounded whole-number estimate, not exact submitted leverage) is omitted
- * inside `isolated` when no estimate is available and never appears on `cross`.
+ * Margin of a feed trade. Branch on `mode` — do not infer isolated state from leverage presence:
+ * `estimatedLeverage` (a rounded whole-number estimate, not exact submitted leverage) is `undefined` on
+ * `cross`, and also `undefined` inside `isolated` when no estimate is available.
  */
-export type MobileFeedMargin =
-  | { mode: 'cross' }
-  | { mode: 'isolated'; estimatedLeverage?: number };
+export interface MobileFeedMargin {
+  mode: 'cross' | 'isolated';
+  estimatedLeverage?: number;
+}
 
 /**
  * A single feed trade: one row per order digest, enriched with the trader's current identity at read time
