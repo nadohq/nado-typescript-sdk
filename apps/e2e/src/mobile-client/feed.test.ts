@@ -7,7 +7,7 @@ import {
   MobileServerFailureError,
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
-import { before, describe, test, TestContext } from 'node:test';
+import { before, describe, test } from 'node:test';
 import {
   assertArrayElements,
   assertEnumMember,
@@ -42,26 +42,18 @@ void describe(
       tc = createTestContext();
     });
 
-    void test('fetches an unfiltered page of the global feed', async (t) => {
-      const page = await getFeedOrSkip(t, () => tc.mobile.getFeed());
-      if (page === null) {
-        return;
-      }
+    void test('fetches an unfiltered page of the global feed', async () => {
+      const page = await tc.mobile.getFeed();
       debugPrint('Global feed page', page);
       assertFeedPageShape(page);
     });
 
-    void test('honors a minimum notional and page limit', async (t) => {
+    void test('honors a minimum notional and page limit', async () => {
       const limit = 5;
-      const page = await getFeedOrSkip(t, () =>
-        tc.mobile.getFeed({
-          minimumNotional: MOBILE_FEED_MIN_NOTIONAL_FLOOR,
-          limit,
-        }),
-      );
-      if (page === null) {
-        return;
-      }
+      const page = await tc.mobile.getFeed({
+        minimumNotional: MOBILE_FEED_MIN_NOTIONAL_FLOOR,
+        limit,
+      });
       debugPrint('Filtered feed page', page);
       assertFeedPageShape(page);
       assert.ok(
@@ -74,14 +66,11 @@ void describe(
       );
     });
 
-    void test('rejects a malformed cursor with INVALID_FEED_CURSOR', async (t) => {
+    void test('rejects a malformed cursor with INVALID_FEED_CURSOR', async () => {
       try {
         await tc.mobile.getFeed({ cursor: 'not-a-feed-cursor' });
         assert.fail('expected INVALID_FEED_CURSOR for a malformed cursor');
       } catch (error) {
-        if (skipIfFeedUnavailable(t, error)) {
-          return;
-        }
         assert.ok(
           error instanceof MobileServerFailureError,
           'should throw MobileServerFailureError',
@@ -94,43 +83,6 @@ void describe(
     });
   },
 );
-
-/**
- * Runs a feed query, returning `null` (after skipping the test) when the backend has not yet deployed the
- * feed variant. The SDK feed client is built ahead of the core implementation, so an unrecognized variant is
- * an expected "not ready" state rather than a failure.
- */
-async function getFeedOrSkip(
-  t: TestContext,
-  operation: () => Promise<MobileFeedPage>,
-): Promise<MobileFeedPage | null> {
-  try {
-    return await operation();
-  } catch (error) {
-    if (skipIfFeedUnavailable(t, error)) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-/**
- * Skips the current test when the error indicates the feed variant is not implemented on the target backend.
- */
-function skipIfFeedUnavailable(t: TestContext, error: unknown): boolean {
-  const notImplemented =
-    error instanceof MobileServerFailureError &&
-    error.responseData.error_code === MOBILE_ERROR_CODES.NOT_IMPLEMENTED;
-  // Backends predating the feed reject the unknown request variant at the JSON-deserialization layer
-  // (HTTP 422 with a plain string body), before any typed failure envelope exists
-  const unknownVariant =
-    error instanceof Error && error.message.includes('unknown variant `feed`');
-  if (notImplemented || unknownVariant) {
-    t.skip('feed variant not implemented on target backend yet');
-    return true;
-  }
-  return false;
-}
 
 /**
  * Asserts the shape of a feed page and each of its trades.
