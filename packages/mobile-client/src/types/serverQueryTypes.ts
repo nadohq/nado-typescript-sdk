@@ -88,3 +88,32 @@ export type MobileServerRegisteredDevicesResponse =
   MobileServerSuccessResponse<{
     devices: MobileServerRegisteredDevice[];
   }>;
+
+/**
+ * Successful responses for each unsigned `public_query`, keyed by request `type`. Counterpart to
+ * {@link MobileServerPublicQueryParamsByType} so a query's request params and response share one lookup,
+ * matching the `*QueryResponseByType` convention used by the engine, indexer, and trigger clients.
+ */
+export interface MobileServerPublicQueryResponseByType {
+  username_availability: MobileServerUsernameAvailabilityResponse;
+  profile: MobileServerProfileResponse;
+  feed: MobileServerFeedResponse;
+}
+
+/**
+ * Successful responses for each signed `query`, keyed by request `type`. Signed queries carry no params
+ * beyond the signed envelope, so this response lookup — not a params map — is the counterpart to
+ * {@link MobileServerPublicQueryResponseByType} for the authenticated `query` route.
+ */
+export interface MobileServerSignedQueryResponseByType {
+  self_identity: MobileServerSelfIdentityResponse;
+  notification_preferences: MobileServerNotificationPreferencesResponse;
+  registered_devices: MobileServerRegisteredDevicesResponse;
+}
+
+/**
+ * Discriminant `type` values for signed `query` requests: the read-only subset of {@link MobileSignedInner}
+ * tags, keyed the same way as {@link MobileServerPublicQueryType}.
+ */
+export type MobileServerSignedQueryType =
+  keyof MobileServerSignedQueryResponseByType;

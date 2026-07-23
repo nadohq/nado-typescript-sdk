@@ -39,18 +39,19 @@ import {
   MobileUsernameAvailability,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
-import { MobileServerSuccessResponse } from './types/serverBaseTypes';
+import {
+  MobileServerPublicQueryParamsByType,
+  MobileServerPublicQueryType,
+  MobileServerSuccessResponse,
+} from './types/serverBaseTypes';
 import { MobileServerExecuteResult } from './types/serverExecuteTypes';
 import {
   MobileServerFeedRequest,
-  MobileServerFeedResponse,
-  MobileServerNotificationPreferencesResponse,
   MobileServerProfileRequest,
-  MobileServerProfileResponse,
-  MobileServerRegisteredDevicesResponse,
-  MobileServerSelfIdentityResponse,
+  MobileServerPublicQueryResponseByType,
+  MobileServerSignedQueryResponseByType,
+  MobileServerSignedQueryType,
   MobileServerUsernameAvailabilityRequest,
-  MobileServerUsernameAvailabilityResponse,
 } from './types/serverQueryTypes';
 import {
   isMobileServerFailureResponse,
@@ -117,8 +118,7 @@ export class MobileClient {
       type: 'username_availability',
       display_name: params.displayName,
     };
-    const data =
-      await this.publicQuery<MobileServerUsernameAvailabilityResponse>(body);
+    const data = await this.publicQuery(body);
     return { username: data.username, available: data.available };
   }
 
@@ -135,7 +135,7 @@ export class MobileClient {
       type: 'profile',
       username: params.username,
     };
-    const data = await this.publicQuery<MobileServerProfileResponse>(body);
+    const data = await this.publicQuery(body);
     return mapMobilePublicProfile(data.profile);
   }
 
@@ -159,7 +159,7 @@ export class MobileClient {
       ...(params.limit != null && { limit: params.limit }),
       ...(params.cursor != null && { cursor: params.cursor }),
     };
-    const data = await this.publicQuery<MobileServerFeedResponse>(body);
+    const data = await this.publicQuery(body);
     return mapMobileFeedPage(data);
   }
 
@@ -179,8 +179,7 @@ export class MobileClient {
       params,
       {},
     );
-    const data =
-      await this.query<MobileServerSelfIdentityResponse>(signedRequest);
+    const data = await this.query<'self_identity'>(signedRequest);
     return data.identity ? mapMobileIdentity(data.identity) : null;
   }
 
@@ -196,10 +195,7 @@ export class MobileClient {
       params,
       {},
     );
-    const data =
-      await this.query<MobileServerNotificationPreferencesResponse>(
-        signedRequest,
-      );
+    const data = await this.query<'notification_preferences'>(signedRequest);
     return mapMobileNotificationPreferences(data.preferences);
   }
 
@@ -214,8 +210,7 @@ export class MobileClient {
       params,
       {},
     );
-    const data =
-      await this.query<MobileServerRegisteredDevicesResponse>(signedRequest);
+    const data = await this.query<'registered_devices'>(signedRequest);
     return data.devices.map(mapMobileRegisteredDevice);
   }
 
@@ -347,9 +342,9 @@ export class MobileClient {
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
-  protected async publicQuery<TResponse extends { status: 'success' }>(
-    body: object,
-  ): Promise<TResponse> {
+  protected async publicQuery<T extends MobileServerPublicQueryType>(
+    body: { type: T } & MobileServerPublicQueryParamsByType[T],
+  ): Promise<MobileServerPublicQueryResponseByType[T]> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/public_query`,
       body,
@@ -359,12 +354,12 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as TResponse;
+    return response.data as MobileServerPublicQueryResponseByType[T];
   }
 
-  protected async query<TResponse extends { status: 'success' }>(
+  protected async query<T extends MobileServerSignedQueryType>(
     body: MobileSignedRequest,
-  ): Promise<TResponse> {
+  ): Promise<MobileServerSignedQueryResponseByType[T]> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/query`,
       body,
@@ -374,7 +369,7 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as TResponse;
+    return response.data as MobileServerSignedQueryResponseByType[T];
   }
 
   protected async execute(
