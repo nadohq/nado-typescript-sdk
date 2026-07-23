@@ -95,8 +95,7 @@ void describe(
       } catch (error) {
         if (
           error instanceof MobileServerFailureError &&
-          error.responseData.error_code ===
-            MOBILE_ERROR_CODES.IDENTITY_ALREADY_CLAIMED
+          error.errorCode === MOBILE_ERROR_CODES.IDENTITY_ALREADY_CLAIMED
         ) {
           // Another process claimed the identity between our check and this call — an acceptable race, not a failure.
           return;
@@ -214,7 +213,7 @@ async function assertRejectsWithErrorCode(
       error instanceof MobileServerFailureError,
       'should throw MobileServerFailureError',
     );
-    assert.equal(error.responseData.error_code, expectedErrorCode);
+    assert.equal(error.errorCode, expectedErrorCode);
     return true;
   });
 }

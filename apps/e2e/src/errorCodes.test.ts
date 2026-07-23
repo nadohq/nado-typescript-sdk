@@ -7,6 +7,10 @@ import {
   IndexerServerFailureError,
   isIndexerServerFailureResponse,
 } from '@nadohq/indexer-client';
+import {
+  MOBILE_ERROR_CODES,
+  MobileServerFailureError,
+} from '@nadohq/mobile-client';
 import { NADO_ERROR_CODES } from '@nadohq/shared';
 import {
   TRIGGER_ERROR_CODES,
@@ -22,7 +26,8 @@ import { describe, test } from 'node:test';
  * `*ServerFailureError` class, that the shared {@link NADO_ERROR_CODES} are inlined into every
  * per-service map, and that the failure-error classes expose the new `errorCode` field on a
  * constructed failure envelope. These are offline shape/export assertions — live failure flows
- * are covered by the per-service E2E suites (e.g. `engine-client/builder.test.ts`).
+ * are covered by the per-service E2E suites (e.g. `engine-client/builder.test.ts`,
+ * `mobile-client/identity.test.ts`).
  */
 void describe('[error-codes]: cross-service error code maps', () => {
   void test('every service map inlines the shared NADO_ERROR_CODES', () => {
@@ -41,6 +46,11 @@ void describe('[error-codes]: cross-service error code maps', () => {
         INDEXER_ERROR_CODES[name as keyof typeof INDEXER_ERROR_CODES],
         value,
         `INDEXER_ERROR_CODES.${name} should match NADO_ERROR_CODES.${name}`,
+      );
+      assert.equal(
+        MOBILE_ERROR_CODES[name as keyof typeof MOBILE_ERROR_CODES],
+        value,
+        `MOBILE_ERROR_CODES.${name} should match NADO_ERROR_CODES.${name}`,
       );
     }
   });
@@ -92,5 +102,23 @@ void describe('[error-codes]: cross-service error code maps', () => {
     assert.equal(error.httpStatus, 503);
     assert.equal(error.errorCode, NADO_ERROR_CODES.SERVICE_UNAVAILABLE);
     assert.equal(error.requestType, 'query_leaderboard_register');
+  });
+
+  void test('MobileServerFailureError exposes errorCode, httpStatus, and requestType on a constructed failure', () => {
+    const error = new MobileServerFailureError(
+      {
+        status: 'failure',
+        error: 'Profile not found',
+        error_code: MOBILE_ERROR_CODES.PROFILE_NOT_FOUND,
+        request_type: 'public_query_profile',
+      },
+      404,
+    );
+
+    assert.ok(error instanceof MobileServerFailureError);
+    assert.equal(error.name, 'MobileServerFailureError');
+    assert.equal(error.httpStatus, 404);
+    assert.equal(error.errorCode, MOBILE_ERROR_CODES.PROFILE_NOT_FOUND);
+    assert.equal(error.requestType, 'public_query_profile');
   });
 });
