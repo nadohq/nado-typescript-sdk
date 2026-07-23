@@ -193,8 +193,8 @@ function assertFeedTradeShape(trade: MobileFeedTrade, label: string): void {
     `${label}.realizedPnl should be finite`,
   );
   assert.ok(
-    Number.isSafeInteger(trade.filledAtMillis) && trade.filledAtMillis >= 0,
-    `${label}.filledAtMillis should be a non-negative safe integer`,
+    Number.isSafeInteger(trade.filledAt) && trade.filledAt >= 0,
+    `${label}.filledAt should be a non-negative safe integer`,
   );
 }
 

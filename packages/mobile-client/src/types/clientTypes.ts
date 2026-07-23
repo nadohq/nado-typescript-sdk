@@ -80,8 +80,8 @@ export interface MobileFeedTrade {
   position: MobileFeedPosition;
   /** Realized PnL of the trade in human units; can be negative. */
   realizedPnl: number;
-  /** Fill time as Unix milliseconds. */
-  filledAtMillis: number;
+  /** Fill time as a Unix timestamp (milliseconds). */
+  filledAt: number;
 }
 
 /**

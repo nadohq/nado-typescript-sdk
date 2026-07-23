@@ -123,7 +123,7 @@ function mapMobileFeedTrade(server: MobileServerFeedTrade): MobileFeedTrade {
     margin: mapMobileFeedMargin(server.margin),
     position: server.position,
     realizedPnl: server.realized_pnl,
-    filledAtMillis: server.filled_at_ms,
+    filledAt: server.filled_at_ms,
   };
 }
 
