@@ -153,11 +153,9 @@ export class MobileClient {
   async getFeed(params: GetMobileFeedParams = {}): Promise<MobileFeedPage> {
     const body: MobileServerFeedRequest = {
       type: 'feed',
-      ...(params.minimumNotional != null && {
-        minimum_notional: params.minimumNotional,
-      }),
-      ...(params.limit != null && { limit: params.limit }),
-      ...(params.cursor != null && { cursor: params.cursor }),
+      minimum_notional: params.minimumNotional,
+      limit: params.limit,
+      cursor: params.cursor,
     };
     const data = await this.publicQuery(body);
     return mapMobileFeedPage(data);
