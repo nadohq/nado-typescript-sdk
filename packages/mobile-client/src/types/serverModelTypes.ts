@@ -63,13 +63,14 @@ export interface MobileFeedTradePosition {
 }
 
 /**
- * Server-side margin of a feed trade, tagged on `mode`. Branch on `mode` — do not infer isolated state from
- * leverage presence: `estimated_leverage` (a rounded whole-number estimate, not exact submitted leverage) is
- * omitted inside `isolated` when no estimate is available and never appears on `cross`.
+ * Server-side margin of a feed trade. Branch on `mode` — do not infer isolated state from leverage presence:
+ * `estimated_leverage` (a rounded whole-number estimate, not exact submitted leverage) is omitted on `cross`,
+ * and also omitted inside `isolated` when no estimate is available.
  */
-export type MobileServerFeedMargin =
-  | { mode: 'cross' }
-  | { mode: 'isolated'; estimated_leverage?: number };
+export interface MobileServerFeedMargin {
+  mode: 'cross' | 'isolated';
+  estimated_leverage?: number;
+}
 
 /**
  * Server-side feed trade shape (snake_case): one row per order digest, enriched at read time with the
