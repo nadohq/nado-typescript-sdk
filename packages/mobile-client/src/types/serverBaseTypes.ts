@@ -1,7 +1,7 @@
 /**
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
-export interface MobileServerPublicQueryParamsByType {
+export interface MobileServerPublicQueryRequestByType {
   username_availability: { display_name: string };
   profile: { username: string };
   feed: {
@@ -23,8 +23,8 @@ export interface MobileServerPublicQueryParamsByType {
 /**
  * Discriminant `type` values for unsigned `public_query` requests.
  */
-export type MobileServerPublicQueryType =
-  keyof MobileServerPublicQueryParamsByType;
+export type MobileServerPublicQueryRequestType =
+  keyof MobileServerPublicQueryRequestByType;
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by route (`public_query_*`,
@@ -33,7 +33,7 @@ export type MobileServerPublicQueryType =
  * tags declared in `signing.ts`.
  */
 export type MobileServerRequestType =
-  | `public_query_${MobileServerPublicQueryType}`
+  | `public_query_${MobileServerPublicQueryRequestType}`
   | `query_${string}`
   | `execute_${string}`;
 

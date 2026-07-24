@@ -40,8 +40,8 @@ import {
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import {
-  MobileServerPublicQueryParamsByType,
-  MobileServerPublicQueryType,
+  MobileServerPublicQueryRequestByType,
+  MobileServerPublicQueryRequestType,
   MobileServerSuccessResponse,
 } from './types/serverBaseTypes';
 import { MobileServerExecuteResult } from './types/serverExecuteTypes';
@@ -49,8 +49,8 @@ import {
   MobileServerFeedRequest,
   MobileServerProfileRequest,
   MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQueryRequestType,
   MobileServerSignedQuerySuccessResponse,
-  MobileServerSignedQueryType,
   MobileServerUsernameAvailabilityRequest,
 } from './types/serverQueryTypes';
 import {
@@ -340,8 +340,8 @@ export class MobileClient {
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
-  protected async publicQuery<T extends MobileServerPublicQueryType>(
-    body: { type: T } & MobileServerPublicQueryParamsByType[T],
+  protected async publicQuery<T extends MobileServerPublicQueryRequestType>(
+    body: { type: T } & MobileServerPublicQueryRequestByType[T],
   ): Promise<MobileServerPublicQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/public_query`,
@@ -355,7 +355,7 @@ export class MobileClient {
     return response.data as MobileServerPublicQuerySuccessResponse<T>;
   }
 
-  protected async query<T extends MobileServerSignedQueryType>(
+  protected async query<T extends MobileServerSignedQueryRequestType>(
     body: MobileSignedRequest,
   ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
