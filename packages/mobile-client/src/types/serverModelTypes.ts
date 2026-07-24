@@ -1,3 +1,4 @@
+import { BalanceSide } from '@nadohq/shared';
 import { Hex } from 'viem';
 
 /**
@@ -36,12 +37,6 @@ export interface MobileServerIdentity {
 }
 
 /**
- * Direction of the position a feed trade resulted in — for `closed`, the direction that was closed. This is
- * NOT the execution buy/sell side, which the feed does not expose.
- */
-export type MobileFeedPositionDirection = 'long' | 'short';
-
-/**
  * How a feed trade changed the trader's position in the product.
  */
 export type MobileFeedPositionEffect =
@@ -56,7 +51,11 @@ export type MobileFeedPositionEffect =
  * and this type is shared by {@link MobileServerFeedTrade} and the client-side `MobileFeedTrade`.
  */
 export interface MobileFeedPosition {
-  direction: MobileFeedPositionDirection;
+  /**
+   * Direction of the position the trade resulted in — for `closed`, the direction that was closed. This is
+   * NOT the execution buy/sell side, which the feed does not expose.
+   */
+  direction: BalanceSide;
   effect: MobileFeedPositionEffect;
 }
 
