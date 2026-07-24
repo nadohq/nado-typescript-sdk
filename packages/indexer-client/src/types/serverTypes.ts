@@ -716,3 +716,40 @@ export type IndexerServerV2SymbolsResponse = Record<
   string,
   IndexerServerV2Symbol
 >;
+
+/**
+ * Wire `request_type` the indexer echoes on failure envelopes. The indexer's failure envelope is
+ * keyed by route (`<verb>_<query_type>`), mirroring the engine and trigger services. Kept as a
+ * `${string}_${string}` template to avoid enumerating the full set of v1 query types declared
+ * above.
+ */
+export type IndexerServerRequestType = `${string}_${string}`;
+
+/**
+ * Failure envelope returned by the indexer service API. Mirrors the failure shape used by the
+ * engine and trigger services: a `status: 'failure'` discriminant plus an `error`/`error_code`
+ * pair and the originating `request_type`. A response missing this envelope shape (e.g. a
+ * malformed body, or a non-JSON response) is a transport-level error, not a domain error.
+ *
+ * The v2 REST endpoints do not return this envelope — they use plain HTTP error responses
+ * without an `error_code` field.
+ */
+export interface IndexerServerFailureResponse {
+  status: 'failure';
+  error: string;
+  error_code: number;
+  request_type: IndexerServerRequestType;
+}
+
+/**
+ * Narrows an unknown response body to the indexer service API failure envelope.
+ */
+export function isIndexerServerFailureResponse(
+  data: unknown,
+): data is IndexerServerFailureResponse {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as Record<string, unknown>).status === 'failure'
+  );
+}

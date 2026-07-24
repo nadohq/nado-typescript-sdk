@@ -118,6 +118,7 @@ import {
   IndexerMatchEvent,
   IndexerOraclePrice,
   IndexerServerEventsParams,
+  IndexerServerFailureError,
   IndexerServerQueryRequestByType,
   IndexerServerQueryRequestType,
   IndexerServerQueryResponseByType,
@@ -125,6 +126,7 @@ import {
   IndexerServerV2TickersResponse,
   IndexerSnapshotBalance,
   IndexerSubaccountSnapshot,
+  isIndexerServerFailureResponse,
   ListIndexerSocialAccountsParams,
   ListIndexerSocialAccountsResponse,
   ListIndexerSubaccountsParams,
@@ -1190,6 +1192,9 @@ export class IndexerBaseClient {
   }
 
   private checkResponseStatus(response: AxiosResponse) {
+    if (isIndexerServerFailureResponse(response.data)) {
+      throw new IndexerServerFailureError(response.data, response.status);
+    }
     if (response.status !== 200 || !response.data) {
       throw Error(
         `Unexpected response from server: ${response.status} ${response.statusText}`,

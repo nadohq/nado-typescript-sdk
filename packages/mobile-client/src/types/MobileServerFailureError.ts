@@ -1,18 +1,36 @@
-import { MobileServerFailureResponse } from './serverBaseTypes';
+import {
+  MobileServerFailureResponse,
+  MobileServerRequestType,
+} from './serverBaseTypes';
 
 /**
  * Error thrown when the mobile service API returns a failure envelope, either as a non-2xx HTTP response
- * or a 2xx response with `status: 'failure'`.
+ * or a 2xx response with `status: 'failure'`. The numeric error code is exposed directly on
+ * {@link errorCode} for comparison against {@link MOBILE_ERROR_CODES}.
  */
 export class MobileServerFailureError extends Error {
+  /**
+   * HTTP status code of the response, e.g. `404` for `PROFILE_NOT_FOUND`. Unlike the engine, the mobile
+   * backend maps domain failures onto HTTP statuses.
+   */
+  readonly httpStatus: number;
+  /**
+   * Numeric mobile service API error code, see {@link MOBILE_ERROR_CODES}.
+   */
+  readonly errorCode: number;
+  /**
+   * The request type that failed, e.g. `public_query_profile`, `execute_claim_username`.
+   */
+  readonly requestType: MobileServerRequestType;
+
   constructor(
     readonly responseData: MobileServerFailureResponse,
-    /**
-     * HTTP status code of the response, e.g. `404` for `PROFILE_NOT_FOUND`. Unlike the engine, the mobile
-     * backend maps domain failures onto HTTP statuses.
-     */
-    readonly httpStatus: number,
+    httpStatus: number,
   ) {
     super(`${responseData.error_code}: ${responseData.error}`);
+    this.name = 'MobileServerFailureError';
+    this.httpStatus = httpStatus;
+    this.errorCode = responseData.error_code;
+    this.requestType = responseData.request_type;
   }
 }
