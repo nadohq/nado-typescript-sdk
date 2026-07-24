@@ -1,4 +1,5 @@
 export * from './balanceTypes';
+export * from './BaseServerFailureError';
 export * from './bytes';
 export * from './ChainEnv';
 export * from './errorCodes';
