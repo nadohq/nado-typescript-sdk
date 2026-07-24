@@ -17,6 +17,7 @@ import {
 } from '@nadohq/shared';
 import {
   Candlestick,
+  GetIndexerPortfolioResponse,
   IndexerEvent,
   IndexerEventWithTx,
   IndexerFundingRate,
@@ -31,6 +32,7 @@ import {
   IndexerOrder,
   IndexerPerpBalance,
   IndexerPerpPrices,
+  IndexerPortfolioPoint,
   IndexerProductPayment,
   IndexerServerBalance,
   IndexerServerCandlestick,
@@ -46,6 +48,8 @@ import {
   IndexerServerNlpSnapshot,
   IndexerServerOrder,
   IndexerServerPerpPrices,
+  IndexerServerPortfolioPoint,
+  IndexerServerPortfolioResponse,
   IndexerServerProduct,
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
@@ -244,6 +248,33 @@ export function mapIndexerFundingRateHistory(
     timestamp: toBigNumber(entry.timestamp),
     fundingRateFrac: removeDecimals(entry.funding_rate_x18),
   };
+}
+
+function mapIndexerPortfolioPoint([
+  timestamp,
+  value,
+]: IndexerServerPortfolioPoint): IndexerPortfolioPoint {
+  return {
+    timestamp: toBigNumber(timestamp),
+    value: toBigNumber(value),
+  };
+}
+
+export function mapIndexerPortfolio(
+  response: IndexerServerPortfolioResponse,
+): GetIndexerPortfolioResponse {
+  return Object.fromEntries(
+    response.map(([period, history]) => [
+      period,
+      {
+        accountValueHistory: history.accountValueHistory.map(
+          mapIndexerPortfolioPoint,
+        ),
+        pnlHistory: history.pnlHistory.map(mapIndexerPortfolioPoint),
+        vlm: toBigNumber(history.vlm),
+      },
+    ]),
+  ) as GetIndexerPortfolioResponse;
 }
 
 export function mapIndexerMakerStatistics(
