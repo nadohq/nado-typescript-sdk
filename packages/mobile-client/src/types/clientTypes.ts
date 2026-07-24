@@ -1,7 +1,7 @@
 import { SignatureParams, Subaccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import {
-  MobileFeedPosition,
+  MobileFeedTradePosition,
   MobileNotificationCategory,
   MobileNotificationPlatform,
 } from './serverModelTypes';
@@ -77,7 +77,7 @@ export interface MobileFeedTrade {
   averagePrice: number;
   margin: MobileFeedMargin;
   /** Resulting position change. `position.direction` is NOT the execution buy/sell side. */
-  position: MobileFeedPosition;
+  position: MobileFeedTradePosition;
   /** Realized PnL of the trade in human units; can be negative. */
   realizedPnl: number;
   /** Fill time as a Unix timestamp (milliseconds). */

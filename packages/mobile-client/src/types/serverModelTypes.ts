@@ -41,12 +41,12 @@ export interface MobileServerIdentity {
  * NOT the execution buy/sell side, which the feed does not expose. Aliases {@link BalanceSide} so the feed's
  * direction values stay in lockstep with the rest of the SDK.
  */
-export type MobileFeedPositionDirection = BalanceSide;
+export type MobileFeedTradePositionDirection = BalanceSide;
 
 /**
  * How a feed trade changed the trader's position in the product.
  */
-export type MobileFeedPositionEffect =
+export type MobileFeedTradePositionEffect =
   | 'opened'
   | 'increased'
   | 'reduced'
@@ -57,9 +57,9 @@ export type MobileFeedPositionEffect =
  * Position change of a feed trade. Both keys are single words, so the wire and client shapes are identical
  * and this type is shared by {@link MobileServerFeedTrade} and the client-side `MobileFeedTrade`.
  */
-export interface MobileFeedPosition {
-  direction: MobileFeedPositionDirection;
-  effect: MobileFeedPositionEffect;
+export interface MobileFeedTradePosition {
+  direction: MobileFeedTradePositionDirection;
+  effect: MobileFeedTradePositionEffect;
 }
 
 /**
@@ -92,7 +92,7 @@ export interface MobileServerFeedTrade {
   /** Average execution price in human units. */
   average_price: number;
   margin: MobileServerFeedMargin;
-  position: MobileFeedPosition;
+  position: MobileFeedTradePosition;
   /** Realized PnL of the trade in human units; can be negative. */
   realized_pnl: number;
   /** Fill time as JavaScript-safe integer Unix milliseconds. */
