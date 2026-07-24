@@ -38,12 +38,14 @@ export type MobileServerRequestType =
   | `execute_${string}`;
 
 /**
- * Successful mobile service API envelope, discriminated on `status`. Payload fields are inlined alongside
- * `status` rather than nested under a `data` key, matching the mobile backend's wire format.
+ * Base success envelope shared by every mobile service API route: just the `status` discriminant. Query
+ * routes intersect this with their payload (see {@link MobileServerPublicQuerySuccessResponse}), inlining the
+ * payload fields alongside `status` rather than nesting them under a `data` key like the engine does; execute
+ * routes return it as-is because they carry no payload.
  */
-export type MobileServerSuccessResponse<TData extends object = object> = {
+export interface MobileServerSuccessResponse {
   status: 'success';
-} & TData;
+}
 
 /**
  * Failure envelope returned by any mobile service API route. A response missing this envelope shape

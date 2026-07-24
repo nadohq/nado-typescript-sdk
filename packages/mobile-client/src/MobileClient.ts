@@ -48,8 +48,8 @@ import { MobileServerExecuteResult } from './types/serverExecuteTypes';
 import {
   MobileServerFeedRequest,
   MobileServerProfileRequest,
-  MobileServerPublicQueryResponseByType,
-  MobileServerSignedQueryResponseByType,
+  MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQuerySuccessResponse,
   MobileServerSignedQueryType,
   MobileServerUsernameAvailabilityRequest,
 } from './types/serverQueryTypes';
@@ -342,7 +342,7 @@ export class MobileClient {
 
   protected async publicQuery<T extends MobileServerPublicQueryType>(
     body: { type: T } & MobileServerPublicQueryParamsByType[T],
-  ): Promise<MobileServerPublicQueryResponseByType[T]> {
+  ): Promise<MobileServerPublicQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/public_query`,
       body,
@@ -352,12 +352,12 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as MobileServerPublicQueryResponseByType[T];
+    return response.data as MobileServerPublicQuerySuccessResponse<T>;
   }
 
   protected async query<T extends MobileServerSignedQueryType>(
     body: MobileSignedRequest,
-  ): Promise<MobileServerSignedQueryResponseByType[T]> {
+  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/query`,
       body,
@@ -367,7 +367,7 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as MobileServerSignedQueryResponseByType[T];
+    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   protected async execute(
