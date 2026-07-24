@@ -103,6 +103,11 @@ export function calculateNotional(
 - Create custom error classes extending base `Error`
 - Use `@throws` JSDoc tags to document all possible errors
 - Provide detailed error context and recovery suggestions
+- Expose structured fields (e.g. `errorCode`, `requestType`) directly on error classes so
+  callers can match against error-code constants instead of digging into `responseData`
+- Map numeric backend error codes to named constants via per-service `*_ERROR_CODES` maps that
+  spread the shared `NADO_ERROR_CODES` (see `@nadohq/shared`) and add service-specific codes in
+  their own numeric range
 
 ✅ **Good error class patterns:**
 
@@ -119,13 +124,31 @@ export class WalletNotProvidedError extends Error {
 }
 
 /**
- * Error thrown when engine server returns a failure response
+ * Error thrown when the engine service API returns a failure envelope.
+ * Numeric error codes are compared against `ENGINE_ERROR_CODES`.
  */
 export class EngineServerFailureError extends Error {
-  // Store server response data as readonly property for debugging
-  constructor(readonly responseData: ServerFailureResponse) {
-    // Call super() with optional message
-    super();
+  readonly errorCode: number;
+  readonly requestType: string | undefined;
+
+  constructor(readonly responseData: EngineServerFailureResponse) {
+    super(`${responseData.error_code}: ${responseData.error}`);
+    this.name = 'EngineServerFailureError';
+    this.errorCode = responseData.error_code;
+    this.requestType =
+      'request_type' in responseData ? responseData.request_type : undefined;
+  }
+}
+
+// Usage: callers match on the numeric code via the error-code map
+try {
+  await engine.placeOrder(params);
+} catch (error) {
+  if (
+    error instanceof EngineServerFailureError &&
+    error.errorCode === ENGINE_ERROR_CODES.INVALID_SIGNER
+  ) {
+    // handle invalid signer
   }
 }
 ```

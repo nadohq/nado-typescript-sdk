@@ -1,6 +1,7 @@
 export * from './balanceTypes';
 export * from './bytes';
 export * from './ChainEnv';
+export * from './errorCodes';
 export * from './healthTypes';
 export * from './marketTypes';
 export * from './nadoContractTypes';

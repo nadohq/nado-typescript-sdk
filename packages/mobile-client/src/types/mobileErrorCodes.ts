@@ -1,12 +1,12 @@
+import { NADO_ERROR_CODES } from '@nadohq/shared';
+
 /**
  * Numeric error codes returned by the mobile service API. Identity codes (61xx), notification codes (62xx),
  * and feed codes (63xx) are mobile-specific; the remaining codes are shared cross-service codes from the
- * backend's common error enum.
+ * backend's common error enum, inlined via spread from {@link NADO_ERROR_CODES}.
  */
 export const MOBILE_ERROR_CODES = {
-  NOT_IMPLEMENTED: 4001,
-  INVALID_SIGNER: 2028,
-  SERVICE_UNAVAILABLE: 1006,
+  ...NADO_ERROR_CODES,
   INVALID_DISPLAY_NAME: 6100,
   USERNAME_UNAVAILABLE: 6101,
   IDENTITY_ALREADY_CLAIMED: 6102,
@@ -21,7 +21,6 @@ export const MOBILE_ERROR_CODES = {
   INVALID_FEED_FILTER: 6300,
   /** Feed cursor is malformed or bound to a different filter. Discard it and restart from the first page. */
   INVALID_FEED_CURSOR: 6301,
-  INTERNAL_ERROR: 5000,
 } as const;
 
 /**
