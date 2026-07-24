@@ -37,6 +37,13 @@ export interface MobileServerIdentity {
 }
 
 /**
+ * Direction of the position a feed trade resulted in — for `closed`, the direction that was closed. This is
+ * NOT the execution buy/sell side, which the feed does not expose. Aliases {@link BalanceSide} so the feed's
+ * direction values stay in lockstep with the rest of the SDK.
+ */
+export type MobileFeedPositionDirection = BalanceSide;
+
+/**
  * How a feed trade changed the trader's position in the product.
  */
 export type MobileFeedPositionEffect =
@@ -51,11 +58,7 @@ export type MobileFeedPositionEffect =
  * and this type is shared by {@link MobileServerFeedTrade} and the client-side `MobileFeedTrade`.
  */
 export interface MobileFeedPosition {
-  /**
-   * Direction of the position the trade resulted in — for `closed`, the direction that was closed. This is
-   * NOT the execution buy/sell side, which the feed does not expose.
-   */
-  direction: BalanceSide;
+  direction: MobileFeedPositionDirection;
   effect: MobileFeedPositionEffect;
 }
 
