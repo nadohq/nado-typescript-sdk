@@ -74,6 +74,10 @@ export interface IndexerServerPerpPricesParams {
   product_ids: number[];
 }
 
+export interface IndexerServerPortfolioParams {
+  subaccount: string;
+}
+
 export interface IndexerServerOraclePricesParams {
   product_ids: number[];
 }
@@ -276,6 +280,7 @@ export interface IndexerServerQueryRequestByType {
   oracle_price: IndexerServerOraclePricesParams;
   orders: IndexerServerOrdersParams;
   perp_prices: IndexerServerPerpPricesParams;
+  portfolio: IndexerServerPortfolioParams;
   price: IndexerServerPriceParams;
   product_snapshots: IndexerServerMultiProductsParams;
   products: IndexerServerProductsParams;
@@ -345,6 +350,30 @@ export interface IndexerServerFundingRateHistoryResponse {
   // Always ascending by timestamp.
   funding_rates: IndexerServerFundingRateHistoryEntry[];
 }
+
+export type IndexerServerPortfolioPeriod =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'allTime'
+  | 'perpDay'
+  | 'perpWeek'
+  | 'perpMonth'
+  | 'perpAllTime';
+
+// [timestamp (unix seconds), value] — both x18-free decimal strings, USDT0-denominated.
+export type IndexerServerPortfolioPoint = [string, string];
+
+export interface IndexerServerPortfolioHistory {
+  accountValueHistory: IndexerServerPortfolioPoint[];
+  pnlHistory: IndexerServerPortfolioPoint[];
+  vlm: string;
+}
+
+export type IndexerServerPortfolioResponse = [
+  IndexerServerPortfolioPeriod,
+  IndexerServerPortfolioHistory,
+][];
 
 export interface IndexerServerPerpPrices {
   product_id: number;
@@ -615,6 +644,7 @@ export interface IndexerServerQueryResponseByType {
   oracle_price: IndexerServerOraclePricesResponse;
   orders: IndexerServerOrdersResponse;
   perp_prices: IndexerServerPerpPricesResponse;
+  portfolio: IndexerServerPortfolioResponse;
   price: IndexerServerPriceResponse;
   product_snapshots: IndexerServerMultiProductsResponse;
   products: IndexerServerProductsResponse;

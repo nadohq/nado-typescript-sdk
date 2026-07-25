@@ -82,6 +82,41 @@ void describe(
       }
     });
 
+    void test('getPortfolio returns value and PnL history across timeframes', async () => {
+      const portfolio = await client.getPortfolio({ subaccount });
+
+      debugPrint('Portfolio', portfolio);
+      assertDefined(portfolio, 'portfolio');
+
+      const periods = [
+        'day',
+        'week',
+        'month',
+        'allTime',
+        'perpDay',
+        'perpWeek',
+        'perpMonth',
+        'perpAllTime',
+      ] as const;
+
+      for (const period of periods) {
+        const history = portfolio[period];
+        assertDefined(history, `portfolio.${period}`);
+        assertBigNumberFinite(history.volume, `portfolio.${period}.volume`);
+        for (const key of ['accountValueHistory', 'pnlHistory'] as const) {
+          assertArray(history[key], `portfolio.${period}.${key}`);
+          assertArrayElements(
+            history[key],
+            (point, label) => {
+              assertBigNumberFinite(point.timestamp, `${label}.timestamp`);
+              assertBigNumberFinite(point.value, `${label}.value`);
+            },
+            `portfolio.${period}.${key}`,
+          );
+        }
+      }
+    });
+
     void test('getLinkedSignerWithRateLimit returns signer info', async () => {
       const linkedSigner = await client.getLinkedSignerWithRateLimit({
         subaccount,

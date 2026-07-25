@@ -37,6 +37,7 @@ import {
   mapIndexerNlpSnapshot,
   mapIndexerOrder,
   mapIndexerPerpPrices,
+  mapIndexerPortfolio,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
   mapIndexerV2Symbols,
@@ -99,6 +100,8 @@ import {
   GetIndexerPerpPricesResponse,
   GetIndexerPointsParams,
   GetIndexerPointsResponse,
+  GetIndexerPortfolioParams,
+  GetIndexerPortfolioResponse,
   GetIndexerPrivateAlphaChoiceParams,
   GetIndexerPrivateAlphaChoiceResponse,
   GetIndexerProductSnapshotsParams,
@@ -316,6 +319,23 @@ export class IndexerBaseClient {
     });
 
     return baseResponse.funding_rates.map(mapIndexerFundingRateHistory);
+  }
+
+  /**
+   * Retrieves a subaccount's account-value and PnL history across all
+   * timeframes, keyed by period. The value aggregates the cross-margin account
+   * plus every isolated child; the queried subaccount must be cross-margin.
+   *
+   * @param params
+   */
+  async getPortfolio(
+    params: GetIndexerPortfolioParams,
+  ): Promise<GetIndexerPortfolioResponse> {
+    const baseResponse = await this.query('portfolio', {
+      subaccount: subaccountToHex(params.subaccount),
+    });
+
+    return mapIndexerPortfolio(baseResponse);
   }
 
   /**
