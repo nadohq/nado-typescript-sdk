@@ -271,7 +271,7 @@ export function mapIndexerPortfolio(
           mapIndexerPortfolioPoint,
         ),
         pnlHistory: history.pnlHistory.map(mapIndexerPortfolioPoint),
-        vlm: toBigNumber(history.vlm),
+        volume: toBigNumber(history.vlm),
       },
     ]),
   ) as GetIndexerPortfolioResponse;

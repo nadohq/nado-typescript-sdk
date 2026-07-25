@@ -274,7 +274,7 @@ export interface IndexerPortfolioHistory {
    */
   pnlHistory: IndexerPortfolioPoint[];
   // Total traded volume over the timeframe, USDT0-denominated.
-  vlm: BigNumber;
+  volume: BigNumber;
 }
 
 export type GetIndexerPortfolioResponse = Record<

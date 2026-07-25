@@ -102,7 +102,7 @@ void describe(
       for (const period of periods) {
         const history = portfolio[period];
         assertDefined(history, `portfolio.${period}`);
-        assertBigNumberFinite(history.vlm, `portfolio.${period}.vlm`);
+        assertBigNumberFinite(history.volume, `portfolio.${period}.volume`);
         for (const key of ['accountValueHistory', 'pnlHistory'] as const) {
           assertArray(history[key], `portfolio.${period}.${key}`);
           assertArrayElements(
