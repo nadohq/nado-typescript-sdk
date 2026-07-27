@@ -10,6 +10,7 @@ import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
 } from '@nadohq/mobile-client';
+import { BaseServerFailureError } from '@nadohq/shared';
 import {
   TRIGGER_ERROR_CODES,
   TriggerServerFailureError,
@@ -34,6 +35,7 @@ void describe('[error-codes]: cross-service error code maps', () => {
 
     const error = new EngineServerFailureError(queryFailure);
 
+    assert.ok(error instanceof BaseServerFailureError);
     assert.equal(error.errorCode, 1006);
     assert.equal(error.requestType, undefined);
   });
@@ -47,6 +49,7 @@ void describe('[error-codes]: cross-service error code maps', () => {
 
     const error = new TriggerServerFailureError(queryFailure);
 
+    assert.ok(error instanceof BaseServerFailureError);
     assert.equal(error.errorCode, TRIGGER_ERROR_CODES.SERVICE_UNAVAILABLE);
     assert.equal(error.requestType, undefined);
   });
@@ -80,6 +83,7 @@ void describe('[error-codes]: cross-service error code maps', () => {
     );
 
     assert.ok(error instanceof MobileServerFailureError);
+    assert.ok(error instanceof BaseServerFailureError);
     assert.equal(error.httpStatus, 404);
     assert.equal(error.errorCode, MOBILE_ERROR_CODES.PROFILE_NOT_FOUND);
     assert.equal(error.requestType, 'public_query_profile');

@@ -238,6 +238,51 @@ export type GetIndexerFundingRateHistoryResponse =
   IndexerFundingRateHistoryEntry[];
 
 /**
+ * Portfolio
+ */
+
+export interface GetIndexerPortfolioParams {
+  /**
+   * Cross-margin subaccount to query. Its value aggregates the cross-margin
+   * account plus every isolated child; isolated subaccounts are rejected.
+   */
+  subaccount: Subaccount;
+}
+
+export type IndexerPortfolioPeriod =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'allTime'
+  | 'perpDay'
+  | 'perpWeek'
+  | 'perpMonth'
+  | 'perpAllTime';
+
+export interface IndexerPortfolioPoint {
+  // Unix seconds
+  timestamp: BigNumber;
+  // USDT0-denominated
+  value: BigNumber;
+}
+
+export interface IndexerPortfolioHistory {
+  accountValueHistory: IndexerPortfolioPoint[];
+  /**
+   * Trading PnL over the timeframe, baseline-subtracted so the first visible
+   * point is `0`. Capital flows (deposits/withdrawals/transfers) are netted out.
+   */
+  pnlHistory: IndexerPortfolioPoint[];
+  // Total traded volume over the timeframe, USDT0-denominated.
+  volume: BigNumber;
+}
+
+export type GetIndexerPortfolioResponse = Record<
+  IndexerPortfolioPeriod,
+  IndexerPortfolioHistory
+>;
+
+/**
  * Candlesticks
  */
 
