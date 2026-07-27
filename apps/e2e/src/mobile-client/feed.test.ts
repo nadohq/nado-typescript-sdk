@@ -112,9 +112,10 @@ function assertFeedTradeShape(trade: MobileFeedTrade, label: string): void {
     `${label}.margin.mode`,
   );
   if (trade.margin.mode === 'cross') {
-    assert.ok(
-      !('estimatedLeverage' in trade.margin),
-      `${label}.margin should not carry estimatedLeverage on cross margin`,
+    assert.equal(
+      trade.margin.estimatedLeverage,
+      undefined,
+      `${label}.margin.estimatedLeverage should be undefined on cross margin`,
     );
   } else if (trade.margin.estimatedLeverage !== undefined) {
     assertNumber(

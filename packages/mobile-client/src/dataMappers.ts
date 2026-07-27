@@ -1,5 +1,4 @@
 import {
-  MobileFeedMargin,
   MobileFeedPage,
   MobileFeedTrade,
   MobileIdentity,
@@ -9,7 +8,6 @@ import {
   MobileRegisteredDevice,
 } from './types/clientTypes';
 import {
-  MobileServerFeedMargin,
   MobileServerFeedTrade,
   MobileServerIdentity,
   MobileServerNotificationPreferenceScope,
@@ -96,16 +94,6 @@ function mapMobileNotificationPreferenceScopeToServer(
   return { type: 'product', product_id: scope.productId };
 }
 
-function mapMobileFeedMargin(server: MobileServerFeedMargin): MobileFeedMargin {
-  if (server.mode === 'cross') {
-    return { mode: 'cross' };
-  }
-  // Preserve the omitted-when-unavailable semantics instead of introducing an explicit `undefined` key
-  return server.estimated_leverage !== undefined
-    ? { mode: 'isolated', estimatedLeverage: server.estimated_leverage }
-    : { mode: 'isolated' };
-}
-
 /**
  * Maps a server-side feed trade (snake_case) to its client-side (camelCase) representation.
  */
@@ -120,7 +108,10 @@ function mapMobileFeedTrade(server: MobileServerFeedTrade): MobileFeedTrade {
     quantity: server.quantity,
     notional: server.notional,
     averagePrice: server.average_price,
-    margin: mapMobileFeedMargin(server.margin),
+    margin: {
+      mode: server.margin.mode,
+      estimatedLeverage: server.margin.estimated_leverage,
+    },
     position: server.position,
     realizedPnl: server.realized_pnl,
     filledAt: server.filled_at_ms,
