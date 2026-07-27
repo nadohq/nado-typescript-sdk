@@ -44,14 +44,31 @@ export interface MobileServerIdentity {
 export type MobileFeedTradePositionDirection = BalanceSide;
 
 /**
+ * Every {@link MobileFeedTradePositionDirection} the feed can report, for callers that need the values at
+ * runtime (validation, filters, UI enumeration).
+ */
+export const MOBILE_FEED_TRADE_POSITION_DIRECTIONS = [
+  'long',
+  'short',
+] as const satisfies readonly MobileFeedTradePositionDirection[];
+
+/**
+ * Every {@link MobileFeedTradePositionEffect} the feed can report, for callers that need the values at
+ * runtime (validation, filters, UI enumeration).
+ */
+export const MOBILE_FEED_TRADE_POSITION_EFFECTS = [
+  'opened',
+  'increased',
+  'reduced',
+  'closed',
+  'flipped',
+] as const;
+
+/**
  * How a feed trade changed the trader's position in the product.
  */
 export type MobileFeedTradePositionEffect =
-  | 'opened'
-  | 'increased'
-  | 'reduced'
-  | 'closed'
-  | 'flipped';
+  (typeof MOBILE_FEED_TRADE_POSITION_EFFECTS)[number];
 
 /**
  * Position change of a feed trade. Both keys are single words, so the wire and client shapes are identical
@@ -63,12 +80,23 @@ export interface MobileFeedTradePosition {
 }
 
 /**
+ * Every {@link MobileFeedMarginMode} the feed can report, for callers that need the values at runtime
+ * (validation, filters, UI enumeration).
+ */
+export const MOBILE_FEED_MARGIN_MODES = ['cross', 'isolated'] as const;
+
+/**
+ * Margin mode a feed trade was executed under. Shared by the wire and client margin shapes.
+ */
+export type MobileFeedMarginMode = (typeof MOBILE_FEED_MARGIN_MODES)[number];
+
+/**
  * Server-side margin of a feed trade. Branch on `mode` — do not infer isolated state from leverage presence:
  * `estimated_leverage` (a rounded whole-number estimate, not exact submitted leverage) is omitted on `cross`,
  * and also omitted inside `isolated` when no estimate is available.
  */
 export interface MobileServerFeedMargin {
-  mode: 'cross' | 'isolated';
+  mode: MobileFeedMarginMode;
   estimated_leverage?: number;
 }
 

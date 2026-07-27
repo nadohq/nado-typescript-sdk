@@ -1,6 +1,7 @@
 import { SignatureParams, Subaccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import {
+  MobileFeedMarginMode,
   MobileFeedTradePosition,
   MobileNotificationCategory,
   MobileNotificationPlatform,
@@ -51,7 +52,7 @@ export interface MobileUsernameAvailability {
  * `cross`, and also `undefined` inside `isolated` when no estimate is available.
  */
 export interface MobileFeedMargin {
-  mode: 'cross' | 'isolated';
+  mode: MobileFeedMarginMode;
   estimatedLeverage?: number;
 }
 

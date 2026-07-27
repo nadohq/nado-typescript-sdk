@@ -1,7 +1,10 @@
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_FEED_MARGIN_MODES,
   MOBILE_FEED_MAX_PAGE_SIZE,
   MOBILE_FEED_MIN_NOTIONAL_FLOOR,
+  MOBILE_FEED_TRADE_POSITION_DIRECTIONS,
+  MOBILE_FEED_TRADE_POSITION_EFFECTS,
   MobileFeedPage,
   MobileFeedTrade,
   MobileServerFailureError,
@@ -20,16 +23,6 @@ import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
-
-const FEED_POSITION_DIRECTIONS = ['long', 'short'] as const;
-const FEED_POSITION_EFFECTS = [
-  'opened',
-  'increased',
-  'reduced',
-  'closed',
-  'flipped',
-] as const;
-const FEED_MARGIN_MODES = ['cross', 'isolated'] as const;
 
 void describe(
   '[mobile-client]: feed',
@@ -115,7 +108,7 @@ function assertFeedTradeShape(trade: MobileFeedTrade, label: string): void {
   assertFiniteNonNegativeNumber(trade.averagePrice, `${label}.averagePrice`);
   assertEnumMember(
     trade.margin.mode,
-    FEED_MARGIN_MODES,
+    MOBILE_FEED_MARGIN_MODES,
     `${label}.margin.mode`,
   );
   if (trade.margin.mode === 'cross') {
@@ -131,12 +124,12 @@ function assertFeedTradeShape(trade: MobileFeedTrade, label: string): void {
   }
   assertEnumMember(
     trade.position.direction,
-    FEED_POSITION_DIRECTIONS,
+    MOBILE_FEED_TRADE_POSITION_DIRECTIONS,
     `${label}.position.direction`,
   );
   assertEnumMember(
     trade.position.effect,
-    FEED_POSITION_EFFECTS,
+    MOBILE_FEED_TRADE_POSITION_EFFECTS,
     `${label}.position.effect`,
   );
   assertNumber(trade.realizedPnl, `${label}.realizedPnl`);

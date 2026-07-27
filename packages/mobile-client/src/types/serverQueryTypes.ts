@@ -1,8 +1,4 @@
-import {
-  MobileServerPublicQueryRequestByType,
-  MobileServerPublicQueryRequestType,
-  MobileServerSuccessResponse,
-} from './serverBaseTypes';
+import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileServerFeedTrade,
   MobileServerIdentity,
@@ -10,6 +6,11 @@ import {
   MobileServerProfile,
   MobileServerRegisteredDevice,
 } from './serverModelTypes';
+import {
+  MobileServerPublicQueryRequestByType,
+  MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
+} from './serverRequestTypes';
 
 /**
  * Unsigned `public_query` request body: a `type` discriminant flattened with its params.
@@ -22,23 +23,6 @@ export type MobileServerPublicQueryRequest<
     type: K;
   } & MobileServerPublicQueryRequestByType[K];
 }[T];
-
-/**
- * Request body for the `username_availability` public query.
- */
-export type MobileServerUsernameAvailabilityRequest =
-  MobileServerPublicQueryRequest<'username_availability'>;
-
-/**
- * Request body for the `profile` public query.
- */
-export type MobileServerProfileRequest =
-  MobileServerPublicQueryRequest<'profile'>;
-
-/**
- * Request body for the `feed` public query.
- */
-export type MobileServerFeedRequest = MobileServerPublicQueryRequest<'feed'>;
 
 /**
  * Payload of the `username_availability` public query success response.
@@ -101,26 +85,6 @@ export interface MobileServerPublicQueryResponseByType {
   profile: MobileServerProfileResponse;
   feed: MobileServerFeedResponse;
 }
-
-/**
- * Params for each signed `query`, keyed by request `type`. These queries identify the caller through the
- * signed envelope (`sender`) and take no further params, so every entry is empty — the signed counterpart to
- * {@link MobileServerPublicQueryRequestByType}, kept so both query routes expose one params lookup keyed by
- * type (matching engine's `EngineServerQueryRequestByType`, which likewise uses `Record<string, never>` for
- * param-less queries).
- */
-export interface MobileServerSignedQueryRequestByType {
-  self_identity: Record<string, never>;
-  notification_preferences: Record<string, never>;
-  registered_devices: Record<string, never>;
-}
-
-/**
- * Discriminant `type` values for signed `query` requests: the read-only subset of {@link MobileSignedInner}
- * tags, keyed the same way as {@link MobileServerPublicQueryRequestType}.
- */
-export type MobileServerSignedQueryRequestType =
-  keyof MobileServerSignedQueryRequestByType;
 
 /**
  * Success payloads for each signed `query`, keyed by request `type`. Counterpart to

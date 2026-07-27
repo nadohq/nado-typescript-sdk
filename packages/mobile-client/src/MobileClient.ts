@@ -39,20 +39,18 @@ import {
   MobileUsernameAvailability,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
+import { MobileServerSuccessResponse } from './types/serverBaseTypes';
+import { MobileServerExecuteResult } from './types/serverExecuteTypes';
+import {
+  MobileServerPublicQueryRequest,
+  MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQuerySuccessResponse,
+} from './types/serverQueryTypes';
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
-  MobileServerSuccessResponse,
-} from './types/serverBaseTypes';
-import { MobileServerExecuteResult } from './types/serverExecuteTypes';
-import {
-  MobileServerFeedRequest,
-  MobileServerProfileRequest,
-  MobileServerPublicQuerySuccessResponse,
   MobileServerSignedQueryRequestType,
-  MobileServerSignedQuerySuccessResponse,
-  MobileServerUsernameAvailabilityRequest,
-} from './types/serverQueryTypes';
+} from './types/serverRequestTypes';
 import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
@@ -114,7 +112,7 @@ export class MobileClient {
   async getUsernameAvailability(
     params: GetMobileUsernameAvailabilityParams,
   ): Promise<MobileUsernameAvailability> {
-    const body: MobileServerUsernameAvailabilityRequest = {
+    const body: MobileServerPublicQueryRequest<'username_availability'> = {
       type: 'username_availability',
       display_name: params.displayName,
     };
@@ -131,7 +129,7 @@ export class MobileClient {
   async getPublicProfile(
     params: GetMobilePublicProfileParams,
   ): Promise<MobilePublicProfile> {
-    const body: MobileServerProfileRequest = {
+    const body: MobileServerPublicQueryRequest<'profile'> = {
       type: 'profile',
       username: params.username,
     };
@@ -151,7 +149,7 @@ export class MobileClient {
    * (discard the cursor and restart from the first page).
    */
   async getFeed(params: GetMobileFeedParams = {}): Promise<MobileFeedPage> {
-    const body: MobileServerFeedRequest = {
+    const body: MobileServerPublicQueryRequest<'feed'> = {
       type: 'feed',
       minimum_notional: params.minimumNotional,
       limit: params.limit,
@@ -340,6 +338,8 @@ export class MobileClient {
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
+  // Spelled out as an intersection rather than `MobileServerPublicQueryRequest<T>`: the latter is an indexed
+  // access on a mapped type, which is not an inference site, so `T` would always widen to the full union.
   protected async publicQuery<T extends MobileServerPublicQueryRequestType>(
     body: { type: T } & MobileServerPublicQueryRequestByType[T],
   ): Promise<MobileServerPublicQuerySuccessResponse<T>> {
