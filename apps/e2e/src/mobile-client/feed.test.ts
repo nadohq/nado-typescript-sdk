@@ -26,7 +26,9 @@ import { RunContext } from '../utils/types';
 
 void describe(
   '[mobile-client]: feed',
-  { timeout: TEST_TIMEOUTS.DEFAULT },
+  // Feed queries are currently slow server-side: an unfiltered page can take well over a minute, and even a
+  // filtered one takes ~20s. Stopgap until the backend feed query is indexed.
+  { timeout: TEST_TIMEOUTS.LONG },
   () => {
     let tc: RunContext;
 
