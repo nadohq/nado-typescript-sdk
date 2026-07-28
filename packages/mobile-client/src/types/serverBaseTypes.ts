@@ -1,35 +1,14 @@
-/**
- * Params for each unsigned `public_query`, keyed by request `type`.
- */
-export interface MobileServerPublicQueryParamsByType {
-  username_availability: { display_name: string };
-  profile: { username: string };
-}
+import { MobileServerRequestType } from './serverRequestTypes';
 
 /**
- * Discriminant `type` values for unsigned `public_query` requests.
+ * Base success envelope shared by every mobile service API route: just the `status` discriminant. Query
+ * routes intersect this with their payload (see {@link MobileServerPublicQuerySuccessResponse}), inlining the
+ * payload fields alongside `status` rather than nesting them under a `data` key like the engine does; execute
+ * routes return it as-is because they carry no payload.
  */
-export type MobileServerPublicQueryType =
-  keyof MobileServerPublicQueryParamsByType;
-
-/**
- * Wire `request_type` the backend echoes on failure envelopes, prefixed by route (`public_query_*`,
- * `query_*`, `execute_*`, e.g. `execute_claim_username`). Public-query types are enumerated; signed
- * query/execute names are kept as a `${prefix}_${string}` template to avoid duplicating the signed-type
- * tags declared in `signing.ts`.
- */
-export type MobileServerRequestType =
-  | `public_query_${MobileServerPublicQueryType}`
-  | `query_${string}`
-  | `execute_${string}`;
-
-/**
- * Successful mobile service API envelope, discriminated on `status`. Payload fields are inlined alongside
- * `status` rather than nested under a `data` key, matching the mobile backend's wire format.
- */
-export type MobileServerSuccessResponse<TData extends object = object> = {
+export interface MobileServerSuccessResponse {
   status: 'success';
-} & TData;
+}
 
 /**
  * Failure envelope returned by any mobile service API route. A response missing this envelope shape

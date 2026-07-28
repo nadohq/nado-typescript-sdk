@@ -1,6 +1,8 @@
 import { SignatureParams, Subaccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import {
+  MobileFeedMarginMode,
+  MobileFeedTradePosition,
   MobileNotificationCategory,
   MobileNotificationPlatform,
 } from './serverModelTypes';
@@ -42,6 +44,56 @@ export interface MobilePublicProfile {
 export interface MobileUsernameAvailability {
   username: string;
   available: boolean;
+}
+
+/**
+ * Margin of a feed trade. Branch on `mode` — do not infer isolated state from leverage presence:
+ * `estimatedLeverage` (a rounded whole-number estimate, not exact submitted leverage) is `undefined` on
+ * `cross`, and also `undefined` inside `isolated` when no estimate is available.
+ */
+export interface MobileFeedMargin {
+  mode: MobileFeedMarginMode;
+  estimatedLeverage?: number;
+}
+
+/**
+ * A single feed trade: one row per order digest, enriched with the trader's current identity at read time
+ * (a rename can change an already-fetched trade on the next read). Amounts are display-oriented human-unit
+ * numbers — do not use them for accounting, order construction, or exact threshold decisions.
+ */
+export interface MobileFeedTrade {
+  /** Order digest this trade is keyed by; the stable id for reconciling live pagination. */
+  orderDigest: Hex;
+  subaccount: Hex;
+  username: string;
+  displayName: string;
+  /** Reserved for a future avatar source; `null` until one is implemented. */
+  avatarUrl: string | null;
+  productId: number;
+  /** Executed quantity in human units. */
+  quantity: number;
+  /** Trade notional in whole-dollar human units. */
+  notional: number;
+  /** Average execution price in human units. */
+  averagePrice: number;
+  margin: MobileFeedMargin;
+  /** Resulting position change. `position.direction` is NOT the execution buy/sell side. */
+  position: MobileFeedTradePosition;
+  /** Realized PnL of the trade in human units; can be negative. */
+  realizedPnl: number;
+  /** Fill time as a Unix timestamp (milliseconds). */
+  filledAt: number;
+}
+
+/**
+ * A page of feed trades. `nextCursor` is `null` when there was no additional candidate at query time.
+ * Pagination is live, not snapshot, so a later fill can move a trade between pages — deduplicate by
+ * {@link MobileFeedTrade.orderDigest} and treat the merged list as a short-lived view, not an authoritative
+ * cache (removals from Private Mode or blacklists are not signaled).
+ */
+export interface MobileFeedPage {
+  trades: MobileFeedTrade[];
+  nextCursor: string | null;
 }
 
 /**
@@ -110,6 +162,24 @@ export interface GetMobileUsernameAvailabilityParams {
  */
 export interface GetMobilePublicProfileParams {
   username: string;
+}
+
+/**
+ * Params for {@link MobileClient.getFeed}.
+ */
+export interface GetMobileFeedParams {
+  /**
+   * Minimum notional filter as a whole-dollar safe integer, at least `MOBILE_FEED_MIN_NOTIONAL_FLOOR`
+   * ($1,000). Omit for the unfiltered feed.
+   */
+  minimumNotional?: number;
+  /** Page size, 1–`MOBILE_FEED_MAX_PAGE_SIZE` (50); the backend defaults to 50 when omitted. */
+  limit?: number;
+  /**
+   * Opaque keyset cursor from a prior page's {@link MobileFeedPage.nextCursor}. Send it back unchanged with
+   * the exact same `minimumNotional` it was issued for.
+   */
+  cursor?: string;
 }
 
 /**

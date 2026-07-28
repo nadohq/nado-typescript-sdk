@@ -4,6 +4,7 @@ import {
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
+  mapMobileFeedPage,
   mapMobileIdentity,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
@@ -17,12 +18,14 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
+  GetMobileFeedParams,
   GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
   GetMobileRegisteredDevicesParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
   MobileClaimUsernameParams,
+  MobileFeedPage,
   MobileIdentity,
   MobileNotificationPreferences,
   MobilePublicProfile,
@@ -39,14 +42,15 @@ import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
 import { MobileServerExecuteResult } from './types/serverExecuteTypes';
 import {
-  MobileServerNotificationPreferencesResponse,
-  MobileServerProfileRequest,
-  MobileServerProfileResponse,
-  MobileServerRegisteredDevicesResponse,
-  MobileServerSelfIdentityResponse,
-  MobileServerUsernameAvailabilityRequest,
-  MobileServerUsernameAvailabilityResponse,
+  MobileServerPublicQueryRequest,
+  MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQuerySuccessResponse,
 } from './types/serverQueryTypes';
+import {
+  MobileServerPublicQueryRequestByType,
+  MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
+} from './types/serverRequestTypes';
 import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
@@ -108,12 +112,11 @@ export class MobileClient {
   async getUsernameAvailability(
     params: GetMobileUsernameAvailabilityParams,
   ): Promise<MobileUsernameAvailability> {
-    const body: MobileServerUsernameAvailabilityRequest = {
+    const body: MobileServerPublicQueryRequest<'username_availability'> = {
       type: 'username_availability',
       display_name: params.displayName,
     };
-    const data =
-      await this.publicQuery<MobileServerUsernameAvailabilityResponse>(body);
+    const data = await this.publicQuery(body);
     return { username: data.username, available: data.available };
   }
 
@@ -126,12 +129,34 @@ export class MobileClient {
   async getPublicProfile(
     params: GetMobilePublicProfileParams,
   ): Promise<MobilePublicProfile> {
-    const body: MobileServerProfileRequest = {
+    const body: MobileServerPublicQueryRequest<'profile'> = {
       type: 'profile',
       username: params.username,
     };
-    const data = await this.publicQuery<MobileServerProfileResponse>(body);
+    const data = await this.publicQuery(body);
     return mapMobilePublicProfile(data.profile);
+  }
+
+  /**
+   * Fetches a page of the global trade feed: public, named, perpetual trades, newest first, optionally
+   * filtered by a whole-dollar minimum notional (omitted means unfiltered). The feed is best-effort rather
+   * than authoritative history, and pagination is live (not snapshot), so deduplicate pages by
+   * {@link MobileFeedTrade.orderDigest}.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_FEED_FILTER` if `minimumNotional` or
+   * `limit` is outside its allowed domain (fix the request; do not retry unchanged), or
+   * `INVALID_FEED_CURSOR` if the cursor is malformed or was issued for a different `minimumNotional`
+   * (discard the cursor and restart from the first page).
+   */
+  async getFeed(params: GetMobileFeedParams = {}): Promise<MobileFeedPage> {
+    const body: MobileServerPublicQueryRequest<'feed'> = {
+      type: 'feed',
+      minimum_notional: params.minimumNotional,
+      limit: params.limit,
+      cursor: params.cursor,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileFeedPage(data);
   }
 
   /*
@@ -150,8 +175,7 @@ export class MobileClient {
       params,
       {},
     );
-    const data =
-      await this.query<MobileServerSelfIdentityResponse>(signedRequest);
+    const data = await this.query<'self_identity'>(signedRequest);
     return data.identity ? mapMobileIdentity(data.identity) : null;
   }
 
@@ -167,10 +191,7 @@ export class MobileClient {
       params,
       {},
     );
-    const data =
-      await this.query<MobileServerNotificationPreferencesResponse>(
-        signedRequest,
-      );
+    const data = await this.query<'notification_preferences'>(signedRequest);
     return mapMobileNotificationPreferences(data.preferences);
   }
 
@@ -185,8 +206,7 @@ export class MobileClient {
       params,
       {},
     );
-    const data =
-      await this.query<MobileServerRegisteredDevicesResponse>(signedRequest);
+    const data = await this.query<'registered_devices'>(signedRequest);
     return data.devices.map(mapMobileRegisteredDevice);
   }
 
@@ -318,9 +338,11 @@ export class MobileClient {
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
-  protected async publicQuery<TResponse extends { status: 'success' }>(
-    body: object,
-  ): Promise<TResponse> {
+  // Spelled out as an intersection rather than `MobileServerPublicQueryRequest<T>`: the latter is an indexed
+  // access on a mapped type, which is not an inference site, so `T` would always widen to the full union.
+  protected async publicQuery<T extends MobileServerPublicQueryRequestType>(
+    body: { type: T } & MobileServerPublicQueryRequestByType[T],
+  ): Promise<MobileServerPublicQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/public_query`,
       body,
@@ -330,12 +352,12 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as TResponse;
+    return response.data as MobileServerPublicQuerySuccessResponse<T>;
   }
 
-  protected async query<TResponse extends { status: 'success' }>(
+  protected async query<T extends MobileServerSignedQueryRequestType>(
     body: MobileSignedRequest,
-  ): Promise<TResponse> {
+  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/query`,
       body,
@@ -345,7 +367,7 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as TResponse;
+    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   protected async execute(

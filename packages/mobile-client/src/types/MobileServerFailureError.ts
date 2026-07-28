@@ -1,8 +1,6 @@
 import { BaseServerFailureError } from '@nadohq/shared';
-import {
-  MobileServerFailureResponse,
-  MobileServerRequestType,
-} from './serverBaseTypes';
+import { MobileServerFailureResponse } from './serverBaseTypes';
+import { MobileServerRequestType } from './serverRequestTypes';
 
 /**
  * Error thrown when the mobile service API returns a failure envelope, either as a non-2xx HTTP response

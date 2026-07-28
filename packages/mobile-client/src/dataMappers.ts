@@ -1,4 +1,6 @@
 import {
+  MobileFeedPage,
+  MobileFeedTrade,
   MobileIdentity,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
@@ -6,12 +8,14 @@ import {
   MobileRegisteredDevice,
 } from './types/clientTypes';
 import {
+  MobileServerFeedTrade,
   MobileServerIdentity,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
   MobileServerRegisteredDevice,
 } from './types/serverModelTypes';
+import { MobileServerFeedResponse } from './types/serverQueryTypes';
 
 /**
  * Maps a server-side identity (snake_case) to its client-side (camelCase) representation.
@@ -88,6 +92,42 @@ function mapMobileNotificationPreferenceScopeToServer(
     return { type: 'subaccount', subaccount: scope.subaccount };
   }
   return { type: 'product', product_id: scope.productId };
+}
+
+/**
+ * Maps a server-side feed trade (snake_case) to its client-side (camelCase) representation.
+ */
+function mapMobileFeedTrade(server: MobileServerFeedTrade): MobileFeedTrade {
+  return {
+    orderDigest: server.order_digest,
+    subaccount: server.subaccount,
+    username: server.username,
+    displayName: server.display_name,
+    avatarUrl: server.avatar_url,
+    productId: server.product_id,
+    quantity: server.quantity,
+    notional: server.notional,
+    averagePrice: server.average_price,
+    margin: {
+      mode: server.margin.mode,
+      estimatedLeverage: server.margin.estimated_leverage,
+    },
+    position: server.position,
+    realizedPnl: server.realized_pnl,
+    filledAt: server.filled_at_ms,
+  };
+}
+
+/**
+ * Maps a server-side feed response to a client-side {@link MobileFeedPage}.
+ */
+export function mapMobileFeedPage(
+  server: MobileServerFeedResponse,
+): MobileFeedPage {
+  return {
+    trades: server.trades.map(mapMobileFeedTrade),
+    nextCursor: server.next_cursor,
+  };
 }
 
 /**
