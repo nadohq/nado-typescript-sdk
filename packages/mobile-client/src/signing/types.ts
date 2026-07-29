@@ -13,8 +13,7 @@ import { MobileNotificationPlatform } from '../types/serverModelTypes';
  * {@link canonicalizeMobileInner}, which is the source of truth. Keep the field order here in sync with it.
  */
 export type MobileSignedInner =
-  | { type: 'claim_username'; display_name: string }
-  | { type: 'update_username'; display_name: string }
+  | { type: 'set_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }
   | { type: 'self_identity' }
   | {

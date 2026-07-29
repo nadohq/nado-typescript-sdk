@@ -25,6 +25,12 @@ export const TEST_SUBACCOUNT_NAME = 'default';
 export const TEST_ISOLATED_SUBACCOUNT_NAME = 'e2etestxxiso';
 
 /**
+ * Second subaccount of the same owner, used to exercise cross-subaccount conflicts (mobile usernames are
+ * unique globally, not per subaccount) while still signing with the one wallet the E2E suite has.
+ */
+export const TEST_SECONDARY_SUBACCOUNT_NAME = 'e2esecond';
+
+/**
  * Contest IDs known to exist on the testnet leaderboard.
  * These may go stale if testnet state is reset.
  *

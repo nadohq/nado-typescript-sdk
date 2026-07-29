@@ -11,10 +11,8 @@ export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
-    case 'claim_username':
-      return { type: 'claim_username', display_name: inner.display_name };
-    case 'update_username':
-      return { type: 'update_username', display_name: inner.display_name };
+    case 'set_username':
+      return { type: 'set_username', display_name: inner.display_name };
     case 'set_private_mode':
       return { type: 'set_private_mode', private_mode: inner.private_mode };
     case 'self_identity':

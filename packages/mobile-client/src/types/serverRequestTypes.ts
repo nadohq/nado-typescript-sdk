@@ -82,7 +82,7 @@ export type MobileServerExecuteRequestType = Exclude<
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
  * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, `query_*` for signed
- * queries, and `execute_*` for signed writes (e.g. `execute_claim_username`).
+ * queries, and `execute_*` for signed writes (e.g. `execute_set_username`).
  */
 export type MobileServerRequestType =
   | `public_query_${MobileServerPublicQueryRequestType}`

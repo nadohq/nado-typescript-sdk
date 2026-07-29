@@ -25,7 +25,6 @@ import {
   GetMobileRegisteredDevicesParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
-  MobileClaimUsernameParams,
   MobileFeedPage,
   MobileIdentity,
   MobileNotificationPreferences,
@@ -33,10 +32,10 @@ import {
   MobileRegisteredDevice,
   MobileRegisterExpoTokenParams,
   MobileSetPrivateModeParams,
+  MobileSetUsernameParams,
   MobileSignedRequestParams,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
-  MobileUpdateUsernameParams,
   MobileUsernameAvailability,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
@@ -79,8 +78,8 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: username claims, public profile lookups, privacy settings, and
- * push notification device/preference management.
+ * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed, privacy
+ * settings, and push notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -275,32 +274,21 @@ export class MobileClient {
    */
 
   /**
-   * Claims a username for a subaccount, derived from the given display name.
+   * Sets a subaccount's username, derived from the given display name. Upserts: the same call claims a first
+   * username and renames an existing one, so callers never need to read the current identity first.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_DISPLAY_NAME` if the display name violates
+   * `MOBILE_DISPLAY_NAME_PATTERN`, `USERNAME_UNAVAILABLE` if the derived username is reserved or already
+   * taken by another subaccount, `INVALID_IDENTITY_TARGET` if the sender is in the engine-created isolated
+   * namespace, or `STALE_IDENTITY_UPDATE` if another identity write for this subaccount committed with a
+   * later nonce (re-read the identity before retrying).
    */
-  async claimUsername(
-    params: MobileClaimUsernameParams,
+  async setUsername(
+    params: MobileSetUsernameParams,
   ): Promise<MobileServerSuccessResponse> {
-    const signedRequest = await this.getSignedRequest(
-      'claim_username',
-      params,
-      {
-        display_name: params.displayName,
-      },
-    );
-    return this.execute(signedRequest);
-  }
-
-  /**
-   * Updates the display name for a subaccount's already-claimed identity.
-   */
-  async updateUsername(
-    params: MobileUpdateUsernameParams,
-  ): Promise<MobileServerSuccessResponse> {
-    const signedRequest = await this.getSignedRequest(
-      'update_username',
-      params,
-      { display_name: params.displayName },
-    );
+    const signedRequest = await this.getSignedRequest('set_username', params, {
+      display_name: params.displayName,
+    });
     return this.execute(signedRequest);
   }
 

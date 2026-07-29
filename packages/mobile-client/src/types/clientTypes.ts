@@ -205,16 +205,10 @@ export interface GetMobileFeedParams {
 export type GetMobileSelfIdentityParams = MobileSignedRequestParams;
 
 /**
- * Params for {@link MobileClient.claimUsername}.
+ * Params for {@link MobileClient.setUsername}.
  */
-export interface MobileClaimUsernameParams extends MobileSignedRequestParams {
-  displayName: string;
-}
-
-/**
- * Params for {@link MobileClient.updateUsername}.
- */
-export interface MobileUpdateUsernameParams extends MobileSignedRequestParams {
+export interface MobileSetUsernameParams extends MobileSignedRequestParams {
+  /** User-facing name to claim, preserving casing. Must match `MOBILE_DISPLAY_NAME_PATTERN`. */
   displayName: string;
 }
 

@@ -19,16 +19,15 @@ const FIXED_PRIVATE_KEY =
   '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b786907' as const;
 const FIXED_VERIFYING_ADDR = '0x0000000000000000000000000000000000000001';
 
+// `set_username`, `set_private_mode`, and `register_expo_token` mirror the backend's pinned fixtures in
+// mobile/src/api/types.rs, so a divergence here is a real wire-format break rather than a stale expectation.
 const PINNED_HASHES = {
-  claim_username:
-    '0xcfbe9e0a546f43f6d68f86b38cf260ffe079af1915800c0e6df8724ddb6f2dff',
-  update_username:
-    '0x92c3831d30de8206f9ee9d4cf29ed2a2fb1612a3b818e2e46121fc1d5eb4edb6',
+  set_username:
+    '0xb4a55d9eb0be4e5c9457761c0c34c75cf39f7c07bd170700d8dd5e9c7de4a659',
   set_private_mode:
     '0x4d12a06234d751e6ddcc01d8f70836bb5b7e207e573641d1efb5aaf2b0f30d10',
   self_identity:
     '0x10e94c4502cade0a0b4d7469717bcc1d266fc6a3b7635236fa1d3600b58c9954',
-  // Mirrors the backend's pinned fixture in mobile/src/api/types.rs.
   register_expo_token:
     '0x1b9471afc9bde66f9bffd576d3326420e1bade4e16afa3a73ddc65f27155611c',
   registered_devices:
@@ -37,22 +36,13 @@ const PINNED_HASHES = {
 
 describe('[mobile-client]: signing (offline)', () => {
   describe('pinned payload hashes', () => {
-    it('claim_username', () => {
+    it('set_username', () => {
       const inner: MobileSignedInner = {
-        type: 'claim_username',
+        type: 'set_username',
         display_name: 'Alice.One',
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.claim_username);
-    });
-
-    it('update_username', () => {
-      const inner: MobileSignedInner = {
-        type: 'update_username',
-        display_name: 'Alice.Two',
-      };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.update_username);
+      expect(hash).toBe(PINNED_HASHES.set_username);
     });
 
     it('set_private_mode', () => {
