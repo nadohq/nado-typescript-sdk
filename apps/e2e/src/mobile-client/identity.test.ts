@@ -5,17 +5,25 @@ import {
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import {
   assertBoolean,
   assertDefined,
   assertHexString,
+  assertNullableString,
   assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_ISOLATED_SUBACCOUNT_NAME,
+  TEST_SECONDARY_SUBACCOUNT_NAME,
+  TEST_SUBACCOUNT_NAME,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 void describe(
@@ -51,127 +59,118 @@ void describe(
       );
     });
 
-    void test('fetches self identity without throwing', async () => {
+    void test('fetches the implicit self identity', async () => {
       const identity = await tc.mobile.getSelfIdentity(
         getMobileSignedParams(tc),
       );
       debugPrint('Self identity result', identity);
 
-      if (identity !== null) {
-        assertHexString(identity.subaccount, 'identity.subaccount');
-        assertString(identity.username, 'identity.username');
-        assertString(identity.displayName, 'identity.displayName');
-        assertBoolean(identity.privateMode, 'identity.privateMode');
-      }
+      // Every non-isolated subaccount has an implicit identity, so the test subaccount always resolves.
+      assertDefined(identity, 'identity');
+      assertHexString(identity.subaccount, 'identity.subaccount');
+      assertBoolean(identity.privateMode, 'identity.privateMode');
+      assertNullableString(identity.username, 'identity.username');
+      assertNullableString(identity.displayName, 'identity.displayName');
     });
 
-    void test('returns PROFILE_NOT_FOUND for a nonexistent username', async () => {
-      const username = `nonexistent-e2e-${Date.now()}`;
+    void test('resolves a public profile for an unclaimed subaccount', async () => {
+      // A freshly generated owner has never claimed a username, but its profile still resolves with null names.
+      const profile = await tc.mobile.getPublicProfile({
+        subaccountOwner: privateKeyToAccount(generatePrivateKey()).address,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
+      debugPrint('Public profile for an unclaimed subaccount', profile);
+
+      assertHexString(profile.subaccount, 'profile.subaccount');
+      assert.equal(profile.username, null);
+      assert.equal(profile.displayName, null);
+      assert.equal(profile.privateMode, false);
+    });
+
+    void test('returns PROFILE_NOT_FOUND for an isolated subaccount', async () => {
       await assertRejectsWithErrorCode(
-        () => tc.mobile.getPublicProfile({ username }),
+        () =>
+          tc.mobile.getPublicProfile({
+            subaccountOwner: tc.walletClientAddress,
+            subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
+          }),
         MOBILE_ERROR_CODES.PROFILE_NOT_FOUND,
       );
     });
 
-    void test('claims a username only if unclaimed, tolerating a race to IDENTITY_ALREADY_CLAIMED', async () => {
-      const identityParams = getMobileSignedParams(tc);
-
-      const existingIdentity = await tc.mobile.getSelfIdentity(identityParams);
-      debugPrint('Existing identity before claim attempt', existingIdentity);
-
-      if (existingIdentity !== null) {
-        // Identity claims are permanent — never attempt to claim again once one already exists.
-        assertHexString(
-          existingIdentity.subaccount,
-          'existingIdentity.subaccount',
-        );
-        return;
-      }
-
-      const displayName = `E2E_${Date.now()}`;
-
-      try {
-        await tc.mobile.claimUsername({ ...identityParams, displayName });
-      } catch (error) {
-        if (
-          error instanceof MobileServerFailureError &&
-          error.errorCode === MOBILE_ERROR_CODES.IDENTITY_ALREADY_CLAIMED
-        ) {
-          // Another process claimed the identity between our check and this call — an acceptable race, not a failure.
-          return;
-        }
-        throw error;
-      }
-
-      await delay(TEST_DELAYS.STANDARD);
-
-      const claimedIdentity = await tc.mobile.getSelfIdentity(identityParams);
-      debugPrint('Identity after claim', claimedIdentity);
-
-      assertDefined(claimedIdentity, 'claimedIdentity');
-      assert.equal(claimedIdentity?.displayName, displayName);
-    });
-
-    void test('updates the display name and restores the original', async () => {
+    // setUsername upserts, so one test covers both claiming a first username and renaming an existing one:
+    // whichever state the shared test subaccount is already in, the same call applies.
+    void test('sets the display name and restores any original', async () => {
       const identityParams = getMobileSignedParams(tc);
 
       const identity = await tc.mobile.getSelfIdentity(identityParams);
-
-      if (identity === null) {
-        await assertRejectsWithErrorCode(
-          () =>
-            tc.mobile.updateUsername({
-              ...identityParams,
-              displayName: `E2E_${Date.now()}`,
-            }),
-          MOBILE_ERROR_CODES.IDENTITY_REQUIRED,
-        );
-        return;
-      }
-
+      assertDefined(identity, 'identity');
       const originalDisplayName = identity.displayName;
-      const tempDisplayName = `E2E_${Date.now()}`;
-      assert.match(tempDisplayName, MOBILE_DISPLAY_NAME_PATTERN);
+      debugPrint('Identity before set', identity);
 
-      await tc.mobile.updateUsername({
+      const newDisplayName = `E2E_${Date.now()}`;
+      assert.match(newDisplayName, MOBILE_DISPLAY_NAME_PATTERN);
+
+      await tc.mobile.setUsername({
         ...identityParams,
-        displayName: tempDisplayName,
+        displayName: newDisplayName,
       });
       await delay(TEST_DELAYS.STANDARD);
 
       const updatedIdentity = await tc.mobile.getSelfIdentity(identityParams);
-      debugPrint('Identity after display name update', updatedIdentity);
+      debugPrint('Identity after set', updatedIdentity);
       assertDefined(updatedIdentity, 'updatedIdentity');
-      assert.equal(updatedIdentity?.displayName, tempDisplayName);
+      assert.equal(updatedIdentity.displayName, newDisplayName);
+      assert.equal(updatedIdentity.username, newDisplayName.toLowerCase());
 
-      await tc.mobile.updateUsername({
+      if (originalDisplayName === null) {
+        // A username cannot be released once claimed, so there is nothing to restore on a first claim.
+        return;
+      }
+
+      await tc.mobile.setUsername({
         ...identityParams,
         displayName: originalDisplayName,
       });
       await delay(TEST_DELAYS.STANDARD);
 
       const restoredIdentity = await tc.mobile.getSelfIdentity(identityParams);
-      debugPrint('Identity after display name restore', restoredIdentity);
+      debugPrint('Identity after restore', restoredIdentity);
       assertDefined(restoredIdentity, 'restoredIdentity');
-      assert.equal(restoredIdentity?.displayName, originalDisplayName);
+      assert.equal(restoredIdentity.displayName, originalDisplayName);
     });
 
+    void test('rejects a name held by another subaccount with USERNAME_UNAVAILABLE', async () => {
+      const identityParams = getMobileSignedParams(tc);
+
+      const identity = await tc.mobile.getSelfIdentity(identityParams);
+      assertDefined(identity, 'identity');
+      const { displayName } = identity;
+
+      if (displayName === null) {
+        // No claimed name on this environment yet, so there is nothing to collide with.
+        return;
+      }
+
+      // Usernames are unique across all identities, so a second subaccount of the same owner cannot take a
+      // name the default subaccount already holds. Signing still works because the owner is unchanged.
+      await assertRejectsWithErrorCode(
+        () =>
+          tc.mobile.setUsername({
+            ...identityParams,
+            subaccountName: TEST_SECONDARY_SUBACCOUNT_NAME,
+            displayName,
+          }),
+        MOBILE_ERROR_CODES.USERNAME_UNAVAILABLE,
+      );
+    });
+
+    // Private Mode works before a username is claimed, so this needs no claimed-identity branch.
     void test('toggles private mode and restores the original value', async () => {
       const identityParams = getMobileSignedParams(tc);
 
       const identity = await tc.mobile.getSelfIdentity(identityParams);
-
-      if (identity === null) {
-        await assertRejectsWithErrorCode(
-          () =>
-            tc.mobile.setPrivateMode({
-              ...identityParams,
-              privateMode: true,
-            }),
-          MOBILE_ERROR_CODES.IDENTITY_REQUIRED,
-        );
-        return;
-      }
+      assertDefined(identity, 'identity');
 
       const originalPrivateMode = identity.privateMode;
 
@@ -184,7 +183,7 @@ void describe(
       const toggledIdentity = await tc.mobile.getSelfIdentity(identityParams);
       debugPrint('Identity after private mode toggle', toggledIdentity);
       assertDefined(toggledIdentity, 'toggledIdentity');
-      assert.equal(toggledIdentity?.privateMode, !originalPrivateMode);
+      assert.equal(toggledIdentity.privateMode, !originalPrivateMode);
 
       await tc.mobile.setPrivateMode({
         ...identityParams,
@@ -195,7 +194,7 @@ void describe(
       const restoredIdentity = await tc.mobile.getSelfIdentity(identityParams);
       debugPrint('Identity after private mode restore', restoredIdentity);
       assertDefined(restoredIdentity, 'restoredIdentity');
-      assert.equal(restoredIdentity?.privateMode, originalPrivateMode);
+      assert.equal(restoredIdentity.privateMode, originalPrivateMode);
     });
   },
 );

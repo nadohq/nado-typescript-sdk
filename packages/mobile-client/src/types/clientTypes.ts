@@ -8,34 +8,40 @@ import {
 } from './serverModelTypes';
 
 /**
- * A subaccount's claimed identity on the mobile service API.
+ * A subaccount's identity on the mobile service API. Every non-isolated subaccount has one implicitly, so
+ * both name fields are `null` until a username is claimed — render a local fallback label in that case and
+ * key lookups, links, and caches off `subaccount`.
  *
  * `username` and `displayName` are two representations of the same claimed name: `displayName` is what the
  * user entered (preserving casing, e.g. `Alice.One`), while `username` is the canonical, lowercased handle
- * derived from it (e.g. `alice.one`). `username` is the unique key used for profile lookups
- * ({@link MobilePublicProfile}); `displayName` is only for presentation.
+ * derived from it (e.g. `alice.one`), unique across identities.
  */
 export interface MobileIdentity {
   subaccount: Hex;
   /**
-   * Canonical, lowercased handle derived from {@link MobileIdentity.displayName}, unique per identity and
-   * used for profile lookups.
+   * Canonical, lowercased handle derived from {@link MobileIdentity.displayName}, unique across identities,
+   * or `null` if no username has been claimed.
    */
-  username: string;
+  username: string | null;
   /**
-   * User-facing name as claimed, preserving original casing. Validated against `MOBILE_DISPLAY_NAME_PATTERN`.
+   * User-facing name as claimed, preserving original casing, or `null` if no username has been claimed.
+   * Validated against `MOBILE_DISPLAY_NAME_PATTERN`.
    */
-  displayName: string;
+  displayName: string | null;
   privateMode: boolean;
 }
 
 /**
- * A subaccount's public profile, as returned by an unsigned profile lookup.
+ * A subaccount's public profile, as returned by an unsigned profile lookup. Private Mode hides the account's
+ * activity, not its profile, so `privateMode` is exposed here too.
  */
 export interface MobilePublicProfile {
   subaccount: Hex;
-  username: string;
-  displayName: string;
+  /** Canonical, lowercased handle, or `null` if no username has been claimed. */
+  username: string | null;
+  /** User-facing name as claimed, or `null` if no username has been claimed. */
+  displayName: string | null;
+  privateMode: boolean;
 }
 
 /**
@@ -65,8 +71,10 @@ export interface MobileFeedTrade {
   /** Order digest this trade is keyed by; the stable id for reconciling live pagination. */
   orderDigest: Hex;
   subaccount: Hex;
-  username: string;
-  displayName: string;
+  /** `null` when the trader has not claimed a username; render a local fallback label from `subaccount`. */
+  username: string | null;
+  /** `null` when the trader has not claimed a username; render a local fallback label from `subaccount`. */
+  displayName: string | null;
   /** Reserved for a future avatar source; `null` until one is implemented. */
   avatarUrl: string | null;
   productId: number;
@@ -151,6 +159,16 @@ export interface MobileSignedRequestParams
   extends Subaccount, SignatureParams {}
 
 /**
+ * Common params for the unsigned notification requests, which name their target with an Expo push token
+ * instead of a subaccount and signature — the counterpart to {@link MobileSignedRequestParams}. The backend
+ * resolves the token's owning wallet and reads or mutates that wallet's state.
+ */
+export interface MobileWithExpoTokenParams {
+  /** Expo push token, e.g. `ExponentPushToken[...]`. */
+  expoToken: string;
+}
+
+/**
  * Params for {@link MobileClient.getUsernameAvailability}.
  */
 export interface GetMobileUsernameAvailabilityParams {
@@ -160,9 +178,7 @@ export interface GetMobileUsernameAvailabilityParams {
 /**
  * Params for {@link MobileClient.getPublicProfile}.
  */
-export interface GetMobilePublicProfileParams {
-  username: string;
-}
+export type GetMobilePublicProfileParams = Subaccount;
 
 /**
  * Params for {@link MobileClient.getFeed}.
@@ -188,16 +204,10 @@ export interface GetMobileFeedParams {
 export type GetMobileSelfIdentityParams = MobileSignedRequestParams;
 
 /**
- * Params for {@link MobileClient.claimUsername}.
+ * Params for {@link MobileClient.setUsername}.
  */
-export interface MobileClaimUsernameParams extends MobileSignedRequestParams {
-  displayName: string;
-}
-
-/**
- * Params for {@link MobileClient.updateUsername}.
- */
-export interface MobileUpdateUsernameParams extends MobileSignedRequestParams {
+export interface MobileSetUsernameParams extends MobileSignedRequestParams {
+  /** User-facing name to claim, preserving casing. Must match `MOBILE_DISPLAY_NAME_PATTERN`. */
   displayName: string;
 }
 
@@ -230,21 +240,19 @@ export interface MobileRegisterExpoTokenParams extends MobileSignedRequestParams
 /**
  * Params for {@link MobileClient.unregisterExpoToken}.
  */
-export interface MobileUnregisterExpoTokenParams extends MobileSignedRequestParams {
-  expoToken: string;
-}
+export type MobileUnregisterExpoTokenParams = MobileWithExpoTokenParams;
 
 /**
  * Params for {@link MobileClient.updateNotificationPreferences}.
  */
-export interface MobileUpdateNotificationPreferencesParams extends MobileSignedRequestParams {
+export interface MobileUpdateNotificationPreferencesParams extends MobileWithExpoTokenParams {
   preferences: MobileNotificationPreferences;
 }
 
 /**
  * Params for {@link MobileClient.getNotificationPreferences}.
  */
-export type GetMobileNotificationPreferencesParams = MobileSignedRequestParams;
+export type GetMobileNotificationPreferencesParams = MobileWithExpoTokenParams;
 
 /**
  * Params for {@link MobileClient.getRegisteredDevices}.

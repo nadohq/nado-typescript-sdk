@@ -1,7 +1,7 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado mobile service API. Manages username claims, public profile lookups, privacy settings, and
-push notification devices/preferences, using EIP-712 + msgpack signed authentication.
+HTTP client for the Nado mobile service API. Manages usernames, public profile lookups, the global trade feed,
+privacy settings, and push notification devices/preferences, using EIP-712 + msgpack signed authentication.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -26,7 +26,10 @@ const mobile = new MobileClient({
 
 // Unsigned public lookups
 const availability = await mobile.getUsernameAvailability({ displayName: 'Alice.One' });
-const profile = await mobile.getPublicProfile({ username: 'alice.one' });
+const profile = await mobile.getPublicProfile({
+  subaccountOwner: '0x...',
+  subaccountName: 'default',
+});
 
 // Signed operations
 const identity = await mobile.getSelfIdentity({
@@ -36,7 +39,7 @@ const identity = await mobile.getSelfIdentity({
   verifyingAddr: '0x...',
 });
 
-await mobile.claimUsername({
+await mobile.setUsername({
   subaccountOwner: walletClient.account.address,
   subaccountName: 'default',
   chainId: ink.id,
@@ -49,16 +52,20 @@ await mobile.claimUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getPublicProfile`.
+`getUsernameAvailability`, `getPublicProfile`, `getFeed`, `getNotificationPreferences`.
+
+### Public Executes
+
+`unregisterExpoToken`, `updateNotificationPreferences`. These are authenticated by possession of an active Expo
+push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 ### Signed Queries
 
-`getSelfIdentity`, `getNotificationPreferences`, `getRegisteredDevices`.
+`getSelfIdentity`, `getRegisteredDevices`.
 
 ### Signed Executes
 
-`claimUsername`, `updateUsername`, `setPrivateMode`, `registerExpoToken`, `unregisterExpoToken`,
-`updateNotificationPreferences`.
+`setUsername`, `setPrivateMode`, `registerExpoToken`.
 
 ### Linked Signers
 

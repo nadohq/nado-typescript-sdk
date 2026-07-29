@@ -9,9 +9,8 @@ export const MOBILE_ERROR_CODES = {
   ...NADO_ERROR_CODES,
   INVALID_DISPLAY_NAME: 6100,
   USERNAME_UNAVAILABLE: 6101,
-  IDENTITY_ALREADY_CLAIMED: 6102,
-  IDENTITY_REQUIRED: 6103,
   INVALID_IDENTITY_TARGET: 6104,
+  /** Another identity write for the subaccount committed with a later nonce. Re-read before retrying. */
   STALE_IDENTITY_UPDATE: 6105,
   PROFILE_NOT_FOUND: 6106,
   INVALID_EXPO_TOKEN: 6200,

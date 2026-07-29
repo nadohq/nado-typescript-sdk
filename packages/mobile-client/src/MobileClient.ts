@@ -1,4 +1,5 @@
 import {
+  subaccountToHex,
   WalletClientWithAccount,
   WalletNotProvidedError,
 } from '@nadohq/shared';
@@ -24,7 +25,6 @@ import {
   GetMobileRegisteredDevicesParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
-  MobileClaimUsernameParams,
   MobileFeedPage,
   MobileIdentity,
   MobileNotificationPreferences,
@@ -32,15 +32,18 @@ import {
   MobileRegisteredDevice,
   MobileRegisterExpoTokenParams,
   MobileSetPrivateModeParams,
+  MobileSetUsernameParams,
   MobileSignedRequestParams,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
-  MobileUpdateUsernameParams,
   MobileUsernameAvailability,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
-import { MobileServerExecuteResult } from './types/serverExecuteTypes';
+import {
+  MobileServerExecuteResult,
+  MobileServerPublicExecuteRequest,
+} from './types/serverExecuteTypes';
 import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
@@ -75,8 +78,8 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: username claims, public profile lookups, privacy settings, and
- * push notification device/preference management.
+ * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed, privacy
+ * settings, and push notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -121,27 +124,30 @@ export class MobileClient {
   }
 
   /**
-   * Looks up a subaccount's public profile by username.
+   * Looks up a subaccount's public profile. Every non-isolated subaccount resolves, with `username` and
+   * `displayName` `null` until a username is claimed. Private Mode does not hide the profile itself, only the
+   * account's activity.
    *
-   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if no identity has claimed the
-   * username or it is invalid. Private Mode does not hide the profile itself, only the account's activity.
+   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the subaccount is in the
+   * engine-created isolated namespace, which cannot own a profile.
    */
   async getPublicProfile(
     params: GetMobilePublicProfileParams,
   ): Promise<MobilePublicProfile> {
     const body: MobileServerPublicQueryRequest<'profile'> = {
       type: 'profile',
-      username: params.username,
+      subaccount: subaccountToHex(params),
     };
     const data = await this.publicQuery(body);
     return mapMobilePublicProfile(data.profile);
   }
 
   /**
-   * Fetches a page of the global trade feed: public, named, perpetual trades, newest first, optionally
-   * filtered by a whole-dollar minimum notional (omitted means unfiltered). The feed is best-effort rather
-   * than authoritative history, and pagination is live (not snapshot), so deduplicate pages by
-   * {@link MobileFeedTrade.orderDigest}.
+   * Fetches a page of the global trade feed: public perpetual trades, newest first, optionally filtered by a
+   * whole-dollar minimum notional (omitted means unfiltered). Trades by subaccounts that have not claimed a
+   * username are included with `null` name fields; only private accounts are filtered out. The feed is
+   * best-effort rather than authoritative history, and pagination is live (not snapshot), so deduplicate pages
+   * by {@link MobileFeedTrade.orderDigest}.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_FEED_FILTER` if `minimumNotional` or
    * `limit` is outside its allowed domain (fix the request; do not retry unchanged), or
@@ -159,13 +165,83 @@ export class MobileClient {
     return mapMobileFeedPage(data);
   }
 
+  /**
+   * Fetches the push notification preferences of the wallet that owns the given Expo push token. Unsigned —
+   * the token identifies the wallet on its own. Falls back to the backend's defaults if the wallet has never
+   * updated its preferences.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is malformed, or is
+   * not currently registered to a wallet.
+   */
+  async getNotificationPreferences(
+    params: GetMobileNotificationPreferencesParams,
+  ): Promise<MobileNotificationPreferences> {
+    const body: MobileServerPublicQueryRequest<'notification_preferences'> = {
+      type: 'notification_preferences',
+      expo_token: params.expoToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileNotificationPreferences(data.preferences);
+  }
+
+  /*
+  Public executes
+   */
+
+  /**
+   * Unregisters an Expo push token, stopping delivery to that device. Unsigned, so it still works at logout
+   * when a wallet signature may no longer be obtainable. Idempotent: unregistering an inactive or unknown
+   * well-formed token succeeds.
+   *
+   * A registration that commits after this call re-activates the token, so stop or await any in-flight
+   * {@link MobileClient.registerExpoToken} before unregistering.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is malformed.
+   */
+  async unregisterExpoToken(
+    params: MobileUnregisterExpoTokenParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const body: MobileServerPublicExecuteRequest<'unregister_expo_token'> = {
+      type: 'unregister_expo_token',
+      expo_token: params.expoToken,
+    };
+    return this.publicExecute(body);
+  }
+
+  /**
+   * Replaces the push notification preferences of the wallet that owns the given Expo push token. Possession
+   * of an active token is the credential rather than a signature, so anyone holding the token can overwrite
+   * that wallet's preferences. The backend requires `schemaVersion` of 1, exactly one entry per known
+   * category, and empty `scopes` on every entry.
+   *
+   * Writes are last-write-wins on commit order rather than ordered by a client nonce, so callers must
+   * serialize their own preference writes.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_PREFERENCES` if those rules are violated, or
+   * `INVALID_EXPO_TOKEN` if the token is malformed or is not currently registered to a wallet.
+   */
+  async updateNotificationPreferences(
+    params: MobileUpdateNotificationPreferencesParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const body: MobileServerPublicExecuteRequest<'update_preferences'> = {
+      type: 'update_preferences',
+      expo_token: params.expoToken,
+      preferences: mapMobileNotificationPreferencesToServer(params.preferences),
+    };
+    return this.publicExecute(body);
+  }
+
   /*
   Signed queries
    */
 
   /**
-   * Fetches the caller's own identity for a subaccount. Returns `null` if the subaccount has not claimed a
-   * username yet — this is normal data, not an error.
+   * Fetches the caller's own identity for a subaccount. Every non-isolated subaccount has an implicit
+   * identity, so this resolves for any valid sender with `username` and `displayName` `null` until a username
+   * is claimed.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_IDENTITY_TARGET` if the sender is in the
+   * engine-created isolated namespace, which cannot own an identity.
    */
   async getSelfIdentity(
     params: GetMobileSelfIdentityParams,
@@ -177,22 +253,6 @@ export class MobileClient {
     );
     const data = await this.query<'self_identity'>(signedRequest);
     return data.identity ? mapMobileIdentity(data.identity) : null;
-  }
-
-  /**
-   * Fetches a wallet's push notification preferences. Falls back to the backend's defaults if the wallet has
-   * never updated its preferences.
-   */
-  async getNotificationPreferences(
-    params: GetMobileNotificationPreferencesParams,
-  ): Promise<MobileNotificationPreferences> {
-    const signedRequest = await this.getSignedRequest(
-      'notification_preferences',
-      params,
-      {},
-    );
-    const data = await this.query<'notification_preferences'>(signedRequest);
-    return mapMobileNotificationPreferences(data.preferences);
   }
 
   /**
@@ -215,32 +275,21 @@ export class MobileClient {
    */
 
   /**
-   * Claims a username for a subaccount, derived from the given display name.
+   * Sets a subaccount's username, derived from the given display name. Upserts: the same call claims a first
+   * username and renames an existing one, so callers never need to read the current identity first.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_DISPLAY_NAME` if the display name violates
+   * `MOBILE_DISPLAY_NAME_PATTERN`, `USERNAME_UNAVAILABLE` if the derived username is reserved or already
+   * taken by another subaccount, `INVALID_IDENTITY_TARGET` if the sender is in the engine-created isolated
+   * namespace, or `STALE_IDENTITY_UPDATE` if another identity write for this subaccount committed with a
+   * later nonce (re-read the identity before retrying).
    */
-  async claimUsername(
-    params: MobileClaimUsernameParams,
+  async setUsername(
+    params: MobileSetUsernameParams,
   ): Promise<MobileServerSuccessResponse> {
-    const signedRequest = await this.getSignedRequest(
-      'claim_username',
-      params,
-      {
-        display_name: params.displayName,
-      },
-    );
-    return this.execute(signedRequest);
-  }
-
-  /**
-   * Updates the display name for a subaccount's already-claimed identity.
-   */
-  async updateUsername(
-    params: MobileUpdateUsernameParams,
-  ): Promise<MobileServerSuccessResponse> {
-    const signedRequest = await this.getSignedRequest(
-      'update_username',
-      params,
-      { display_name: params.displayName },
-    );
+    const signedRequest = await this.getSignedRequest('set_username', params, {
+      display_name: params.displayName,
+    });
     return this.execute(signedRequest);
   }
 
@@ -282,41 +331,6 @@ export class MobileClient {
     return this.execute(signedRequest);
   }
 
-  /**
-   * Unregisters an Expo push token for the wallet. Idempotent — unregistering an unknown token succeeds.
-   */
-  async unregisterExpoToken(
-    params: MobileUnregisterExpoTokenParams,
-  ): Promise<MobileServerSuccessResponse> {
-    const signedRequest = await this.getSignedRequest(
-      'unregister_expo_token',
-      params,
-      { expo_token: params.expoToken },
-    );
-    return this.execute(signedRequest);
-  }
-
-  /**
-   * Replaces the wallet's push notification preferences. The backend requires `schemaVersion` of 1, exactly
-   * one entry per known category, and empty `scopes` on every entry.
-   *
-   * @throws {MobileServerFailureError} With error code `INVALID_PREFERENCES` if those rules are violated.
-   */
-  async updateNotificationPreferences(
-    params: MobileUpdateNotificationPreferencesParams,
-  ): Promise<MobileServerSuccessResponse> {
-    const signedRequest = await this.getSignedRequest(
-      'update_preferences',
-      params,
-      {
-        preferences: mapMobileNotificationPreferencesToServer(
-          params.preferences,
-        ),
-      },
-    );
-    return this.execute(signedRequest);
-  }
-
   /*
   Base Fns
    */
@@ -353,6 +367,21 @@ export class MobileClient {
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
     return response.data as MobileServerPublicQuerySuccessResponse<T>;
+  }
+
+  protected async publicExecute(
+    body: MobileServerPublicExecuteRequest,
+  ): Promise<MobileServerSuccessResponse> {
+    const response = await this.axiosInstance.post<MobileServerExecuteResult>(
+      `${this.opts.url}/mobile/public_execute`,
+      body,
+    );
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
+    return response.data as MobileServerSuccessResponse;
   }
 
   protected async query<T extends MobileServerSignedQueryRequestType>(
