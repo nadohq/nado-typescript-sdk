@@ -166,9 +166,9 @@ export class MobileClient {
   }
 
   /**
-   * Fetches the push notification preferences of the wallet that owns the given Expo push token. Possession
-   * of an active token is the credential, so no signature is required. Falls back to the backend's defaults
-   * if the wallet has never updated its preferences.
+   * Fetches the push notification preferences of the wallet that owns the given Expo push token. Unsigned —
+   * the token identifies the wallet on its own. Falls back to the backend's defaults if the wallet has never
+   * updated its preferences.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is malformed, or is
    * not currently registered to a wallet.
@@ -189,9 +189,9 @@ export class MobileClient {
    */
 
   /**
-   * Unregisters an Expo push token, stopping delivery to that device. Possession of the token is the
-   * credential, so no signature is required — which matters at logout, when a wallet signature may no longer
-   * be obtainable. Idempotent: unregistering an inactive or unknown well-formed token succeeds.
+   * Unregisters an Expo push token, stopping delivery to that device. Unsigned, so it still works at logout
+   * when a wallet signature may no longer be obtainable. Idempotent: unregistering an inactive or unknown
+   * well-formed token succeeds.
    *
    * A registration that commits after this call re-activates the token, so stop or await any in-flight
    * {@link MobileClient.registerExpoToken} before unregistering.
@@ -210,8 +210,9 @@ export class MobileClient {
 
   /**
    * Replaces the push notification preferences of the wallet that owns the given Expo push token. Possession
-   * of an active token is the credential, so no signature is required. The backend requires `schemaVersion`
-   * of 1, exactly one entry per known category, and empty `scopes` on every entry.
+   * of an active token is the credential rather than a signature, so anyone holding the token can overwrite
+   * that wallet's preferences. The backend requires `schemaVersion` of 1, exactly one entry per known
+   * category, and empty `scopes` on every entry.
    *
    * Writes are last-write-wins on commit order rather than ordered by a client nonce, so callers must
    * serialize their own preference writes.
