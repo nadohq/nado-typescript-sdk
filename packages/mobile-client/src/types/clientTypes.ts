@@ -159,12 +159,11 @@ export interface MobileSignedRequestParams
   extends Subaccount, SignatureParams {}
 
 /**
- * Common params for token-authenticated notification requests, where possession of an active Expo push token
- * is the credential instead of a wallet signature — the unsigned counterpart to
- * {@link MobileSignedRequestParams}. The backend resolves the token's owning wallet and mutates or reads that
- * wallet's state, so the caller never names a target.
+ * Common params for the unsigned notification requests, which name their target with an Expo push token
+ * instead of a subaccount and signature — the counterpart to {@link MobileSignedRequestParams}. The backend
+ * resolves the token's owning wallet and reads or mutates that wallet's state.
  */
-export interface MobileTokenAuthedRequestParams {
+export interface MobileWithExpoTokenParams {
   /** Expo push token, e.g. `ExponentPushToken[...]`. */
   expoToken: string;
 }
@@ -241,20 +240,19 @@ export interface MobileRegisterExpoTokenParams extends MobileSignedRequestParams
 /**
  * Params for {@link MobileClient.unregisterExpoToken}.
  */
-export type MobileUnregisterExpoTokenParams = MobileTokenAuthedRequestParams;
+export type MobileUnregisterExpoTokenParams = MobileWithExpoTokenParams;
 
 /**
  * Params for {@link MobileClient.updateNotificationPreferences}.
  */
-export interface MobileUpdateNotificationPreferencesParams extends MobileTokenAuthedRequestParams {
+export interface MobileUpdateNotificationPreferencesParams extends MobileWithExpoTokenParams {
   preferences: MobileNotificationPreferences;
 }
 
 /**
  * Params for {@link MobileClient.getNotificationPreferences}.
  */
-export type GetMobileNotificationPreferencesParams =
-  MobileTokenAuthedRequestParams;
+export type GetMobileNotificationPreferencesParams = MobileWithExpoTokenParams;
 
 /**
  * Params for {@link MobileClient.getRegisteredDevices}.

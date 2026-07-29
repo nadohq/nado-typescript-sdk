@@ -84,7 +84,7 @@ void describe(
         'unregistered device should no longer be listed',
       );
 
-      // Unregister is token-authenticated and idempotent, so replaying it on the now-inactive token succeeds.
+      // Unregister is keyed by the token alone and idempotent, so replaying it on an inactive token succeeds.
       await tc.mobile.unregisterExpoToken({ expoToken });
     });
 
