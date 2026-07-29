@@ -1,10 +1,7 @@
 import { WalletClientWithAccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
-import {
-  MobileNotificationPlatform,
-  MobileServerNotificationPreferences,
-} from '../types/serverModelTypes';
+import { MobileNotificationPlatform } from '../types/serverModelTypes';
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.
@@ -29,12 +26,6 @@ export type MobileSignedInner =
       locale: string | null;
       app_version: string | null;
     }
-  | { type: 'unregister_expo_token'; expo_token: string }
-  | {
-      type: 'update_preferences';
-      preferences: MobileServerNotificationPreferences;
-    }
-  | { type: 'notification_preferences' }
   | { type: 'registered_devices' };
 
 /**

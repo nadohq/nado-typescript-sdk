@@ -15,8 +15,8 @@ import {
   assertArrayElements,
   assertEnumMember,
   assertHexString,
+  assertNullableString,
   assertNumber,
-  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
@@ -26,8 +26,8 @@ import { RunContext } from '../utils/types';
 
 void describe(
   '[mobile-client]: feed',
-  // Feed queries are currently slow server-side: an unfiltered page can take well over a minute, and even a
-  // filtered one takes ~20s. Stopgap until the backend feed query is indexed.
+  // Feed queries are still slow server-side, and an unfiltered page on a cold cache is the worst case, so
+  // these get the long timeout rather than the default.
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
     let tc: RunContext;
@@ -98,8 +98,9 @@ function assertFeedPageShape(page: MobileFeedPage): void {
 function assertFeedTradeShape(trade: MobileFeedTrade, label: string): void {
   assertHexString(trade.orderDigest, `${label}.orderDigest`);
   assertHexString(trade.subaccount, `${label}.subaccount`);
-  assertString(trade.username, `${label}.username`);
-  assertString(trade.displayName, `${label}.displayName`);
+  // The feed includes unnamed public activity, so both name fields are null until a username is claimed.
+  assertNullableString(trade.username, `${label}.username`);
+  assertNullableString(trade.displayName, `${label}.displayName`);
   assert.ok(
     trade.avatarUrl === null || typeof trade.avatarUrl === 'string',
     `${label}.avatarUrl should be a string or null`,

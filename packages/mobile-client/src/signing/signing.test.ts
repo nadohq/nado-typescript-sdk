@@ -28,15 +28,9 @@ const PINNED_HASHES = {
     '0x4d12a06234d751e6ddcc01d8f70836bb5b7e207e573641d1efb5aaf2b0f30d10',
   self_identity:
     '0x10e94c4502cade0a0b4d7469717bcc1d266fc6a3b7635236fa1d3600b58c9954',
-  // The three execute hashes below mirror the backend's pinned fixtures in mobile/src/api/types.rs.
+  // Mirrors the backend's pinned fixture in mobile/src/api/types.rs.
   register_expo_token:
     '0x1b9471afc9bde66f9bffd576d3326420e1bade4e16afa3a73ddc65f27155611c',
-  unregister_expo_token:
-    '0xd131071d0898c97496f3d41dfc05f30a5f82c95e550944c4fba47419ddd0ebf3',
-  update_preferences:
-    '0x071b8ac6f3d2518267dd238c8c96e15e07e0552aede3ba32383706bb05726f83',
-  notification_preferences:
-    '0x3694dda0e5732b36eb3b60da6b147ec4e35520fc54529610c69d19d722d4fe97',
   registered_devices:
     '0xe77b42e32d27f054f86d5ed52c9aac7b3eed857eb6209ee883c92f01b84d3334',
 } as const;
@@ -88,33 +82,6 @@ describe('[mobile-client]: signing (offline)', () => {
       expect(hash).toBe(PINNED_HASHES.register_expo_token);
     });
 
-    it('unregister_expo_token', () => {
-      const inner: MobileSignedInner = {
-        type: 'unregister_expo_token',
-        expo_token: 'ExponentPushToken[abcdef1234567890abcdef]',
-      };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.unregister_expo_token);
-    });
-
-    it('update_preferences', () => {
-      const inner: MobileSignedInner = {
-        type: 'update_preferences',
-        preferences: {
-          schema_version: 1,
-          categories: [{ category: 'order_fill', enabled: true, scopes: [] }],
-        },
-      };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.update_preferences);
-    });
-
-    it('notification_preferences', () => {
-      const inner: MobileSignedInner = { type: 'notification_preferences' };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.notification_preferences);
-    });
-
     it('registered_devices', () => {
       const inner: MobileSignedInner = { type: 'registered_devices' };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
@@ -134,19 +101,19 @@ describe('[mobile-client]: signing (offline)', () => {
     expect(hash).toBe(PINNED_HASHES.set_private_mode);
   });
 
-  it('canonicalizes nested preference key order regardless of input key order', () => {
-    // Nested preference objects must also be rebuilt in the backend's struct declaration order
-    // (schema_version, categories; category, enabled, scopes) for the msgpack hash to be deterministic.
+  it('canonicalizes multi-field key order regardless of input key order', () => {
+    // register_expo_token is the only signed payload with more than one field, so it is where a caller can
+    // actually get the order wrong; canonicalizeMobileInner must rebuild it in the backend's declaration order.
     const outOfOrderInner = {
-      preferences: {
-        categories: [{ scopes: [], enabled: true, category: 'order_fill' }],
-        schema_version: 1,
-      },
-      type: 'update_preferences',
-    } as unknown as MobileSignedInner;
+      app_version: '1.2.3',
+      locale: 'en-GB',
+      platform: 'ios',
+      expo_token: 'ExponentPushToken[abcdef1234567890abcdef]',
+      type: 'register_expo_token',
+    } as MobileSignedInner;
 
     const hash = getMobilePayloadHash(canonicalizeMobileInner(outOfOrderInner));
-    expect(hash).toBe(PINNED_HASHES.update_preferences);
+    expect(hash).toBe(PINNED_HASHES.register_expo_token);
   });
 
   describe('nonce generation', () => {

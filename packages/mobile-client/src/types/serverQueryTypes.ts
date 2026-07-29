@@ -53,15 +53,16 @@ export interface MobileServerFeedResponse {
 }
 
 /**
- * Payload of the signed `self_identity` query success response. A `null` identity means the subaccount has
- * not claimed a username yet — this is normal data, not an error.
+ * Payload of the signed `self_identity` query success response. Every non-isolated subaccount has an implicit
+ * identity, so the backend returns one for any valid sender, with `null` name fields when no username has
+ * been claimed; `identity` stays nullable to match the backend's `Option`.
  */
 export interface MobileServerSelfIdentityResponse {
   identity: MobileServerIdentity | null;
 }
 
 /**
- * Payload of the signed `notification_preferences` query success response.
+ * Payload of the `notification_preferences` public query success response.
  */
 export interface MobileServerNotificationPreferencesResponse {
   preferences: MobileServerNotificationPreferences;
@@ -84,6 +85,7 @@ export interface MobileServerPublicQueryResponseByType {
   username_availability: MobileServerUsernameAvailabilityResponse;
   profile: MobileServerProfileResponse;
   feed: MobileServerFeedResponse;
+  notification_preferences: MobileServerNotificationPreferencesResponse;
 }
 
 /**
@@ -94,7 +96,6 @@ export interface MobileServerPublicQueryResponseByType {
  */
 export interface MobileServerSignedQueryResponseByType {
   self_identity: MobileServerSelfIdentityResponse;
-  notification_preferences: MobileServerNotificationPreferencesResponse;
   registered_devices: MobileServerRegisteredDevicesResponse;
 }
 

@@ -1,9 +1,10 @@
 import {
+  MOBILE_ERROR_CODES,
   MobileNotificationPreferences,
   MobileServerFailureError,
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
-import { before, describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 import { keccak256, stringToBytes } from 'viem';
 import { assertDefined, assertString } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
@@ -22,21 +23,28 @@ void describe(
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let tc: RunContext;
+    /**
+     * Preference reads and writes are authorized by possession of an active Expo push token, so the
+     * preference tests share one token registered here rather than each registering their own.
+     */
+    let preferencesExpoToken: string;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
       tc = createTestContext();
+      preferencesExpoToken = createTestExpoToken().expoToken;
+      await tc.mobile.registerExpoToken({
+        ...getMobileSignedParams(tc),
+        expoToken: preferencesExpoToken,
+        platform: 'ios',
+        appVersion: '0.0.1-e2e',
+      });
+      await delay(TEST_DELAYS.STANDARD);
     });
 
     void test('registers, lists, and unregisters an Expo push token', async () => {
       const signedParams = getMobileSignedParams(tc);
-      // Unique per run so parallel/failed runs don't collide on the same token row.
-      const expoTokenInner = `e2e-device-${Date.now()}`;
-      const expoToken = `ExponentPushToken[${expoTokenInner}]`;
-      // The backend identifies devices by the first 8 hex chars of keccak256 over the bracket-stripped token.
-      const expectedFingerprintPrefix = keccak256(
-        stringToBytes(expoTokenInner),
-      ).slice(2, 10);
+      const { expoToken, fingerprintPrefix } = createTestExpoToken();
 
       await tc.mobile.registerExpoToken({
         ...signedParams,
@@ -51,7 +59,7 @@ void describe(
       debugPrint('Registered devices after register', devices);
 
       const registeredDevice = devices.find(
-        (device) => device.tokenFingerprintPrefix === expectedFingerprintPrefix,
+        (device) => device.tokenFingerprintPrefix === fingerprintPrefix,
       );
       assertDefined(registeredDevice, 'registeredDevice');
       assert.equal(registeredDevice?.platform, 'ios');
@@ -62,7 +70,7 @@ void describe(
         'registeredDevice.tokenFingerprintPrefix',
       );
 
-      await tc.mobile.unregisterExpoToken({ ...signedParams, expoToken });
+      await tc.mobile.unregisterExpoToken({ expoToken });
       await delay(TEST_DELAYS.STANDARD);
 
       const devicesAfterUnregister =
@@ -70,12 +78,14 @@ void describe(
       debugPrint('Registered devices after unregister', devicesAfterUnregister);
       assert.equal(
         devicesAfterUnregister.some(
-          (device) =>
-            device.tokenFingerprintPrefix === expectedFingerprintPrefix,
+          (device) => device.tokenFingerprintPrefix === fingerprintPrefix,
         ),
         false,
         'unregistered device should no longer be listed',
       );
+
+      // Unregister is token-authenticated and idempotent, so replaying it on the now-inactive token succeeds.
+      await tc.mobile.unregisterExpoToken({ expoToken });
     });
 
     void test('rejects a malformed Expo push token', async () => {
@@ -95,19 +105,39 @@ void describe(
       );
     });
 
-    void test('fetches default-shaped notification preferences', async () => {
-      const preferences = await tc.mobile.getNotificationPreferences(
-        getMobileSignedParams(tc),
+    void test('rejects a preference read for an unregistered Expo push token', async () => {
+      await assert.rejects(
+        tc.mobile.getNotificationPreferences({
+          expoToken: createTestExpoToken().expoToken,
+        }),
+        (error: unknown) => {
+          assert.ok(
+            error instanceof MobileServerFailureError,
+            'should throw MobileServerFailureError',
+          );
+          assert.equal(
+            error.errorCode,
+            MOBILE_ERROR_CODES.INVALID_EXPO_TOKEN,
+            'an unregistered token is not a valid preference credential',
+          );
+          return true;
+        },
       );
+    });
+
+    void test('fetches default-shaped notification preferences', async () => {
+      const preferences = await tc.mobile.getNotificationPreferences({
+        expoToken: preferencesExpoToken,
+      });
       debugPrint('Notification preferences', preferences);
 
       assertPreferencesShape(preferences);
     });
 
     void test('toggles a category preference and restores the original', async () => {
-      const signedParams = getMobileSignedParams(tc);
-
-      const original = await tc.mobile.getNotificationPreferences(signedParams);
+      const original = await tc.mobile.getNotificationPreferences({
+        expoToken: preferencesExpoToken,
+      });
       assertPreferencesShape(original);
 
       const toggled: MobileNotificationPreferences = {
@@ -120,12 +150,14 @@ void describe(
       };
 
       await tc.mobile.updateNotificationPreferences({
-        ...signedParams,
+        expoToken: preferencesExpoToken,
         preferences: toggled,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const updated = await tc.mobile.getNotificationPreferences(signedParams);
+      const updated = await tc.mobile.getNotificationPreferences({
+        expoToken: preferencesExpoToken,
+      });
       debugPrint('Preferences after toggle', updated);
       assert.equal(
         updated.categories.find((category) => category.category === 'funding')
@@ -135,17 +167,39 @@ void describe(
       );
 
       await tc.mobile.updateNotificationPreferences({
-        ...signedParams,
+        expoToken: preferencesExpoToken,
         preferences: original,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restored = await tc.mobile.getNotificationPreferences(signedParams);
+      const restored = await tc.mobile.getNotificationPreferences({
+        expoToken: preferencesExpoToken,
+      });
       debugPrint('Preferences after restore', restored);
       assert.deepEqual(restored, original);
     });
+
+    after(async () => {
+      await tc.mobile.unregisterExpoToken({ expoToken: preferencesExpoToken });
+    });
   },
 );
+
+/**
+ * Builds an Expo push token that is unique per call, so parallel or previously failed runs never collide on
+ * the same token row, alongside the device id the backend derives from it: the first 8 hex chars of
+ * `keccak256` over the bracket-stripped token.
+ */
+function createTestExpoToken(): {
+  expoToken: string;
+  fingerprintPrefix: string;
+} {
+  const inner = `e2e-device-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    expoToken: `ExponentPushToken[${inner}]`,
+    fingerprintPrefix: keccak256(stringToBytes(inner)).slice(2, 10),
+  };
+}
 
 /**
  * Asserts the backend's preferences MVP invariants: current schema version, one entry per known category,

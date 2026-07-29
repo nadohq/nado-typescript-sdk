@@ -145,6 +145,20 @@ export function assertString(value: unknown, label: string): void {
 }
 
 /**
+ * Asserts that a value is either `null` or a non-empty string, for backend fields that are genuinely absent
+ * rather than empty (e.g. an unclaimed username).
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertNullableString(value: unknown, label: string): void {
+  if (value === null) {
+    return;
+  }
+  assertString(value, label);
+}
+
+/**
  * Asserts that a value is a non-empty string.
  *
  * @param value - The value to check.

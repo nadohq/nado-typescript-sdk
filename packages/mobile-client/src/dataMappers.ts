@@ -41,6 +41,7 @@ export function mapMobilePublicProfile(
     subaccount: server.subaccount,
     username: server.username,
     displayName: server.display_name,
+    privateMode: server.private_mode,
   };
 }
 

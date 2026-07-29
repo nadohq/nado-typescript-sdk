@@ -18,21 +18,24 @@ export type MobileNotificationCategory =
   | 'announcement';
 
 /**
- * Server-side public profile shape (snake_case).
+ * Server-side public profile shape (snake_case). Name fields are `null` until the subaccount claims a
+ * username.
  */
 export interface MobileServerProfile {
   subaccount: Hex;
-  username: string;
-  display_name: string;
+  username: string | null;
+  display_name: string | null;
+  private_mode: boolean;
 }
 
 /**
- * Server-side identity shape (snake_case) returned by the signed `self_identity` query.
+ * Server-side identity shape (snake_case) returned by the signed `self_identity` query. Name fields are
+ * `null` until the subaccount claims a username.
  */
 export interface MobileServerIdentity {
   subaccount: Hex;
-  username: string;
-  display_name: string;
+  username: string | null;
+  display_name: string | null;
   private_mode: boolean;
 }
 
@@ -109,8 +112,8 @@ export interface MobileServerFeedTrade {
   /** Order digest this row is keyed by; the stable id clients use to reconcile live pagination. */
   order_digest: Hex;
   subaccount: Hex;
-  username: string;
-  display_name: string;
+  username: string | null;
+  display_name: string | null;
   /** Reserved for a future avatar source; `null` until one is implemented. */
   avatar_url: string | null;
   product_id: number;
@@ -146,8 +149,8 @@ export interface MobileServerNotificationCategoryPreference {
 }
 
 /**
- * Server-side notification preferences shape (snake_case), used in both the `update_preferences` execute and
- * the `notification_preferences` query response.
+ * Server-side notification preferences shape (snake_case), used in both the `update_preferences` public
+ * execute and the `notification_preferences` public query response.
  */
 export interface MobileServerNotificationPreferences {
   /** Only `1` is accepted by the backend for the MVP. */
