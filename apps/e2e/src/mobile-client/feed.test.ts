@@ -26,9 +26,7 @@ import { RunContext } from '../utils/types';
 
 void describe(
   '[mobile-client]: feed',
-  // Feed queries are still slow server-side, and an unfiltered page on a cold cache is the worst case, so
-  // these get the long timeout rather than the default.
-  { timeout: TEST_TIMEOUTS.LONG },
+  { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let tc: RunContext;
 
