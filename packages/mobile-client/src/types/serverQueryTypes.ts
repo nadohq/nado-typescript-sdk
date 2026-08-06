@@ -3,14 +3,12 @@ import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileNotificationPlatform,
   MobileServerFeedTrade,
-  MobileServerIdentity,
   MobileServerNotificationPreferences,
   MobileServerProfile,
 } from './serverModelTypes';
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
-  MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
 
 /**
@@ -54,15 +52,6 @@ export interface MobileServerFeedResponse {
 }
 
 /**
- * Payload of the signed `self_identity` query success response. Every non-isolated subaccount has an implicit
- * identity, so the backend returns one for any valid sender, with `null` name fields when no username has
- * been claimed; `identity` stays nullable to match the backend's `Option`.
- */
-export interface MobileServerSelfIdentityResponse {
-  identity: MobileServerIdentity | null;
-}
-
-/**
  * Payload of the `notification_preferences` public query success response.
  */
 export interface MobileServerNotificationPreferencesResponse {
@@ -97,16 +86,6 @@ export interface MobileServerPublicQueryResponseByType {
 }
 
 /**
- * Success payloads for each signed `query`, keyed by request `type`. Counterpart to
- * {@link MobileServerSignedQueryRequestByType} so a signed query's request params and response share one
- * lookup, matching the public route. Holds the unwrapped payload; the envelope is applied by
- * {@link MobileServerSignedQuerySuccessResponse}.
- */
-export interface MobileServerSignedQueryResponseByType {
-  self_identity: MobileServerSelfIdentityResponse;
-}
-
-/**
  * Full success response for an unsigned `public_query`: the {@link MobileServerSuccessResponse} envelope with
  * the query's payload inlined alongside `status`. Derived from {@link MobileServerPublicQueryResponseByType},
  * mirroring engine's `EngineServerQuerySuccessResponse` (inlined here instead of nested under `data`).
@@ -115,12 +94,3 @@ export type MobileServerPublicQuerySuccessResponse<
   T extends MobileServerPublicQueryRequestType =
     MobileServerPublicQueryRequestType,
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
-
-/**
- * Full success response for a signed `query`: the {@link MobileServerSuccessResponse} envelope with the
- * query's payload inlined alongside `status`. Derived from {@link MobileServerSignedQueryResponseByType}.
- */
-export type MobileServerSignedQuerySuccessResponse<
-  T extends MobileServerSignedQueryRequestType =
-    MobileServerSignedQueryRequestType,
-> = MobileServerSuccessResponse & MobileServerSignedQueryResponseByType[T];

@@ -32,13 +32,6 @@ const profile = await mobile.getPublicProfile({
 });
 
 // Signed operations
-const identity = await mobile.getSelfIdentity({
-  subaccountOwner: walletClient.account.address,
-  subaccountName: 'default',
-  chainId: ink.id,
-  verifyingAddr: '0x...',
-});
-
 await mobile.setUsername({
   subaccountOwner: walletClient.account.address,
   subaccountName: 'default',
@@ -58,10 +51,6 @@ await mobile.setUsername({
 
 `unregisterExpoToken`, `updateNotificationPreferences`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
-
-### Signed Queries
-
-`getSelfIdentity`.
 
 ### Signed Executes
 

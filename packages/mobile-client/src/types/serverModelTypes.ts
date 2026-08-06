@@ -29,17 +29,6 @@ export interface MobileServerProfile {
 }
 
 /**
- * Server-side identity shape (snake_case) returned by the signed `self_identity` query. Name fields are
- * `null` until the subaccount claims a username.
- */
-export interface MobileServerIdentity {
-  subaccount: Hex;
-  username: string | null;
-  display_name: string | null;
-  private_mode: boolean;
-}
-
-/**
  * Direction of the position a feed trade resulted in — for `closed`, the direction that was closed. This is
  * NOT the execution buy/sell side, which the feed does not expose. Aliases {@link BalanceSide} so the feed's
  * direction values stay in lockstep with the rest of the SDK.

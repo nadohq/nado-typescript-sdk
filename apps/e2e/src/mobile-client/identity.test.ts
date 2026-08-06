@@ -60,9 +60,10 @@ void describe(
     });
 
     void test('fetches the implicit self identity', async () => {
-      const identity = await tc.mobile.getSelfIdentity(
-        getMobileSignedParams(tc),
-      );
+      const identity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       debugPrint('Self identity result', identity);
 
       // Every non-isolated subaccount has an implicit identity, so the test subaccount always resolves.
@@ -103,7 +104,10 @@ void describe(
     void test('sets the display name and restores any original', async () => {
       const identityParams = getMobileSignedParams(tc);
 
-      const identity = await tc.mobile.getSelfIdentity(identityParams);
+      const identity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       assertDefined(identity, 'identity');
       const originalDisplayName = identity.displayName;
       debugPrint('Identity before set', identity);
@@ -117,7 +121,10 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const updatedIdentity = await tc.mobile.getSelfIdentity(identityParams);
+      const updatedIdentity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       debugPrint('Identity after set', updatedIdentity);
       assertDefined(updatedIdentity, 'updatedIdentity');
       assert.equal(updatedIdentity.displayName, newDisplayName);
@@ -134,7 +141,10 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restoredIdentity = await tc.mobile.getSelfIdentity(identityParams);
+      const restoredIdentity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       debugPrint('Identity after restore', restoredIdentity);
       assertDefined(restoredIdentity, 'restoredIdentity');
       assert.equal(restoredIdentity.displayName, originalDisplayName);
@@ -143,7 +153,10 @@ void describe(
     void test('rejects a name held by another subaccount with USERNAME_UNAVAILABLE', async () => {
       const identityParams = getMobileSignedParams(tc);
 
-      const identity = await tc.mobile.getSelfIdentity(identityParams);
+      const identity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       assertDefined(identity, 'identity');
       const { displayName } = identity;
 
@@ -169,7 +182,10 @@ void describe(
     void test('toggles private mode and restores the original value', async () => {
       const identityParams = getMobileSignedParams(tc);
 
-      const identity = await tc.mobile.getSelfIdentity(identityParams);
+      const identity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       assertDefined(identity, 'identity');
 
       const originalPrivateMode = identity.privateMode;
@@ -180,7 +196,10 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const toggledIdentity = await tc.mobile.getSelfIdentity(identityParams);
+      const toggledIdentity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       debugPrint('Identity after private mode toggle', toggledIdentity);
       assertDefined(toggledIdentity, 'toggledIdentity');
       assert.equal(toggledIdentity.privateMode, !originalPrivateMode);
@@ -191,7 +210,10 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restoredIdentity = await tc.mobile.getSelfIdentity(identityParams);
+      const restoredIdentity = await tc.mobile.getPublicProfile({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      });
       debugPrint('Identity after private mode restore', restoredIdentity);
       assertDefined(restoredIdentity, 'restoredIdentity');
       assert.equal(restoredIdentity.privateMode, originalPrivateMode);

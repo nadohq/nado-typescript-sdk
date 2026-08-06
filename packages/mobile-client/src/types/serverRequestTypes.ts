@@ -53,39 +53,17 @@ export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
 /**
- * Params for each signed `query`, keyed by request `type`. These queries identify the caller through the
- * signed envelope (`sender`) and take no further params, so every entry is empty — the signed counterpart to
- * {@link MobileServerPublicQueryRequestByType}, kept so both query routes expose one params lookup keyed by
- * type (matching engine's `EngineServerQueryRequestByType`, which likewise uses `Record<string, never>` for
- * param-less queries).
- */
-export interface MobileServerSignedQueryRequestByType {
-  self_identity: Record<string, never>;
-}
-
-/**
- * Discriminant `type` values for signed `query` requests: the read-only subset of {@link MobileSignedInner}
- * tags, keyed the same way as {@link MobileServerPublicQueryRequestType}.
- */
-export type MobileServerSignedQueryRequestType =
-  keyof MobileServerSignedQueryRequestByType;
-
-/**
  * Discriminant `type` values for signed `execute` requests: the write subset of {@link MobileSignedInner}
- * tags, derived as everything that is not a signed query so the two routes cannot overlap or drift.
+ * tags. With no signed queries remaining, every signed inner type is an execute.
  */
-export type MobileServerExecuteRequestType = Exclude<
-  MobileSignedInner['type'],
-  MobileServerSignedQueryRequestType
->;
+export type MobileServerExecuteRequestType = MobileSignedInner['type'];
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
- * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, `query_*` for signed
- * queries, and `execute_*` for signed writes (e.g. `execute_set_username`).
+ * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
+ * writes (e.g. `execute_set_username`).
  */
 export type MobileServerRequestType =
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
-  | `query_${MobileServerSignedQueryRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

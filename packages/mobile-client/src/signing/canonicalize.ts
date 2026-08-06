@@ -15,8 +15,6 @@ export function canonicalizeMobileInner(
       return { type: 'set_username', display_name: inner.display_name };
     case 'set_private_mode':
       return { type: 'set_private_mode', private_mode: inner.private_mode };
-    case 'self_identity':
-      return { type: 'self_identity' };
     case 'register_expo_token':
       return {
         type: 'register_expo_token',
