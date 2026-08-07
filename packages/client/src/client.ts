@@ -1,6 +1,7 @@
 import { WalletClientWithAccount } from '@nadohq/shared';
 import { MarketAPI } from './apis/market';
 import { PerpAPI } from './apis/perp';
+import { RewardsAPI } from './apis/rewards';
 import { SpotAPI } from './apis/spot';
 import { SubaccountAPI } from './apis/subaccount';
 import { WebsocketAPI } from './apis/ws';
@@ -16,6 +17,7 @@ export class NadoClient {
   subaccount!: SubaccountAPI;
   spot!: SpotAPI;
   perp!: PerpAPI;
+  rewards!: RewardsAPI;
   ws!: WebsocketAPI;
 
   constructor(context: NadoClientContext) {
@@ -65,6 +67,7 @@ export class NadoClient {
     this.subaccount = new SubaccountAPI(context);
     this.spot = new SpotAPI(context);
     this.perp = new PerpAPI(context);
+    this.rewards = new RewardsAPI(context);
     this.ws = new WebsocketAPI(context);
   }
 }

@@ -593,9 +593,60 @@ export interface IndexerServerCashIncentivesEventPlatform {
   unlocked_reward: string;
 }
 
+/**
+ * Claim status of a wallet for a single Cash Incentives event.
+ *
+ * - `in_progress`: the event is still active.
+ * - `pending`: the event has ended, but its settlement has not been published.
+ * - `no_reward`: the settlement exists, but the wallet has no reward.
+ * - `claimable`: the settlement grants this wallet a reward, and the proof to claim it is included.
+ *
+ * There is deliberately no `claimed` status. The airdrop contract's `getClaimed` is the source of
+ * truth for whether a reward has already been taken, so a reward stays `claimable` here even after
+ * it has been claimed onchain.
+ */
+export const INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES = [
+  'in_progress',
+  'pending',
+  'no_reward',
+  'claimable',
+] as const;
+
+export type IndexerServerCashIncentivesWalletStatus =
+  (typeof INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES)[number];
+
+/**
+ * `wallet.claim` variant carrying everything needed to claim onchain.
+ */
+export interface IndexerServerCashIncentivesClaimableClaim {
+  status: 'claimable';
+  airdrop_address: string;
+  // Reward event id within the airdrop contract, distinct from `metadata.event_id`
+  week: number;
+  // Integer string in raw token units, as committed to by the merkle root
+  total_amount: string;
+  // Merkle proof hashes
+  proof: string[];
+}
+
+/**
+ * `wallet.claim` variant for events with nothing to claim, which carries only the status.
+ */
+export interface IndexerServerCashIncentivesUnclaimableClaim {
+  status: Exclude<IndexerServerCashIncentivesWalletStatus, 'claimable'>;
+}
+
+/**
+ * Always present, tagged on `status`. Only the `claimable` variant carries proof data.
+ */
+export type IndexerServerCashIncentivesWalletClaim =
+  | IndexerServerCashIncentivesClaimableClaim
+  | IndexerServerCashIncentivesUnclaimableClaim;
+
 export interface IndexerServerCashIncentivesEventWallet {
   // x18 string
   reward: string;
+  claim: IndexerServerCashIncentivesWalletClaim;
 }
 
 export interface IndexerServerCashIncentivesEvent {

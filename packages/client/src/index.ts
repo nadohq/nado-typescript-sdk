@@ -4,6 +4,7 @@ export * from './createNadoClient';
 
 export * from './apis/market';
 export * from './apis/perp';
+export * from './apis/rewards';
 export * from './apis/spot';
 export * from './apis/subaccount';
 
