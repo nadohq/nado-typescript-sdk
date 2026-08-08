@@ -82,7 +82,7 @@ void describe(
       }
     });
 
-    void test('getPortfolio returns value and PnL history across timeframes', async () => {
+    void test('getPortfolio returns all series across timeframes', async () => {
       const portfolio = await client.getPortfolio({ subaccount });
 
       debugPrint('Portfolio', portfolio);
@@ -99,11 +99,19 @@ void describe(
         'perpAllTime',
       ] as const;
 
+      const series = [
+        'accountValueHistory',
+        'pnlHistory',
+        'volumeHistory',
+        'tradeSizeHistory',
+        'marketCountHistory',
+      ] as const;
+
       for (const period of periods) {
         const history = portfolio[period];
         assertDefined(history, `portfolio.${period}`);
-        assertBigNumberFinite(history.volume, `portfolio.${period}.volume`);
-        for (const key of ['accountValueHistory', 'pnlHistory'] as const) {
+
+        for (const key of series) {
           assertArray(history[key], `portfolio.${period}.${key}`);
           assertArrayElements(
             history[key],
@@ -113,6 +121,23 @@ void describe(
             },
             `portfolio.${period}.${key}`,
           );
+        }
+
+        // All series are aligned: same length, same timestamps.
+        const { accountValueHistory } = history;
+        for (const key of series) {
+          assert.equal(
+            history[key].length,
+            accountValueHistory.length,
+            `portfolio.${period}.${key} should have the same length as accountValueHistory`,
+          );
+          history[key].forEach((point, idx) => {
+            assert.equal(
+              point.timestamp.toString(),
+              accountValueHistory[idx]?.timestamp.toString(),
+              `portfolio.${period}.${key}[${idx}].timestamp should match accountValueHistory[${idx}].timestamp`,
+            );
+          });
         }
       }
     });

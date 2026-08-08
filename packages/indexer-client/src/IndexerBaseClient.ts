@@ -322,9 +322,14 @@ export class IndexerBaseClient {
   }
 
   /**
-   * Retrieves a subaccount's account-value and PnL history across all
-   * timeframes, keyed by period. The value aggregates the cross-margin account
-   * plus every isolated child; the queried subaccount must be cross-margin.
+   * Retrieves a subaccount's account-value, PnL, traded-volume, average-trade-size,
+   * and markets-traded history across all timeframes, keyed by period. The value
+   * aggregates the cross-margin account plus every isolated child; the queried
+   * subaccount must be cross-margin.
+   *
+   * Points are downsampled per timeframe, so the most recent point can be up to
+   * ~20 minutes stale. For the exact live value, use the engine client's
+   * `getSubaccountSummary` query instead.
    *
    * @param params
    */

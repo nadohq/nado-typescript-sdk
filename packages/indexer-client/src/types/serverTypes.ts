@@ -361,13 +361,19 @@ export type IndexerServerPortfolioPeriod =
   | 'perpMonth'
   | 'perpAllTime';
 
-// [timestamp (unix seconds), value] — both x18-free decimal strings, USDT0-denominated.
+/**
+ * [timestamp (unix seconds), value] — both x18-free decimal strings. Values are
+ * USDT0-denominated, except `marketCountHistory` points, which are integer counts.
+ */
 export type IndexerServerPortfolioPoint = [string, string];
 
+// All five series are aligned: same timestamps, same length.
 export interface IndexerServerPortfolioHistory {
   accountValueHistory: IndexerServerPortfolioPoint[];
   pnlHistory: IndexerServerPortfolioPoint[];
-  vlm: string;
+  volumeHistory: IndexerServerPortfolioPoint[];
+  tradeSizeHistory: IndexerServerPortfolioPoint[];
+  marketCountHistory: IndexerServerPortfolioPoint[];
 }
 
 export type IndexerServerPortfolioResponse = [

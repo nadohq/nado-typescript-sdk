@@ -262,19 +262,40 @@ export type IndexerPortfolioPeriod =
 export interface IndexerPortfolioPoint {
   // Unix seconds
   timestamp: BigNumber;
-  // USDT0-denominated
+  // USDT0-denominated, except on `marketCountHistory`, where it is an integer count.
   value: BigNumber;
 }
 
+/**
+ * All five series are aligned: same timestamps, same length. They share the same
+ * baseline — the first snapshot at or after the timeframe start — so every series
+ * except `accountValueHistory` begins at `0` and accumulates from there.
+ */
 export interface IndexerPortfolioHistory {
+  // Mark-to-market account value at each timestamp, USDT0-denominated.
   accountValueHistory: IndexerPortfolioPoint[];
   /**
    * Trading PnL over the timeframe, baseline-subtracted so the first visible
    * point is `0`. Capital flows (deposits/withdrawals/transfers) are netted out.
    */
   pnlHistory: IndexerPortfolioPoint[];
-  // Total traded volume over the timeframe, USDT0-denominated.
-  volume: BigNumber;
+  /**
+   * Cumulative traded quote volume within the timeframe up to each timestamp,
+   * USDT0-denominated.
+   */
+  volumeHistory: IndexerPortfolioPoint[];
+  /**
+   * Average trade size within the timeframe up to each timestamp — the
+   * timeframe's quote volume divided by its trade count, or `0` when no trades
+   * have occurred yet. A trade is a single fill, so an order matched against
+   * multiple resting orders counts once per fill.
+   */
+  tradeSizeHistory: IndexerPortfolioPoint[];
+  /**
+   * Number of distinct markets traded within the timeframe up to each
+   * timestamp. Only markets with at least one fill inside the timeframe count.
+   */
+  marketCountHistory: IndexerPortfolioPoint[];
 }
 
 export type GetIndexerPortfolioResponse = Record<

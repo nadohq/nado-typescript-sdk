@@ -271,7 +271,13 @@ export function mapIndexerPortfolio(
           mapIndexerPortfolioPoint,
         ),
         pnlHistory: history.pnlHistory.map(mapIndexerPortfolioPoint),
-        volume: toBigNumber(history.vlm),
+        volumeHistory: history.volumeHistory.map(mapIndexerPortfolioPoint),
+        tradeSizeHistory: history.tradeSizeHistory.map(
+          mapIndexerPortfolioPoint,
+        ),
+        marketCountHistory: history.marketCountHistory.map(
+          mapIndexerPortfolioPoint,
+        ),
       },
     ]),
   ) as GetIndexerPortfolioResponse;
