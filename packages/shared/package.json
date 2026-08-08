@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/shared",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "type": "module",
   "sideEffects": false,
   "description": "Shared utilities, types, and contract helpers for Nado SDK",
