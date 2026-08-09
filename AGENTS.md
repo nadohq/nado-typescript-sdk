@@ -72,7 +72,7 @@ The project follows a monorepo pattern with these core packages:
 ### Key Patterns
 
 - All packages use TypeScript with strict type checking
-- Use bignumber.js (renamed to BigDecimal) for precise decimal calculations
+- Use bignumber.js for precise decimal calculations (the SDK exports `BigNumber`/`toBigNumber`/`BigNumberish`)
 - EIP-712 signing for off-chain order execution
 - Comprehensive type definitions for all API responses
 - Consistent error handling with custom error classes
