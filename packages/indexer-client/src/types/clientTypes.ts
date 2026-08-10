@@ -60,6 +60,7 @@ export interface IndexerBalanceTrackedVars {
   netEntryUnrealized: BigNumber;
   netEntryCumulative: BigNumber;
   quoteVolumeCumulative: BigNumber;
+  cumulativeTradeCount: BigNumber;
 }
 
 export interface IndexerEvent<

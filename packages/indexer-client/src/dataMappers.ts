@@ -177,6 +177,7 @@ export function mapIndexerEvent(event: IndexerServerEvent): IndexerEvent {
       netInterestCumulative: toBigNumber(event.net_interest_cumulative),
       netInterestUnrealized: toBigNumber(event.net_interest_unrealized),
       quoteVolumeCumulative: toBigNumber(event.quote_volume_cumulative),
+      cumulativeTradeCount: toBigNumber(event.cumulative_trade_count),
     },
   };
 }

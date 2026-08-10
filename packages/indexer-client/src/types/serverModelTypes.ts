@@ -83,6 +83,11 @@ export interface IndexerServerEvent {
    * Total traded volume in terms of the primary quote (i.e in terms of USDT) for this product
    */
   quote_volume_cumulative: string;
+  /**
+   * Total number of fills for this subaccount + product, as an integer string.
+   * Events indexed before this field existed report `0`.
+   */
+  cumulative_trade_count: string;
 }
 
 export interface IndexerServerTx {
