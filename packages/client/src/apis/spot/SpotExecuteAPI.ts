@@ -20,6 +20,12 @@ import {
 
 export class SpotExecuteAPI extends BaseSpotAPI {
   async deposit(params: DepositCollateralParams) {
+    if (!isWriteableContract(this.context.contracts.endpoint)) {
+      throw new Error(
+        'Endpoint contract does not permit writes. Is a wallet client provided?',
+      );
+    }
+  
     return depositCollateral({
       endpoint: this.context.contracts.endpoint,
       subaccountName: params.subaccountName,
