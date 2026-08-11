@@ -1,10 +1,11 @@
+import { Hex } from 'viem';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
+  MobileNotificationPlatform,
   MobileServerFeedTrade,
   MobileServerIdentity,
   MobileServerNotificationPreferences,
   MobileServerProfile,
-  MobileServerRegisteredDevice,
 } from './serverModelTypes';
 import {
   MobileServerPublicQueryRequestByType,
@@ -69,10 +70,16 @@ export interface MobileServerNotificationPreferencesResponse {
 }
 
 /**
- * Payload of the signed `registered_devices` query success response.
+ * Payload of the `registered_wallet` public query success response. Inlined into the envelope rather than
+ * nested under a key, matching the backend's `RegisteredWalletResponse`.
  */
-export interface MobileServerRegisteredDevicesResponse {
-  devices: MobileServerRegisteredDevice[];
+export interface MobileServerRegisteredWalletResponse {
+  wallet: Hex;
+  platform: MobileNotificationPlatform;
+  locale: string | null;
+  app_version: string | null;
+  token_fingerprint_prefix: string;
+  last_seen_at: number;
 }
 
 /**
@@ -86,6 +93,7 @@ export interface MobileServerPublicQueryResponseByType {
   profile: MobileServerProfileResponse;
   feed: MobileServerFeedResponse;
   notification_preferences: MobileServerNotificationPreferencesResponse;
+  registered_wallet: MobileServerRegisteredWalletResponse;
 }
 
 /**
@@ -96,7 +104,6 @@ export interface MobileServerPublicQueryResponseByType {
  */
 export interface MobileServerSignedQueryResponseByType {
   self_identity: MobileServerSelfIdentityResponse;
-  registered_devices: MobileServerRegisteredDevicesResponse;
 }
 
 /**

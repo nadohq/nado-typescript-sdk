@@ -30,8 +30,6 @@ const PINNED_HASHES = {
     '0x10e94c4502cade0a0b4d7469717bcc1d266fc6a3b7635236fa1d3600b58c9954',
   register_expo_token:
     '0x1b9471afc9bde66f9bffd576d3326420e1bade4e16afa3a73ddc65f27155611c',
-  registered_devices:
-    '0xe77b42e32d27f054f86d5ed52c9aac7b3eed857eb6209ee883c92f01b84d3334',
 } as const;
 
 describe('[mobile-client]: signing (offline)', () => {
@@ -70,12 +68,6 @@ describe('[mobile-client]: signing (offline)', () => {
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.register_expo_token);
-    });
-
-    it('registered_devices', () => {
-      const inner: MobileSignedInner = { type: 'registered_devices' };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.registered_devices);
     });
   });
 

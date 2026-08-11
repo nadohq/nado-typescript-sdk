@@ -24,8 +24,7 @@ export type MobileSignedInner =
       // backend, which serializes `Option::None` as nil under the same key.
       locale: string | null;
       app_version: string | null;
-    }
-  | { type: 'registered_devices' };
+    };
 
 /**
  * Type-specific payload fields for a signed inner request of a given `type` (the inner payload without its

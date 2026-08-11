@@ -52,7 +52,7 @@ await mobile.setUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getPublicProfile`, `getFeed`, `getNotificationPreferences`.
+`getUsernameAvailability`, `getPublicProfile`, `getFeed`, `getNotificationPreferences`, `getRegisteredWallet`.
 
 ### Public Executes
 
@@ -61,7 +61,7 @@ push token rather than a wallet signature, so they still work at logout when a s
 
 ### Signed Queries
 
-`getSelfIdentity`, `getRegisteredDevices`.
+`getSelfIdentity`.
 
 ### Signed Executes
 

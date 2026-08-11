@@ -6,7 +6,7 @@ import {
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { keccak256, stringToBytes } from 'viem';
-import { assertDefined, assertString } from '../utils/assertions';
+import { assertString } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
@@ -42,12 +42,11 @@ void describe(
       await delay(TEST_DELAYS.STANDARD);
     });
 
-    void test('registers, lists, and unregisters an Expo push token', async () => {
-      const signedParams = getMobileSignedParams(tc);
+    void test('registers, resolves, and unregisters an Expo push token', async () => {
       const { expoToken, fingerprintPrefix } = createTestExpoToken();
 
       await tc.mobile.registerExpoToken({
-        ...signedParams,
+        ...getMobileSignedParams(tc),
         expoToken,
         platform: 'ios',
         locale: 'en-US',
@@ -55,37 +54,37 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const devices = await tc.mobile.getRegisteredDevices(signedParams);
-      debugPrint('Registered devices after register', devices);
+      const registration = await tc.mobile.getRegisteredWallet({ expoToken });
+      debugPrint('Registered wallet after register', registration);
 
-      const registeredDevice = devices.find(
-        (device) => device.tokenFingerprintPrefix === fingerprintPrefix,
+      assert.equal(
+        registration.wallet.toLowerCase(),
+        tc.walletClientAddress.toLowerCase(),
       );
-      assertDefined(registeredDevice, 'registeredDevice');
-      assert.equal(registeredDevice?.platform, 'ios');
-      assert.equal(registeredDevice?.locale, 'en-US');
-      assert.equal(registeredDevice?.appVersion, '0.0.1-e2e');
-      assertString(
-        registeredDevice?.tokenFingerprintPrefix,
-        'registeredDevice.tokenFingerprintPrefix',
-      );
+      assert.equal(registration.platform, 'ios');
+      assert.equal(registration.locale, 'en-US');
+      assert.equal(registration.appVersion, '0.0.1-e2e');
+      assert.equal(registration.tokenFingerprintPrefix, fingerprintPrefix);
 
       await tc.mobile.unregisterExpoToken({ expoToken });
       await delay(TEST_DELAYS.STANDARD);
 
-      const devicesAfterUnregister =
-        await tc.mobile.getRegisteredDevices(signedParams);
-      debugPrint('Registered devices after unregister', devicesAfterUnregister);
-      assert.equal(
-        devicesAfterUnregister.some(
-          (device) => device.tokenFingerprintPrefix === fingerprintPrefix,
-        ),
-        false,
-        'unregistered device should no longer be listed',
+      // An unregistered token is no longer a valid credential, so the lookup fails rather than reporting an
+      // inactive registration.
+      await assertRejectsWithInvalidExpoToken(
+        tc.mobile.getRegisteredWallet({ expoToken }),
       );
 
       // Unregister is keyed by the token alone and idempotent, so replaying it on an inactive token succeeds.
       await tc.mobile.unregisterExpoToken({ expoToken });
+    });
+
+    void test('rejects a registered wallet lookup for an unregistered Expo push token', async () => {
+      await assertRejectsWithInvalidExpoToken(
+        tc.mobile.getRegisteredWallet({
+          expoToken: createTestExpoToken().expoToken,
+        }),
+      );
     });
 
     void test('rejects a malformed Expo push token', async () => {
@@ -106,22 +105,10 @@ void describe(
     });
 
     void test('rejects a preference read for an unregistered Expo push token', async () => {
-      await assert.rejects(
+      await assertRejectsWithInvalidExpoToken(
         tc.mobile.getNotificationPreferences({
           expoToken: createTestExpoToken().expoToken,
         }),
-        (error: unknown) => {
-          assert.ok(
-            error instanceof MobileServerFailureError,
-            'should throw MobileServerFailureError',
-          );
-          assert.equal(
-            error.errorCode,
-            MOBILE_ERROR_CODES.INVALID_EXPO_TOKEN,
-            'an unregistered token is not a valid preference credential',
-          );
-          return true;
-        },
       );
     });
 
@@ -199,6 +186,23 @@ function createTestExpoToken(): {
     expoToken: `ExponentPushToken[${inner}]`,
     fingerprintPrefix: keccak256(stringToBytes(inner)).slice(2, 10),
   };
+}
+
+/**
+ * Asserts that a token-authenticated request was rejected because its Expo push token is not an active
+ * credential. The backend collapses malformed, unknown, and unregistered tokens into this one error.
+ */
+async function assertRejectsWithInvalidExpoToken(
+  request: Promise<unknown>,
+): Promise<void> {
+  await assert.rejects(request, (error: unknown) => {
+    assert.ok(
+      error instanceof MobileServerFailureError,
+      'should throw MobileServerFailureError',
+    );
+    assert.equal(error.errorCode, MOBILE_ERROR_CODES.INVALID_EXPO_TOKEN);
+    return true;
+  });
 }
 
 /**

@@ -157,14 +157,3 @@ export interface MobileServerNotificationPreferences {
   schema_version: 1;
   categories: MobileServerNotificationCategoryPreference[];
 }
-
-/**
- * Server-side registered push device shape (snake_case).
- */
-export interface MobileServerRegisteredDevice {
-  platform: MobileNotificationPlatform;
-  locale: string | null;
-  app_version: string | null;
-  token_fingerprint_prefix: string;
-  last_seen_at: number;
-}

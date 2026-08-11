@@ -23,6 +23,7 @@ export interface MobileServerPublicQueryRequestByType {
     cursor?: string;
   };
   notification_preferences: { expo_token: string };
+  registered_wallet: { expo_token: string };
 }
 
 /**
@@ -60,7 +61,6 @@ export type MobileServerPublicExecuteRequestType =
  */
 export interface MobileServerSignedQueryRequestByType {
   self_identity: Record<string, never>;
-  registered_devices: Record<string, never>;
 }
 
 /**

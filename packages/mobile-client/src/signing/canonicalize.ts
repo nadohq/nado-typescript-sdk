@@ -25,8 +25,6 @@ export function canonicalizeMobileInner(
         locale: inner.locale,
         app_version: inner.app_version,
       };
-    case 'registered_devices':
-      return { type: 'registered_devices' };
     default: {
       throw new Error(
         `canonicalizeMobileInner: unhandled inner payload type: ${JSON.stringify(inner)}`,
