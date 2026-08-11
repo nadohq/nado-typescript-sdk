@@ -5,7 +5,7 @@ import {
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
   MobilePublicProfile,
-  MobileRegisteredDevice,
+  MobileRegisteredWallet,
 } from './types/clientTypes';
 import {
   MobileServerFeedTrade,
@@ -13,9 +13,11 @@ import {
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
-  MobileServerRegisteredDevice,
 } from './types/serverModelTypes';
-import { MobileServerFeedResponse } from './types/serverQueryTypes';
+import {
+  MobileServerFeedResponse,
+  MobileServerRegisteredWalletResponse,
+} from './types/serverQueryTypes';
 
 /**
  * Maps a server-side identity (snake_case) to its client-side (camelCase) representation.
@@ -132,12 +134,13 @@ export function mapMobileFeedPage(
 }
 
 /**
- * Maps a server-side registered device (snake_case) to its client-side (camelCase) representation.
+ * Maps a server-side registered wallet (snake_case) to its client-side (camelCase) representation.
  */
-export function mapMobileRegisteredDevice(
-  server: MobileServerRegisteredDevice,
-): MobileRegisteredDevice {
+export function mapMobileRegisteredWallet(
+  server: MobileServerRegisteredWalletResponse,
+): MobileRegisteredWallet {
   return {
+    wallet: server.wallet,
     platform: server.platform,
     locale: server.locale,
     appVersion: server.app_version,

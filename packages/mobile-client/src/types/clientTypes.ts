@@ -132,9 +132,12 @@ export interface MobileNotificationPreferences {
 }
 
 /**
- * A device registered for push notifications.
+ * The wallet an Expo push token is currently registered to, alongside the redacted metadata of the device
+ * that registered it.
  */
-export interface MobileRegisteredDevice {
+export interface MobileRegisteredWallet {
+  /** Address of the wallet that owns the token's active registration. */
+  wallet: Hex;
   /** Push platform the device registered under. */
   platform: MobileNotificationPlatform;
   /** BCP-47 locale tag reported at registration, or `null` if none was provided. */
@@ -255,6 +258,6 @@ export interface MobileUpdateNotificationPreferencesParams extends MobileWithExp
 export type GetMobileNotificationPreferencesParams = MobileWithExpoTokenParams;
 
 /**
- * Params for {@link MobileClient.getRegisteredDevices}.
+ * Params for {@link MobileClient.getRegisteredWallet}.
  */
-export type GetMobileRegisteredDevicesParams = MobileSignedRequestParams;
+export type GetMobileRegisteredWalletParams = MobileWithExpoTokenParams;

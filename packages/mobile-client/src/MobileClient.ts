@@ -10,7 +10,7 @@ import {
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobilePublicProfile,
-  mapMobileRegisteredDevice,
+  mapMobileRegisteredWallet,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
@@ -22,14 +22,14 @@ import {
   GetMobileFeedParams,
   GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
-  GetMobileRegisteredDevicesParams,
+  GetMobileRegisteredWalletParams,
   GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
   MobileIdentity,
   MobileNotificationPreferences,
   MobilePublicProfile,
-  MobileRegisteredDevice,
+  MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
@@ -184,6 +184,27 @@ export class MobileClient {
     return mapMobileNotificationPreferences(data.preferences);
   }
 
+  /**
+   * Resolves the wallet that an Expo push token is currently registered to, along with the redacted metadata
+   * of the device that registered it. Unsigned — the token identifies the wallet on its own. Use it to check
+   * whether a locally held token is still active and which wallet currently owns it, since registering the
+   * same token under another wallet transfers ownership.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is malformed, or is
+   * not currently registered to a wallet — including a token that was unregistered. The backend does not
+   * distinguish those cases.
+   */
+  async getRegisteredWallet(
+    params: GetMobileRegisteredWalletParams,
+  ): Promise<MobileRegisteredWallet> {
+    const body: MobileServerPublicQueryRequest<'registered_wallet'> = {
+      type: 'registered_wallet',
+      expo_token: params.expoToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileRegisteredWallet(data);
+  }
+
   /*
   Public executes
    */
@@ -253,21 +274,6 @@ export class MobileClient {
     );
     const data = await this.query<'self_identity'>(signedRequest);
     return data.identity ? mapMobileIdentity(data.identity) : null;
-  }
-
-  /**
-   * Fetches the devices registered for push notifications for a wallet.
-   */
-  async getRegisteredDevices(
-    params: GetMobileRegisteredDevicesParams,
-  ): Promise<MobileRegisteredDevice[]> {
-    const signedRequest = await this.getSignedRequest(
-      'registered_devices',
-      params,
-      {},
-    );
-    const data = await this.query<'registered_devices'>(signedRequest);
-    return data.devices.map(mapMobileRegisteredDevice);
   }
 
   /*
