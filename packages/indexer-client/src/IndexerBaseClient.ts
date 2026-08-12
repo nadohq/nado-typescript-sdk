@@ -1007,8 +1007,9 @@ export class IndexerBaseClient {
   }
 
   /**
-   * Retrieves cash incentives information (platform volume and unlocked rewards) for a given wallet address.
-   * If no `eventId` is provided, the latest event is returned.
+   * Retrieves cash incentives information for a given wallet address: per-event platform volume,
+   * unlocked rewards, and `wallet.claim`, which carries the claim status plus the merkle proof when
+   * that status is `claimable`.
    * @param params
    */
   async getCashIncentives(
@@ -1036,6 +1037,19 @@ export class IndexerBaseClient {
         },
         wallet: {
           reward: removeDecimals(event.wallet.reward),
+          claim:
+            event.wallet.claim.status === 'claimable'
+              ? {
+                  status: 'claimable',
+                  airdropAddress: getValidatedAddress(
+                    event.wallet.claim.airdrop_address,
+                  ),
+                  week: event.wallet.claim.week,
+                  // Kept in raw token units so it can be passed to the airdrop contract unchanged
+                  totalAmount: toBigNumber(event.wallet.claim.total_amount),
+                  proof: event.wallet.claim.proof.map(getValidatedHex),
+                }
+              : { status: event.wallet.claim.status },
         },
       })),
       walletSummary: {

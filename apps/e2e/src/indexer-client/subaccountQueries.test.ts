@@ -1,4 +1,7 @@
-import { IndexerClient } from '@nadohq/indexer-client';
+import {
+  INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES,
+  IndexerClient,
+} from '@nadohq/indexer-client';
 import {
   nowInSeconds,
   QUOTE_PRODUCT_ID,
@@ -15,6 +18,7 @@ import {
   assertBigNumberFinite,
   assertBigNumberNonNegative,
   assertDefined,
+  assertEnumMember,
   assertHexString,
   assertNumber,
   assertPaginatedResponse,
@@ -605,6 +609,38 @@ void describe(
             event.wallet.reward,
             `${label}.wallet.reward`,
           );
+          const claim = event.wallet.claim;
+          const claimLabel = `${label}.wallet.claim`;
+          assertDefined(claim, claimLabel);
+          assertEnumMember(
+            claim.status,
+            INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES,
+            `${claimLabel}.status`,
+          );
+
+          // Only the `claimable` variant of the tagged union carries proof data
+          if (claim.status === 'claimable') {
+            assertHexString(
+              claim.airdropAddress,
+              `${claimLabel}.airdropAddress`,
+            );
+            assertNumber(claim.week, `${claimLabel}.week`);
+            assertBigNumberNonNegative(
+              claim.totalAmount,
+              `${claimLabel}.totalAmount`,
+            );
+            assertArray(claim.proof, `${claimLabel}.proof`);
+            assertArrayElements(
+              claim.proof,
+              assertHexString,
+              `${claimLabel}.proof`,
+            );
+          } else {
+            assert.ok(
+              !('proof' in claim),
+              `${claimLabel} should not carry proof data when status is ${claim.status}`,
+            );
+          }
         },
         'cashIncentives.events',
       );

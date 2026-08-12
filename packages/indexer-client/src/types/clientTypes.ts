@@ -21,6 +21,7 @@ import {
   NadoWithdrawCollateralV2Tx,
 } from './NadoTx';
 import {
+  IndexerServerCashIncentivesWalletStatus,
   IndexerServerFastWithdrawalSignatureParams,
   IndexerServerListSubaccountsParams,
   IndexerServerTriggerTypeFilter,
@@ -984,8 +985,54 @@ export interface IndexerCashIncentivesEventPlatform {
   unlockedReward: BigNumber;
 }
 
+/**
+ * `wallet.claim` variant carrying the data needed to build an Airdrop contract `claim` call.
+ */
+export interface IndexerCashIncentivesClaimableClaim {
+  /** Discriminant marking this claim as ready to submit onchain. */
+  status: 'claimable';
+  /** Airdrop contract holding the reward. */
+  airdropAddress: Address;
+  /**
+   * Reward event identifier within the airdrop contract. This is not the same as
+   * {@link IndexerCashIncentivesEventMetadata.eventId}, which identifies the Cash Incentives campaign.
+   */
+  week: number;
+  /**
+   * Cumulative claimable amount in raw token units, as committed to by the merkle root. Pass this to
+   * the contract unchanged; use {@link IndexerCashIncentivesEventWallet.reward} for display, since
+   * the reward token's decimals are not part of the response.
+   */
+  totalAmount: BigNumber;
+  /** Merkle proof for this wallet's reward. */
+  proof: Hex[];
+}
+
+/**
+ * `wallet.claim` variant for events with nothing to claim, which carries only the status.
+ */
+export interface IndexerCashIncentivesUnclaimableClaim {
+  /** Why there is nothing to claim yet. */
+  status: Exclude<IndexerServerCashIncentivesWalletStatus, 'claimable'>;
+}
+
+/**
+ * Always present, tagged on `status`. Only the `claimable` variant carries proof data, so narrow on
+ * `status === 'claimable'` before reading it. See
+ * {@link IndexerServerCashIncentivesWalletStatus} for the meaning of each status.
+ */
+export type IndexerCashIncentivesWalletClaim =
+  | IndexerCashIncentivesClaimableClaim
+  | IndexerCashIncentivesUnclaimableClaim;
+
 export interface IndexerCashIncentivesEventWallet {
+  /**
+   * Reward for this wallet as a decimal token amount, already converted from the x18 value the
+   * indexer returns. Populated before the reward becomes claimable.
+   */
   reward: BigNumber;
+  /** Claim state for this event, always present and tagged on `status`. */
+  claim: IndexerCashIncentivesWalletClaim;
 }
 
 export interface IndexerCashIncentivesEvent {
