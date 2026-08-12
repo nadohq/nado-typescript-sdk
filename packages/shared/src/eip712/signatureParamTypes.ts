@@ -74,7 +74,7 @@ export interface EIP712CancelProductOrdersParams extends Subaccount {
 }
 
 export interface EIP712LinkSignerParams extends Subaccount {
-  signer: Address;
+  signer: Hex;
   nonce: string;
 }
 
