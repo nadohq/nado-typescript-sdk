@@ -20,6 +20,10 @@ import {
 
 export class SpotExecuteAPI extends BaseSpotAPI {
   async deposit(params: DepositCollateralParams) {
+    if (!isWriteableContract(this.context.contracts.endpoint)) {
+      throw new WalletNotProvidedError();
+    }
+  
     return depositCollateral({
       endpoint: this.context.contracts.endpoint,
       subaccountName: params.subaccountName,
