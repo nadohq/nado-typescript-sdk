@@ -142,9 +142,8 @@ import {
 } from './types';
 
 export interface IndexerClientOpts {
-  // Server URLs
+  // Server base URL, without a version segment (ex. `https://archive.prod.nado.xyz`)
   url: string;
-  v2Url?: string;
   // Wallet Client for EIP712 signing
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
@@ -160,7 +159,9 @@ type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
  */
 export class IndexerBaseClient {
   readonly opts: IndexerClientOpts;
+  readonly v1Url: string;
   readonly v2Url: string;
+  readonly rewardsUrl: string;
   readonly axiosInstance: AxiosInstance;
 
   constructor(opts: IndexerClientOpts) {
@@ -171,7 +172,9 @@ export class IndexerBaseClient {
       validateStatus: () => true,
       headers: getNadoClientTypeHeaders(opts.clientType),
     });
-    this.v2Url = opts.v2Url ? opts.v2Url : opts.url.replace('v1', 'v2');
+    this.v1Url = `${opts.url}/v1`;
+    this.v2Url = `${opts.url}/v2`;
+    this.rewardsUrl = `${opts.url}/rewards/v1`;
   }
 
   /**
@@ -739,7 +742,7 @@ export class IndexerBaseClient {
   async getLeaderboard(
     params: GetIndexerLeaderboardParams,
   ): Promise<GetIndexerLeaderboardResponse> {
-    const baseResponse = await this.query('leaderboard', {
+    const baseResponse = await this.rewardsQuery('leaderboard', {
       contest_id: params.contestId,
       rank_type: params.rankType,
       start: params.startCursor,
@@ -760,7 +763,7 @@ export class IndexerBaseClient {
   async getLeaderboardParticipant(
     params: GetIndexerLeaderboardParticipantParams,
   ): Promise<GetIndexerLeaderboardParticipantResponse> {
-    const baseResponse = await this.query('leaderboard_rank', {
+    const baseResponse = await this.rewardsQuery('leaderboard_rank', {
       subaccount: subaccountToHex(params.subaccount),
       contest_ids: params.contestIds,
     });
@@ -804,7 +807,7 @@ export class IndexerBaseClient {
         signature,
       };
 
-    const baseResponse = await this.query('leaderboard_register', {
+    const baseResponse = await this.rewardsQuery('leaderboard_register', {
       update_registration: updateRegistrationTx,
     });
 
@@ -824,7 +827,7 @@ export class IndexerBaseClient {
   async getLeaderboardRegistrations(
     params: GetIndexerLeaderboardRegistrationsParams,
   ): Promise<GetIndexerLeaderboardRegistrationsResponse> {
-    const baseResponse = await this.query('leaderboard_registrations', {
+    const baseResponse = await this.rewardsQuery('leaderboard_registrations', {
       subaccount: subaccountToHex(params.subaccount),
       contest_ids: params.contestIds,
       active: params.active,
@@ -845,7 +848,7 @@ export class IndexerBaseClient {
   async getLeaderboardContests(
     params: GetIndexerLeaderboardContestsParams,
   ): Promise<GetIndexerLeaderboardContestsResponse> {
-    const baseResponse = await this.query('leaderboard_contests', {
+    const baseResponse = await this.rewardsQuery('leaderboard_contests', {
       contest_ids: params.contestIds,
       active: params.active,
     });
@@ -931,7 +934,7 @@ export class IndexerBaseClient {
   async getPrivateAlphaChoice(
     params: GetIndexerPrivateAlphaChoiceParams,
   ): Promise<GetIndexerPrivateAlphaChoiceResponse> {
-    const baseResponse = await this.query('private_alpha_choice', {
+    const baseResponse = await this.rewardsQuery('private_alpha_choice', {
       address: params.address,
     });
 
@@ -949,7 +952,7 @@ export class IndexerBaseClient {
   async getPoints(
     params: GetIndexerPointsParams,
   ): Promise<GetIndexerPointsResponse> {
-    const baseResponse = await this.query('nado_points', {
+    const baseResponse = await this.rewardsQuery('nado_points', {
       address: params.address,
     });
 
@@ -980,7 +983,7 @@ export class IndexerBaseClient {
   async getXPoints(
     params: GetIndexerXPointsParams,
   ): Promise<GetIndexerXPointsResponse> {
-    const baseResponse = await this.query('nado_xpoints', {
+    const baseResponse = await this.rewardsQuery('nado_xpoints', {
       address: params.address,
     });
 
@@ -1019,7 +1022,7 @@ export class IndexerBaseClient {
   async getCashIncentives(
     params: GetIndexerCashIncentivesParams,
   ): Promise<GetIndexerCashIncentivesResponse> {
-    const baseResponse = await this.query('cash_incentives', {
+    const baseResponse = await this.rewardsQuery('cash_incentives', {
       wallet_address: params.address,
     });
 
@@ -1089,7 +1092,7 @@ export class IndexerBaseClient {
       signatureParams,
     );
 
-    const baseResponse = await this.query('social_connect', {
+    const baseResponse = await this.rewardsQuery('social_connect', {
       update_social_account: { tx, signature },
     });
 
@@ -1104,7 +1107,7 @@ export class IndexerBaseClient {
   async listSocialAccounts(
     params: ListIndexerSocialAccountsParams,
   ): Promise<ListIndexerSocialAccountsResponse> {
-    const baseResponse = await this.query('list_social_accounts', {
+    const baseResponse = await this.rewardsQuery('list_social_accounts', {
       address: params.address,
     });
 
@@ -1141,7 +1144,7 @@ export class IndexerBaseClient {
       signatureParams,
     );
 
-    const baseResponse = await this.query('revoke_social_account', {
+    const baseResponse = await this.rewardsQuery('revoke_social_account', {
       update_social_account: { tx, signature },
     });
 
@@ -1196,7 +1199,28 @@ export class IndexerBaseClient {
     return mapValues(response.data, mapIndexerV2Symbols);
   }
 
-  protected async query<TRequestType extends IndexerServerQueryRequestType>(
+  protected query<TRequestType extends IndexerServerQueryRequestType>(
+    requestType: TRequestType,
+    params: IndexerServerQueryRequestByType[TRequestType],
+  ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
+    return this.queryWithUrl(this.v1Url, requestType, params);
+  }
+
+  /**
+   * Runs a query against the rewards endpoint, which serves leaderboard, points,
+   * cash incentives, private alpha, and social account queries
+   */
+  protected rewardsQuery<TRequestType extends IndexerServerQueryRequestType>(
+    requestType: TRequestType,
+    params: IndexerServerQueryRequestByType[TRequestType],
+  ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
+    return this.queryWithUrl(this.rewardsUrl, requestType, params);
+  }
+
+  private async queryWithUrl<
+    TRequestType extends IndexerServerQueryRequestType,
+  >(
+    url: string,
     requestType: TRequestType,
     params: IndexerServerQueryRequestByType[TRequestType],
   ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
@@ -1205,7 +1229,7 @@ export class IndexerBaseClient {
     };
     const response = await this.axiosInstance.post<
       IndexerServerQueryResponseByType[TRequestType]
-    >(this.opts.url, reqBody);
+    >(url, reqBody);
 
     this.checkResponseStatus(response);
 
