@@ -1,7 +1,6 @@
 import {
   getNadoClientTypeHeaders,
   getSignedTransactionRequest,
-  NadoClientType,
   SignableRequestType,
   SignableRequestTypeToParams,
   WalletClientWithAccount,
@@ -39,7 +38,7 @@ export interface EngineClientOpts {
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
   // Identifies the calling client, sent as a header with every request. Defaults to `sdk`
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 // Only 1 key can be defined per execute request

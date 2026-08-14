@@ -9,7 +9,6 @@ import {
   getNadoEIP712Values,
   getOrderNonce,
   getSignedTransactionRequest,
-  NadoClientType,
   SignableRequestType,
   SignableRequestTypeToParams,
   toIntegerString,
@@ -54,7 +53,7 @@ export interface TriggerClientOpts {
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
   // Identifies the calling client, sent as a header with every request. Defaults to `sdk`
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 /**

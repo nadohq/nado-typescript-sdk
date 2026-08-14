@@ -45,10 +45,13 @@ void describe('[client]: orders', { timeout: TEST_TIMEOUTS.LONG }, () => {
     chainId = context.chainId;
     endpointAddr = context.endpointAddr;
 
-    nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient: context.walletClient,
-      publicClient: context.publicClient,
-    });
+    nadoClient = createNadoClient(
+      { chainEnv: context.env.chainEnv },
+      {
+        walletClient: context.walletClient,
+        publicClient: context.publicClient,
+      },
+    );
 
     const markets = await context.engine.getAllMarkets();
     const oraclePrice = markets.find(

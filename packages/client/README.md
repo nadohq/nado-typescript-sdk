@@ -35,10 +35,13 @@ const walletClient = createWalletClient({
   transport: http(),
 });
 
-const client = createNadoClient('inkMainnet', {
-  publicClient,
-  walletClient,
-});
+const client = createNadoClient(
+  { chainEnv: 'inkMainnet' },
+  {
+    publicClient,
+    walletClient,
+  },
+);
 
 // Query all markets
 const markets = await client.market.getAllMarkets();
@@ -79,8 +82,8 @@ This package re-exports everything from the underlying packages, so most apps on
 ## Client Type
 
 Every request made by the client (engine, indexer, trigger, and mobile) carries an `x-nado-client-type` header
-identifying the calling client, so the backend can distinguish traffic per surface. It defaults to `sdk`; pass a
-`clientType` to override it:
+identifying the calling client, so the backend can distinguish traffic per surface. It defaults to `sdk`; pass any
+`clientType` string to override it:
 
 ```ts
 const client = createNadoClient(
@@ -97,7 +100,7 @@ const engineClient = new EngineClient({ url, walletClient, clientType: 'mobile' 
 
 ## Advanced: Custom Endpoints
 
-Pass a custom configuration object instead of a `ChainEnv` string to connect to custom endpoints:
+Pass endpoints explicitly instead of a `chainEnv` to connect to custom endpoints:
 
 ```ts
 const client = createNadoClient(

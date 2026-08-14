@@ -9,7 +9,6 @@ import {
   getValidatedAddress,
   getValidatedHex,
   mapValues,
-  NadoClientType,
   nowInSeconds,
   removeDecimals,
   SignableRequestType,
@@ -151,7 +150,7 @@ export interface IndexerClientOpts {
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
   // Identifies the calling client, sent as a header with every request. Defaults to `sdk`
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;

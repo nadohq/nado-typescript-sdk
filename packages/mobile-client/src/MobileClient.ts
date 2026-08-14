@@ -1,6 +1,5 @@
 import {
   getNadoClientTypeHeaders,
-  NadoClientType,
   subaccountToHex,
   WalletClientWithAccount,
   WalletNotProvidedError,
@@ -80,7 +79,7 @@ export interface MobileClientOpts {
   /**
    * Identifies the calling client, sent as a header with every request. Defaults to `sdk`.
    */
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 /**

@@ -1,8 +1,7 @@
 import {
   DEFAULT_NADO_CLIENT_TYPE,
   NADO_CLIENT_TYPE_HEADER,
-  NadoClientType,
-} from '../types/NadoClientType';
+} from '../consts/clientType';
 
 /**
  * Builds the default request headers identifying the calling client. Used by every service client
@@ -12,7 +11,7 @@ import {
  * @returns Headers to apply to all requests made by a service client.
  */
 export function getNadoClientTypeHeaders(
-  clientType?: NadoClientType,
+  clientType?: string,
 ): Record<string, string> {
   return {
     [NADO_CLIENT_TYPE_HEADER]: clientType ?? DEFAULT_NADO_CLIENT_TYPE,

@@ -41,10 +41,13 @@ void describe(
       const context = createTestContext();
       publicClient = context.publicClient;
       walletClientAddress = context.walletClientAddress;
-      nadoClient = createNadoClient(context.env.chainEnv, {
-        walletClient: context.walletClient,
-        publicClient: context.publicClient,
-      });
+      nadoClient = createNadoClient(
+        { chainEnv: context.env.chainEnv },
+        {
+          walletClient: context.walletClient,
+          publicClient: context.publicClient,
+        },
+      );
     });
     beforeEach(async () => {
       await delay(TEST_DELAYS.STANDARD);

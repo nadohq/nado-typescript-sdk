@@ -8,7 +8,6 @@ import {
   ChainEnv,
   NADO_ABIS,
   NADO_DEPLOYMENTS,
-  NadoClientType,
   NadoContractName,
   NadoContracts,
   NadoDeploymentAddresses,
@@ -35,7 +34,7 @@ export interface NadoClientContext {
   triggerClient: TriggerClient;
   mobileClient: MobileClient;
   // Identifies the calling client, sent as a header with every request made by the service clients above
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 /**
@@ -47,7 +46,7 @@ interface NadoClientContextOpts {
   indexerEndpoint: string;
   triggerEndpoint: string;
   mobileEndpoint: string;
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 /**
@@ -55,7 +54,7 @@ interface NadoClientContextOpts {
  */
 interface NadoClientContextChainEnvOpts {
   chainEnv: ChainEnv;
-  clientType?: NadoClientType;
+  clientType?: string;
 }
 
 /**
@@ -68,12 +67,10 @@ export type CreateNadoClientContextAccountOpts = Pick<
 
 /**
  * Args for creating a context, either fully custom endpoints or a chain env with default endpoints.
- * A bare {@link ChainEnv} is equivalent to `{ chainEnv }`.
  */
 export type CreateNadoClientContextOpts =
   | NadoClientContextOpts
-  | NadoClientContextChainEnvOpts
-  | ChainEnv;
+  | NadoClientContextChainEnvOpts;
 
 /**
  * Utility function to create client context from options
@@ -94,12 +91,11 @@ export function createClientContext(
     clientType,
   } = ((): NadoClientContextOpts => {
     // Custom endpoint options
-    if (typeof opts === 'object' && !('chainEnv' in opts)) {
+    if (!('chainEnv' in opts)) {
       return opts;
     }
 
-    const { chainEnv, clientType }: NadoClientContextChainEnvOpts =
-      typeof opts === 'object' ? opts : { chainEnv: opts };
+    const { chainEnv, clientType } = opts;
     return {
       contractAddresses: NADO_DEPLOYMENTS[chainEnv],
       engineEndpoint: ENGINE_CLIENT_ENDPOINTS[chainEnv],
