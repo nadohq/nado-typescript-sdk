@@ -25,6 +25,7 @@ export interface RunContext {
     engine: string;
     trigger: string;
     indexer: string;
+    indexerRewards: string;
     mobile: string;
   };
   contracts: NadoDeploymentAddresses;

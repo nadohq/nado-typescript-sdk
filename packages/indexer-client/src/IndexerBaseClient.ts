@@ -44,6 +44,7 @@ import {
   mapIndexerV2Ticker,
   mapSnapshotsIntervalToServerParams,
 } from './dataMappers';
+import { getIndexerRewardsUrl } from './endpoints';
 import {
   ConnectSocialAccountParams,
   ConnectSocialAccountResponse,
@@ -117,6 +118,7 @@ import {
   GetIndexerV2TickersResponse,
   GetIndexerXPointsParams,
   GetIndexerXPointsResponse,
+  INDEXER_SERVER_REWARDS_QUERY_REQUEST_TYPES,
   IndexerEventWithTx,
   IndexerMatchEvent,
   IndexerOraclePrice,
@@ -144,6 +146,8 @@ export interface IndexerClientOpts {
   // Server URLs
   url: string;
   v2Url?: string;
+  // Base URL for rewards queries, defaults to `url` with a `/rewards` path prefix
+  rewardsUrl?: string;
   // Wallet Client for EIP712 signing
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
@@ -152,12 +156,17 @@ export interface IndexerClientOpts {
 
 type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
 
+const REWARDS_QUERY_REQUEST_TYPES = new Set<IndexerServerQueryRequestType>(
+  INDEXER_SERVER_REWARDS_QUERY_REQUEST_TYPES,
+);
+
 /**
  * Base client for all indexer requests
  */
 export class IndexerBaseClient {
   readonly opts: IndexerClientOpts;
   readonly v2Url: string;
+  readonly rewardsUrl: string;
   readonly axiosInstance: AxiosInstance;
 
   constructor(opts: IndexerClientOpts) {
@@ -168,6 +177,9 @@ export class IndexerBaseClient {
       validateStatus: () => true,
     });
     this.v2Url = opts.v2Url ? opts.v2Url : opts.url.replace('v1', 'v2');
+    this.rewardsUrl = opts.rewardsUrl
+      ? opts.rewardsUrl
+      : getIndexerRewardsUrl(opts.url);
   }
 
   /**
@@ -1199,9 +1211,13 @@ export class IndexerBaseClient {
     const reqBody: IndexerQueryRequestBody = {
       [requestType]: params,
     };
+    // Rewards queries are served under a separate path prefix on the archive service
+    const url = REWARDS_QUERY_REQUEST_TYPES.has(requestType)
+      ? this.rewardsUrl
+      : this.opts.url;
     const response = await this.axiosInstance.post<
       IndexerServerQueryResponseByType[TRequestType]
-    >(this.opts.url, reqBody);
+    >(url, reqBody);
 
     this.checkResponseStatus(response);
 

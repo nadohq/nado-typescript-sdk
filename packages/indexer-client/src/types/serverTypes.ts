@@ -301,6 +301,32 @@ export type IndexerServerQueryRequestType =
   keyof IndexerServerQueryRequestByType;
 
 /**
+ * Query request types served by the archive's rewards API, which lives behind a
+ * dedicated `/rewards` path prefix. Every other request type is served by the
+ * archive's base URL.
+ */
+export const INDEXER_SERVER_REWARDS_QUERY_REQUEST_TYPES = [
+  'cash_incentives',
+  'leaderboard',
+  'leaderboard_contests',
+  'leaderboard_rank',
+  'leaderboard_register',
+  'leaderboard_registrations',
+  'list_social_accounts',
+  'nado_points',
+  'nado_xpoints',
+  'private_alpha_choice',
+  'revoke_social_account',
+  'social_connect',
+] as const satisfies readonly IndexerServerQueryRequestType[];
+
+/**
+ * Query request type served by the archive's rewards API.
+ */
+export type IndexerServerRewardsQueryRequestType =
+  (typeof INDEXER_SERVER_REWARDS_QUERY_REQUEST_TYPES)[number];
+
+/**
  * Responses
  */
 
