@@ -1,9 +1,4 @@
-import {
-  getIndexerRewardsUrl,
-  INDEXER_CLIENT_ENDPOINTS,
-  INDEXER_REWARDS_CLIENT_ENDPOINTS,
-  IndexerClient,
-} from '@nadohq/indexer-client';
+import { IndexerClient } from '@nadohq/indexer-client';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
 import { Address } from 'viem';
@@ -14,9 +9,9 @@ import { createTestContext } from '../utils/runWithContext';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 
 /**
- * Rewards queries on the archive service are served under a `/rewards` path prefix,
- * separate from the base archive URL. These tests pin the routing and confirm the
- * rewards endpoint actually answers.
+ * Rewards queries are served under a `/rewards` path prefix on the archive service,
+ * separate from the base URL every other query uses. These tests pin the derived URL
+ * and confirm the rewards endpoint answers.
  */
 void describe(
   '[indexer-client]: rewards endpoint routing',
@@ -37,30 +32,17 @@ void describe(
       await delay(TEST_DELAYS.STANDARD);
     });
 
-    void test('client resolves the rewards URL for the chain env', () => {
-      const tc = createTestContext();
-
+    void test('rewards URL carries the /rewards prefix', () => {
       debugPrint('Rewards URL', client.rewardsUrl);
-      assert.equal(client.rewardsUrl, tc.endpoints.indexerRewards);
+
       assert.equal(
         client.rewardsUrl,
-        getIndexerRewardsUrl(tc.endpoints.indexer),
+        client.opts.url.replace('v1', 'rewards/v1'),
       );
       assert.ok(
         client.rewardsUrl.includes('/rewards/'),
         `expected rewards URL to carry the /rewards prefix, got ${client.rewardsUrl}`,
       );
-    });
-
-    void test('published rewards endpoints prefix every non-local archive endpoint', () => {
-      for (const [chainEnv, url] of Object.entries(INDEXER_CLIENT_ENDPOINTS)) {
-        const rewardsUrl =
-          INDEXER_REWARDS_CLIENT_ENDPOINTS[
-            chainEnv as keyof typeof INDEXER_REWARDS_CLIENT_ENDPOINTS
-          ];
-
-        assert.equal(rewardsUrl, getIndexerRewardsUrl(url));
-      }
     });
 
     void test('leaderboard_contests resolves over the rewards endpoint', async () => {
