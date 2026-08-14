@@ -9,9 +9,9 @@ import { createTestContext } from '../utils/runWithContext';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 
 /**
- * Rewards queries are served under a `/rewards` path prefix on the archive service,
- * separate from the base URL every other query uses. These tests pin the derived URL
- * and confirm the rewards endpoint answers.
+ * Rewards queries are served under `/rewards/v1` on the archive service, separate
+ * from the `/v1` path every other query uses. These tests pin the URLs derived from
+ * the base endpoint and confirm the rewards endpoint answers.
  */
 void describe(
   '[indexer-client]: rewards endpoint routing',
@@ -32,17 +32,12 @@ void describe(
       await delay(TEST_DELAYS.STANDARD);
     });
 
-    void test('rewards URL carries the /rewards prefix', () => {
+    void test('per-API URLs derive from the base endpoint', () => {
       debugPrint('Rewards URL', client.rewardsUrl);
 
-      assert.equal(
-        client.rewardsUrl,
-        client.opts.url.replace('v1', 'rewards/v1'),
-      );
-      assert.ok(
-        client.rewardsUrl.includes('/rewards/'),
-        `expected rewards URL to carry the /rewards prefix, got ${client.rewardsUrl}`,
-      );
+      assert.equal(client.v1Url, `${client.opts.url}/v1`);
+      assert.equal(client.v2Url, `${client.opts.url}/v2`);
+      assert.equal(client.rewardsUrl, `${client.opts.url}/rewards/v1`);
     });
 
     void test('leaderboard_contests resolves over the rewards endpoint', async () => {

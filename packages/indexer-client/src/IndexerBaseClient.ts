@@ -141,8 +141,10 @@ import {
 } from './types';
 
 export interface IndexerClientOpts {
-  // Server URLs
+  // Server base URL, without a version segment (ex. `https://archive.prod.nado.xyz`)
   url: string;
+  // Per-API URLs, each defaulting to the matching path under `url`
+  v1Url?: string;
   v2Url?: string;
   rewardsUrl?: string;
   // Wallet Client for EIP712 signing
@@ -158,6 +160,7 @@ type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
  */
 export class IndexerBaseClient {
   readonly opts: IndexerClientOpts;
+  readonly v1Url: string;
   readonly v2Url: string;
   readonly rewardsUrl: string;
   readonly axiosInstance: AxiosInstance;
@@ -169,10 +172,9 @@ export class IndexerBaseClient {
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
     });
-    this.v2Url = opts.v2Url ? opts.v2Url : opts.url.replace('v1', 'v2');
-    this.rewardsUrl = opts.rewardsUrl
-      ? opts.rewardsUrl
-      : opts.url.replace('v1', 'rewards/v1');
+    this.v1Url = opts.v1Url ?? `${opts.url}/v1`;
+    this.v2Url = opts.v2Url ?? `${opts.url}/v2`;
+    this.rewardsUrl = opts.rewardsUrl ?? `${opts.url}/rewards/v1`;
   }
 
   /**
@@ -1201,7 +1203,7 @@ export class IndexerBaseClient {
     requestType: TRequestType,
     params: IndexerServerQueryRequestByType[TRequestType],
   ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
-    return this.queryWithUrl(this.opts.url, requestType, params);
+    return this.queryWithUrl(this.v1Url, requestType, params);
   }
 
   /**
