@@ -15,7 +15,6 @@ import { MobileNotificationPlatform } from '../types/serverModelTypes';
 export type MobileSignedInner =
   | { type: 'set_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }
-  | { type: 'self_identity' }
   | {
       type: 'register_expo_token';
       expo_token: string;

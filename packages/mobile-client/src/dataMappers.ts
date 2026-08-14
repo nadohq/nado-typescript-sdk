@@ -1,7 +1,6 @@
 import {
   MobileFeedPage,
   MobileFeedTrade,
-  MobileIdentity,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
   MobilePublicProfile,
@@ -9,7 +8,6 @@ import {
 } from './types/clientTypes';
 import {
   MobileServerFeedTrade,
-  MobileServerIdentity,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
@@ -18,20 +16,6 @@ import {
   MobileServerFeedResponse,
   MobileServerRegisteredWalletResponse,
 } from './types/serverQueryTypes';
-
-/**
- * Maps a server-side identity (snake_case) to its client-side (camelCase) representation.
- */
-export function mapMobileIdentity(
-  server: MobileServerIdentity,
-): MobileIdentity {
-  return {
-    subaccount: server.subaccount,
-    username: server.username,
-    displayName: server.display_name,
-    privateMode: server.private_mode,
-  };
-}
 
 /**
  * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation.

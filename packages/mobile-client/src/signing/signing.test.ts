@@ -26,8 +26,6 @@ const PINNED_HASHES = {
     '0xb4a55d9eb0be4e5c9457761c0c34c75cf39f7c07bd170700d8dd5e9c7de4a659',
   set_private_mode:
     '0x4d12a06234d751e6ddcc01d8f70836bb5b7e207e573641d1efb5aaf2b0f30d10',
-  self_identity:
-    '0x10e94c4502cade0a0b4d7469717bcc1d266fc6a3b7635236fa1d3600b58c9954',
   register_expo_token:
     '0x1b9471afc9bde66f9bffd576d3326420e1bade4e16afa3a73ddc65f27155611c',
 } as const;
@@ -50,12 +48,6 @@ describe('[mobile-client]: signing (offline)', () => {
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.set_private_mode);
-    });
-
-    it('self_identity', () => {
-      const inner: MobileSignedInner = { type: 'self_identity' };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.self_identity);
     });
 
     it('register_expo_token', () => {

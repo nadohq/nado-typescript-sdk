@@ -8,30 +8,6 @@ import {
 } from './serverModelTypes';
 
 /**
- * A subaccount's identity on the mobile service API. Every non-isolated subaccount has one implicitly, so
- * both name fields are `null` until a username is claimed — render a local fallback label in that case and
- * key lookups, links, and caches off `subaccount`.
- *
- * `username` and `displayName` are two representations of the same claimed name: `displayName` is what the
- * user entered (preserving casing, e.g. `Alice.One`), while `username` is the canonical, lowercased handle
- * derived from it (e.g. `alice.one`), unique across identities.
- */
-export interface MobileIdentity {
-  subaccount: Hex;
-  /**
-   * Canonical, lowercased handle derived from {@link MobileIdentity.displayName}, unique across identities,
-   * or `null` if no username has been claimed.
-   */
-  username: string | null;
-  /**
-   * User-facing name as claimed, preserving original casing, or `null` if no username has been claimed.
-   * Validated against `MOBILE_DISPLAY_NAME_PATTERN`.
-   */
-  displayName: string | null;
-  privateMode: boolean;
-}
-
-/**
  * A subaccount's public profile, as returned by an unsigned profile lookup. Private Mode hides the account's
  * activity, not its profile, so `privateMode` is exposed here too.
  */
@@ -200,11 +176,6 @@ export interface GetMobileFeedParams {
    */
   cursor?: string;
 }
-
-/**
- * Params for {@link MobileClient.getSelfIdentity}.
- */
-export type GetMobileSelfIdentityParams = MobileSignedRequestParams;
 
 /**
  * Params for {@link MobileClient.setUsername}.

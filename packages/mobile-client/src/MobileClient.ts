@@ -6,7 +6,6 @@ import {
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapMobileFeedPage,
-  mapMobileIdentity,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobilePublicProfile,
@@ -23,10 +22,8 @@ import {
   GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
   GetMobileRegisteredWalletParams,
-  GetMobileSelfIdentityParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
-  MobileIdentity,
   MobileNotificationPreferences,
   MobilePublicProfile,
   MobileRegisteredWallet,
@@ -47,12 +44,10 @@ import {
 import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
-  MobileServerSignedQuerySuccessResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
-  MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
 import {
   isMobileServerFailureResponse,
@@ -253,30 +248,6 @@ export class MobileClient {
   }
 
   /*
-  Signed queries
-   */
-
-  /**
-   * Fetches the caller's own identity for a subaccount. Every non-isolated subaccount has an implicit
-   * identity, so this resolves for any valid sender with `username` and `displayName` `null` until a username
-   * is claimed.
-   *
-   * @throws {MobileServerFailureError} With error code `INVALID_IDENTITY_TARGET` if the sender is in the
-   * engine-created isolated namespace, which cannot own an identity.
-   */
-  async getSelfIdentity(
-    params: GetMobileSelfIdentityParams,
-  ): Promise<MobileIdentity | null> {
-    const signedRequest = await this.getSignedRequest(
-      'self_identity',
-      params,
-      {},
-    );
-    const data = await this.query<'self_identity'>(signedRequest);
-    return data.identity ? mapMobileIdentity(data.identity) : null;
-  }
-
-  /*
   Signed executes
    */
 
@@ -354,7 +325,7 @@ export class MobileClient {
       throw new WalletNotProvidedError();
     }
 
-    const inner = { type, ...innerParams } as MobileSignedInner;
+    const inner = { type, ...innerParams } as unknown as MobileSignedInner;
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
@@ -388,21 +359,6 @@ export class MobileClient {
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
     return response.data as MobileServerSuccessResponse;
-  }
-
-  protected async query<T extends MobileServerSignedQueryRequestType>(
-    body: MobileSignedRequest,
-  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
-    const response = await this.axiosInstance.post<unknown>(
-      `${this.opts.url}/mobile/query`,
-      body,
-    );
-
-    this.checkResponseStatus(response);
-    this.checkServerStatus(response);
-
-    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   protected async execute(
