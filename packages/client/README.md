@@ -79,25 +79,6 @@ This package re-exports everything from the underlying packages, so most apps on
 - `@nadohq/mobile-client`
 - `@nadohq/shared`
 
-## Client Type
-
-Every request made by the client (engine, indexer, trigger, and mobile) carries an `x-nado-client-type` header
-identifying the calling client, so the backend can distinguish traffic per surface. It defaults to `sdk`; pass any
-`clientType` string to override it:
-
-```ts
-const client = createNadoClient(
-  { chainEnv: 'inkMainnet', clientType: 'web' },
-  { publicClient, walletClient },
-);
-```
-
-The sub-clients accept the same option when constructed directly:
-
-```ts
-const engineClient = new EngineClient({ url, walletClient, clientType: 'mobile' });
-```
-
 ## Advanced: Custom Endpoints
 
 Pass endpoints explicitly instead of a `chainEnv` to connect to custom endpoints:
@@ -110,7 +91,6 @@ const client = createNadoClient(
     indexerEndpoint: 'https://...',
     triggerEndpoint: 'https://...',
     mobileEndpoint: 'https://...',
-    clientType: 'web',
   },
   { publicClient, walletClient },
 );

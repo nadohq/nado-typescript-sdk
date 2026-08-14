@@ -3,8 +3,3 @@
  * traffic to the surface that produced it.
  */
 export const NADO_CLIENT_TYPE_HEADER = 'x-nado-client-type';
-
-/**
- * Client type used when none is given, indicating direct SDK usage.
- */
-export const DEFAULT_NADO_CLIENT_TYPE = 'sdk';

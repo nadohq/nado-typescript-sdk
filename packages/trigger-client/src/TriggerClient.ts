@@ -52,7 +52,7 @@ export interface TriggerClientOpts {
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
-  // Identifies the calling client, sent as a header with every request. Defaults to `sdk`
+  // If provided, identifies the calling client, sent as a header with every request
   clientType?: string;
 }
 

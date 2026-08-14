@@ -33,7 +33,7 @@ export interface NadoClientContext {
   indexerClient: IndexerClient;
   triggerClient: TriggerClient;
   mobileClient: MobileClient;
-  // Identifies the calling client, sent as a header with every request made by the service clients above
+  // If provided, identifies the calling client, sent as a header with every request made by the service clients above
   clientType?: string;
 }
 
