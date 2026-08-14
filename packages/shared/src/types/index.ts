@@ -5,6 +5,7 @@ export * from './ChainEnv';
 export * from './errorCodes';
 export * from './healthTypes';
 export * from './marketTypes';
+export * from './NadoClientType';
 export * from './nadoContractTypes';
 export * from './orderAppendixTypes';
 export * from './OrderExecutionType';

@@ -1,4 +1,6 @@
 import {
+  getNadoClientTypeHeaders,
+  NadoClientType,
   subaccountToHex,
   WalletClientWithAccount,
   WalletNotProvidedError,
@@ -75,6 +77,10 @@ export interface MobileClientOpts {
    * If provided, this signer is used instead of `walletClient` for all signed requests.
    */
   linkedSignerWalletClient?: WalletClientWithAccount;
+  /**
+   * Identifies the calling client, sent as a header with every request. Defaults to `sdk`.
+   */
+  clientType?: NadoClientType;
 }
 
 /**
@@ -91,6 +97,7 @@ export class MobileClient {
       withCredentials: true,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
+      headers: getNadoClientTypeHeaders(opts.clientType),
     });
   }
 
