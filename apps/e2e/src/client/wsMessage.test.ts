@@ -39,10 +39,13 @@ void describe(
       chainId = context.chainId;
       walletClientAddress = context.walletClientAddress;
 
-      nadoClient = createNadoClient(context.env.chainEnv, {
-        walletClient: context.walletClient,
-        publicClient: context.publicClient,
-      });
+      nadoClient = createNadoClient(
+        { chainEnv: context.env.chainEnv },
+        {
+          walletClient: context.walletClient,
+          publicClient: context.publicClient,
+        },
+      );
     });
 
     beforeEach(async () => {

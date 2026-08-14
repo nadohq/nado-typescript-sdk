@@ -3,6 +3,7 @@ import {
   EIP712LeaderboardAuthenticationValues,
   EIP712SocialAuthenticationParams,
   getDefaultRecvTime,
+  getNadoClientTypeHeaders,
   getNadoEIP712Values,
   getSignedTransactionRequest,
   getValidatedAddress,
@@ -148,6 +149,8 @@ export interface IndexerClientOpts {
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
+  // If provided, identifies the calling client, sent as a header with every request
+  clientType?: string;
 }
 
 type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
@@ -166,6 +169,7 @@ export class IndexerBaseClient {
       withCredentials: true,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
+      headers: getNadoClientTypeHeaders(opts.clientType),
     });
     this.v2Url = opts.v2Url ? opts.v2Url : opts.url.replace('v1', 'v2');
   }

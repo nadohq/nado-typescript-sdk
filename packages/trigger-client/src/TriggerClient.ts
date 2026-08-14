@@ -5,6 +5,7 @@ import {
   EIP712OrderParams,
   EIP712UpdateDependencyParams,
   getDefaultRecvTime,
+  getNadoClientTypeHeaders,
   getNadoEIP712Values,
   getOrderNonce,
   getSignedTransactionRequest,
@@ -51,6 +52,8 @@ export interface TriggerClientOpts {
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
+  // If provided, identifies the calling client, sent as a header with every request
+  clientType?: string;
 }
 
 /**
@@ -66,6 +69,7 @@ export class TriggerClient {
       withCredentials: true,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
+      headers: getNadoClientTypeHeaders(opts.clientType),
     });
   }
 

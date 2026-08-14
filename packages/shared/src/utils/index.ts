@@ -3,6 +3,7 @@ export * from './balanceValue';
 export * from './bytes32';
 export * from './createDeterministicLinkedSignerPrivateKey';
 export * from './errors';
+export * from './getNadoClientTypeHeaders';
 export * from './getValidatedAddress';
 export * from './getValidatedHex';
 export * from './interest';

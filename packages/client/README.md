@@ -35,10 +35,13 @@ const walletClient = createWalletClient({
   transport: http(),
 });
 
-const client = createNadoClient('inkMainnet', {
-  publicClient,
-  walletClient,
-});
+const client = createNadoClient(
+  { chainEnv: 'inkMainnet' },
+  {
+    publicClient,
+    walletClient,
+  },
+);
 
 // Query all markets
 const markets = await client.market.getAllMarkets();
@@ -78,7 +81,7 @@ This package re-exports everything from the underlying packages, so most apps on
 
 ## Advanced: Custom Endpoints
 
-Pass a custom configuration object instead of a `ChainEnv` string to connect to custom endpoints:
+Pass endpoints explicitly instead of a `chainEnv` to connect to custom endpoints:
 
 ```ts
 const client = createNadoClient(

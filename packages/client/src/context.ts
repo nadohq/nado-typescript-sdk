@@ -33,10 +33,12 @@ export interface NadoClientContext {
   indexerClient: IndexerClient;
   triggerClient: TriggerClient;
   mobileClient: MobileClient;
+  // If provided, identifies the calling client, sent as a header with every request made by the service clients above
+  clientType?: string;
 }
 
 /**
- * Args for creating a context
+ * Args for creating a context with custom endpoints
  */
 interface NadoClientContextOpts {
   contractAddresses: NadoDeploymentAddresses;
@@ -44,6 +46,15 @@ interface NadoClientContextOpts {
   indexerEndpoint: string;
   triggerEndpoint: string;
   mobileEndpoint: string;
+  clientType?: string;
+}
+
+/**
+ * Args for creating a context with the default endpoints of a chain env
+ */
+interface NadoClientContextChainEnvOpts {
+  chainEnv: ChainEnv;
+  clientType?: string;
 }
 
 /**
@@ -54,7 +65,12 @@ export type CreateNadoClientContextAccountOpts = Pick<
   'walletClient' | 'linkedSignerWalletClient' | 'publicClient'
 >;
 
-export type CreateNadoClientContextOpts = NadoClientContextOpts | ChainEnv;
+/**
+ * Args for creating a context, either fully custom endpoints or a chain env with default endpoints.
+ */
+export type CreateNadoClientContextOpts =
+  | NadoClientContextOpts
+  | NadoClientContextChainEnvOpts;
 
 /**
  * Utility function to create client context from options
@@ -72,19 +88,21 @@ export function createClientContext(
     indexerEndpoint,
     triggerEndpoint,
     mobileEndpoint,
+    clientType,
   } = ((): NadoClientContextOpts => {
-    // Custom options
-    if (typeof opts === 'object') {
+    // Custom endpoint options
+    if (!('chainEnv' in opts)) {
       return opts;
     }
 
-    const chainEnv = opts;
+    const { chainEnv, clientType } = opts;
     return {
       contractAddresses: NADO_DEPLOYMENTS[chainEnv],
       engineEndpoint: ENGINE_CLIENT_ENDPOINTS[chainEnv],
       indexerEndpoint: INDEXER_CLIENT_ENDPOINTS[chainEnv],
       triggerEndpoint: TRIGGER_CLIENT_ENDPOINTS[chainEnv],
       mobileEndpoint: MOBILE_CLIENT_ENDPOINTS[chainEnv],
+      clientType,
     };
   })();
   const { publicClient, walletClient, linkedSignerWalletClient } = accountOpts;
@@ -132,25 +150,30 @@ export function createClientContext(
       }),
     },
     contractAddresses,
+    clientType,
     engineClient: new EngineClient({
       url: engineEndpoint,
       walletClient,
       linkedSignerWalletClient,
+      clientType,
     }),
     indexerClient: new IndexerClient({
       url: indexerEndpoint,
       walletClient,
       linkedSignerWalletClient,
+      clientType,
     }),
     triggerClient: new TriggerClient({
       url: triggerEndpoint,
       walletClient,
       linkedSignerWalletClient,
+      clientType,
     }),
     mobileClient: new MobileClient({
       url: mobileEndpoint,
       walletClient,
       linkedSignerWalletClient,
+      clientType,
     }),
   };
 }

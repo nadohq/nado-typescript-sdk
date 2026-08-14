@@ -9,8 +9,14 @@ import {
  * Creates a Nado client from given options.
  * {@label CLIENT}
  *
- * @param opts
+ * @param opts - A chain env or custom endpoints.
  * @param accountOpts
+ *
+ * @example
+ * const nadoClient = createNadoClient(
+ *   { chainEnv: 'inkMainnet' },
+ *   { publicClient, walletClient },
+ * );
  */
 export function createNadoClient(
   opts: CreateNadoClientContextOpts,

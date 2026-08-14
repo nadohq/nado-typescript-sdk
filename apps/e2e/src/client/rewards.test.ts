@@ -28,19 +28,25 @@ void describe('[client]: rewards', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
 
     const context = createTestContext();
     walletClientAddress = context.walletClient.account.address;
-    nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient: context.walletClient,
-      publicClient: context.publicClient,
-    });
+    nadoClient = createNadoClient(
+      { chainEnv: context.env.chainEnv },
+      {
+        walletClient: context.walletClient,
+        publicClient: context.publicClient,
+      },
+    );
 
-    noRewardsNadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient: createWalletClient({
-        account: privateKeyToAccount(generatePrivateKey()),
-        chain: CHAIN_ENV_TO_CHAIN[context.env.chainEnv],
-        transport: http(),
-      }),
-      publicClient: context.publicClient,
-    });
+    noRewardsNadoClient = createNadoClient(
+      { chainEnv: context.env.chainEnv },
+      {
+        walletClient: createWalletClient({
+          account: privateKeyToAccount(generatePrivateKey()),
+          chain: CHAIN_ENV_TO_CHAIN[context.env.chainEnv],
+          transport: http(),
+        }),
+        publicClient: context.publicClient,
+      },
+    );
   });
 
   beforeEach(async () => {
