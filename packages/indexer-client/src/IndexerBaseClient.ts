@@ -143,10 +143,6 @@ import {
 export interface IndexerClientOpts {
   // Server base URL, without a version segment (ex. `https://archive.prod.nado.xyz`)
   url: string;
-  // Per-API URLs, each defaulting to the matching path under `url`
-  v1Url?: string;
-  v2Url?: string;
-  rewardsUrl?: string;
   // Wallet Client for EIP712 signing
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
@@ -172,9 +168,9 @@ export class IndexerBaseClient {
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
     });
-    this.v1Url = opts.v1Url ?? `${opts.url}/v1`;
-    this.v2Url = opts.v2Url ?? `${opts.url}/v2`;
-    this.rewardsUrl = opts.rewardsUrl ?? `${opts.url}/rewards/v1`;
+    this.v1Url = `${opts.url}/v1`;
+    this.v2Url = `${opts.url}/v2`;
+    this.rewardsUrl = `${opts.url}/rewards/v1`;
   }
 
   /**
