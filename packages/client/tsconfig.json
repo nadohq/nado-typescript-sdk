@@ -18,6 +18,9 @@
       "path": "../indexer-client"
     },
     {
+      "path": "../nuanze-client"
+    },
+    {
       "path": "../trigger-client"
     }
   ]

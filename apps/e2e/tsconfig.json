@@ -22,6 +22,9 @@
       "path": "../../packages/indexer-client"
     },
     {
+      "path": "../../packages/nuanze-client"
+    },
+    {
       "path": "../../packages/trigger-client"
     }
   ]

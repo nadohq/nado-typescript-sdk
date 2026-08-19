@@ -1,9 +1,9 @@
 {
-  "name": "@nadohq/client",
+  "name": "@nadohq/nuanze-client",
   "version": "0.19.1",
   "type": "module",
   "sideEffects": false,
-  "description": "Nado SDK client — unified API for trading, market data, and collateral management on Nado",
+  "description": "HTTP client for the Nuanze public analytics API — markets, wallets, trades, candles, flows, and positioning",
   "author": "Frank Jia <frank@inkfnd.com>",
   "homepage": "",
   "license": "ISC",
@@ -41,20 +41,16 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "^0.19.1",
-    "@nadohq/indexer-client": "^0.19.1",
-    "@nadohq/nuanze-client": "^0.19.1",
     "@nadohq/shared": "^0.19.1",
-    "@nadohq/trigger-client": "^0.19.1",
-    "ts-mixer": "6.0.4"
+    "axios": "1.16.1"
   },
   "peerDependencies": {
     "bignumber.js": "11.1.1",
     "viem": "2.50.4"
   },
   "devDependencies": {
+    "@jest/globals": "30.4.1",
     "bignumber.js": "11.1.1",
     "viem": "2.50.4"
-  },
-  "gitHead": "c7606b994e819a25e1bd8df874463ecb4bbfc689"
+  }
 }
