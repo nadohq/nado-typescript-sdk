@@ -7,11 +7,14 @@ import {
   EIP712LiquidateSubaccountValues,
   EIP712ListTriggerOrdersValues,
   EIP712MintNlpValues,
+  EIP712NadoAuthenticationValues,
   EIP712OrderCancellationValues,
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
   EIP712SocialAuthenticationValues,
   EIP712TransferQuoteValues,
+  EIP712UpdateDependencyValues,
+  EIP712WithdrawCollateralV2Values,
   EIP712WithdrawCollateralValues,
   SignableRequestTypeToEIP712Values,
 } from './eip712ValueTypes';
@@ -28,10 +31,13 @@ import {
   EIP712LiquidateSubaccountParams,
   EIP712ListTriggerOrdersParams,
   EIP712MintNlpParams,
+  EIP712NadoAuthenticationParams,
   EIP712OrderParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
+  EIP712UpdateDependencyParams,
   EIP712WithdrawCollateralParams,
+  EIP712WithdrawCollateralV2Params,
 } from './signatureParamTypes';
 
 /**
@@ -54,12 +60,22 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
         params as EIP712WithdrawCollateralParams,
       );
       break;
+    case 'withdraw_collateral_v2':
+      values = getWithdrawCollateralV2Values(
+        params as EIP712WithdrawCollateralV2Params,
+      );
+      break;
     case 'place_order':
       values = getOrderValues(params as EIP712OrderParams);
       break;
     case 'list_trigger_orders':
       values = getListTriggerOrdersValues(
         params as EIP712ListTriggerOrdersParams,
+      );
+      break;
+    case 'update_dependency':
+      values = getUpdateDependencyValues(
+        params as EIP712UpdateDependencyParams,
       );
       break;
     case 'cancel_orders':
@@ -97,6 +113,11 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
     case 'burn_nlp':
       values = getBurnNlpValues(params as EIP712BurnNlpParams);
       break;
+    case 'nado_authentication':
+      values = getNadoAuthenticationValues(
+        params as EIP712NadoAuthenticationParams,
+      );
+      break;
     default:
       throw new Error(`Unsupported request type: ${requestType}`);
   }
@@ -115,6 +136,22 @@ function getWithdrawCollateralValues(
     productId: params.productId,
     amount: toIntegerString(params.amount),
     nonce: params.nonce,
+  };
+}
+
+function getWithdrawCollateralV2Values(
+  params: EIP712WithdrawCollateralV2Params,
+): EIP712WithdrawCollateralV2Values {
+  return {
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    productId: params.productId,
+    amount: toIntegerString(params.amount),
+    nonce: params.nonce,
+    sendTo: params.sendTo,
+    appendix: toIntegerString(params.appendix),
   };
 }
 
@@ -141,6 +178,20 @@ function getListTriggerOrdersValues(
       subaccountOwner: params.subaccountOwner,
       subaccountName: params.subaccountName,
     }),
+  };
+}
+
+function getUpdateDependencyValues(
+  params: EIP712UpdateDependencyParams,
+): EIP712UpdateDependencyValues {
+  return {
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    oldDigest: params.oldDigest,
+    newDigest: params.newDigest,
+    nonce: params.nonce,
   };
 }
 
@@ -264,6 +315,20 @@ function getBurnNlpValues(params: EIP712BurnNlpParams): EIP712BurnNlpValues {
       subaccountName: params.subaccountName,
     }),
     nlpAmount: toIntegerString(params.nlpAmount),
+    nonce: params.nonce,
+  };
+}
+
+function getNadoAuthenticationValues(
+  params: EIP712NadoAuthenticationParams,
+): EIP712NadoAuthenticationValues {
+  return {
+    method: params.method,
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    payloadHash: params.payloadHash,
     nonce: params.nonce,
   };
 }

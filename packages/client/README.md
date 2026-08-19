@@ -1,6 +1,6 @@
 # `@nadohq/client`
 
-The main entry point for the Nado TypeScript SDK. Composes the engine, indexer, trigger, and shared packages into a single `NadoClient` with domain-specific APIs for market data, trading, collateral management, and real-time subscriptions.
+The main entry point for the Nado TypeScript SDK. Composes the engine, indexer, trigger, mobile, and shared packages into a single `NadoClient` with domain-specific APIs for market data, trading, collateral management, and real-time subscriptions.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -35,10 +35,13 @@ const walletClient = createWalletClient({
   transport: http(),
 });
 
-const client = createNadoClient('inkMainnet', {
-  publicClient,
-  walletClient,
-});
+const client = createNadoClient(
+  { chainEnv: 'inkMainnet' },
+  {
+    publicClient,
+    walletClient,
+  },
+);
 
 // Query all markets
 const markets = await client.market.getAllMarkets();
@@ -73,11 +76,12 @@ This package re-exports everything from the underlying packages, so most apps on
 - `@nadohq/engine-client`
 - `@nadohq/indexer-client`
 - `@nadohq/trigger-client`
+- `@nadohq/mobile-client`
 - `@nadohq/shared`
 
 ## Advanced: Custom Endpoints
 
-Pass a custom configuration object instead of a `ChainEnv` string to connect to custom endpoints:
+Pass endpoints explicitly instead of a `chainEnv` to connect to custom endpoints:
 
 ```ts
 const client = createNadoClient(
@@ -86,6 +90,7 @@ const client = createNadoClient(
     engineEndpoint: 'https://...',
     indexerEndpoint: 'https://...',
     triggerEndpoint: 'https://...',
+    mobileEndpoint: 'https://...',
   },
   { publicClient, walletClient },
 );

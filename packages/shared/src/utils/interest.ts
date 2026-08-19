@@ -44,10 +44,10 @@ export function calcUtilizationRatio(product: SpotProduct) {
  * interest. The calculation for interest rate is as follows:
  *
  * If utilization ratio > inflection:
- *  annual rate = (1 - utilization ratio) / (1 - inflection) * interestLargeCap + interestFloor + interestSmallCap
+ * annual rate = (utilization ratio - inflection) / (1 - inflection) * interestLargeCap + interestFloor + interestSmallCap
  *
- * If utilization ratio < inflection:
- *  annual rate = utilization * interestSmallCap / inflection + utilization
+ * If utilization ratio <= inflection:
+ * annual rate = utilization ratio * interestSmallCap / inflection + interestFloor
  *
  * The returned rate is annual rate / 31536000 seconds per year.
  *

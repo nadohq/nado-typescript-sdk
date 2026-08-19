@@ -11,7 +11,7 @@ import {
   EngineExecuteRequestParamsByType,
   EngineServerExecutePlaceOrderPayload,
   EngineServerExecuteRequestByType,
-  SignatureParams,
+  SignatureParamsOrSignature,
   WithBaseEngineExecuteParams,
   WithSignature,
 } from './types';
@@ -68,6 +68,30 @@ export class EngineExecuteBuilder {
     );
 
     const tx = getNadoEIP712Values('withdraw_collateral', paramsWithNonce);
+    return {
+      signature,
+      tx,
+      spot_leverage: clientParams.spotLeverage ?? null,
+    };
+  }
+
+  /**
+   * Builds server payload for the `withdraw_collateral_v2` execute action.
+   * @param clientParams Client WithdrawCollateralV2 params.
+   * @returns `withdraw_collateral_v2` payload
+   */
+  async buildWithdrawCollateralV2Payload(
+    clientParams: EngineExecuteRequestParamsByType['withdraw_collateral_v2'],
+  ): Promise<EngineServerExecuteRequestByType['withdraw_collateral_v2']> {
+    const nonce = await this.getTxNonceIfNeeded(clientParams);
+    const paramsWithNonce = { ...clientParams, nonce };
+
+    const signature = await this.getSignatureIfNeeded(
+      'withdraw_collateral_v2',
+      paramsWithNonce,
+    );
+
+    const tx = getNadoEIP712Values('withdraw_collateral_v2', paramsWithNonce);
     return {
       signature,
       tx,
@@ -314,7 +338,8 @@ export class EngineExecuteBuilder {
 
   protected async getSignatureIfNeeded<T extends SignableRequestType>(
     requestType: T,
-    paramsWithNonce: SignatureParams & SignableRequestTypeToParams[T],
+    paramsWithNonce: SignatureParamsOrSignature &
+      SignableRequestTypeToParams[T],
   ) {
     if ('signature' in paramsWithNonce) {
       return paramsWithNonce.signature;

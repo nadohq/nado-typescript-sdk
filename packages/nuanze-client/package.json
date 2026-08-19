@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/nuanze-client",
-  "version": "0.19.1",
+  "version": "0.36.0",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nuanze public analytics API - markets, wallets, trades, candles, flows, and positioning",
@@ -41,16 +41,16 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.19.1",
+    "@nadohq/shared": "^0.36.0",
     "axios": "1.16.1"
   },
   "peerDependencies": {
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "devDependencies": {
     "@jest/globals": "30.4.1",
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   }
 }

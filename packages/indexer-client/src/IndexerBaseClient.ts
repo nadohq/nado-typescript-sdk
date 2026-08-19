@@ -3,6 +3,7 @@ import {
   EIP712LeaderboardAuthenticationValues,
   EIP712SocialAuthenticationParams,
   getDefaultRecvTime,
+  getNadoClientTypeHeaders,
   getNadoEIP712Values,
   getSignedTransactionRequest,
   getValidatedAddress,
@@ -27,6 +28,7 @@ import {
   mapIndexerEvent,
   mapIndexerEventWithTx,
   mapIndexerFundingRate,
+  mapIndexerFundingRateHistory,
   mapIndexerLeaderboardContest,
   mapIndexerLeaderboardPosition,
   mapIndexerLeaderboardRegistration,
@@ -36,6 +38,7 @@ import {
   mapIndexerNlpSnapshot,
   mapIndexerOrder,
   mapIndexerPerpPrices,
+  mapIndexerPortfolio,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
   mapIndexerV2Symbols,
@@ -48,6 +51,8 @@ import {
   GetIndexerBacklogResponse,
   GetIndexerCandlesticksParams,
   GetIndexerCandlesticksResponse,
+  GetIndexerCashIncentivesParams,
+  GetIndexerCashIncentivesResponse,
   GetIndexerEdgeCandlesticksParams,
   GetIndexerEdgeCandlesticksResponse,
   GetIndexerEdgeMarketSnapshotResponse,
@@ -56,6 +61,8 @@ import {
   GetIndexerEventsResponse,
   GetIndexerFastWithdrawalSignatureParams,
   GetIndexerFastWithdrawalSignatureResponse,
+  GetIndexerFundingRateHistoryParams,
+  GetIndexerFundingRateHistoryResponse,
   GetIndexerFundingRateParams,
   GetIndexerFundingRateResponse,
   GetIndexerInterestFundingPaymentsParams,
@@ -94,6 +101,8 @@ import {
   GetIndexerPerpPricesResponse,
   GetIndexerPointsParams,
   GetIndexerPointsResponse,
+  GetIndexerPortfolioParams,
+  GetIndexerPortfolioResponse,
   GetIndexerPrivateAlphaChoiceParams,
   GetIndexerPrivateAlphaChoiceResponse,
   GetIndexerProductSnapshotsParams,
@@ -107,10 +116,13 @@ import {
   GetIndexerV2SymbolsResponse,
   GetIndexerV2TickersParams,
   GetIndexerV2TickersResponse,
+  GetIndexerXPointsParams,
+  GetIndexerXPointsResponse,
   IndexerEventWithTx,
   IndexerMatchEvent,
   IndexerOraclePrice,
   IndexerServerEventsParams,
+  IndexerServerFailureError,
   IndexerServerQueryRequestByType,
   IndexerServerQueryRequestType,
   IndexerServerQueryResponseByType,
@@ -118,6 +130,7 @@ import {
   IndexerServerV2TickersResponse,
   IndexerSnapshotBalance,
   IndexerSubaccountSnapshot,
+  isIndexerServerFailureResponse,
   ListIndexerSocialAccountsParams,
   ListIndexerSocialAccountsResponse,
   ListIndexerSubaccountsParams,
@@ -129,13 +142,14 @@ import {
 } from './types';
 
 export interface IndexerClientOpts {
-  // Server URLs
+  // Server base URL, without a version segment (ex. `https://archive.prod.nado.xyz`)
   url: string;
-  v2Url?: string;
   // Wallet Client for EIP712 signing
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
+  // If provided, identifies the calling client, sent as a header with every request
+  clientType?: string;
 }
 
 type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
@@ -145,7 +159,9 @@ type IndexerQueryRequestBody = Partial<IndexerServerQueryRequestByType>;
  */
 export class IndexerBaseClient {
   readonly opts: IndexerClientOpts;
+  readonly v1Url: string;
   readonly v2Url: string;
+  readonly rewardsUrl: string;
   readonly axiosInstance: AxiosInstance;
 
   constructor(opts: IndexerClientOpts) {
@@ -154,8 +170,11 @@ export class IndexerBaseClient {
       withCredentials: true,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
+      headers: getNadoClientTypeHeaders(opts.clientType),
     });
-    this.v2Url = opts.v2Url ? opts.v2Url : opts.url.replace('v1', 'v2');
+    this.v1Url = `${opts.url}/v1`;
+    this.v2Url = `${opts.url}/v2`;
+    this.rewardsUrl = `${opts.url}/rewards/v1`;
   }
 
   /**
@@ -285,6 +304,50 @@ export class IndexerBaseClient {
     });
 
     return mapValues(baseResponse, mapIndexerFundingRate);
+  }
+
+  /**
+   * Retrieves a perp product's historical (realized hourly) funding rates,
+   * ordered ascending by timestamp, where 1 = 100%.
+   *
+   * To paginate forward, pass the last entry's `timestamp + 1` as the next
+   * request's `startTimeInclusive`.
+   *
+   * @param params
+   */
+  async getFundingRateHistory(
+    params: GetIndexerFundingRateHistoryParams,
+  ): Promise<GetIndexerFundingRateHistoryResponse> {
+    const baseResponse = await this.query('funding_rate_history', {
+      product_id: params.productId,
+      start_time: params.startTimeInclusive,
+      end_time: params.endTimeInclusive,
+      limit: params.limit,
+    });
+
+    return baseResponse.funding_rates.map(mapIndexerFundingRateHistory);
+  }
+
+  /**
+   * Retrieves a subaccount's account-value, PnL, traded-volume, average-trade-size,
+   * and markets-traded history across all timeframes, keyed by period. The value
+   * aggregates the cross-margin account plus every isolated child; the queried
+   * subaccount must be cross-margin.
+   *
+   * Points are downsampled per timeframe, so the most recent point can be up to
+   * ~20 minutes stale. For the exact live value, use the engine client's
+   * `getSubaccountSummary` query instead.
+   *
+   * @param params
+   */
+  async getPortfolio(
+    params: GetIndexerPortfolioParams,
+  ): Promise<GetIndexerPortfolioResponse> {
+    const baseResponse = await this.query('portfolio', {
+      subaccount: subaccountToHex(params.subaccount),
+    });
+
+    return mapIndexerPortfolio(baseResponse);
   }
 
   /**
@@ -679,7 +742,7 @@ export class IndexerBaseClient {
   async getLeaderboard(
     params: GetIndexerLeaderboardParams,
   ): Promise<GetIndexerLeaderboardResponse> {
-    const baseResponse = await this.query('leaderboard', {
+    const baseResponse = await this.rewardsQuery('leaderboard', {
       contest_id: params.contestId,
       rank_type: params.rankType,
       start: params.startCursor,
@@ -700,7 +763,7 @@ export class IndexerBaseClient {
   async getLeaderboardParticipant(
     params: GetIndexerLeaderboardParticipantParams,
   ): Promise<GetIndexerLeaderboardParticipantResponse> {
-    const baseResponse = await this.query('leaderboard_rank', {
+    const baseResponse = await this.rewardsQuery('leaderboard_rank', {
       subaccount: subaccountToHex(params.subaccount),
       contest_ids: params.contestIds,
     });
@@ -744,7 +807,7 @@ export class IndexerBaseClient {
         signature,
       };
 
-    const baseResponse = await this.query('leaderboard_register', {
+    const baseResponse = await this.rewardsQuery('leaderboard_register', {
       update_registration: updateRegistrationTx,
     });
 
@@ -764,7 +827,7 @@ export class IndexerBaseClient {
   async getLeaderboardRegistrations(
     params: GetIndexerLeaderboardRegistrationsParams,
   ): Promise<GetIndexerLeaderboardRegistrationsResponse> {
-    const baseResponse = await this.query('leaderboard_registrations', {
+    const baseResponse = await this.rewardsQuery('leaderboard_registrations', {
       subaccount: subaccountToHex(params.subaccount),
       contest_ids: params.contestIds,
       active: params.active,
@@ -785,7 +848,7 @@ export class IndexerBaseClient {
   async getLeaderboardContests(
     params: GetIndexerLeaderboardContestsParams,
   ): Promise<GetIndexerLeaderboardContestsResponse> {
-    const baseResponse = await this.query('leaderboard_contests', {
+    const baseResponse = await this.rewardsQuery('leaderboard_contests', {
       contest_ids: params.contestIds,
       active: params.active,
     });
@@ -807,6 +870,7 @@ export class IndexerBaseClient {
     return {
       idx: toBigInt(baseResponse.idx),
       tx: baseResponse.tx,
+      txV2: baseResponse.tx_v2,
       txBytes: getValidatedHex(baseResponse.tx_bytes),
       signatures: baseResponse.signatures.map(getValidatedHex),
     };
@@ -870,7 +934,7 @@ export class IndexerBaseClient {
   async getPrivateAlphaChoice(
     params: GetIndexerPrivateAlphaChoiceParams,
   ): Promise<GetIndexerPrivateAlphaChoiceResponse> {
-    const baseResponse = await this.query('private_alpha_choice', {
+    const baseResponse = await this.rewardsQuery('private_alpha_choice', {
       address: params.address,
     });
 
@@ -888,7 +952,7 @@ export class IndexerBaseClient {
   async getPoints(
     params: GetIndexerPointsParams,
   ): Promise<GetIndexerPointsResponse> {
-    const baseResponse = await this.query('nado_points', {
+    const baseResponse = await this.rewardsQuery('nado_points', {
       address: params.address,
     });
 
@@ -907,6 +971,99 @@ export class IndexerBaseClient {
         points: toBigNumber(baseResponse.all_time_points.points),
         rank: baseResponse.all_time_points.rank,
         tier: baseResponse.all_time_points.tier,
+      },
+    };
+  }
+
+  /**
+   * Retrieves xPoints information (Nado x xStocks points program) for a given address,
+   * including per-epoch points, all-time points, and per-quest breakdowns.
+   * @param params
+   */
+  async getXPoints(
+    params: GetIndexerXPointsParams,
+  ): Promise<GetIndexerXPointsResponse> {
+    const baseResponse = await this.rewardsQuery('nado_xpoints', {
+      address: params.address,
+    });
+
+    const mapQuests = (
+      quests: typeof baseResponse.all_time_points.quests,
+    ): GetIndexerXPointsResponse['allTimePoints']['quests'] =>
+      quests.map((quest) => ({
+        questType: quest.quest_type,
+        points: toBigNumber(quest.points),
+      }));
+
+    return {
+      pointsPerEpoch: baseResponse.points_per_epoch.map((epoch) => ({
+        epoch: epoch.epoch,
+        description: epoch.description,
+        startTime: toBigNumber(epoch.start_time),
+        endTime: toBigNumber(epoch.end_time),
+        totalPoints: toBigNumber(epoch.total_points),
+        rank: epoch.rank,
+        quests: mapQuests(epoch.quests),
+      })),
+      allTimePoints: {
+        totalPoints: toBigNumber(baseResponse.all_time_points.total_points),
+        rank: baseResponse.all_time_points.rank,
+        quests: mapQuests(baseResponse.all_time_points.quests),
+      },
+    };
+  }
+
+  /**
+   * Retrieves cash incentives information for a given wallet address: per-event platform volume,
+   * unlocked rewards, and `wallet.claim`, which carries the claim status plus the merkle proof when
+   * that status is `claimable`.
+   * @param params
+   */
+  async getCashIncentives(
+    params: GetIndexerCashIncentivesParams,
+  ): Promise<GetIndexerCashIncentivesResponse> {
+    const baseResponse = await this.rewardsQuery('cash_incentives', {
+      wallet_address: params.address,
+    });
+
+    return {
+      events: baseResponse.events.map((event) => ({
+        metadata: {
+          eventId: event.metadata.event_id,
+          description: event.metadata.description,
+          epochStart: toBigNumber(event.metadata.epoch_start),
+          epochEnd: toBigNumber(event.metadata.epoch_end),
+          maxVolume: removeDecimals(event.metadata.max_volume),
+          maxReward: removeDecimals(event.metadata.max_reward),
+          minVolume: removeDecimals(event.metadata.min_volume),
+          minReward: removeDecimals(event.metadata.min_reward),
+        },
+        platform: {
+          platformVolume: removeDecimals(event.platform.platform_volume),
+          unlockedReward: removeDecimals(event.platform.unlocked_reward),
+        },
+        wallet: {
+          reward: removeDecimals(event.wallet.reward),
+          claim:
+            event.wallet.claim.status === 'claimable'
+              ? {
+                  status: 'claimable',
+                  airdropAddress: getValidatedAddress(
+                    event.wallet.claim.airdrop_address,
+                  ),
+                  week: event.wallet.claim.week,
+                  // Kept in raw token units so it can be passed to the airdrop contract unchanged
+                  totalAmount: toBigNumber(event.wallet.claim.total_amount),
+                  proof: event.wallet.claim.proof.map(getValidatedHex),
+                }
+              : { status: event.wallet.claim.status },
+        },
+      })),
+      walletSummary: {
+        totalReward: removeDecimals(baseResponse.wallet_summary.total_reward),
+        claimableReward: removeDecimals(
+          baseResponse.wallet_summary.claimable_reward,
+        ),
       },
     };
   }
@@ -935,7 +1092,7 @@ export class IndexerBaseClient {
       signatureParams,
     );
 
-    const baseResponse = await this.query('social_connect', {
+    const baseResponse = await this.rewardsQuery('social_connect', {
       update_social_account: { tx, signature },
     });
 
@@ -950,7 +1107,7 @@ export class IndexerBaseClient {
   async listSocialAccounts(
     params: ListIndexerSocialAccountsParams,
   ): Promise<ListIndexerSocialAccountsResponse> {
-    const baseResponse = await this.query('list_social_accounts', {
+    const baseResponse = await this.rewardsQuery('list_social_accounts', {
       address: params.address,
     });
 
@@ -987,7 +1144,7 @@ export class IndexerBaseClient {
       signatureParams,
     );
 
-    const baseResponse = await this.query('revoke_social_account', {
+    const baseResponse = await this.rewardsQuery('revoke_social_account', {
       update_social_account: { tx, signature },
     });
 
@@ -1042,7 +1199,28 @@ export class IndexerBaseClient {
     return mapValues(response.data, mapIndexerV2Symbols);
   }
 
-  protected async query<TRequestType extends IndexerServerQueryRequestType>(
+  protected query<TRequestType extends IndexerServerQueryRequestType>(
+    requestType: TRequestType,
+    params: IndexerServerQueryRequestByType[TRequestType],
+  ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
+    return this.queryWithUrl(this.v1Url, requestType, params);
+  }
+
+  /**
+   * Runs a query against the rewards endpoint, which serves leaderboard, points,
+   * cash incentives, private alpha, and social account queries
+   */
+  protected rewardsQuery<TRequestType extends IndexerServerQueryRequestType>(
+    requestType: TRequestType,
+    params: IndexerServerQueryRequestByType[TRequestType],
+  ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
+    return this.queryWithUrl(this.rewardsUrl, requestType, params);
+  }
+
+  private async queryWithUrl<
+    TRequestType extends IndexerServerQueryRequestType,
+  >(
+    url: string,
     requestType: TRequestType,
     params: IndexerServerQueryRequestByType[TRequestType],
   ): Promise<IndexerServerQueryResponseByType[TRequestType]> {
@@ -1051,7 +1229,7 @@ export class IndexerBaseClient {
     };
     const response = await this.axiosInstance.post<
       IndexerServerQueryResponseByType[TRequestType]
-    >(this.opts.url, reqBody);
+    >(url, reqBody);
 
     this.checkResponseStatus(response);
 
@@ -1081,6 +1259,9 @@ export class IndexerBaseClient {
   }
 
   private checkResponseStatus(response: AxiosResponse) {
+    if (isIndexerServerFailureResponse(response.data)) {
+      throw new IndexerServerFailureError(response.data, response.status);
+    }
     if (response.status !== 200 || !response.data) {
       throw Error(
         `Unexpected response from server: ${response.status} ${response.statusText}`,

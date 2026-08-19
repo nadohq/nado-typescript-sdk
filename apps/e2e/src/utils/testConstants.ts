@@ -18,6 +18,19 @@ export const TEST_PRODUCT_ID_LIST: number[] = Object.values(TEST_PRODUCT_IDS);
 export const TEST_SUBACCOUNT_NAME = 'default';
 
 /**
+ * Subaccount name landing in the engine-created isolated namespace, which cannot own a mobile identity or
+ * public profile. A subaccount is isolated when the final three bytes of its bytes32 are ASCII `iso`; names
+ * are right-padded to 12 bytes, so the name must be exactly 12 characters and end in `iso`.
+ */
+export const TEST_ISOLATED_SUBACCOUNT_NAME = 'e2etestxxiso';
+
+/**
+ * Second subaccount of the same owner, used to exercise cross-subaccount conflicts (mobile usernames are
+ * unique globally, not per subaccount) while still signing with the one wallet the E2E suite has.
+ */
+export const TEST_SECONDARY_SUBACCOUNT_NAME = 'e2esecond';
+
+/**
  * Contest IDs known to exist on the testnet leaderboard.
  * These may go stale if testnet state is reset.
  *

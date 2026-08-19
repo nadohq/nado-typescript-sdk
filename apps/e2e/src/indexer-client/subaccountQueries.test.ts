@@ -1,4 +1,7 @@
-import { IndexerClient } from '@nadohq/indexer-client';
+import {
+  INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES,
+  IndexerClient,
+} from '@nadohq/indexer-client';
 import {
   nowInSeconds,
   QUOTE_PRODUCT_ID,
@@ -15,6 +18,7 @@ import {
   assertBigNumberFinite,
   assertBigNumberNonNegative,
   assertDefined,
+  assertEnumMember,
   assertHexString,
   assertNumber,
   assertPaginatedResponse,
@@ -82,6 +86,66 @@ void describe(
       }
     });
 
+    void test('getPortfolio returns all series across timeframes', async () => {
+      const portfolio = await client.getPortfolio({ subaccount });
+
+      debugPrint('Portfolio', portfolio);
+      assertDefined(portfolio, 'portfolio');
+
+      const periods = [
+        'day',
+        'week',
+        'month',
+        'allTime',
+        'perpDay',
+        'perpWeek',
+        'perpMonth',
+        'perpAllTime',
+      ] as const;
+
+      const series = [
+        'accountValueHistory',
+        'pnlHistory',
+        'volumeHistory',
+        'tradeSizeHistory',
+        'marketCountHistory',
+      ] as const;
+
+      for (const period of periods) {
+        const history = portfolio[period];
+        assertDefined(history, `portfolio.${period}`);
+
+        for (const key of series) {
+          assertArray(history[key], `portfolio.${period}.${key}`);
+          assertArrayElements(
+            history[key],
+            (point, label) => {
+              assertBigNumberFinite(point.timestamp, `${label}.timestamp`);
+              assertBigNumberFinite(point.value, `${label}.value`);
+            },
+            `portfolio.${period}.${key}`,
+          );
+        }
+
+        // All series are aligned: same length, same timestamps.
+        const { accountValueHistory } = history;
+        for (const key of series) {
+          assert.equal(
+            history[key].length,
+            accountValueHistory.length,
+            `portfolio.${period}.${key} should have the same length as accountValueHistory`,
+          );
+          history[key].forEach((point, idx) => {
+            assert.equal(
+              point.timestamp.toString(),
+              accountValueHistory[idx]?.timestamp.toString(),
+              `portfolio.${period}.${key}[${idx}].timestamp should match accountValueHistory[${idx}].timestamp`,
+            );
+          });
+        }
+      }
+    });
+
     void test('getLinkedSignerWithRateLimit returns signer info', async () => {
       const linkedSigner = await client.getLinkedSignerWithRateLimit({
         subaccount,
@@ -120,7 +184,11 @@ void describe(
 
     void test('getEvents returns deposit/withdraw collateral events', async () => {
       const events = await client.getEvents({
-        eventTypes: ['deposit_collateral', 'withdraw_collateral'],
+        eventTypes: [
+          'deposit_collateral',
+          'withdraw_collateral',
+          'withdraw_collateral_v2',
+        ],
         limit: {
           type: 'txs',
           value: 1,
@@ -292,7 +360,7 @@ void describe(
           maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
           subaccountName: subaccount.subaccountName,
           subaccountOwner: subaccount.subaccountOwner,
-          eventTypes: ['withdraw_collateral'],
+          eventTypes: ['withdraw_collateral', 'withdraw_collateral_v2'],
         });
 
       debugPrint('Paginated withdrawal events', withdrawEvents);
@@ -331,7 +399,7 @@ void describe(
             maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
             subaccountName: subaccount.subaccountName,
             subaccountOwner: subaccount.subaccountOwner,
-            eventTypes: ['withdraw_collateral'],
+            eventTypes: ['withdraw_collateral', 'withdraw_collateral_v2'],
           });
 
         if (withdrawEvents.events.length === 0) {
@@ -383,7 +451,7 @@ void describe(
 
     void test('getFastWithdrawalSignature returns a signature for a recent withdrawal', async () => {
       const latestWithdrawal = await client.getEvents({
-        eventTypes: ['withdraw_collateral'],
+        eventTypes: ['withdraw_collateral_v2'],
         // Query an older event such that the fast withdrawal signature is available
         maxTimestampInclusive: nowInSeconds() - TimeInSeconds.DAY,
         limit: {
@@ -434,6 +502,160 @@ void describe(
           assertNumber(epoch.rank, `${label}.rank`);
         },
         'points.pointsPerEpoch',
+      );
+    });
+
+    void test('getXPoints returns xPoints for the wallet address', async () => {
+      const xPoints = await client.getXPoints({
+        address: subaccount.subaccountOwner as Address,
+      });
+
+      debugPrint('XPoints', xPoints);
+      assertDefined(xPoints, 'xPoints');
+      assertDefined(xPoints.allTimePoints, 'xPoints.allTimePoints');
+      assertBigNumberFinite(
+        xPoints.allTimePoints.totalPoints,
+        'xPoints.allTimePoints.totalPoints',
+      );
+      assertNumber(xPoints.allTimePoints.rank, 'xPoints.allTimePoints.rank');
+      assertArray(xPoints.allTimePoints.quests, 'xPoints.allTimePoints.quests');
+      assertArrayElements(
+        xPoints.allTimePoints.quests,
+        (quest, label) => {
+          assertString(quest.questType, `${label}.questType`);
+          assertBigNumberFinite(quest.points, `${label}.points`);
+        },
+        'xPoints.allTimePoints.quests',
+      );
+      assertArray(xPoints.pointsPerEpoch, 'xPoints.pointsPerEpoch');
+      assertArrayElements(
+        xPoints.pointsPerEpoch,
+        (epoch, label) => {
+          assertNumber(epoch.epoch, `${label}.epoch`);
+          assertString(epoch.description, `${label}.description`);
+          assertBigNumberFinite(epoch.startTime, `${label}.startTime`);
+          assertBigNumberFinite(epoch.endTime, `${label}.endTime`);
+          assertBigNumberFinite(epoch.totalPoints, `${label}.totalPoints`);
+          assertNumber(epoch.rank, `${label}.rank`);
+          assertArray(epoch.quests, `${label}.quests`);
+          assertArrayElements(
+            epoch.quests,
+            (quest, questLabel) => {
+              assertString(quest.questType, `${questLabel}.questType`);
+              assertBigNumberFinite(quest.points, `${questLabel}.points`);
+            },
+            `${label}.quests`,
+          );
+        },
+        'xPoints.pointsPerEpoch',
+      );
+    });
+
+    void test('getCashIncentives returns platform volume and rewards per event', async () => {
+      const cashIncentives = await client.getCashIncentives({
+        address: subaccount.subaccountOwner as Address,
+      });
+
+      debugPrint('CashIncentives', cashIncentives);
+      assertDefined(cashIncentives, 'cashIncentives');
+
+      assertArray(cashIncentives.events, 'cashIncentives.events');
+      assertArrayElements(
+        cashIncentives.events,
+        (event, label) => {
+          assertDefined(event.metadata, `${label}.metadata`);
+          assertNumber(event.metadata.eventId, `${label}.metadata.eventId`);
+          assertString(
+            event.metadata.description,
+            `${label}.metadata.description`,
+          );
+          assertBigNumberFinite(
+            event.metadata.epochStart,
+            `${label}.metadata.epochStart`,
+          );
+          assertBigNumberFinite(
+            event.metadata.epochEnd,
+            `${label}.metadata.epochEnd`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.maxVolume,
+            `${label}.metadata.maxVolume`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.maxReward,
+            `${label}.metadata.maxReward`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.minVolume,
+            `${label}.metadata.minVolume`,
+          );
+          assertBigNumberNonNegative(
+            event.metadata.minReward,
+            `${label}.metadata.minReward`,
+          );
+
+          assertDefined(event.platform, `${label}.platform`);
+          assertBigNumberNonNegative(
+            event.platform.platformVolume,
+            `${label}.platform.platformVolume`,
+          );
+          assertBigNumberNonNegative(
+            event.platform.unlockedReward,
+            `${label}.platform.unlockedReward`,
+          );
+
+          assertDefined(event.wallet, `${label}.wallet`);
+          assertBigNumberNonNegative(
+            event.wallet.reward,
+            `${label}.wallet.reward`,
+          );
+          const claim = event.wallet.claim;
+          const claimLabel = `${label}.wallet.claim`;
+          assertDefined(claim, claimLabel);
+          assertEnumMember(
+            claim.status,
+            INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES,
+            `${claimLabel}.status`,
+          );
+
+          // Only the `claimable` variant of the tagged union carries proof data
+          if (claim.status === 'claimable') {
+            assertHexString(
+              claim.airdropAddress,
+              `${claimLabel}.airdropAddress`,
+            );
+            assertNumber(claim.week, `${claimLabel}.week`);
+            assertBigNumberNonNegative(
+              claim.totalAmount,
+              `${claimLabel}.totalAmount`,
+            );
+            assertArray(claim.proof, `${claimLabel}.proof`);
+            assertArrayElements(
+              claim.proof,
+              assertHexString,
+              `${claimLabel}.proof`,
+            );
+          } else {
+            assert.ok(
+              !('proof' in claim),
+              `${claimLabel} should not carry proof data when status is ${claim.status}`,
+            );
+          }
+        },
+        'cashIncentives.events',
+      );
+
+      assertDefined(
+        cashIncentives.walletSummary,
+        'cashIncentives.walletSummary',
+      );
+      assertBigNumberNonNegative(
+        cashIncentives.walletSummary.totalReward,
+        'cashIncentives.walletSummary.totalReward',
+      );
+      assertBigNumberNonNegative(
+        cashIncentives.walletSummary.claimableReward,
+        'cashIncentives.walletSummary.claimableReward',
       );
     });
   },

@@ -12,6 +12,7 @@ import {
 } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, beforeEach, describe, test } from 'node:test';
+import { zeroAddress } from 'viem';
 import { assertDefined } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
@@ -38,10 +39,13 @@ void describe(
       chainId = context.chainId;
       walletClientAddress = context.walletClientAddress;
 
-      nadoClient = createNadoClient(context.env.chainEnv, {
-        walletClient: context.walletClient,
-        publicClient: context.publicClient,
-      });
+      nadoClient = createNadoClient(
+        { chainEnv: context.env.chainEnv },
+        {
+          walletClient: context.walletClient,
+          publicClient: context.publicClient,
+        },
+      );
     });
 
     beforeEach(async () => {
@@ -130,6 +134,22 @@ void describe(
 
         debugPrint('Withdraw Collateral WS request', result);
         assertDefined(result, 'withdrawCollateralMessage');
+      });
+
+      void test('buildWithdrawCollateralV2Message returns a valid message', async () => {
+        const result =
+          await nadoClient.ws.execute.buildWithdrawCollateralV2Message({
+            subaccountOwner: walletClientAddress,
+            subaccountName: TEST_SUBACCOUNT_NAME,
+            productId: QUOTE_PRODUCT_ID,
+            amount: addDecimals(4999),
+            sendTo: zeroAddress,
+            appendix: 0,
+            signature: '',
+          });
+
+        debugPrint('Withdraw Collateral V2 WS request', result);
+        assertDefined(result, 'withdrawCollateralV2Message');
       });
     });
 

@@ -8,6 +8,8 @@ import {
   EIP712OrderParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
+  EIP712WithdrawCollateralV2Params,
+  SignatureParams,
 } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { EngineServerExecuteSuccessResult } from './serverExecuteTypes';
@@ -16,12 +18,8 @@ import { EngineServerExecuteSuccessResult } from './serverExecuteTypes';
  * Either verifying address or signature must be provided;
  * If signature is not provided, the verifying address with the engine signer will be used to sign.
  */
-export type SignatureParams =
-  | {
-      // Endpoint address for all executes except order placement
-      verifyingAddr: string;
-      chainId: number;
-    }
+export type SignatureParamsOrSignature =
+  | SignatureParams
   | {
       signature: string;
     };
@@ -37,7 +35,7 @@ export type WithSignature<T> = T & {
 };
 
 // Params associated with all engine executes
-export type WithBaseEngineExecuteParams<T> = SignatureParams &
+export type WithBaseEngineExecuteParams<T> = SignatureParamsOrSignature &
   Omit<T, 'nonce'> & {
     nonce?: string;
   };
@@ -59,6 +57,10 @@ export type EngineLiquidateSubaccountParams =
 
 export type EngineWithdrawCollateralParams = WithBaseEngineExecuteParams<
   WithSpotLeverage<EIP712WithdrawCollateralParams>
+>;
+
+export type EngineWithdrawCollateralV2Params = WithBaseEngineExecuteParams<
+  WithSpotLeverage<EIP712WithdrawCollateralV2Params>
 >;
 
 export type EngineCancelOrdersParams =
@@ -123,6 +125,7 @@ export interface EngineExecuteRequestParamsByType {
   place_orders: EnginePlaceOrdersParams;
   transfer_quote: EngineTransferQuoteParams;
   withdraw_collateral: EngineWithdrawCollateralParams;
+  withdraw_collateral_v2: EngineWithdrawCollateralV2Params;
 }
 
 export type EnginePlaceOrderResult =

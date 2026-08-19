@@ -83,6 +83,11 @@ export interface IndexerServerEvent {
    * Total traded volume in terms of the primary quote (i.e in terms of USDT) for this product
    */
   quote_volume_cumulative: string;
+  /**
+   * Total number of fills for this subaccount + product, as an integer string.
+   * Events indexed before this field existed report `0`.
+   */
+  cumulative_trade_count: string;
 }
 
 export interface IndexerServerTx {
@@ -260,7 +265,11 @@ export interface IndexerServerSocialAccount {
 export interface IndexerServerLeaderboardTrackPosition {
   value: string;
   rank: string;
-  qualification_status: 'qualified' | 'insufficient_account_value';
+  qualification_status:
+    | 'qualified'
+    | 'insufficient_account_value'
+    | 'insufficient_volume'
+    | 'insufficient_account_value_and_volume';
 }
 
 export interface IndexerServerLeaderboardContestTrack {
@@ -268,6 +277,7 @@ export interface IndexerServerLeaderboardContestTrack {
   rank_type: IndexerLeaderboardRankType;
   sort_order: 'ASC' | 'DESC';
   threshold: string;
+  volume_threshold: string;
 }
 
 export interface IndexerServerLeaderboardPosition {

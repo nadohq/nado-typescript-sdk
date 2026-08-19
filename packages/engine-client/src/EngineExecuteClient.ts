@@ -32,6 +32,15 @@ export class EngineExecuteClient extends EngineBaseClient {
     );
   }
 
+  async withdrawCollateralV2(
+    params: EngineExecuteRequestParamsByType['withdraw_collateral_v2'],
+  ) {
+    return this.execute(
+      'withdraw_collateral_v2',
+      await this.payloadBuilder.buildWithdrawCollateralV2Payload(params),
+    );
+  }
+
   async placeOrder(
     params: EngineExecuteRequestParamsByType['place_order'],
   ): Promise<EnginePlaceOrderResult> {

@@ -16,10 +16,13 @@ export async function ensureSubaccountFunded(
   const depositAmount = addDecimals(1000, 6);
   const subaccountName = TEST_SUBACCOUNT_NAME;
 
-  const nadoClient: NadoClient = createNadoClient(context.env.chainEnv, {
-    walletClient: context.walletClient,
-    publicClient: context.publicClient,
-  });
+  const nadoClient: NadoClient = createNadoClient(
+    { chainEnv: context.env.chainEnv },
+    {
+      walletClient: context.walletClient,
+      publicClient: context.publicClient,
+    },
+  );
 
   await waitForTransaction(
     nadoClient.spot._mintMockERC20({

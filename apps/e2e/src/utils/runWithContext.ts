@@ -3,6 +3,7 @@ import {
   INDEXER_CLIENT_ENDPOINTS,
   IndexerClient,
 } from '@nadohq/indexer-client';
+import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
 import { CHAIN_ENV_TO_CHAIN, NADO_DEPLOYMENTS } from '@nadohq/shared';
 import {
   TRIGGER_CLIENT_ENDPOINTS,
@@ -43,6 +44,7 @@ export function createTestContext(): RunContext {
     engine: ENGINE_CLIENT_ENDPOINTS[env.chainEnv],
     indexer: INDEXER_CLIENT_ENDPOINTS[env.chainEnv],
     trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
+    mobile: MOBILE_CLIENT_ENDPOINTS[env.chainEnv],
   };
 
   const contracts = NADO_DEPLOYMENTS[env.chainEnv];
@@ -66,6 +68,10 @@ export function createTestContext(): RunContext {
     }),
     trigger: new TriggerClient({
       url: endpoints.trigger,
+      walletClient,
+    }),
+    mobile: new MobileClient({
+      url: endpoints.mobile,
       walletClient,
     }),
   };

@@ -4,14 +4,6 @@ HTTP client for the Nado trigger service. Manages stop-loss, take-profit, and ot
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
-## Installation
-
-```bash
-npm install @nadohq/trigger-client @nadohq/engine-client @nadohq/shared viem bignumber.js
-```
-
-Most apps should use `@nadohq/client` instead, which includes this package. Install `@nadohq/trigger-client` directly when integrating only the trigger service.
-
 ## Usage
 
 ```ts
@@ -45,7 +37,7 @@ await trigger.cancelTriggerOrders({ ... });
 
 ### Executes
 
-`placeTriggerOrder`, `placeTriggerOrders`, `cancelTriggerOrders`, `cancelProductOrders`.
+`placeTriggerOrder`, `placeTriggerOrders`, `cancelTriggerOrders`, `cancelProductOrders`, `updateTriggerDependency`.
 
 ### Queries
 

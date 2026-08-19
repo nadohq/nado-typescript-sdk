@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/engine-client",
-  "version": "0.19.1",
+  "version": "0.36.0",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nado off-chain matching engine",
@@ -41,17 +41,17 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.19.1",
+    "@nadohq/shared": "^0.36.0",
     "axios": "1.16.1",
     "ts-mixer": "6.0.4"
   },
   "peerDependencies": {
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "devDependencies": {
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "gitHead": "c7606b994e819a25e1bd8df874463ecb4bbfc689"
 }

@@ -58,10 +58,13 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     chainId = context.chainId;
     endpointAddr = context.endpointAddr;
 
-    nadoClient = createNadoClient(context.env.chainEnv, {
-      walletClient: context.walletClient,
-      publicClient: context.publicClient,
-    });
+    nadoClient = createNadoClient(
+      { chainEnv: context.env.chainEnv },
+      {
+        walletClient: context.walletClient,
+        publicClient: context.publicClient,
+      },
+    );
   });
 
   beforeEach(async () => {

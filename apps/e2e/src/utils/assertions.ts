@@ -1,6 +1,46 @@
+import { toPrintableObject } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { isHex } from 'viem';
+
+/**
+ * Maximum length of a formatted value in an assertion failure message.
+ * Keeps failures readable when a large API response is the offending value.
+ */
+const MAX_FORMATTED_VALUE_LENGTH = 200;
+
+/**
+ * Formats an arbitrary value for inclusion in an assertion failure message.
+ * BigNumbers and bigints are stringified via {@link toPrintableObject}, and
+ * long values are truncated to keep failure output readable.
+ *
+ * @param value - The value to format.
+ * @returns A short, human-readable representation of the value.
+ */
+function formatValue(value: unknown): string {
+  let formatted: string;
+
+  if (value === undefined) {
+    // `toPrintableObject` normalizes `undefined` to `null`, so keep the distinction here.
+    formatted = 'undefined';
+  } else if (typeof value === 'number' && !Number.isFinite(value)) {
+    // `JSON.stringify` serializes `NaN` / `Infinity` as `null`.
+    formatted = String(value);
+  } else {
+    try {
+      // `JSON.stringify` returns `undefined` for values it cannot serialize (e.g. functions).
+      formatted =
+        JSON.stringify(toPrintableObject(value)) ??
+        Object.prototype.toString.call(value);
+    } catch {
+      formatted = Object.prototype.toString.call(value);
+    }
+  }
+
+  return formatted.length > MAX_FORMATTED_VALUE_LENGTH
+    ? `${formatted.slice(0, MAX_FORMATTED_VALUE_LENGTH)}…`
+    : formatted;
+}
 
 // ---------------------------------------------------------------------------
 // Primitive / utility assertions
@@ -32,7 +72,10 @@ export function assertArray(
   value: unknown,
   label: string,
 ): asserts value is unknown[] {
-  assert.ok(Array.isArray(value), `${label} should be an array`);
+  assert.ok(
+    Array.isArray(value),
+    `${label} should be an array, instead got ${formatValue(value)}`,
+  );
 }
 
 /**
@@ -57,8 +100,15 @@ export function assertNonEmptyArray(
  * @param label - Human-readable label included in the failure message.
  */
 export function assertHexString(value: unknown, label: string): void {
-  assert.equal(typeof value, 'string', `${label} should be a string`);
-  assert.ok(isHex(value), `${label} should be a hex string`);
+  assert.equal(
+    typeof value,
+    'string',
+    `${label} should be a string, instead got ${formatValue(value)}`,
+  );
+  assert.ok(
+    isHex(value),
+    `${label} should be a hex string, instead got ${formatValue(value)}`,
+  );
 }
 
 /**
@@ -80,7 +130,9 @@ export function assertPaginatedResponse(
   assert.equal(
     typeof response.meta.hasMore,
     'boolean',
-    `${label}.meta.hasMore should be a boolean`,
+    `${label}.meta.hasMore should be a boolean, instead got ${formatValue(
+      response.meta.hasMore,
+    )}`,
   );
 }
 
@@ -93,7 +145,7 @@ export function assertPaginatedResponse(
 export function assertBigNumberFinite(value: unknown, label: string): void {
   assert.ok(
     value instanceof BigNumber && value.isFinite(),
-    `${label} should be a finite BigNumber`,
+    `${label} should be a finite BigNumber, instead got ${formatValue(value)}`,
   );
 }
 
@@ -105,7 +157,10 @@ export function assertBigNumberFinite(value: unknown, label: string): void {
  */
 export function assertBigNumberPositive(value: unknown, label: string): void {
   assertBigNumberFinite(value, label);
-  assert.ok((value as BigNumber).gt(0), `${label} should be positive`);
+  assert.ok(
+    (value as BigNumber).gt(0),
+    `${label} should be positive, instead got ${formatValue(value)}`,
+  );
 }
 
 /**
@@ -119,7 +174,10 @@ export function assertBigNumberNonNegative(
   label: string,
 ): void {
   assertBigNumberFinite(value, label);
-  assert.ok((value as BigNumber).gte(0), `${label} should be non-negative`);
+  assert.ok(
+    (value as BigNumber).gte(0),
+    `${label} should be non-negative, instead got ${formatValue(value)}`,
+  );
 }
 
 /**
@@ -129,7 +187,11 @@ export function assertBigNumberNonNegative(
  * @param label - Human-readable label included in the failure message.
  */
 export function assertNumber(value: unknown, label: string): void {
-  assert.equal(typeof value, 'number', `${label} should be a number`);
+  assert.equal(
+    typeof value,
+    'number',
+    `${label} should be a number, instead got ${formatValue(value)}`,
+  );
 }
 
 /**
@@ -140,8 +202,26 @@ export function assertNumber(value: unknown, label: string): void {
  * @param label - Human-readable label included in the failure message.
  */
 export function assertString(value: unknown, label: string): void {
-  assert.equal(typeof value, 'string', `${label} should be a string`);
+  assert.equal(
+    typeof value,
+    'string',
+    `${label} should be a string, instead got ${formatValue(value)}`,
+  );
   assert.ok((value as string).length > 0, `${label} should not be empty`);
+}
+
+/**
+ * Asserts that a value is either `null` or a non-empty string, for backend fields that are genuinely absent
+ * rather than empty (e.g. an unclaimed username).
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertNullableString(value: unknown, label: string): void {
+  if (value === null) {
+    return;
+  }
+  assertString(value, label);
 }
 
 /**
@@ -151,7 +231,11 @@ export function assertString(value: unknown, label: string): void {
  * @param label - Human-readable label included in the failure message.
  */
 export function assertNonEmptyString(value: unknown, label: string): void {
-  assert.equal(typeof value, 'string', `${label} should be a string`);
+  assert.equal(
+    typeof value,
+    'string',
+    `${label} should be a string, instead got ${formatValue(value)}`,
+  );
   assert.ok((value as string).length > 0, `${label} should not be empty`);
 }
 
@@ -162,7 +246,11 @@ export function assertNonEmptyString(value: unknown, label: string): void {
  * @param label - Human-readable label included in the failure message.
  */
 export function assertBoolean(value: unknown, label: string): void {
-  assert.equal(typeof value, 'boolean', `${label} should be a boolean`);
+  assert.equal(
+    typeof value,
+    'boolean',
+    `${label} should be a boolean, instead got ${formatValue(value)}`,
+  );
 }
 
 /**
@@ -174,7 +262,7 @@ export function assertBoolean(value: unknown, label: string): void {
 export function assertRecord(value: unknown, label: string): void {
   assert.ok(
     typeof value === 'object' && value !== null && !Array.isArray(value),
-    `${label} should be a record object`,
+    `${label} should be a record object, instead got ${formatValue(value)}`,
   );
   assert.ok(
     Object.keys(value).length > 0,
@@ -196,7 +284,7 @@ export function assertEnumMember<T>(
 ): void {
   assert.ok(
     (validValues as readonly unknown[]).includes(value),
-    `${label} should be one of [${validValues.join(', ')}], got ${String(value)}`,
+    `${label} should be one of [${validValues.join(', ')}], instead got ${formatValue(value)}`,
   );
 }
 

@@ -23,6 +23,17 @@ export function getNadoEIP712Types(
           { name: 'nonce', type: 'uint64' },
         ],
       };
+    case 'withdraw_collateral_v2':
+      return {
+        WithdrawCollateralV2: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'productId', type: 'uint32' },
+          { name: 'amount', type: 'uint128' },
+          { name: 'nonce', type: 'uint64' },
+          { name: 'sendTo', type: 'address' },
+          { name: 'appendix', type: 'uint128' },
+        ],
+      };
     case 'place_order':
       return {
         Order: [
@@ -39,6 +50,15 @@ export function getNadoEIP712Types(
         ListTriggerOrders: [
           { name: 'sender', type: 'bytes32' },
           { name: 'recvTime', type: 'uint64' },
+        ],
+      };
+    case 'update_dependency':
+      return {
+        DependencyUpdate: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'oldDigest', type: 'bytes32' },
+          { name: 'newDigest', type: 'bytes32' },
+          { name: 'nonce', type: 'uint64' },
         ],
       };
     case 'cancel_orders':
@@ -115,6 +135,15 @@ export function getNadoEIP712Types(
         BurnNlp: [
           { name: 'sender', type: 'bytes32' },
           { name: 'nlpAmount', type: 'uint128' },
+          { name: 'nonce', type: 'uint64' },
+        ],
+      };
+    case 'nado_authentication':
+      return {
+        NadoAuthentication: [
+          { name: 'method', type: 'string' },
+          { name: 'sender', type: 'bytes32' },
+          { name: 'payloadHash', type: 'bytes32' },
           { name: 'nonce', type: 'uint64' },
         ],
       };

@@ -5,6 +5,7 @@ import {
   PerpBalance,
   PerpMarket,
   ProductEngineType,
+  SignatureParams,
   SpotBalance,
   SpotMarket,
   Subaccount,
@@ -14,8 +15,13 @@ import { Address, Hex } from 'viem';
 import { CandlestickPeriod } from './CandlestickPeriod';
 import { IndexerEventType } from './IndexerEventType';
 import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
-import { NadoTx, NadoWithdrawCollateralTx } from './NadoTx';
 import {
+  NadoTx,
+  NadoWithdrawCollateralTx,
+  NadoWithdrawCollateralV2Tx,
+} from './NadoTx';
+import {
+  IndexerServerCashIncentivesWalletStatus,
   IndexerServerFastWithdrawalSignatureParams,
   IndexerServerListSubaccountsParams,
   IndexerServerTriggerTypeFilter,
@@ -55,6 +61,7 @@ export interface IndexerBalanceTrackedVars {
   netEntryUnrealized: BigNumber;
   netEntryCumulative: BigNumber;
   quoteVolumeCumulative: BigNumber;
+  cumulativeTradeCount: BigNumber;
 }
 
 export interface IndexerEvent<
@@ -192,6 +199,110 @@ export interface GetIndexerMultiProductFundingRatesParams {
 export type GetIndexerMultiProductFundingRatesResponse = Record<
   number,
   IndexerFundingRate
+>;
+
+/**
+ * Funding rate history
+ */
+
+export interface GetIndexerFundingRateHistoryParams {
+  productId: number;
+  /**
+   * Unix epoch in seconds, inclusive lower bound. Only rates with `timestamp >= startTimeInclusive`
+   * are returned, paging forward from that time. When omitted, the most recent `limit` rates are returned.
+   */
+  startTimeInclusive?: number;
+  /**
+   * Unix epoch in seconds, inclusive upper bound. Only rates with `timestamp <= endTimeInclusive`
+   * are returned. Defaults to the current time.
+   */
+  endTimeInclusive?: number;
+  /** Max number of rates to return. Defaults to 100, max 1000. */
+  limit?: number;
+}
+
+export interface IndexerFundingRateHistoryEntry {
+  productId: number;
+  // Seconds
+  timestamp: BigNumber;
+  /**
+   * Realized hourly funding rate at this tick, where 1 = 100%.
+   * Multiply by 24 for the daily equivalent.
+   */
+  fundingRateFrac: BigNumber;
+}
+
+/**
+ * Entries are always ordered ascending by `timestamp`. To paginate forward,
+ * pass the last entry's `timestamp + 1` as the next request's `startTimeInclusive`.
+ */
+export type GetIndexerFundingRateHistoryResponse =
+  IndexerFundingRateHistoryEntry[];
+
+/**
+ * Portfolio
+ */
+
+export interface GetIndexerPortfolioParams {
+  /**
+   * Cross-margin subaccount to query. Its value aggregates the cross-margin
+   * account plus every isolated child; isolated subaccounts are rejected.
+   */
+  subaccount: Subaccount;
+}
+
+export type IndexerPortfolioPeriod =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'allTime'
+  | 'perpDay'
+  | 'perpWeek'
+  | 'perpMonth'
+  | 'perpAllTime';
+
+export interface IndexerPortfolioPoint {
+  // Unix seconds
+  timestamp: BigNumber;
+  // USDT0-denominated, except on `marketCountHistory`, where it is an integer count.
+  value: BigNumber;
+}
+
+/**
+ * All five series are aligned: same timestamps, same length. They share the same
+ * baseline — the first snapshot at or after the timeframe start — so every series
+ * except `accountValueHistory` begins at `0` and accumulates from there.
+ */
+export interface IndexerPortfolioHistory {
+  // Mark-to-market account value at each timestamp, USDT0-denominated.
+  accountValueHistory: IndexerPortfolioPoint[];
+  /**
+   * Trading PnL over the timeframe, baseline-subtracted so the first visible
+   * point is `0`. Capital flows (deposits/withdrawals/transfers) are netted out.
+   */
+  pnlHistory: IndexerPortfolioPoint[];
+  /**
+   * Cumulative traded quote volume within the timeframe up to each timestamp,
+   * USDT0-denominated.
+   */
+  volumeHistory: IndexerPortfolioPoint[];
+  /**
+   * Average trade size within the timeframe up to each timestamp — the
+   * timeframe's quote volume divided by its trade count, or `0` when no trades
+   * have occurred yet. A trade is a single fill, so an order matched against
+   * multiple resting orders counts once per fill.
+   */
+  tradeSizeHistory: IndexerPortfolioPoint[];
+  /**
+   * Number of distinct markets traded within the timeframe up to each
+   * timestamp. Only markets with at least one fill inside the timeframe count.
+   */
+  marketCountHistory: IndexerPortfolioPoint[];
+}
+
+export type GetIndexerPortfolioResponse = Record<
+  IndexerPortfolioPeriod,
+  IndexerPortfolioHistory
 >;
 
 /**
@@ -581,7 +692,11 @@ export interface IndexerSocialAccountInfo {
 export interface IndexerLeaderboardTrackPosition {
   value: BigNumber;
   rank: BigNumber;
-  qualificationStatus: 'qualified' | 'insufficient_account_value';
+  qualificationStatus:
+    | 'qualified'
+    | 'insufficient_account_value'
+    | 'insufficient_volume'
+    | 'insufficient_account_value_and_volume';
 }
 
 export interface IndexerLeaderboardParticipant {
@@ -610,11 +725,6 @@ export interface GetIndexerLeaderboardParticipantResponse {
   // If the subaccount is not eligible for a given contest, it would not be included in the response.
   // contestId -> IndexerLeaderboardParticipant
   participant: Record<string, IndexerLeaderboardParticipant>;
-}
-
-interface SignatureParams {
-  verifyingAddr: string;
-  chainId: number;
 }
 
 export interface GetIndexerLeaderboardRegistrationsParams {
@@ -656,8 +766,10 @@ export interface IndexerLeaderboardContestTrack {
   trackId: number;
   rankType: IndexerLeaderboardRankType;
   sortOrder: 'ASC' | 'DESC';
-  // Float indicating the min account value required to qualify for this track e.g: 250.0
-  minRequiredAccountValue: BigNumber;
+  // Float indicating the min value required to qualify for this track e.g: 250.0
+  accountValueThreshold: BigNumber;
+  // Float indicating the min volume required to qualify for this track e.g: 1000.0
+  volumeThreshold: BigNumber;
 }
 
 export interface IndexerLeaderboardContest {
@@ -713,6 +825,8 @@ export type GetIndexerFastWithdrawalSignatureParams =
 export interface GetIndexerFastWithdrawalSignatureResponse {
   idx: bigint;
   tx: NadoWithdrawCollateralTx['withdraw_collateral'];
+  // Present only for `WithdrawCollateralV2` withdrawals.
+  txV2?: NadoWithdrawCollateralV2Tx['withdraw_collateral_v2'];
   txBytes: Hex;
   signatures: Hex[];
 }
@@ -808,6 +922,133 @@ export interface IndexerAllTimePoints {
 export interface GetIndexerPointsResponse {
   pointsPerEpoch: IndexerPointsEpoch[];
   allTimePoints: IndexerAllTimePoints;
+}
+
+/**
+ * Nado XPoints (Nado x xStocks points program)
+ */
+
+export interface GetIndexerXPointsParams {
+  address: Address;
+}
+
+export interface IndexerXPointsQuest {
+  /** Quest identifier, e.g. `ProtocolDepositBoost` or `ProtocolTieredVolumeBoost` */
+  questType: string;
+  points: BigNumber;
+}
+
+export interface IndexerXPointsEpoch {
+  epoch: number;
+  description: string;
+  startTime: BigNumber;
+  endTime: BigNumber;
+  totalPoints: BigNumber;
+  rank: number;
+  quests: IndexerXPointsQuest[];
+}
+
+export interface IndexerXPointsAllTime {
+  totalPoints: BigNumber;
+  rank: number;
+  quests: IndexerXPointsQuest[];
+}
+
+export interface GetIndexerXPointsResponse {
+  pointsPerEpoch: IndexerXPointsEpoch[];
+  allTimePoints: IndexerXPointsAllTime;
+}
+
+/**
+ * Cash Incentives (platform volume and unlocked rewards)
+ */
+
+export interface GetIndexerCashIncentivesParams {
+  address: Address;
+}
+
+export interface IndexerCashIncentivesEventMetadata {
+  eventId: number;
+  description: string;
+  /** Unix timestamp in seconds */
+  epochStart: BigNumber;
+  /** Unix timestamp in seconds */
+  epochEnd: BigNumber;
+  maxVolume: BigNumber;
+  maxReward: BigNumber;
+  minVolume: BigNumber;
+  minReward: BigNumber;
+}
+
+export interface IndexerCashIncentivesEventPlatform {
+  platformVolume: BigNumber;
+  unlockedReward: BigNumber;
+}
+
+/**
+ * `wallet.claim` variant carrying the data needed to build an Airdrop contract `claim` call.
+ */
+export interface IndexerCashIncentivesClaimableClaim {
+  /** Discriminant marking this claim as ready to submit onchain. */
+  status: 'claimable';
+  /** Airdrop contract holding the reward. */
+  airdropAddress: Address;
+  /**
+   * Reward event identifier within the airdrop contract. This is not the same as
+   * {@link IndexerCashIncentivesEventMetadata.eventId}, which identifies the Cash Incentives campaign.
+   */
+  week: number;
+  /**
+   * Cumulative claimable amount in raw token units, as committed to by the merkle root. Pass this to
+   * the contract unchanged; use {@link IndexerCashIncentivesEventWallet.reward} for display, since
+   * the reward token's decimals are not part of the response.
+   */
+  totalAmount: BigNumber;
+  /** Merkle proof for this wallet's reward. */
+  proof: Hex[];
+}
+
+/**
+ * `wallet.claim` variant for events with nothing to claim, which carries only the status.
+ */
+export interface IndexerCashIncentivesUnclaimableClaim {
+  /** Why there is nothing to claim yet. */
+  status: Exclude<IndexerServerCashIncentivesWalletStatus, 'claimable'>;
+}
+
+/**
+ * Always present, tagged on `status`. Only the `claimable` variant carries proof data, so narrow on
+ * `status === 'claimable'` before reading it. See
+ * {@link IndexerServerCashIncentivesWalletStatus} for the meaning of each status.
+ */
+export type IndexerCashIncentivesWalletClaim =
+  | IndexerCashIncentivesClaimableClaim
+  | IndexerCashIncentivesUnclaimableClaim;
+
+export interface IndexerCashIncentivesEventWallet {
+  /**
+   * Reward for this wallet as a decimal token amount, already converted from the x18 value the
+   * indexer returns. Populated before the reward becomes claimable.
+   */
+  reward: BigNumber;
+  /** Claim state for this event, always present and tagged on `status`. */
+  claim: IndexerCashIncentivesWalletClaim;
+}
+
+export interface IndexerCashIncentivesEvent {
+  metadata: IndexerCashIncentivesEventMetadata;
+  platform: IndexerCashIncentivesEventPlatform;
+  wallet: IndexerCashIncentivesEventWallet;
+}
+
+export interface IndexerCashIncentivesWalletSummary {
+  totalReward: BigNumber;
+  claimableReward: BigNumber;
+}
+
+export interface GetIndexerCashIncentivesResponse {
+  events: IndexerCashIncentivesEvent[];
+  walletSummary: IndexerCashIncentivesWalletSummary;
 }
 
 /**

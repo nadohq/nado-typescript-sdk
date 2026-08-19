@@ -1,11 +1,14 @@
 import {
   GetEngineAllMarketsResponse,
+  GetEngineCachedBboHistoryParams,
+  GetEngineCachedMarketPricesParams,
   GetEngineMarketLiquidityParams,
   GetEngineMarketPriceParams,
   GetEngineMarketPricesParams,
   GetEngineMaxOrderSizeParams,
   GetEngineSubaccountOrdersParams,
   GetEngineSubaccountProductOrdersParams,
+  GetEngineSymbolsParams,
   ValidateEngineOrderParams,
 } from '@nadohq/engine-client';
 import {
@@ -45,6 +48,59 @@ export class MarketQueryAPI extends BaseNadoAPI {
    */
   async getHealthGroups() {
     return this.context.engineClient.getHealthGroups();
+  }
+
+  /**
+   * Retrieves symbols and product trading config from the offchain engine
+   */
+  async getSymbols(params: GetEngineSymbolsParams = {}) {
+    return this.context.engineClient.getSymbols(params);
+  }
+
+  /**
+   * Cached (edge) variant of {@link getLatestMarketPrices}, served from the gateway's in-memory
+   * cache. Lower latency but eventually consistent — do not use for order/margin/settlement
+   * decisions. Products with no cached price are omitted.
+   */
+  async getCachedMarketPrices(params: GetEngineCachedMarketPricesParams = {}) {
+    return this.context.engineClient.getCachedMarketPrices(params);
+  }
+
+  /**
+   * Cached (edge) variant of symbols / product trading config, served from the gateway cache.
+   */
+  async getCachedSymbols(params: GetEngineSymbolsParams = {}) {
+    return this.context.engineClient.getCachedSymbols(params);
+  }
+
+  /**
+   * Cached (edge) variant of {@link getAllMarkets}, served from the gateway cache.
+   */
+  async getCachedAllMarkets(): Promise<GetEngineAllMarketsResponse> {
+    return this.context.engineClient.getCachedAllMarkets();
+  }
+
+  /**
+   * Cached (edge) variant of {@link getEdgeAllMarkets}, served from the gateway cache.
+   */
+  async getCachedEdgeAllMarkets(): Promise<
+    Record<number, GetEngineAllMarketsResponse>
+  > {
+    return this.context.engineClient.getCachedEdgeAllMarkets();
+  }
+
+  /**
+   * Cached (edge) variant of {@link getHealthGroups}, served from the gateway cache.
+   */
+  async getCachedHealthGroups() {
+    return this.context.engineClient.getCachedHealthGroups();
+  }
+
+  /**
+   * Rolling per-product best-bid/offer history sampled by the gateway (up to 30 minutes).
+   */
+  async getCachedBboHistory(params: GetEngineCachedBboHistoryParams = {}) {
+    return this.context.engineClient.getCachedBboHistory(params);
   }
 
   /**

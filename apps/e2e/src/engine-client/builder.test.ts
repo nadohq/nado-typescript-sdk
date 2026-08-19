@@ -231,10 +231,13 @@ void describe('[engine-client]: builder', () => {
       void test('submits ClaimBuilderFee via slow mode and polls for event', async () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
-        const nadoClient: NadoClient = createNadoClient(tc.env.chainEnv, {
-          walletClient: tc.walletClient,
-          publicClient,
-        });
+        const nadoClient: NadoClient = createNadoClient(
+          { chainEnv: tc.env.chainEnv },
+          {
+            walletClient: tc.walletClient,
+            publicClient,
+          },
+        );
 
         const slowModeFeeAmount = addDecimals(1, 6);
         await waitForTransaction(
@@ -340,6 +343,19 @@ void describe('[engine-client]: builder', () => {
             assert.ok(
               err instanceof EngineServerFailureError,
               'error should be EngineServerFailureError',
+            );
+            // The new `errorCode` field (see ENGINE_ERROR_CODES) must be populated on real
+            // backend failures — only its numeric value is asserted here since the engine's
+            // invalid-builder code is not part of the shared cross-service enum.
+            assert.equal(
+              typeof err.errorCode,
+              'number',
+              'EngineServerFailureError.errorCode should be a number',
+            );
+            assert.equal(
+              err.errorCode,
+              err.responseData.error_code,
+              'EngineServerFailureError.errorCode should mirror responseData.error_code',
             );
             const msg = err.message.toLowerCase();
             assert.ok(

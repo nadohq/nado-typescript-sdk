@@ -1,11 +1,8 @@
 import { Abi } from 'viem';
-import {
-  ContractInstance,
-  WriteableContractInstance,
-} from '../types/viemTypes';
+import { WriteableContractInstance } from '../types/viemTypes';
 
-export function isWriteableContract<TAbi extends Abi>(
-  contract: ContractInstance<TAbi>,
-): contract is WriteableContractInstance<TAbi> {
+export function isWriteableContract<T extends { abi: Abi }>(
+  contract: T,
+): contract is T & WriteableContractInstance<T['abi']> {
   return 'write' in contract;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/shared",
-  "version": "0.19.1",
+  "version": "0.36.0",
   "type": "module",
   "sideEffects": false,
   "description": "Shared utilities, types, and contract helpers for Nado SDK",
@@ -45,12 +45,12 @@
   },
   "peerDependencies": {
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "devDependencies": {
     "@jest/globals": "30.4.1",
     "bignumber.js": "11.1.1",
-    "viem": "2.50.4"
+    "viem": "2.52.0"
   },
   "gitHead": "c7606b994e819a25e1bd8df874463ecb4bbfc689"
 }

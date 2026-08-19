@@ -5,7 +5,7 @@ import {
 } from '@nadohq/shared';
 import { IndexerEventType } from './IndexerEventType';
 import { IndexerLeaderboardRankType } from './IndexerLeaderboardType';
-import { NadoWithdrawCollateralTx } from './NadoTx';
+import { NadoWithdrawCollateralTx, NadoWithdrawCollateralV2Tx } from './NadoTx';
 import {
   IndexerServerCandlestick,
   IndexerServerEvent,
@@ -58,12 +58,24 @@ export interface IndexerServerFundingRatesParams {
   product_ids: number[];
 }
 
+export interface IndexerServerFundingRateHistoryParams {
+  product_id: number;
+  start_time?: number | string;
+  end_time?: number | string;
+  // Max number of rates to return. Defaults to 100, max 1000.
+  limit?: number;
+}
+
 export interface IndexerServerPriceParams {
   product_id: number;
 }
 
 export interface IndexerServerPerpPricesParams {
   product_ids: number[];
+}
+
+export interface IndexerServerPortfolioParams {
+  subaccount: string;
 }
 
 export interface IndexerServerOraclePricesParams {
@@ -234,6 +246,14 @@ export interface IndexerServerPointsParams {
   address: string;
 }
 
+export interface IndexerServerXPointsParams {
+  address: string;
+}
+
+export interface IndexerServerCashIncentivesParams {
+  wallet_address: string;
+}
+
 // Request
 export interface IndexerServerQueryRequestByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsParams;
@@ -245,6 +265,7 @@ export interface IndexerServerQueryRequestByType {
   events: IndexerServerEventsParams;
   fast_withdrawal_signature: IndexerServerFastWithdrawalSignatureParams;
   funding_rate: IndexerServerFundingRateParams;
+  funding_rate_history: IndexerServerFundingRateHistoryParams;
   funding_rates: IndexerServerFundingRatesParams;
   interest_and_funding: IndexerServerInterestFundingParams;
   leaderboard: IndexerServerLeaderboardParams;
@@ -259,6 +280,7 @@ export interface IndexerServerQueryRequestByType {
   oracle_price: IndexerServerOraclePricesParams;
   orders: IndexerServerOrdersParams;
   perp_prices: IndexerServerPerpPricesParams;
+  portfolio: IndexerServerPortfolioParams;
   price: IndexerServerPriceParams;
   product_snapshots: IndexerServerMultiProductsParams;
   products: IndexerServerProductsParams;
@@ -268,6 +290,8 @@ export interface IndexerServerQueryRequestByType {
   nlp_snapshots: IndexerServerNlpSnapshotsParams;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceParams;
   nado_points: IndexerServerPointsParams;
+  nado_xpoints: IndexerServerXPointsParams;
+  cash_incentives: IndexerServerCashIncentivesParams;
   social_connect: IndexerServerSocialConnectParams;
   list_social_accounts: IndexerServerListSocialAccountsParams;
   revoke_social_account: IndexerServerRevokeSocialAccountParams;
@@ -313,6 +337,49 @@ export type IndexerServerFundingRatesResponse = Record<
   string,
   IndexerServerFundingRate
 >;
+
+export interface IndexerServerFundingRateHistoryEntry {
+  product_id: number;
+  // Epoch time in seconds of the settlement tick this funding rate was recorded at.
+  timestamp: string;
+  // Realized hourly funding rate at this tick, multiplied by 10^18 (% = rate * 100).
+  funding_rate_x18: string;
+}
+
+export interface IndexerServerFundingRateHistoryResponse {
+  // Always ascending by timestamp.
+  funding_rates: IndexerServerFundingRateHistoryEntry[];
+}
+
+export type IndexerServerPortfolioPeriod =
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'allTime'
+  | 'perpDay'
+  | 'perpWeek'
+  | 'perpMonth'
+  | 'perpAllTime';
+
+/**
+ * [timestamp (unix seconds), value] — both x18-free decimal strings. Values are
+ * USDT0-denominated, except `marketCountHistory` points, which are integer counts.
+ */
+export type IndexerServerPortfolioPoint = [string, string];
+
+// All five series are aligned: same timestamps, same length.
+export interface IndexerServerPortfolioHistory {
+  accountValueHistory: IndexerServerPortfolioPoint[];
+  pnlHistory: IndexerServerPortfolioPoint[];
+  volumeHistory: IndexerServerPortfolioPoint[];
+  tradeSizeHistory: IndexerServerPortfolioPoint[];
+  marketCountHistory: IndexerServerPortfolioPoint[];
+}
+
+export type IndexerServerPortfolioResponse = [
+  IndexerServerPortfolioPeriod,
+  IndexerServerPortfolioHistory,
+][];
 
 export interface IndexerServerPerpPrices {
   product_id: number;
@@ -419,6 +486,8 @@ export interface IndexerServerLeaderboardContestsResponse {
 export interface IndexerServerFastWithdrawalSignatureResponse {
   idx: string;
   tx: NadoWithdrawCollateralTx['withdraw_collateral'];
+  // Present only for `WithdrawCollateralV2` withdrawals.
+  tx_v2?: NadoWithdrawCollateralV2Tx['withdraw_collateral_v2'];
   tx_bytes: string;
   signatures: string[];
 }
@@ -474,6 +543,130 @@ export interface IndexerServerPointsResponse {
   all_time_points: IndexerServerAllTimePoints;
 }
 
+export interface IndexerServerXPointsQuest {
+  quest_type: string;
+  points: string;
+}
+
+export interface IndexerServerXPointsEpoch {
+  epoch: number;
+  description: string;
+  start_time: string;
+  end_time: string;
+  total_points: string;
+  rank: number;
+  quests: IndexerServerXPointsQuest[];
+}
+
+export interface IndexerServerXPointsAllTime {
+  total_points: string;
+  rank: number;
+  quests: IndexerServerXPointsQuest[];
+}
+
+export interface IndexerServerXPointsResponse {
+  points_per_epoch: IndexerServerXPointsEpoch[];
+  all_time_points: IndexerServerXPointsAllTime;
+}
+
+export interface IndexerServerCashIncentivesEventMetadata {
+  event_id: number;
+  description: string;
+  // UNIX timestamp in seconds
+  epoch_start: string;
+  // UNIX timestamp in seconds
+  epoch_end: string;
+  // x18 string
+  max_volume: string;
+  // x18 string
+  max_reward: string;
+  // x18 string
+  min_volume: string;
+  // x18 string
+  min_reward: string;
+}
+
+export interface IndexerServerCashIncentivesEventPlatform {
+  // x18 string
+  platform_volume: string;
+  // x18 string
+  unlocked_reward: string;
+}
+
+/**
+ * Claim status of a wallet for a single Cash Incentives event.
+ *
+ * - `in_progress`: the event is still active.
+ * - `pending`: the event has ended, but its settlement has not been published.
+ * - `no_reward`: the settlement exists, but the wallet has no reward.
+ * - `claimable`: the settlement grants this wallet a reward, and the proof to claim it is included.
+ *
+ * There is deliberately no `claimed` status. The airdrop contract's `getClaimed` is the source of
+ * truth for whether a reward has already been taken, so a reward stays `claimable` here even after
+ * it has been claimed onchain.
+ */
+export const INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES = [
+  'in_progress',
+  'pending',
+  'no_reward',
+  'claimable',
+] as const;
+
+export type IndexerServerCashIncentivesWalletStatus =
+  (typeof INDEXER_SERVER_CASH_INCENTIVES_WALLET_STATUSES)[number];
+
+/**
+ * `wallet.claim` variant carrying everything needed to claim onchain.
+ */
+export interface IndexerServerCashIncentivesClaimableClaim {
+  status: 'claimable';
+  airdrop_address: string;
+  // Reward event id within the airdrop contract, distinct from `metadata.event_id`
+  week: number;
+  // Integer string in raw token units, as committed to by the merkle root
+  total_amount: string;
+  // Merkle proof hashes
+  proof: string[];
+}
+
+/**
+ * `wallet.claim` variant for events with nothing to claim, which carries only the status.
+ */
+export interface IndexerServerCashIncentivesUnclaimableClaim {
+  status: Exclude<IndexerServerCashIncentivesWalletStatus, 'claimable'>;
+}
+
+/**
+ * Always present, tagged on `status`. Only the `claimable` variant carries proof data.
+ */
+export type IndexerServerCashIncentivesWalletClaim =
+  | IndexerServerCashIncentivesClaimableClaim
+  | IndexerServerCashIncentivesUnclaimableClaim;
+
+export interface IndexerServerCashIncentivesEventWallet {
+  // x18 string
+  reward: string;
+  claim: IndexerServerCashIncentivesWalletClaim;
+}
+
+export interface IndexerServerCashIncentivesEvent {
+  metadata: IndexerServerCashIncentivesEventMetadata;
+  platform: IndexerServerCashIncentivesEventPlatform;
+  wallet: IndexerServerCashIncentivesEventWallet;
+}
+
+export interface IndexerServerCashIncentivesWalletSummary {
+  // x18 string
+  total_reward: string;
+  // x18 string
+  claimable_reward: string;
+}
+
+export interface IndexerServerCashIncentivesResponse {
+  events: IndexerServerCashIncentivesEvent[];
+  wallet_summary: IndexerServerCashIncentivesWalletSummary;
+}
+
 export interface IndexerServerSocialConnectResponse {
   url: string;
 }
@@ -493,6 +686,7 @@ export interface IndexerServerQueryResponseByType {
   events: IndexerServerEventsResponse;
   fast_withdrawal_signature: IndexerServerFastWithdrawalSignatureResponse;
   funding_rate: IndexerServerFundingRateResponse;
+  funding_rate_history: IndexerServerFundingRateHistoryResponse;
   funding_rates: IndexerServerFundingRatesResponse;
   interest_and_funding: IndexerServerInterestFundingResponse;
   leaderboard: IndexerServerLeaderboardResponse;
@@ -507,6 +701,7 @@ export interface IndexerServerQueryResponseByType {
   oracle_price: IndexerServerOraclePricesResponse;
   orders: IndexerServerOrdersResponse;
   perp_prices: IndexerServerPerpPricesResponse;
+  portfolio: IndexerServerPortfolioResponse;
   price: IndexerServerPriceResponse;
   product_snapshots: IndexerServerMultiProductsResponse;
   products: IndexerServerProductsResponse;
@@ -516,6 +711,8 @@ export interface IndexerServerQueryResponseByType {
   nlp_snapshots: IndexerServerNlpSnapshotsResponse;
   private_alpha_choice: IndexerServerPrivateAlphaChoiceResponse;
   nado_points: IndexerServerPointsResponse;
+  nado_xpoints: IndexerServerXPointsResponse;
+  cash_incentives: IndexerServerCashIncentivesResponse;
   social_connect: IndexerServerSocialConnectResponse;
   list_social_accounts: IndexerServerSocialAccountsResponse;
   revoke_social_account: IndexerServerSocialAccountsResponse;
@@ -606,3 +803,40 @@ export type IndexerServerV2SymbolsResponse = Record<
   string,
   IndexerServerV2Symbol
 >;
+
+/**
+ * Wire `request_type` the indexer echoes on failure envelopes. The indexer's failure envelope is
+ * keyed by route (`<verb>_<query_type>`), mirroring the engine and trigger services. Kept as a
+ * `${string}_${string}` template to avoid enumerating the full set of v1 query types declared
+ * above.
+ */
+export type IndexerServerRequestType = `${string}_${string}`;
+
+/**
+ * Failure envelope returned by the indexer service API. Mirrors the failure shape used by the
+ * engine and trigger services: a `status: 'failure'` discriminant plus an `error`/`error_code`
+ * pair and the originating `request_type`. A response missing this envelope shape (e.g. a
+ * malformed body, or a non-JSON response) is a transport-level error, not a domain error.
+ *
+ * The v2 REST endpoints do not return this envelope — they use plain HTTP error responses
+ * without an `error_code` field.
+ */
+export interface IndexerServerFailureResponse {
+  status: 'failure';
+  error: string;
+  error_code: number;
+  request_type: IndexerServerRequestType;
+}
+
+/**
+ * Narrows an unknown response body to the indexer service API failure envelope.
+ */
+export function isIndexerServerFailureResponse(
+  data: unknown,
+): data is IndexerServerFailureResponse {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as Record<string, unknown>).status === 'failure'
+  );
+}

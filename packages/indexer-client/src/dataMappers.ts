@@ -17,9 +17,11 @@ import {
 } from '@nadohq/shared';
 import {
   Candlestick,
+  GetIndexerPortfolioResponse,
   IndexerEvent,
   IndexerEventWithTx,
   IndexerFundingRate,
+  IndexerFundingRateHistoryEntry,
   IndexerLeaderboardContest,
   IndexerLeaderboardParticipant,
   IndexerLeaderboardRegistration,
@@ -30,11 +32,13 @@ import {
   IndexerOrder,
   IndexerPerpBalance,
   IndexerPerpPrices,
+  IndexerPortfolioPoint,
   IndexerProductPayment,
   IndexerServerBalance,
   IndexerServerCandlestick,
   IndexerServerEvent,
   IndexerServerFundingRate,
+  IndexerServerFundingRateHistoryEntry,
   IndexerServerLeaderboardContest,
   IndexerServerLeaderboardPosition,
   IndexerServerLeaderboardRegistration,
@@ -44,6 +48,8 @@ import {
   IndexerServerNlpSnapshot,
   IndexerServerOrder,
   IndexerServerPerpPrices,
+  IndexerServerPortfolioPoint,
+  IndexerServerPortfolioResponse,
   IndexerServerProduct,
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
@@ -171,6 +177,7 @@ export function mapIndexerEvent(event: IndexerServerEvent): IndexerEvent {
       netInterestCumulative: toBigNumber(event.net_interest_cumulative),
       netInterestUnrealized: toBigNumber(event.net_interest_unrealized),
       quoteVolumeCumulative: toBigNumber(event.quote_volume_cumulative),
+      cumulativeTradeCount: toBigNumber(event.cumulative_trade_count),
     },
   };
 }
@@ -232,6 +239,49 @@ export function mapIndexerFundingRate(
     updateTime: toBigNumber(fundingRate.update_time),
     productId: fundingRate.product_id,
   };
+}
+
+export function mapIndexerFundingRateHistory(
+  entry: IndexerServerFundingRateHistoryEntry,
+): IndexerFundingRateHistoryEntry {
+  return {
+    productId: entry.product_id,
+    timestamp: toBigNumber(entry.timestamp),
+    fundingRateFrac: removeDecimals(entry.funding_rate_x18),
+  };
+}
+
+function mapIndexerPortfolioPoint([
+  timestamp,
+  value,
+]: IndexerServerPortfolioPoint): IndexerPortfolioPoint {
+  return {
+    timestamp: toBigNumber(timestamp),
+    value: toBigNumber(value),
+  };
+}
+
+export function mapIndexerPortfolio(
+  response: IndexerServerPortfolioResponse,
+): GetIndexerPortfolioResponse {
+  return Object.fromEntries(
+    response.map(([period, history]) => [
+      period,
+      {
+        accountValueHistory: history.accountValueHistory.map(
+          mapIndexerPortfolioPoint,
+        ),
+        pnlHistory: history.pnlHistory.map(mapIndexerPortfolioPoint),
+        volumeHistory: history.volumeHistory.map(mapIndexerPortfolioPoint),
+        tradeSizeHistory: history.tradeSizeHistory.map(
+          mapIndexerPortfolioPoint,
+        ),
+        marketCountHistory: history.marketCountHistory.map(
+          mapIndexerPortfolioPoint,
+        ),
+      },
+    ]),
+  ) as GetIndexerPortfolioResponse;
 }
 
 export function mapIndexerMakerStatistics(
@@ -307,7 +357,8 @@ export function mapIndexerLeaderboardContest(
       trackId: track.track_id,
       rankType: track.rank_type,
       sortOrder: track.sort_order,
-      minRequiredAccountValue: toBigNumber(track.threshold),
+      accountValueThreshold: toBigNumber(track.threshold),
+      volumeThreshold: toBigNumber(track.volume_threshold),
     })),
   };
 }

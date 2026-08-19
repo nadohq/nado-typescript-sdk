@@ -1,4 +1,5 @@
 import {
+  getNadoClientTypeHeaders,
   getSignedTransactionRequest,
   SignableRequestType,
   SignableRequestTypeToParams,
@@ -7,11 +8,18 @@ import {
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
+  EngineServerCachedQueryRequestByType,
+  EngineServerCachedQueryRequestType,
+  EngineServerCachedQueryResponse,
+  EngineServerCachedQueryResponseByType,
+  EngineServerCachedQuerySuccessResponse,
+  EngineServerEdgeControlRequestByType,
+  EngineServerEdgeControlRequestType,
+  EngineServerEdgeControlResponseByType,
   EngineServerExecuteRequestByType,
   EngineServerExecuteRequestType,
   EngineServerExecuteResult,
   EngineServerExecuteSuccessResult,
-  EngineServerQueryRequest,
   EngineServerQueryRequestByType,
   EngineServerQueryRequestType,
   EngineServerQueryResponse,
@@ -29,6 +37,8 @@ export interface EngineClientOpts {
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
   linkedSignerWalletClient?: WalletClientWithAccount;
+  // If provided, identifies the calling client, sent as a header with every request
+  clientType?: string;
 }
 
 // Only 1 key can be defined per execute request
@@ -37,6 +47,11 @@ type EngineExecuteRequestBody = Partial<EngineServerExecuteRequestByType>;
 type EngineQueryRequestResponse<
   T extends EngineServerQueryRequestType = EngineServerQueryRequestType,
 > = EngineServerQueryResponse<T>;
+
+type EngineCachedQueryRequestResponse<
+  T extends EngineServerCachedQueryRequestType =
+    EngineServerCachedQueryRequestType,
+> = EngineServerCachedQueryResponse<T>;
 
 /**
  * Base client for all engine requests
@@ -51,6 +66,7 @@ export class EngineBaseClient {
       withCredentials: true,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
+      headers: getNadoClientTypeHeaders(opts.clientType),
     });
   }
 
@@ -119,19 +135,62 @@ export class EngineBaseClient {
   }
 
   /**
-   * A simple, typechecked fn for constructing a query request in the format expected by the server.
+   * Queries the gateway's in-memory cache via the `/edge/query` endpoint. Lower latency than
+   * {@link query} at the cost of eventual consistency — do not use for order, margin, or
+   * settlement decisions.
    *
    * @param requestType
    * @param params
+   * @public
    */
-  public getQueryRequest<TRequestType extends EngineServerQueryRequestType>(
+  public async edgeQuery<
+    TRequestType extends EngineServerCachedQueryRequestType,
+  >(
     requestType: TRequestType,
-    params: EngineServerQueryRequestByType[TRequestType],
-  ): EngineServerQueryRequest<TRequestType> {
-    return {
-      type: requestType,
-      ...params,
-    };
+    params: EngineServerCachedQueryRequestByType[TRequestType],
+  ): Promise<EngineServerCachedQueryResponseByType[TRequestType]> {
+    const request = this.getQueryRequest(requestType, params);
+    const response =
+      await this.axiosInstance.post<EngineCachedQueryRequestResponse>(
+        `${this.opts.url}/edge/query`,
+        request,
+      );
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
+    const successResponse = response as AxiosResponse<
+      EngineServerCachedQuerySuccessResponse<TRequestType>
+    >;
+
+    return successResponse.data.data;
+  }
+
+  /**
+   * Sends an edge control message (`ping` / `time`) via the `/edge/query` endpoint. These
+   * return immediately from the server clock and use a different envelope than the cached data
+   * queries (no `data` field), so the whole response body is returned.
+   *
+   * @param requestType
+   * @param params
+   * @public
+   */
+  public async edgeControlQuery<
+    TRequestType extends EngineServerEdgeControlRequestType,
+  >(
+    requestType: TRequestType,
+    params: EngineServerEdgeControlRequestByType[TRequestType],
+  ): Promise<EngineServerEdgeControlResponseByType[TRequestType]> {
+    const request = this.getQueryRequest(requestType, params);
+    const response = await this.axiosInstance.post<
+      EngineServerEdgeControlResponseByType[TRequestType]
+    >(`${this.opts.url}/edge/query`, request);
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    return response.data;
   }
 
   /**
@@ -156,6 +215,24 @@ export class EngineBaseClient {
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
     return response.data as EngineServerExecuteSuccessResult<TRequestType>;
+  }
+
+  /**
+   * A simple, typechecked fn for constructing a `type`-tagged request body in the format expected
+   * by the server. Generic over the request type / params pair so it can build live query, edge
+   * (cached) query, and edge control request bodies alike.
+   *
+   * @param requestType
+   * @param params
+   */
+  public getQueryRequest<TRequestType extends string, TParams extends object>(
+    requestType: TRequestType,
+    params: TParams,
+  ): { type: TRequestType } & TParams {
+    return {
+      type: requestType,
+      ...params,
+    };
   }
 
   /**
@@ -189,8 +266,14 @@ export class EngineBaseClient {
     params: SignableRequestTypeToParams[T],
   ) {
     // Use the linked signer if provided, otherwise use the default signer provided to the engine
-    const walletClient =
-      this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
+    // However, always use wallet signer for withdraw_collateral_v2 as linked signers are not allowed for different
+    // withdrawal addresses
+    const walletClient = (() => {
+      if (requestType === 'withdraw_collateral_v2') {
+        return this.opts.walletClient;
+      }
+      return this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
+    })();
 
     if (!walletClient) {
       throw new WalletNotProvidedError();
@@ -215,7 +298,10 @@ export class EngineBaseClient {
 
   private checkServerStatus(
     response: AxiosResponse<
-      EngineServerExecuteResult | EngineQueryRequestResponse
+      | EngineServerExecuteResult
+      | EngineQueryRequestResponse
+      | EngineCachedQueryRequestResponse
+      | EngineServerEdgeControlResponseByType[EngineServerEdgeControlRequestType]
     >,
   ) {
     if (response.data.status !== 'success') {

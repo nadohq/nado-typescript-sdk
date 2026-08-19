@@ -24,6 +24,9 @@ export type TriggerServerCancelOrdersParams =
 export type TriggerServerCancelProductOrdersParams =
   EngineServerExecuteRequestByType['cancel_product_orders'];
 
+export type TriggerServerUpdateDependencyParams =
+  EngineServerExecuteRequestByType['update_dependency'];
+
 export interface TriggerServerPlaceOrdersParams {
   orders: TriggerServerPlaceOrderParams[];
   stop_on_failure: boolean | null;
@@ -34,6 +37,7 @@ export interface TriggerServerExecuteRequestByType {
   place_orders: TriggerServerPlaceOrdersParams;
   cancel_orders: TriggerServerCancelOrdersParams;
   cancel_product_orders: TriggerServerCancelProductOrdersParams;
+  update_dependency: TriggerServerUpdateDependencyParams;
 }
 
 export type TriggerServerExecuteRequestType =

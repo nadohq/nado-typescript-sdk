@@ -8,6 +8,8 @@ import {
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
   EIP712TransferQuoteValues,
+  EIP712UpdateDependencyValues,
+  EIP712WithdrawCollateralV2Values,
   EIP712WithdrawCollateralValues,
   SignedTx,
 } from '@nadohq/shared';
@@ -24,6 +26,10 @@ export interface EngineServerCancelOrdersResponse {
   cancelled_orders: EngineServerOrderResponse[];
 }
 
+export interface EngineServerUpdateDependencyResponse {
+  digest: string;
+}
+
 export interface EngineServerExecuteResponseDataByType {
   burn_nlp: null;
   cancel_and_place: EngineServerPlaceOrderResponse;
@@ -35,7 +41,9 @@ export interface EngineServerExecuteResponseDataByType {
   place_order: EngineServerPlaceOrderResponse;
   place_orders: EngineServerPlaceOrdersResponse;
   transfer_quote: null;
+  update_dependency: EngineServerUpdateDependencyResponse;
   withdraw_collateral: null;
+  withdraw_collateral_v2: null;
 }
 
 export interface EngineServerExecuteSuccessResult<
@@ -123,8 +131,12 @@ export interface EngineServerExecuteRequestByType {
     stop_on_failure: boolean | null;
   };
   transfer_quote: SignedTx<EIP712TransferQuoteValues>;
+  update_dependency: SignedTx<EIP712UpdateDependencyValues>;
   withdraw_collateral: WithSpotLeverage<
     SignedTx<EIP712WithdrawCollateralValues>
+  >;
+  withdraw_collateral_v2: WithSpotLeverage<
+    SignedTx<EIP712WithdrawCollateralV2Values>
   >;
 }
 

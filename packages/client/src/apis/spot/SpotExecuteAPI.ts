@@ -15,10 +15,15 @@ import {
   MintNlpParams,
   TransferQuoteParams,
   WithdrawCollateralParams,
+  WithdrawCollateralV2Params,
 } from './types';
 
 export class SpotExecuteAPI extends BaseSpotAPI {
   async deposit(params: DepositCollateralParams) {
+    if (!isWriteableContract(this.context.contracts.endpoint)) {
+      throw new WalletNotProvidedError();
+    }
+
     return depositCollateral({
       endpoint: this.context.contracts.endpoint,
       subaccountName: params.subaccountName,
@@ -30,6 +35,24 @@ export class SpotExecuteAPI extends BaseSpotAPI {
 
   async withdraw(params: WithdrawCollateralParams) {
     return this.context.engineClient.withdrawCollateral({
+      ...params,
+      subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
+      chainId: this.getWalletClientChainIdIfNeeded(params),
+      verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),
+    });
+  }
+
+  /**
+   * Withdraws collateral to a custom recipient address via the `withdraw_collateral_v2` execute.
+   *
+   * When `sendTo` is the zero address, funds are sent to the subaccount owner. When `sendTo` is a
+   * non-zero address, the transaction must be signed by the subaccount owner (linked signers are
+   * not permitted).
+   *
+   * @param params
+   */
+  async withdrawV2(params: WithdrawCollateralV2Params) {
+    return this.context.engineClient.withdrawCollateralV2({
       ...params,
       subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
       chainId: this.getWalletClientChainIdIfNeeded(params),

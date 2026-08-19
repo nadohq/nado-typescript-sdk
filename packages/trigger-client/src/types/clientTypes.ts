@@ -5,7 +5,9 @@ import {
 import {
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
+  EIP712UpdateDependencyParams,
   OrderAppendix,
+  SignatureParams,
   Subaccount,
 } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
@@ -17,15 +19,6 @@ import {
 } from './serverQueryTypes';
 
 type WithOptionalNonce<T> = Omit<T, 'nonce'> & { nonce?: string };
-
-interface SignatureParams {
-  /**
-   * Address derived from productId for placement (see getOrderVerifyingAddr)
-   * endpoint address for cancellation & listing
-   */
-  verifyingAddr: string;
-  chainId: number;
-}
 
 /**
  * Executes
@@ -58,6 +51,9 @@ export type TriggerCancelOrdersParams = SignatureParams &
 
 export type TriggerCancelProductOrdersParams = SignatureParams &
   WithOptionalNonce<EIP712CancelProductOrdersParams>;
+
+export type TriggerUpdateDependencyParams = SignatureParams &
+  WithOptionalNonce<EIP712UpdateDependencyParams>;
 
 /**
  * Queries
