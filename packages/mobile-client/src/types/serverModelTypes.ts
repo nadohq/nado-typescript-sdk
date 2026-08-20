@@ -18,6 +18,19 @@ export type MobileNotificationCategory =
   | 'announcement';
 
 /**
+ * Server-side identity summary (snake_case): the read-time identity fields the backend attaches to a
+ * subaccount wherever it surfaces one alongside other data. Name fields are `null` until the subaccount
+ * claims a username, and a rename shows up on the next read without any change to the surrounding record.
+ */
+export interface MobileServerIdentitySummary {
+  subaccount: Hex;
+  username: string | null;
+  display_name: string | null;
+  /** Reserved for a future avatar source; `null` until one is implemented. */
+  avatar_url: string | null;
+}
+
+/**
  * Server-side public profile shape (snake_case). Name fields are `null` until the subaccount claims a
  * username.
  */
@@ -26,6 +39,24 @@ export interface MobileServerProfile {
   username: string | null;
   display_name: string | null;
   private_mode: boolean;
+  /**
+   * Exact count at query time — the backend counts rather than reading a cached counter. Unnamed and private
+   * accounts are included: Private Mode hides activity, not relationships.
+   */
+  follower_count: number;
+  following_count: number;
+}
+
+/**
+ * Server-side row of a Followers or Following page (snake_case). `is_following` describes the *Viewer's*
+ * relationship to this account, not the listed relationship that put it in the page, so it is `false` on the
+ * Viewer's own row.
+ */
+export interface MobileServerFollowListAccount {
+  identity: MobileServerIdentitySummary;
+  is_following: boolean;
+  /** The listed account's own follower count, exact at query time. */
+  follower_count: number;
 }
 
 /**
@@ -97,14 +128,9 @@ export interface MobileServerFeedMargin {
  * trader's current identity. Amounts are display-oriented human-unit JSON numbers — do not use them for
  * accounting, order construction, or exact threshold decisions.
  */
-export interface MobileServerFeedTrade {
+export interface MobileServerFeedTrade extends MobileServerIdentitySummary {
   /** Order digest this row is keyed by; the stable id clients use to reconcile live pagination. */
   order_digest: Hex;
-  subaccount: Hex;
-  username: string | null;
-  display_name: string | null;
-  /** Reserved for a future avatar source; `null` until one is implemented. */
-  avatar_url: string | null;
   product_id: number;
   /** Executed quantity in human units. */
   quantity: number;

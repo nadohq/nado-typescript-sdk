@@ -1,15 +1,16 @@
 import {
   MOBILE_DISPLAY_NAME_PATTERN,
   MOBILE_ERROR_CODES,
-  MobileServerFailureError,
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
   assertBoolean,
   assertDefined,
   assertHexString,
+  assertNonNegativeInteger,
   assertNullableString,
   assertString,
 } from '../utils/assertions';
@@ -53,7 +54,7 @@ void describe(
     });
 
     void test('rejects a malformed display name with INVALID_DISPLAY_NAME', async () => {
-      await assertRejectsWithErrorCode(
+      await assertRejectsWithMobileErrorCode(
         () => tc.mobile.getUsernameAvailability({ displayName: '!!' }),
         MOBILE_ERROR_CODES.INVALID_DISPLAY_NAME,
       );
@@ -72,6 +73,14 @@ void describe(
       assertBoolean(identity.privateMode, 'identity.privateMode');
       assertNullableString(identity.username, 'identity.username');
       assertNullableString(identity.displayName, 'identity.displayName');
+      assertNonNegativeInteger(
+        identity.followerCount,
+        'identity.followerCount',
+      );
+      assertNonNegativeInteger(
+        identity.followingCount,
+        'identity.followingCount',
+      );
     });
 
     void test('resolves a public profile for an unclaimed subaccount', async () => {
@@ -86,10 +95,13 @@ void describe(
       assert.equal(profile.username, null);
       assert.equal(profile.displayName, null);
       assert.equal(profile.privateMode, false);
+      // A subaccount nobody could have followed yet has exact zero counts rather than an absent field.
+      assert.equal(profile.followerCount, 0);
+      assert.equal(profile.followingCount, 0);
     });
 
     void test('returns PROFILE_NOT_FOUND for an isolated subaccount', async () => {
-      await assertRejectsWithErrorCode(
+      await assertRejectsWithMobileErrorCode(
         () =>
           tc.mobile.getPublicProfile({
             subaccountOwner: tc.walletClientAddress,
@@ -167,7 +179,7 @@ void describe(
 
       // Usernames are unique across all identities, so a second subaccount of the same owner cannot take a
       // name the default subaccount already holds. Signing still works because the owner is unchanged.
-      await assertRejectsWithErrorCode(
+      await assertRejectsWithMobileErrorCode(
         () =>
           tc.mobile.setUsername({
             ...identityParams,
@@ -220,21 +232,3 @@ void describe(
     });
   },
 );
-
-/**
- * Asserts that the given operation rejects with a {@link MobileServerFailureError} carrying the expected
- * mobile service API error code.
- */
-async function assertRejectsWithErrorCode(
-  operation: () => Promise<unknown>,
-  expectedErrorCode: number,
-): Promise<void> {
-  await assert.rejects(operation, (error: unknown) => {
-    assert.ok(
-      error instanceof MobileServerFailureError,
-      'should throw MobileServerFailureError',
-    );
-    assert.equal(error.errorCode, expectedErrorCode);
-    return true;
-  });
-}

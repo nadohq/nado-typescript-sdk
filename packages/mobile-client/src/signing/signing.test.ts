@@ -19,8 +19,8 @@ const FIXED_PRIVATE_KEY =
   '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b786907' as const;
 const FIXED_VERIFYING_ADDR = '0x0000000000000000000000000000000000000001';
 
-// `set_username`, `set_private_mode`, and `register_expo_token` mirror the backend's pinned fixtures in
-// mobile/src/api/types.rs, so a divergence here is a real wire-format break rather than a stale expectation.
+// Every hash here mirrors the backend's pinned fixtures in mobile/src/api/types.rs, so a divergence is a
+// real wire-format break rather than a stale expectation.
 const PINNED_HASHES = {
   set_username:
     '0xb4a55d9eb0be4e5c9457761c0c34c75cf39f7c07bd170700d8dd5e9c7de4a659',
@@ -28,7 +28,21 @@ const PINNED_HASHES = {
     '0x4d12a06234d751e6ddcc01d8f70836bb5b7e207e573641d1efb5aaf2b0f30d10',
   register_expo_token:
     '0x1b9471afc9bde66f9bffd576d3326420e1bade4e16afa3a73ddc65f27155611c',
+  set_follow_true:
+    '0x1ff8529b7c1a0111313eed98536e591555a3bcab51133776ce30c6ef32b559b3',
+  set_follow_false:
+    '0xec9e9e8f32ac4fcf3015f8b7f20c338623ff85db0488703c7fb688519a46e2e5',
+  follow_summary:
+    '0x9872d3eb331bd76476d6b22003f8e929de88b44fea6a65492ed48b14ecdbf99f',
+  followers:
+    '0x44f3cd2c991196cf949a25cebe0e16a4e5e8a14846d35751f3931de3c8ffcabd',
+  following:
+    '0xaddabad62abf1919dcd4250eee20359970cbfb59f4c81536551462f8918e5ddd',
 } as const;
+
+// Every follow fixture on the backend targets this subaccount.
+const FIXTURE_TARGET_SUBACCOUNT =
+  '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
 
 describe('[mobile-client]: signing (offline)', () => {
   describe('pinned payload hashes', () => {
@@ -61,6 +75,58 @@ describe('[mobile-client]: signing (offline)', () => {
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.register_expo_token);
     });
+
+    it('set_follow (follow)', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_follow',
+        subaccount: FIXTURE_TARGET_SUBACCOUNT,
+        is_following: true,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.set_follow_true);
+    });
+
+    it('set_follow (unfollow)', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_follow',
+        subaccount: FIXTURE_TARGET_SUBACCOUNT,
+        is_following: false,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.set_follow_false);
+    });
+
+    it('follow_summary', () => {
+      const inner: MobileSignedInner = {
+        type: 'follow_summary',
+        subaccount: FIXTURE_TARGET_SUBACCOUNT,
+        followed_by_limit: 2,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.follow_summary);
+    });
+
+    it('followers', () => {
+      const inner: MobileSignedInner = {
+        type: 'followers',
+        subaccount: FIXTURE_TARGET_SUBACCOUNT,
+        cursor: null,
+        limit: 50,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.followers);
+    });
+
+    it('following', () => {
+      const inner: MobileSignedInner = {
+        type: 'following',
+        subaccount: FIXTURE_TARGET_SUBACCOUNT,
+        cursor: null,
+        limit: 50,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.following);
+    });
   });
 
   it('canonicalizes msgpack key order regardless of input key order', () => {
@@ -76,8 +142,8 @@ describe('[mobile-client]: signing (offline)', () => {
   });
 
   it('canonicalizes multi-field key order regardless of input key order', () => {
-    // register_expo_token is the only signed payload with more than one field, so it is where a caller can
-    // actually get the order wrong; canonicalizeMobileInner must rebuild it in the backend's declaration order.
+    // register_expo_token has the most fields of any signed payload, so it is where a caller is most likely
+    // to get the order wrong; canonicalizeMobileInner must rebuild it in the backend's declaration order.
     const outOfOrderInner = {
       app_version: '1.2.3',
       locale: 'en-GB',

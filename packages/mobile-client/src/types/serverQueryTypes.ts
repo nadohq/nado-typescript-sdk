@@ -3,12 +3,15 @@ import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileNotificationPlatform,
   MobileServerFeedTrade,
+  MobileServerFollowListAccount,
+  MobileServerIdentitySummary,
   MobileServerNotificationPreferences,
   MobileServerProfile,
 } from './serverModelTypes';
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
 
 /**
@@ -94,3 +97,44 @@ export type MobileServerPublicQuerySuccessResponse<
   T extends MobileServerPublicQueryRequestType =
     MobileServerPublicQueryRequestType,
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
+
+/**
+ * Payload of the `follow_summary` signed query success response. `is_following` is the direct
+ * `Viewer -> viewed Profile` relationship; every `followed_by` entry satisfies both `Viewer -> entry` and
+ * `entry -> viewed Profile`, so each one is already familiar and carries no `is_following` of its own.
+ */
+export interface MobileServerFollowSummaryResponse {
+  is_following: boolean;
+  /** Exact size of the two-edge intersection, independent of how many previews were requested. */
+  followed_by_count: number;
+  followed_by: MobileServerIdentitySummary[];
+}
+
+/**
+ * Payload of the `followers` and `following` signed query success responses. Both list directions share one
+ * shape; only the relationship that selected the rows differs.
+ */
+export interface MobileServerFollowListResponse {
+  accounts: MobileServerFollowListAccount[];
+  /** `null` means the list is complete. */
+  next_cursor: string | null;
+}
+
+/**
+ * Success payloads for each signed `query`, keyed by request `type` — the signed counterpart to
+ * {@link MobileServerPublicQueryResponseByType}.
+ */
+export interface MobileServerSignedQueryResponseByType {
+  follow_summary: MobileServerFollowSummaryResponse;
+  followers: MobileServerFollowListResponse;
+  following: MobileServerFollowListResponse;
+}
+
+/**
+ * Full success response for a signed `query`: the {@link MobileServerSuccessResponse} envelope with the
+ * query's payload inlined alongside `status`.
+ */
+export type MobileServerSignedQuerySuccessResponse<
+  T extends MobileServerSignedQueryRequestType =
+    MobileServerSignedQueryRequestType,
+> = MobileServerSuccessResponse & MobileServerSignedQueryResponseByType[T];

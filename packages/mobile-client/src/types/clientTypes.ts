@@ -18,6 +18,75 @@ export interface MobilePublicProfile {
   /** User-facing name as claimed, or `null` if no username has been claimed. */
   displayName: string | null;
   privateMode: boolean;
+  /**
+   * Exact count at query time rather than a cached counter, including unnamed and private accounts — Private
+   * Mode hides activity, not relationships.
+   */
+  followerCount: number;
+  followingCount: number;
+}
+
+/**
+ * The identity fields the backend attaches to a subaccount wherever it surfaces one alongside other data.
+ * Resolved at read time, so a rename shows up on the next read without any change to the surrounding record.
+ */
+export interface MobileIdentitySummary {
+  subaccount: Hex;
+  /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
+  username: string | null;
+  /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
+  displayName: string | null;
+  /** Reserved for a future avatar source; `null` until one is implemented. */
+  avatarUrl: string | null;
+}
+
+/**
+ * A Viewer's relationship with one Profile, plus the Followed By preview: accounts the Viewer follows that
+ * also follow that Profile. Every preview entry is therefore already familiar to the Viewer, which is why it
+ * carries no `isFollowing` of its own.
+ */
+export interface MobileFollowSummary {
+  /** The direct `Viewer -> viewed Profile` relationship. */
+  isFollowing: boolean;
+  /** Exact size of the two-edge intersection, independent of how many previews were requested. */
+  followedByCount: number;
+  /** Newest `preview -> viewed Profile` relationship first, with a bytes32 tie-break. */
+  followedBy: MobileIdentitySummary[];
+}
+
+/**
+ * One row of a Followers or Following page.
+ */
+export interface MobileFollowListAccount {
+  identity: MobileIdentitySummary;
+  /**
+   * Whether the *Viewer* follows this account — not the listed relationship that put it in the page. The
+   * Viewer can appear in another Profile's list, and does not follow themself, so their own row is `false`.
+   */
+  isFollowing: boolean;
+  /** This account's own follower count. */
+  followerCount: number;
+}
+
+/**
+ * A page of Followers or Following. Pagination is live rather than snapshot: a Follow or Unfollow between
+ * pages can move an account, so an account can appear twice or not at all across one session. Deduplicate by
+ * {@link MobileIdentitySummary.subaccount} and restart from `cursor: undefined` on refresh.
+ */
+export interface MobileFollowListPage {
+  accounts: MobileFollowListAccount[];
+  /** `null` means the list is complete. */
+  nextCursor: string | null;
+}
+
+/**
+ * Post-commit state of a follow or unfollow. The mutation and its count share one database transaction, so
+ * these values are authoritative — apply them rather than re-reading.
+ */
+export interface MobileFollowMutationResult {
+  isFollowing: boolean;
+  /** The *target's* follower count after the mutation, not the sender's. */
+  followerCount: number;
 }
 
 /**
@@ -43,16 +112,9 @@ export interface MobileFeedMargin {
  * (a rename can change an already-fetched trade on the next read). Amounts are display-oriented human-unit
  * numbers — do not use them for accounting, order construction, or exact threshold decisions.
  */
-export interface MobileFeedTrade {
+export interface MobileFeedTrade extends MobileIdentitySummary {
   /** Order digest this trade is keyed by; the stable id for reconciling live pagination. */
   orderDigest: Hex;
-  subaccount: Hex;
-  /** `null` when the trader has not claimed a username; render a local fallback label from `subaccount`. */
-  username: string | null;
-  /** `null` when the trader has not claimed a username; render a local fallback label from `subaccount`. */
-  displayName: string | null;
-  /** Reserved for a future avatar source; `null` until one is implemented. */
-  avatarUrl: string | null;
   productId: number;
   /** Executed quantity in human units. */
   quantity: number;
@@ -191,6 +253,61 @@ export interface MobileSetUsernameParams extends MobileSignedRequestParams {
 export interface MobileSetPrivateModeParams extends MobileSignedRequestParams {
   privateMode: boolean;
 }
+
+/**
+ * Common params for the signed follow requests. The subaccount carried by {@link MobileSignedRequestParams}
+ * is the signing Viewer (the Follower, for mutations); `target` is the other party.
+ */
+export interface MobileFollowRequestParams extends MobileSignedRequestParams {
+  /** The Profile being followed, unfollowed, or read. Must not be the signing subaccount. */
+  target: Subaccount;
+}
+
+/**
+ * Params for {@link MobileClient.setFollow}.
+ */
+export interface MobileSetFollowParams extends MobileFollowRequestParams {
+  /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
+  isFollowing: boolean;
+}
+
+/**
+ * Params for {@link MobileClient.getFollowSummary}.
+ */
+export interface GetMobileFollowSummaryParams extends MobileFollowRequestParams {
+  /**
+   * Number of Followed By preview identities to return, 0–`MOBILE_FOLLOWED_BY_MAX_LIMIT` (10); the backend
+   * defaults to `MOBILE_FOLLOWED_BY_DEFAULT_LIMIT` (2) when omitted. Pass 0 for the count alone.
+   */
+  followedByLimit?: number;
+}
+
+/**
+ * Common params for a Followers or Following page.
+ */
+export interface GetMobileFollowListParams extends MobileFollowRequestParams {
+  /**
+   * Opaque cursor from the previous page's {@link MobileFollowListPage.nextCursor}. Omit for the first page.
+   * A cursor is bound to its Viewer, Profile, and list direction — reusing it elsewhere fails with
+   * `INVALID_FOLLOW_CURSOR`.
+   */
+  cursor?: string;
+  /**
+   * Page size, 1–`MOBILE_FOLLOW_LIST_MAX_PAGE_SIZE` (50); the backend defaults to
+   * `MOBILE_FOLLOW_LIST_DEFAULT_PAGE_SIZE` (25) when omitted.
+   */
+  limit?: number;
+}
+
+/**
+ * Params for {@link MobileClient.getFollowers}.
+ */
+export type GetMobileFollowersParams = GetMobileFollowListParams;
+
+/**
+ * Params for {@link MobileClient.getFollowing}.
+ */
+export type GetMobileFollowingParams = GetMobileFollowListParams;
 
 /**
  * Params for {@link MobileClient.registerExpoToken}.

@@ -7,6 +7,9 @@ import {
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapMobileFeedPage,
+  mapMobileFollowListPage,
+  mapMobileFollowMutationResult,
+  mapMobileFollowSummary,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobilePublicProfile,
@@ -20,15 +23,22 @@ import {
 } from './signing';
 import {
   GetMobileFeedParams,
+  GetMobileFollowersParams,
+  GetMobileFollowingParams,
+  GetMobileFollowSummaryParams,
   GetMobileNotificationPreferencesParams,
   GetMobilePublicProfileParams,
   GetMobileRegisteredWalletParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
+  MobileFollowListPage,
+  MobileFollowMutationResult,
+  MobileFollowSummary,
   MobileNotificationPreferences,
   MobilePublicProfile,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
+  MobileSetFollowParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
   MobileSignedRequestParams,
@@ -40,15 +50,19 @@ import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
 import {
   MobileServerExecuteResult,
+  MobileServerExecuteSuccessResponse,
   MobileServerPublicExecuteRequest,
 } from './types/serverExecuteTypes';
 import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQuerySuccessResponse,
 } from './types/serverQueryTypes';
 import {
+  MobileServerExecuteRequestType,
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
 import {
   isMobileServerFailureResponse,
@@ -78,8 +92,8 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed, privacy
- * settings, and push notification device/preference management.
+ * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed, the
+ * follower/following graph, privacy settings, and push notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -254,6 +268,78 @@ export class MobileClient {
   }
 
   /*
+  Signed queries
+   */
+
+  /**
+   * Reads the signing Viewer's relationship with one Profile, plus the Followed By preview: accounts the
+   * Viewer follows that also follow that Profile. `isFollowing` lives here rather than on the unsigned
+   * profile lookup because an unsigned viewer identity would be an unauthenticated claim.
+   *
+   * Does not return the Profile's follower or following totals — pair it with
+   * {@link MobileClient.getPublicProfile} when the UI needs both.
+   *
+   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the viewed Profile is in the
+   * engine-created isolated namespace, or `INVALID_FOLLOW_LIMIT` if `followedByLimit` is outside 0–10.
+   */
+  async getFollowSummary(
+    params: GetMobileFollowSummaryParams,
+  ): Promise<MobileFollowSummary> {
+    const signedRequest = await this.getSignedRequest(
+      'follow_summary',
+      params,
+      {
+        subaccount: subaccountToHex(params.target),
+        followed_by_limit: params.followedByLimit ?? null,
+      },
+    );
+    const data = await this.signedQuery<'follow_summary'>(signedRequest);
+    return mapMobileFollowSummary(data);
+  }
+
+  /**
+   * Fetches a page of the accounts that follow the given Profile.
+   *
+   * Familiar accounts (those the signing Viewer follows) come first, unfamiliar second, and within each group
+   * the newest listed relationship first with a bytes32 tie-break. The grouping is evaluated per request
+   * against the live graph, so following an account from inside the list moves it between groups on the next
+   * page — deduplicate by subaccount and do not re-sort locally.
+   *
+   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the viewed Profile is isolated,
+   * `INVALID_FOLLOW_CURSOR` if the cursor is malformed or was issued for a different Viewer, Profile, or list
+   * direction (discard it and restart from the first page), or `INVALID_FOLLOW_LIMIT` if `limit` is outside
+   * 1–50.
+   */
+  async getFollowers(
+    params: GetMobileFollowersParams,
+  ): Promise<MobileFollowListPage> {
+    const signedRequest = await this.getSignedRequest('followers', params, {
+      subaccount: subaccountToHex(params.target),
+      cursor: params.cursor ?? null,
+      limit: params.limit ?? null,
+    });
+    const data = await this.signedQuery<'followers'>(signedRequest);
+    return mapMobileFollowListPage(data);
+  }
+
+  /**
+   * Fetches a page of the accounts the given Profile follows. Ordering, cursor rules, and errors match
+   * {@link MobileClient.getFollowers}. When the Viewer reads their own Following list every row is familiar,
+   * so every `isFollowing` is `true`.
+   */
+  async getFollowing(
+    params: GetMobileFollowingParams,
+  ): Promise<MobileFollowListPage> {
+    const signedRequest = await this.getSignedRequest('following', params, {
+      subaccount: subaccountToHex(params.target),
+      cursor: params.cursor ?? null,
+      limit: params.limit ?? null,
+    });
+    const data = await this.signedQuery<'following'>(signedRequest);
+    return mapMobileFollowListPage(data);
+  }
+
+  /*
   Signed executes
    */
 
@@ -314,6 +400,32 @@ export class MobileClient {
     return this.execute(signedRequest);
   }
 
+  /**
+   * Sets whether the signing subaccount follows a Profile. Both directions are idempotent: following again
+   * keeps the original relationship creation time, so it does not move the account in recency order, and
+   * unfollowing a relationship that does not exist succeeds with `isFollowing: false`. Unfollowing deletes
+   * the relationship rather than deactivating it, so a later follow gets a new creation time and moves the
+   * account to the front of recency order.
+   *
+   * Only `isFollowing: true` is checked against the canonical Query DB subaccount index, so unfollowing still
+   * works while that index lags.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_FOLLOW_TARGET` if the target is the sender or
+   * either party is isolated, `FOLLOWER_NOT_ELIGIBLE` if the sender is not yet in the canonical Query DB
+   * subaccount index, or `FOLLOWING_NOT_FOUND` if the target is not. Both index errors are transient for an
+   * account that is being recorded, so they are retryable after catch-up — unlike `INVALID_FOLLOW_TARGET`.
+   */
+  async setFollow(
+    params: MobileSetFollowParams,
+  ): Promise<MobileFollowMutationResult> {
+    const signedRequest = await this.getSignedRequest('set_follow', params, {
+      subaccount: subaccountToHex(params.target),
+      is_following: params.isFollowing,
+    });
+    const data = await this.execute<'set_follow'>(signedRequest);
+    return mapMobileFollowMutationResult(data);
+  }
+
   /*
   Base Fns
    */
@@ -367,9 +479,9 @@ export class MobileClient {
     return response.data as MobileServerSuccessResponse;
   }
 
-  protected async execute(
-    body: MobileSignedRequest,
-  ): Promise<MobileServerSuccessResponse> {
+  protected async execute<
+    T extends MobileServerExecuteRequestType = MobileServerExecuteRequestType,
+  >(body: MobileSignedRequest): Promise<MobileServerExecuteSuccessResponse<T>> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/mobile/execute`,
       body,
@@ -379,7 +491,22 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
-    return response.data as MobileServerSuccessResponse;
+    return response.data as MobileServerExecuteSuccessResponse<T>;
+  }
+
+  protected async signedQuery<T extends MobileServerSignedQueryRequestType>(
+    body: MobileSignedRequest,
+  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
+    const response = await this.axiosInstance.post<unknown>(
+      `${this.opts.url}/mobile/query`,
+      body,
+    );
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
+    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   /**

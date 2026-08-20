@@ -1,19 +1,27 @@
 import {
   MobileFeedPage,
   MobileFeedTrade,
+  MobileFollowListPage,
+  MobileFollowMutationResult,
+  MobileFollowSummary,
+  MobileIdentitySummary,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
   MobilePublicProfile,
   MobileRegisteredWallet,
 } from './types/clientTypes';
+import { MobileServerFollowMutationResponse } from './types/serverExecuteTypes';
 import {
   MobileServerFeedTrade,
+  MobileServerIdentitySummary,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
 } from './types/serverModelTypes';
 import {
   MobileServerFeedResponse,
+  MobileServerFollowListResponse,
+  MobileServerFollowSummaryResponse,
   MobileServerRegisteredWalletResponse,
 } from './types/serverQueryTypes';
 
@@ -28,6 +36,63 @@ export function mapMobilePublicProfile(
     username: server.username,
     displayName: server.display_name,
     privateMode: server.private_mode,
+    followerCount: server.follower_count,
+    followingCount: server.following_count,
+  };
+}
+
+/**
+ * Maps a server-side identity summary (snake_case) to its client-side (camelCase) representation.
+ */
+function mapMobileIdentitySummary(
+  server: MobileServerIdentitySummary,
+): MobileIdentitySummary {
+  return {
+    subaccount: server.subaccount,
+    username: server.username,
+    displayName: server.display_name,
+    avatarUrl: server.avatar_url,
+  };
+}
+
+/**
+ * Maps a server-side follow summary response to its client-side representation.
+ */
+export function mapMobileFollowSummary(
+  server: MobileServerFollowSummaryResponse,
+): MobileFollowSummary {
+  return {
+    isFollowing: server.is_following,
+    followedByCount: server.followed_by_count,
+    followedBy: server.followed_by.map(mapMobileIdentitySummary),
+  };
+}
+
+/**
+ * Maps a server-side Followers or Following response to a client-side {@link MobileFollowListPage}.
+ */
+export function mapMobileFollowListPage(
+  server: MobileServerFollowListResponse,
+): MobileFollowListPage {
+  return {
+    accounts: server.accounts.map((account) => ({
+      identity: mapMobileIdentitySummary(account.identity),
+      isFollowing: account.is_following,
+      followerCount: account.follower_count,
+    })),
+    nextCursor: server.next_cursor,
+  };
+}
+
+/**
+ * Maps a server-side follow or unfollow response to its client-side representation.
+ */
+export function mapMobileFollowMutationResult(
+  server: MobileServerFollowMutationResponse,
+): MobileFollowMutationResult {
+  return {
+    isFollowing: server.is_following,
+    followerCount: server.follower_count,
   };
 }
 
@@ -86,11 +151,8 @@ function mapMobileNotificationPreferenceScopeToServer(
  */
 function mapMobileFeedTrade(server: MobileServerFeedTrade): MobileFeedTrade {
   return {
+    ...mapMobileIdentitySummary(server),
     orderDigest: server.order_digest,
-    subaccount: server.subaccount,
-    username: server.username,
-    displayName: server.display_name,
-    avatarUrl: server.avatar_url,
     productId: server.product_id,
     quantity: server.quantity,
     notional: server.notional,

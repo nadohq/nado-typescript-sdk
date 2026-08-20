@@ -1,7 +1,8 @@
 # `@nadohq/mobile-client`
 
 HTTP client for the Nado mobile service API. Manages usernames, public profile lookups, the global trade feed,
-privacy settings, and push notification devices/preferences, using EIP-712 + msgpack signed authentication.
+the follower/following graph, privacy settings, and push notification devices/preferences, using EIP-712 +
+msgpack signed authentication.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -52,9 +53,14 @@ await mobile.setUsername({
 `unregisterExpoToken`, `updateNotificationPreferences`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
+### Signed Queries
+
+`getFollowSummary`, `getFollowers`, `getFollowing`. Every follow graph read is signed because the results are
+relative to the signing Viewer, including each paginated request.
+
 ### Signed Executes
 
-`setUsername`, `setPrivateMode`, `registerExpoToken`.
+`setUsername`, `setPrivateMode`, `registerExpoToken`, `setFollow`.
 
 ### Linked Signers
 

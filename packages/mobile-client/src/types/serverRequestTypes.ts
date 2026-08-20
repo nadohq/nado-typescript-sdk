@@ -53,17 +53,33 @@ export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
 /**
- * Discriminant `type` values for signed `execute` requests: the write subset of {@link MobileSignedInner}
- * tags. With no signed queries remaining, every signed inner type is an execute.
+ * Discriminant `type` values for signed `query` requests: the read-only subset of {@link MobileSignedInner}
+ * tags. Unlike the public queries, these carry no separate params map — a signed request body *is* its inner
+ * payload flattened with the envelope, so {@link MobileSignedInner} is the single source of truth for both
+ * the fields and their significant order.
  */
-export type MobileServerExecuteRequestType = MobileSignedInner['type'];
+export type MobileServerSignedQueryRequestType =
+  | 'follow_summary'
+  | 'followers'
+  | 'following';
+
+/**
+ * Discriminant `type` values for signed `execute` requests: the write subset of {@link MobileSignedInner}
+ * tags, i.e. everything that is not a signed query.
+ */
+export type MobileServerExecuteRequestType = Exclude<
+  MobileSignedInner['type'],
+  MobileServerSignedQueryRequestType
+>;
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
- * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
- * writes (e.g. `execute_set_username`).
+ * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, `execute_*` for signed
+ * writes (e.g. `execute_set_username`), and `query_*` for signed reads (e.g. `query_followers`). The prefix
+ * names the route, so it never carries the `mobile:` prefix that the EIP-712 method does.
  */
 export type MobileServerRequestType =
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
-  | `execute_${MobileServerExecuteRequestType}`;
+  | `execute_${MobileServerExecuteRequestType}`
+  | `query_${MobileServerSignedQueryRequestType}`;

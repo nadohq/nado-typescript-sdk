@@ -11,6 +11,11 @@ import { MobileNotificationPlatform } from '../types/serverModelTypes';
  * declares its structs — `type` first, then the remaining fields — or the hash won't match and signature
  * verification fails. This type only describes the shape; the authoritative runtime key order is enforced by
  * {@link canonicalizeMobileInner}, which is the source of truth. Keep the field order here in sync with it.
+ *
+ * Every bytes32 field must be lowercase hex. The backend decodes them case-insensitively but hashes its own
+ * re-serialization, which is always lowercase, so a mixed-case value is accepted on the wire and then fails
+ * authentication against a hash the client never reproduced. Build them with `subaccountToHex`, which
+ * lowercases; unlike bytes32, string fields such as `display_name` are hashed as-is and keep their casing.
  */
 export type MobileSignedInner =
   | { type: 'set_username'; display_name: string }
@@ -23,6 +28,34 @@ export type MobileSignedInner =
       // backend, which serializes `Option::None` as nil under the same key.
       locale: string | null;
       app_version: string | null;
+    }
+  | {
+      type: 'set_follow';
+      subaccount: Hex;
+      /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
+      is_following: boolean;
+    }
+  | {
+      type: 'follow_summary';
+      subaccount: Hex;
+      /** `null` requests the backend default of 2; otherwise 0–10, where 0 omits the preview identities. */
+      followed_by_limit: number | null;
+    }
+  | {
+      type: 'followers';
+      subaccount: Hex;
+      /** `null` requests the first page; otherwise an opaque cursor from the previous page. */
+      cursor: string | null;
+      /** `null` requests the backend default of 25; otherwise 1–50. */
+      limit: number | null;
+    }
+  | {
+      type: 'following';
+      subaccount: Hex;
+      /** `null` requests the first page; otherwise an opaque cursor from the previous page. */
+      cursor: string | null;
+      /** `null` requests the backend default of 25; otherwise 1–50. */
+      limit: number | null;
     };
 
 /**
