@@ -33,6 +33,13 @@ export interface MobileServerFollowMutationResponse {
 }
 
 /**
+ * Payload of an execute route that returns nothing beyond the success discriminant. Spelled `Record<never,
+ * never>` rather than `Record<string, never>` because the latter's index signature would collapse `status` to
+ * `never` when intersected with the success envelope.
+ */
+export type MobileServerEmptyExecuteResponse = Record<never, never>;
+
+/**
  * Success payloads for each signed `execute`, keyed by request `type`. Most execute routes carry no payload
  * beyond the success discriminant and so map to an empty object; `set_follow` returns its post-commit
  * relationship state.
@@ -43,13 +50,6 @@ export interface MobileServerExecuteResponseByType {
   register_expo_token: MobileServerEmptyExecuteResponse;
   set_follow: MobileServerFollowMutationResponse;
 }
-
-/**
- * Payload of an execute route that returns nothing beyond the success discriminant. Spelled `Record<never,
- * never>` rather than `Record<string, never>` because the latter's index signature would collapse `status` to
- * `never` when intersected with the success envelope.
- */
-export type MobileServerEmptyExecuteResponse = Record<never, never>;
 
 /**
  * Full success response for a signed `execute`: the {@link MobileServerSuccessResponse} envelope with the

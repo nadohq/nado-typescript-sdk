@@ -18,6 +18,7 @@ import {
 import {
   buildSignedMobileRequest,
   MobileSignedInner,
+  MobileSignedInnerByType,
   MobileSignedInnerParams,
   MobileSignedRequest,
 } from './signing';
@@ -293,7 +294,7 @@ export class MobileClient {
         followed_by_limit: params.followedByLimit ?? null,
       },
     );
-    const data = await this.signedQuery<'follow_summary'>(signedRequest);
+    const data = await this.signedQuery(signedRequest);
     return mapMobileFollowSummary(data);
   }
 
@@ -318,7 +319,7 @@ export class MobileClient {
       cursor: params.cursor ?? null,
       limit: params.limit ?? null,
     });
-    const data = await this.signedQuery<'followers'>(signedRequest);
+    const data = await this.signedQuery(signedRequest);
     return mapMobileFollowListPage(data);
   }
 
@@ -335,7 +336,7 @@ export class MobileClient {
       cursor: params.cursor ?? null,
       limit: params.limit ?? null,
     });
-    const data = await this.signedQuery<'following'>(signedRequest);
+    const data = await this.signedQuery(signedRequest);
     return mapMobileFollowListPage(data);
   }
 
@@ -422,7 +423,7 @@ export class MobileClient {
       subaccount: subaccountToHex(params.target),
       is_following: params.isFollowing,
     });
-    const data = await this.execute<'set_follow'>(signedRequest);
+    const data = await this.execute(signedRequest);
     return mapMobileFollowMutationResult(data);
   }
 
@@ -430,11 +431,13 @@ export class MobileClient {
   Base Fns
    */
 
+  // Returns the request narrowed to `type` so `execute` and `signedQuery` can infer their response from the
+  // request they are given, instead of being told the type a second time at the call site.
   protected async getSignedRequest<T extends MobileSignedInner['type']>(
     type: T,
     params: MobileSignedRequestParams,
     innerParams: MobileSignedInnerParams<T>,
-  ): Promise<MobileSignedRequest> {
+  ): Promise<MobileSignedRequest<MobileSignedInnerByType<T>>> {
     // Use the linked signer if provided, otherwise use the default signer provided to the client
     const walletClient =
       this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
@@ -443,7 +446,10 @@ export class MobileClient {
       throw new WalletNotProvidedError();
     }
 
-    const inner = { type, ...innerParams } as unknown as MobileSignedInner;
+    const inner = {
+      type,
+      ...innerParams,
+    } as unknown as MobileSignedInnerByType<T>;
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
@@ -479,9 +485,11 @@ export class MobileClient {
     return response.data as MobileServerSuccessResponse;
   }
 
-  protected async execute<
-    T extends MobileServerExecuteRequestType = MobileServerExecuteRequestType,
-  >(body: MobileSignedRequest): Promise<MobileServerExecuteSuccessResponse<T>> {
+  // `T` is inferred from the body's `type` rather than declared by the caller, for the same reason
+  // `publicQuery` spells its body out as an intersection: an indexed access is not an inference site.
+  protected async execute<T extends MobileServerExecuteRequestType>(
+    body: MobileSignedRequest & { type: T },
+  ): Promise<MobileServerExecuteSuccessResponse<T>> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/mobile/execute`,
       body,
@@ -495,7 +503,7 @@ export class MobileClient {
   }
 
   protected async signedQuery<T extends MobileServerSignedQueryRequestType>(
-    body: MobileSignedRequest,
+    body: MobileSignedRequest & { type: T },
   ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/mobile/query`,

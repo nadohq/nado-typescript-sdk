@@ -59,11 +59,17 @@ export type MobileSignedInner =
     };
 
 /**
+ * The single {@link MobileSignedInner} member carrying the given `type` tag.
+ */
+export type MobileSignedInnerByType<T extends MobileSignedInner['type']> =
+  Extract<MobileSignedInner, { type: T }>;
+
+/**
  * Type-specific payload fields for a signed inner request of a given `type` (the inner payload without its
  * `type` tag). Derived from {@link MobileSignedInner} so the two never drift apart.
  */
 export type MobileSignedInnerParams<T extends MobileSignedInner['type']> = Omit<
-  Extract<MobileSignedInner, { type: T }>,
+  MobileSignedInnerByType<T>,
   'type'
 >;
 
