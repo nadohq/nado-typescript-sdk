@@ -1,47 +1,14 @@
-import { NuanzeConfigError } from './errors';
+import { ChainEnv } from '@nadohq/shared';
 
 /**
- * Canonical base URL of the Nuanze public analytics API, including the major
- * version segment.
+ * Base URLs for the Nuanze public analytics API, including the major version segment.
  *
- * Unlike the engine, indexer, and trigger clients there is no per-chain
- * endpoint map: Nuanze is a single public service and accepts no chain
- * environment, wallet client, signer, or contract address.
+ * Nuanze runs a single public deployment that serves mainnet data, so every chain environment maps
+ * to the same host. The map exists so callers can key off `chainEnv` exactly like the other service
+ * clients.
  */
-export const NUANZE_API_BASE_URL = 'https://api.nuanze.co/v1';
-
-/**
- * Normalize and validate a Nuanze base URL.
- *
- * Trailing slashes are stripped so path joining stays unambiguous. Only HTTP
- * and HTTPS are accepted, which rules out `file:`, `data:`, and other schemes
- * that would otherwise reach the transport.
- *
- * @param baseUrl - Override to validate. Defaults to {@link NUANZE_API_BASE_URL}.
- * @returns The normalized absolute base URL, without a trailing slash.
- * @throws {NuanzeConfigError} If the value is not a parseable HTTP(S) URL.
- */
-export function resolveNuanzeBaseUrl(
-  baseUrl: string = NUANZE_API_BASE_URL,
-): string {
-  if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
-    throw new NuanzeConfigError('`baseUrl` must be a non-empty string.');
-  }
-
-  let parsed: URL;
-  try {
-    parsed = new URL(baseUrl);
-  } catch (cause) {
-    throw new NuanzeConfigError(`\`baseUrl\` is not a valid URL: ${baseUrl}`, {
-      cause,
-    });
-  }
-
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new NuanzeConfigError(
-      `\`baseUrl\` must use http or https, received ${parsed.protocol.replace(':', '')}.`,
-    );
-  }
-
-  return parsed.toString().replace(/\/+$/, '');
-}
+export const NUANZE_CLIENT_ENDPOINTS: Record<ChainEnv, string> = {
+  local: 'https://api.nuanze.co/v1',
+  inkTestnet: 'https://api.nuanze.co/v1',
+  inkMainnet: 'https://api.nuanze.co/v1',
+};

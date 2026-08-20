@@ -28,7 +28,7 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
   - `bun run test:e2e:client` - Client E2E tests
   - `bun run test:e2e:engine` - Engine-client E2E tests
   - `bun run test:e2e:indexer` - Indexer-client E2E tests
-  - `bun run test:e2e:nuanze` - Nuanze-client E2E tests (no credentials required)
+  - `bun run test:e2e:nuanze` - Nuanze-client E2E tests
   - `bun run test:e2e:trigger` - Trigger-client E2E tests
   - `bun run test:e2e:mobile` - Mobile-client E2E tests
 - Without building first (if already built): `bun --cwd apps/e2e e2e` and `e2e:client`, `e2e:engine`, `e2e:indexer`, `e2e:nuanze`, `e2e:trigger`, `e2e:mobile`

@@ -1,134 +1,64 @@
 import { toBigNumber } from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
+import { NuanzeLatestTicker, NuanzeMarket } from './types/clientModelTypes';
+import { GetNuanzeMarketsResponse } from './types/clientTypes';
 import {
-  arrayAt,
-  decimalStringAt,
-  enumAt,
-  integerAt,
-  isoTimestampAt,
-  NuanzeSchemaViolationError,
-  nullableAt,
-  objectAt,
-  stringAt,
-} from './schema';
-import type {
-  NuanzeLatestTicker,
-  NuanzeMarket,
-  NuanzeMarketListResponse,
-} from './types';
-import { NUANZE_MARKET_TRADING_STATUSES, NUANZE_MARKET_VENUES } from './types';
-import type { NuanzeDecimal } from './types/decimal';
+  NuanzeServerLatestTicker,
+  NuanzeServerMarket,
+} from './types/serverModelTypes';
+import { NuanzeServerMarketsResponse } from './types/serverQueryTypes';
 
-/**
- * Convert a documented decimal field to {@link NuanzeDecimal}.
- *
- * Mapping is always field-specific: there is no recursive "convert every
- * numeric-looking string" pass, so IDs, counts, ranks, enums, addresses,
- * cursors, timestamps, and calendar days keep their wire types.
- *
- * @param value - Raw field value from the response body.
- * @param pointer - Path to the field, used in violation messages.
- * @returns The value as an exact decimal.
- * @throws {NuanzeSchemaViolationError} If the value is not a finite base-10 decimal string.
- */
-export function nuanzeDecimalAt(
-  value: unknown,
-  pointer: string,
-): NuanzeDecimal {
-  return toBigNumber(decimalStringAt(value, pointer));
+function mapNuanzeDecimal(value: string | null): BigNumber | null {
+  return value === null ? null : toBigNumber(value);
 }
 
 /**
- * Convert a documented nullable decimal field to {@link NuanzeDecimal}.
- *
- * @param value - Raw field value from the response body.
- * @param pointer - Path to the field, used in violation messages.
- * @returns The value as an exact decimal, or null when the API reported null.
- * @throws {NuanzeSchemaViolationError} If the value is neither null nor a finite base-10 decimal string.
+ * Maps a server-side latest ticker to its client-side representation, converting decimal strings to
+ * `BigNumber`.
  */
-export function nullableNuanzeDecimalAt(
-  value: unknown,
-  pointer: string,
-): NuanzeDecimal | null {
-  return nullableAt(value, pointer, nuanzeDecimalAt);
-}
-
-function mapLatestTicker(value: unknown, pointer: string): NuanzeLatestTicker {
-  const latest = objectAt(value, pointer);
+export function mapNuanzeLatestTicker(
+  server: NuanzeServerLatestTicker,
+): NuanzeLatestTicker {
   return {
-    midPrice: nullableNuanzeDecimalAt(latest.midPrice, `${pointer}.midPrice`),
-    bidPrice: nullableNuanzeDecimalAt(latest.bidPrice, `${pointer}.bidPrice`),
-    askPrice: nullableNuanzeDecimalAt(latest.askPrice, `${pointer}.askPrice`),
-    volume24h: nullableNuanzeDecimalAt(
-      latest.volume24h,
-      `${pointer}.volume24h`,
-    ),
-    openInterest: nullableNuanzeDecimalAt(
-      latest.openInterest,
-      `${pointer}.openInterest`,
-    ),
-    priceChange24hPct: nullableNuanzeDecimalAt(
-      latest.priceChange24hPct,
-      `${pointer}.priceChange24hPct`,
-    ),
-    updatedAt: isoTimestampAt(latest.updatedAt, `${pointer}.updatedAt`),
-  };
-}
-
-function mapMarket(value: unknown, pointer: string): NuanzeMarket {
-  const market = objectAt(value, pointer);
-  return {
-    productId: integerAt(market.productId, `${pointer}.productId`),
-    symbol: stringAt(market.symbol, `${pointer}.symbol`),
-    ticker: stringAt(market.ticker, `${pointer}.ticker`),
-    venue: enumAt(market.venue, NUANZE_MARKET_VENUES, `${pointer}.venue`),
-    tradingStatus: enumAt(
-      market.tradingStatus,
-      NUANZE_MARKET_TRADING_STATUSES,
-      `${pointer}.tradingStatus`,
-    ),
-    priceIncrement: nuanzeDecimalAt(
-      market.priceIncrement,
-      `${pointer}.priceIncrement`,
-    ),
-    sizeIncrement: nuanzeDecimalAt(
-      market.sizeIncrement,
-      `${pointer}.sizeIncrement`,
-    ),
-    minSize: nuanzeDecimalAt(market.minSize, `${pointer}.minSize`),
-    latest: nullableAt(market.latest, `${pointer}.latest`, mapLatestTicker),
-    updatedAt: isoTimestampAt(market.updatedAt, `${pointer}.updatedAt`),
+    midPrice: mapNuanzeDecimal(server.midPrice),
+    bidPrice: mapNuanzeDecimal(server.bidPrice),
+    askPrice: mapNuanzeDecimal(server.askPrice),
+    volume24h: mapNuanzeDecimal(server.volume24h),
+    openInterest: mapNuanzeDecimal(server.openInterest),
+    priceChange24hPct: mapNuanzeDecimal(server.priceChange24hPct),
+    updatedAt: server.updatedAt,
   };
 }
 
 /**
- * Validate and map a `GET /markets` body.
- *
- * @param body - Decoded JSON body from the response.
- * @returns The mapped market list.
- * @throws {NuanzeSchemaViolationError} If the body departs from the published
- * contract, including a `count` that disagrees with the list length, which would
- * mean the universe was truncated.
+ * Maps a server-side market to its client-side representation. Only the decimal fields change: IDs,
+ * enums, and timestamps keep their wire types.
  */
-export function mapNuanzeMarketListResponse(
-  body: unknown,
-): NuanzeMarketListResponse {
-  const root = objectAt(body, 'body');
-
-  const markets = arrayAt(root.markets, 'body.markets').map((market, index) =>
-    mapMarket(market, `body.markets[${index}]`),
-  );
-
-  const count = integerAt(root.count, 'body.count');
-  if (count !== markets.length) {
-    throw new NuanzeSchemaViolationError(
-      'body.count',
-      `expected the market list length ${String(markets.length)}, received ${String(count)}`,
-    );
-  }
-
+export function mapNuanzeMarket(server: NuanzeServerMarket): NuanzeMarket {
   return {
-    markets,
-    count,
-    asOf: isoTimestampAt(root.asOf, 'body.asOf'),
+    productId: server.productId,
+    symbol: server.symbol,
+    ticker: server.ticker,
+    venue: server.venue,
+    tradingStatus: server.tradingStatus,
+    priceIncrement: toBigNumber(server.priceIncrement),
+    sizeIncrement: toBigNumber(server.sizeIncrement),
+    minSize: toBigNumber(server.minSize),
+    latest:
+      server.latest === null ? null : mapNuanzeLatestTicker(server.latest),
+    updatedAt: server.updatedAt,
+  };
+}
+
+/**
+ * Maps a server-side `GET /markets` response to its client-side representation.
+ */
+export function mapNuanzeMarketsResponse(
+  server: NuanzeServerMarketsResponse,
+): GetNuanzeMarketsResponse {
+  return {
+    markets: server.markets.map(mapNuanzeMarket),
+    count: server.count,
+    asOf: server.asOf,
   };
 }

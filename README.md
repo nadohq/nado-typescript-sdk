@@ -30,7 +30,7 @@ Client for the mobile service — identity, usernames, privacy settings, and pus
 ### `@nadohq/nuanze-client`
 
 Read-only client for the public Nuanze analytics API — markets, wallets, trades, candles, flows, and
-positioning. Standalone and credential-free, so it is never attached to `NadoClient`.
+positioning. Credential-free, so it takes no wallet client or linked signer.
 
 ### `@nadohq/shared`
 

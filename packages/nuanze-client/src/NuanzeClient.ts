@@ -1,82 +1,89 @@
-import { mapNuanzeMarketListResponse } from './dataMappers';
-import type { NuanzeClientOptions, NuanzeRequestOptions } from './transport';
-import { NuanzeTransport } from './transport';
-import type {
-  NuanzeListMarketsParams,
-  NuanzeMarketListResponse,
-} from './types';
-import type { NuanzeRateLimitSnapshot } from './types/rateLimit';
+import { getNadoClientTypeHeaders } from '@nadohq/shared';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { mapNuanzeMarketsResponse } from './dataMappers';
+import {
+  GetNuanzeMarketsParams,
+  GetNuanzeMarketsResponse,
+} from './types/clientTypes';
+import { NuanzeServerFailureError } from './types/NuanzeServerFailureError';
+import {
+  isNuanzeServerFailureResponse,
+  NuanzeServerMarketsResponse,
+} from './types/serverQueryTypes';
 
 /**
- * Read-only client for the Nuanze public analytics API.
+ * Options for constructing a {@link NuanzeClient}.
+ */
+export interface NuanzeClientOpts {
+  /**
+   * Base URL of the Nuanze API, including the version segment, e.g. {@link NUANZE_CLIENT_ENDPOINTS}.
+   */
+  url: string;
+  /**
+   * If provided, identifies the calling client, sent as a header with every request.
+   */
+  clientType?: string;
+}
+
+/**
+ * Client for the Nuanze public analytics API: markets, wallets, trades, candles, collateral flows,
+ * and positioning.
  *
- * Standalone by design: it takes no chain environment, wallet client, signer, or
- * contract address, and the API requires no credentials. `NadoClient` neither
- * holds nor configures an instance.
- *
- * Each method performs exactly one HTTP attempt with a finite timeout. Failures
- * arrive as `NuanzeApiError`, `NuanzeTimeoutError`, `NuanzeResponseError`, or
- * `NuanzeConfigError`. Caller cancellation is never reclassified: it surfaces as
- * axios's `CanceledError`.
- *
- * @example
- * ```ts
- * const nuanze = new NuanzeClient();
- * const { markets } = await nuanze.listMarkets({ venue: 'perp' });
- * ```
+ * Read-only and credential-free, so unlike the other service clients it takes no wallet client or
+ * linked signer. The API meters a weighted token bucket per client IP and reports its state in the
+ * `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` response headers; add an
+ * interceptor on {@link axiosInstance} to observe them.
  */
 export class NuanzeClient {
-  /** Transport backing every request, exposed for diagnostics. */
-  readonly transport: NuanzeTransport;
+  readonly opts: NuanzeClientOpts;
+  readonly axiosInstance: AxiosInstance;
 
-  constructor(options: NuanzeClientOptions = {}) {
-    this.transport = new NuanzeTransport(options);
-  }
-
-  /** Normalized base URL every request is resolved against. */
-  get baseUrl(): string {
-    return this.transport.baseUrl;
-  }
-
-  /**
-   * Rate-limit headers from the most recent charged response.
-   *
-   * The API meters a weighted token bucket per client IP: capacity 150 units
-   * refilling at 2 units per second. This client reports the state but never
-   * sleeps, retries, or self-throttles on it. With concurrent calls, prefer
-   * `NuanzeRequestOptions.onResponse` for per-request attribution.
-   */
-  get lastRateLimit(): NuanzeRateLimitSnapshot {
-    return this.transport.lastRateLimit;
-  }
-
-  /**
-   * List the complete active market universe, ordered by `productId` ascending.
-   *
-   * Costs 2 rate-limit units. The response is never truncated, so `count` always
-   * equals the returned list length.
-   *
-   * @param params - Optional venue, tradability, and ticker filters.
-   * @param options - Per-request signal, timeout, request ID, and response observer.
-   * @returns Markets with decimal increments and the latest ticker per market.
-   * @throws {NuanzeApiError} If the API rejected the request, for example with `BAD_REQUEST` for an invalid filter.
-   * @throws {NuanzeTimeoutError} If the timeout elapsed before a full response.
-   * @throws {NuanzeResponseError} If the response was not the documented contract.
-   * @throws {NuanzeConfigError} If a per-request option is invalid. Nothing is sent.
-   */
-  async listMarkets(
-    params: NuanzeListMarketsParams = {},
-    options?: NuanzeRequestOptions,
-  ): Promise<NuanzeMarketListResponse> {
-    return this.transport.get({
-      path: '/markets',
-      query: {
-        venue: params.venue,
-        tradingStatus: params.tradingStatus,
-        ticker: params.ticker,
-      },
-      decode: mapNuanzeMarketListResponse,
-      options,
+  constructor(opts: NuanzeClientOpts) {
+    this.opts = opts;
+    this.axiosInstance = axios.create({
+      // Nuanze is public and answers every origin with `Access-Control-Allow-Origin: *`, which
+      // browsers reject for credentialed requests.
+      withCredentials: false,
+      // We have custom logic to validate response status and create an appropriate error
+      validateStatus: () => true,
+      headers: getNadoClientTypeHeaders(opts.clientType),
     });
+  }
+
+  /**
+   * Gets the active market universe, ordered by `productId` ascending. Never truncated, so `count`
+   * always equals the length of `markets`. Market metadata refreshes about every five minutes and
+   * prices about every minute.
+   *
+   * @throws {NuanzeServerFailureError} With error code `BAD_REQUEST` if a filter value is not a
+   * documented venue or tradability state.
+   */
+  async getMarkets(
+    params: GetNuanzeMarketsParams = {},
+  ): Promise<GetNuanzeMarketsResponse> {
+    const response = await this.axiosInstance.get<NuanzeServerMarketsResponse>(
+      `${this.opts.url}/markets`,
+      { params },
+    );
+
+    this.checkResponseStatus(response);
+
+    return mapNuanzeMarketsResponse(response.data);
+  }
+
+  /**
+   * Validates the HTTP status before interpreting the body. Nuanze maps every domain failure onto a
+   * non-2xx status carrying a failure envelope, so anything else is a transport-level error.
+   */
+  private checkResponseStatus(response: AxiosResponse<unknown>) {
+    if (response.status >= 200 && response.status < 300) {
+      return;
+    }
+    if (isNuanzeServerFailureResponse(response.data)) {
+      throw new NuanzeServerFailureError(response.data, response.status);
+    }
+    throw new Error(
+      `Unexpected response from Nuanze: ${response.status} ${response.statusText}. Data: ${JSON.stringify(response.data)}`,
+    );
   }
 }

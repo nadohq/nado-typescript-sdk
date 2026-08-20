@@ -4,6 +4,7 @@ import {
   IndexerClient,
 } from '@nadohq/indexer-client';
 import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
+import { NUANZE_CLIENT_ENDPOINTS, NuanzeClient } from '@nadohq/nuanze-client';
 import {
   ChainEnv,
   NADO_ABIS,
@@ -33,6 +34,7 @@ export interface NadoClientContext {
   indexerClient: IndexerClient;
   triggerClient: TriggerClient;
   mobileClient: MobileClient;
+  nuanzeClient: NuanzeClient;
   // If provided, identifies the calling client, sent as a header with every request made by the service clients above
   clientType?: string;
 }
@@ -46,6 +48,7 @@ interface NadoClientContextOpts {
   indexerEndpoint: string;
   triggerEndpoint: string;
   mobileEndpoint: string;
+  nuanzeEndpoint: string;
   clientType?: string;
 }
 
@@ -88,6 +91,7 @@ export function createClientContext(
     indexerEndpoint,
     triggerEndpoint,
     mobileEndpoint,
+    nuanzeEndpoint,
     clientType,
   } = ((): NadoClientContextOpts => {
     // Custom endpoint options
@@ -102,6 +106,7 @@ export function createClientContext(
       indexerEndpoint: INDEXER_CLIENT_ENDPOINTS[chainEnv],
       triggerEndpoint: TRIGGER_CLIENT_ENDPOINTS[chainEnv],
       mobileEndpoint: MOBILE_CLIENT_ENDPOINTS[chainEnv],
+      nuanzeEndpoint: NUANZE_CLIENT_ENDPOINTS[chainEnv],
       clientType,
     };
   })();
@@ -173,6 +178,11 @@ export function createClientContext(
       url: mobileEndpoint,
       walletClient,
       linkedSignerWalletClient,
+      clientType,
+    }),
+    // Nuanze is read-only and credential-free, so it takes no signer
+    nuanzeClient: new NuanzeClient({
+      url: nuanzeEndpoint,
       clientType,
     }),
   };
