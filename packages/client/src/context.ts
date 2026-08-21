@@ -180,10 +180,9 @@ export function createClientContext(
       linkedSignerWalletClient,
       clientType,
     }),
-    // Nuanze is read-only and credential-free, so it takes no signer
+    // Nuanze is read-only and credential-free, so it takes no signer or client type
     nuanzeClient: new NuanzeClient({
       url: nuanzeEndpoint,
-      clientType,
     }),
   };
 }

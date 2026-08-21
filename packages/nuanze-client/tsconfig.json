@@ -1,10 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    // WHATWG `URL` and `URLSearchParams` are used internally for base-URL
-    // validation and query serialization. Nothing DOM-specific reaches the
-    // published types: the public abort signal uses axios's `GenericAbortSignal`.
-    "lib": ["esnext", "dom"],
     "rootDir": "./src",
     "sourceRoot": "./src",
     "outDir": "./dist"

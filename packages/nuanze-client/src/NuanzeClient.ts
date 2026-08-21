@@ -1,4 +1,3 @@
-import { getNadoClientTypeHeaders } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { mapNuanzeMarketsResponse } from './dataMappers';
 import {
@@ -19,10 +18,6 @@ export interface NuanzeClientOpts {
    * Base URL of the Nuanze API, including the version segment, e.g. {@link NUANZE_CLIENT_ENDPOINTS}.
    */
   url: string;
-  /**
-   * If provided, identifies the calling client, sent as a header with every request.
-   */
-  clientType?: string;
 }
 
 /**
@@ -30,9 +25,11 @@ export interface NuanzeClientOpts {
  * and positioning.
  *
  * Read-only and credential-free, so unlike the other service clients it takes no wallet client or
- * linked signer. The API meters a weighted token bucket per client IP and reports its state in the
- * `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` response headers; add an
- * interceptor on {@link axiosInstance} to observe them.
+ * linked signer. It also sends no `x-nado-client-type` header: Nuanze is a public API that does not
+ * attribute traffic per client, and its `Access-Control-Allow-Headers` does not list the header, so
+ * sending it would fail CORS preflight in the browser. The API meters a weighted token bucket per
+ * client IP and reports its state in the `RateLimit-Limit`, `RateLimit-Remaining`, and
+ * `RateLimit-Reset` response headers; add an interceptor on {@link axiosInstance} to observe them.
  */
 export class NuanzeClient {
   readonly opts: NuanzeClientOpts;
@@ -46,7 +43,6 @@ export class NuanzeClient {
       withCredentials: false,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
-      headers: getNadoClientTypeHeaders(opts.clientType),
     });
   }
 

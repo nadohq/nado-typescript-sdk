@@ -142,11 +142,9 @@
       },
       "devDependencies": {
         "bignumber.js": "11.1.1",
-        "viem": "2.52.0",
       },
       "peerDependencies": {
         "bignumber.js": "11.1.1",
-        "viem": "2.52.0",
       },
     },
     "packages/shared": {
