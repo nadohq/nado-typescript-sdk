@@ -18,17 +18,26 @@ import type {
   ListIndexerSubaccountsResponse,
 } from '@nadohq/indexer-client';
 import type {
+  MobileFollowSummary,
+  MobileIdentitySummary,
+} from '@nadohq/mobile-client';
+import { MOBILE_FOLLOWED_BY_PREVIEW_LIMIT } from '@nadohq/mobile-client';
+import type {
   BalanceWithProduct,
   HealthStatusByType,
   MarketWithProduct,
 } from '@nadohq/shared';
 import type { TriggerOrderInfo } from '@nadohq/trigger-client';
+import assert from 'node:assert/strict';
 import {
+  assertArrayElements,
   assertBigNumberFinite,
   assertBigNumberNonNegative,
   assertBoolean,
   assertDefined,
   assertHexString,
+  assertNonNegativeInteger,
+  assertNullableString,
   assertNumber,
   assertString,
 } from './assertions';
@@ -479,6 +488,49 @@ export function assertSubaccountListingShape(
   assertBoolean(entry.isolated, `${label}.isolated`);
   assertString(entry.subaccountOwner, `${label}.subaccountOwner`);
   assertString(entry.subaccountName, `${label}.subaccountName`);
+}
+
+// ---------------------------------------------------------------------------
+// Mobile identity shapes
+// ---------------------------------------------------------------------------
+
+/**
+ * Validates the shape of a {@link MobileIdentitySummary}. Name fields are `null` until a username is claimed,
+ * and `avatarUrl` is `null` until an avatar source exists on the backend.
+ */
+export function assertMobileIdentitySummaryShape(
+  identity: MobileIdentitySummary,
+  label: string,
+): void {
+  assertHexString(identity.subaccount, `${label}.subaccount`);
+  assertNullableString(identity.username, `${label}.username`);
+  assertNullableString(identity.displayName, `${label}.displayName`);
+  assertNullableString(identity.avatarUrl, `${label}.avatarUrl`);
+}
+
+/**
+ * Validates the shape of a {@link MobileFollowSummary} and its preview identities.
+ */
+export function assertMobileFollowSummaryShape(
+  summary: MobileFollowSummary,
+  label: string,
+): void {
+  assertBoolean(summary.isFollowing, `${label}.isFollowing`);
+  assertNonNegativeInteger(summary.followedByCount, `${label}.followedByCount`);
+  assertArrayElements(
+    summary.followedBy,
+    assertMobileIdentitySummaryShape,
+    `${label}.followedBy`,
+  );
+  // The preview is capped by the backend, but the count covers the whole intersection.
+  assert.ok(
+    summary.followedBy.length <= summary.followedByCount,
+    `${label}.followedBy should never exceed the exact followed-by count`,
+  );
+  assert.ok(
+    summary.followedBy.length <= MOBILE_FOLLOWED_BY_PREVIEW_LIMIT,
+    `${label}.followedBy should respect the fixed preview limit of ${MOBILE_FOLLOWED_BY_PREVIEW_LIMIT}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
