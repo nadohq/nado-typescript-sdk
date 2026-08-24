@@ -77,7 +77,7 @@ void describe('[error-codes]: cross-service error code maps', () => {
         status: 'failure',
         error: 'Profile not found',
         error_code: MOBILE_ERROR_CODES.PROFILE_NOT_FOUND,
-        request_type: 'public_query_profile',
+        request_type: 'public_query_profiles',
       },
       404,
     );
@@ -86,6 +86,6 @@ void describe('[error-codes]: cross-service error code maps', () => {
     assert.ok(error instanceof BaseServerFailureError);
     assert.equal(error.httpStatus, 404);
     assert.equal(error.errorCode, MOBILE_ERROR_CODES.PROFILE_NOT_FOUND);
-    assert.equal(error.requestType, 'public_query_profile');
+    assert.equal(error.requestType, 'public_query_profiles');
   });
 });

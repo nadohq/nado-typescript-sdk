@@ -27,9 +27,9 @@ const mobile = new MobileClient({
 
 // Unsigned public lookups
 const availability = await mobile.getUsernameAvailability({ displayName: 'Alice.One' });
-const profile = await mobile.getPublicProfile({
-  subaccountOwner: '0x...',
-  subaccountName: 'default',
+const [profile] = await mobile.getProfiles({
+  subaccounts: [{ subaccountOwner: '0x...', subaccountName: 'default' }],
+  include: { followCounts: true },
 });
 
 // Signed operations
@@ -46,13 +46,13 @@ await mobile.setUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getPublicProfile`, `getProfiles`, `getFeed`, `getNotificationPreferences`,
-`getRegisteredWallet`.
+`getUsernameAvailability`, `getProfiles`, `getFeed`, `getNotificationPreferences`, `getRegisteredWallet`.
 
-`getPublicProfile` is deliberately lightweight and never reads the follow graph. `getProfiles` batches up to 25
-subaccounts and is the only route that returns follower totals (`include.followCounts`) or a follow summary
-(`include.followSummary.viewAs`); use it for a single subaccount too when the UI needs either. Because it is
-unsigned, that `viewAs` is an unauthenticated claim.
+`getProfiles` is the only profile route: it batches up to 25 subaccounts, returns them in the requested order,
+and carries follower totals (`include.followCounts`) and a follow summary (`include.followSummary.viewAs`) as
+opt-in includes, so use it for a single subaccount too. Because it is unsigned, that `viewAs` is an
+unauthenticated claim. The backend still serves the older singular `profile` request for compatibility, but it
+returns base fields only and costs more weight than the batched equivalent, so the SDK does not expose it.
 
 ### Public Executes
 

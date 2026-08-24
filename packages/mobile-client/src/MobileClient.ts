@@ -28,7 +28,6 @@ import {
   GetMobileFollowingParams,
   GetMobileNotificationPreferencesParams,
   GetMobileProfilesParams,
-  GetMobilePublicProfileParams,
   GetMobileRegisteredWalletParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
@@ -139,34 +138,14 @@ export class MobileClient {
   }
 
   /**
-   * Looks up a subaccount's public profile. Every non-isolated subaccount resolves, with `username` and
-   * `displayName` `null` until a username is claimed. Private Mode does not hide the profile itself, only the
-   * account's activity.
+   * Looks up public profiles, optionally with follower totals and a follow summary. Returns one profile per
+   * requested subaccount, in the requested order, so callers can correlate positionally. Every non-isolated
+   * subaccount resolves, with `username` and `displayName` `null` until a username is claimed. Private Mode
+   * does not hide the profile itself, only the account's activity.
    *
-   * Returns the base fields only — no follower totals and no follow summary. Use
-   * {@link MobileClient.getProfiles} when the UI needs either, even for a single subaccount.
-   *
-   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the subaccount is in the
-   * engine-created isolated namespace, which cannot own a profile.
-   */
-  async getPublicProfile(
-    params: GetMobilePublicProfileParams,
-  ): Promise<MobilePublicProfile> {
-    const body: MobileServerPublicQueryRequest<'profile'> = {
-      type: 'profile',
-      subaccount: subaccountToHex(params),
-    };
-    const data = await this.publicQuery(body);
-    return mapMobilePublicProfile(data.profile);
-  }
-
-  /**
-   * Looks up several public profiles at once, optionally with follower totals and a follow summary. Returns
-   * one profile per requested subaccount, in the requested order, so callers can correlate positionally.
-   *
-   * This is the only route that returns follower totals or a follow summary, so use it for a single
-   * subaccount too when the UI needs them. It is unsigned, which means `include.followSummary.viewAs` is an
-   * unauthenticated claim: the follow *lists* remain signed precisely because they prove the viewer.
+   * This is the only profile route, so use it for a single subaccount too. It is unsigned, which means
+   * `include.followSummary.viewAs` is an unauthenticated claim: the follow *lists* remain signed precisely
+   * because they prove the viewer.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_PROFILES_REQUEST` if `subaccounts` is empty,
    * holds duplicates, or exceeds `MOBILE_PROFILES_MAX_BATCH_SIZE` (25), or `PROFILE_NOT_FOUND` if any

@@ -1,16 +1,14 @@
 import {
   MOBILE_DISPLAY_NAME_PATTERN,
   MOBILE_ERROR_CODES,
+  MobilePublicProfile,
 } from '@nadohq/mobile-client';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
-import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
   assertBoolean,
   assertDefined,
-  assertHexString,
-  assertNullableString,
   assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
@@ -19,7 +17,6 @@ import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
-  TEST_ISOLATED_SUBACCOUNT_NAME,
   TEST_SECONDARY_SUBACCOUNT_NAME,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -59,61 +56,12 @@ void describe(
       );
     });
 
-    void test('fetches the implicit self identity', async () => {
-      const identity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-      debugPrint('Self identity result', identity);
-
-      // Every non-isolated subaccount has an implicit identity, so the test subaccount always resolves.
-      assertDefined(identity, 'identity');
-      assertHexString(identity.subaccount, 'identity.subaccount');
-      assertBoolean(identity.privateMode, 'identity.privateMode');
-      assertNullableString(identity.username, 'identity.username');
-      assertNullableString(identity.displayName, 'identity.displayName');
-      // The singular lookup is deliberately lightweight: it never reads the follow graph, so the totals and
-      // the summary are absent here. getProfiles is the only route that returns them (see profiles.test.ts).
-      assert.equal(identity.followerCount, undefined);
-      assert.equal(identity.followingCount, undefined);
-      assert.equal(identity.followSummary, undefined);
-    });
-
-    void test('resolves a public profile for an unclaimed subaccount', async () => {
-      // A freshly generated owner has never claimed a username, but its profile still resolves with null names.
-      const profile = await tc.mobile.getPublicProfile({
-        subaccountOwner: privateKeyToAccount(generatePrivateKey()).address,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-      debugPrint('Public profile for an unclaimed subaccount', profile);
-
-      assertHexString(profile.subaccount, 'profile.subaccount');
-      assert.equal(profile.username, null);
-      assert.equal(profile.displayName, null);
-      assert.equal(profile.privateMode, false);
-    });
-
-    void test('returns PROFILE_NOT_FOUND for an isolated subaccount', async () => {
-      await assertRejectsWithMobileErrorCode(
-        () =>
-          tc.mobile.getPublicProfile({
-            subaccountOwner: tc.walletClientAddress,
-            subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
-          }),
-        MOBILE_ERROR_CODES.PROFILE_NOT_FOUND,
-      );
-    });
-
     // setUsername upserts, so one test covers both claiming a first username and renaming an existing one:
     // whichever state the shared test subaccount is already in, the same call applies.
     void test('sets the display name and restores any original', async () => {
       const identityParams = getMobileSignedParams(tc);
 
-      const identity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-      assertDefined(identity, 'identity');
+      const identity = await getTestSubaccountProfile(tc);
       const originalDisplayName = identity.displayName;
       debugPrint('Identity before set', identity);
 
@@ -126,12 +74,8 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const updatedIdentity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
+      const updatedIdentity = await getTestSubaccountProfile(tc);
       debugPrint('Identity after set', updatedIdentity);
-      assertDefined(updatedIdentity, 'updatedIdentity');
       assert.equal(updatedIdentity.displayName, newDisplayName);
       assert.equal(updatedIdentity.username, newDisplayName.toLowerCase());
 
@@ -146,23 +90,15 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restoredIdentity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
+      const restoredIdentity = await getTestSubaccountProfile(tc);
       debugPrint('Identity after restore', restoredIdentity);
-      assertDefined(restoredIdentity, 'restoredIdentity');
       assert.equal(restoredIdentity.displayName, originalDisplayName);
     });
 
     void test('rejects a name held by another subaccount with USERNAME_UNAVAILABLE', async () => {
       const identityParams = getMobileSignedParams(tc);
 
-      const identity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-      assertDefined(identity, 'identity');
+      const identity = await getTestSubaccountProfile(tc);
       const { displayName } = identity;
 
       if (displayName === null) {
@@ -187,11 +123,7 @@ void describe(
     void test('toggles private mode and restores the original value', async () => {
       const identityParams = getMobileSignedParams(tc);
 
-      const identity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
-      assertDefined(identity, 'identity');
+      const identity = await getTestSubaccountProfile(tc);
 
       const originalPrivateMode = identity.privateMode;
 
@@ -201,12 +133,8 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const toggledIdentity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
+      const toggledIdentity = await getTestSubaccountProfile(tc);
       debugPrint('Identity after private mode toggle', toggledIdentity);
-      assertDefined(toggledIdentity, 'toggledIdentity');
       assert.equal(toggledIdentity.privateMode, !originalPrivateMode);
 
       await tc.mobile.setPrivateMode({
@@ -215,13 +143,29 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restoredIdentity = await tc.mobile.getPublicProfile({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-      });
+      const restoredIdentity = await getTestSubaccountProfile(tc);
       debugPrint('Identity after private mode restore', restoredIdentity);
-      assertDefined(restoredIdentity, 'restoredIdentity');
       assert.equal(restoredIdentity.privateMode, originalPrivateMode);
     });
   },
 );
+
+/**
+ * Reads the shared test subaccount's profile to verify what an identity write landed. Profiles are only
+ * readable in batches, so this asks for a single slot and unwraps it; profiles.test.ts covers the batching
+ * and the includes themselves.
+ */
+async function getTestSubaccountProfile(
+  tc: RunContext,
+): Promise<MobilePublicProfile> {
+  const [profile] = await tc.mobile.getProfiles({
+    subaccounts: [
+      {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      },
+    ],
+  });
+  assertDefined(profile, 'profile');
+  return profile;
+}

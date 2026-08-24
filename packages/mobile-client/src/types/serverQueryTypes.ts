@@ -34,13 +34,6 @@ export interface MobileServerUsernameAvailabilityResponse {
 }
 
 /**
- * Payload of the `profile` public query success response.
- */
-export interface MobileServerProfileResponse {
-  profile: MobileServerProfile;
-}
-
-/**
  * Payload of the `profiles` public query success response. One entry per requested subaccount, in the exact
  * order they were requested, so callers can correlate positionally as well as by `subaccount`.
  */
@@ -89,7 +82,6 @@ export interface MobileServerRegisteredWalletResponse {
  */
 export interface MobileServerPublicQueryResponseByType {
   username_availability: MobileServerUsernameAvailabilityResponse;
-  profile: MobileServerProfileResponse;
   profiles: MobileServerProfilesResponse;
   feed: MobileServerFeedResponse;
   notification_preferences: MobileServerNotificationPreferencesResponse;

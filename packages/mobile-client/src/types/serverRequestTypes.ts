@@ -22,7 +22,6 @@ export interface MobileServerProfilesInclude {
  */
 export interface MobileServerPublicQueryRequestByType {
   username_availability: { display_name: string };
-  profile: { subaccount: Hex };
   profiles: {
     /**
      * 1–`MOBILE_PROFILES_MAX_BATCH_SIZE` (25) distinct subaccounts. Results come back in this exact order,

@@ -12,9 +12,8 @@ import {
  * activity, not its profile, so `privateMode` is exposed here too. A subaccount with no identity row still
  * yields a profile, with `null` names and `privateMode: false`.
  *
- * The last three fields are `undefined` unless the matching {@link MobileClient.getProfiles} option asked
- * for them — absent means "not requested" rather than "none". {@link MobileClient.getPublicProfile} never
- * returns them.
+ * The last three fields are `undefined` unless the matching {@link MobileProfilesInclude} asked for them —
+ * absent means "not requested" rather than "none".
  */
 export interface MobilePublicProfile {
   subaccount: Hex;
@@ -25,11 +24,11 @@ export interface MobilePublicProfile {
   privateMode: boolean;
   /**
    * Exact count at query time rather than a cached counter, including unnamed and private accounts — Private
-   * Mode hides activity, not relationships. Requires `includeFollowCounts`.
+   * Mode hides activity, not relationships. Requires the `followCounts` include.
    */
   followerCount?: number;
   followingCount?: number;
-  /** Requires `followSummaryViewAs`, and is relative to that subaccount. */
+  /** Requires the `followSummary` include, and is relative to that include's `viewAs`. */
   followSummary?: MobileFollowSummary;
 }
 
@@ -225,11 +224,6 @@ export interface MobileWithExpoTokenParams {
 export interface GetMobileUsernameAvailabilityParams {
   displayName: string;
 }
-
-/**
- * Params for {@link MobileClient.getPublicProfile}.
- */
-export type GetMobilePublicProfileParams = Subaccount;
 
 /**
  * Opt-in extras for a profiles lookup. Each one adds fields that are otherwise absent from every returned
