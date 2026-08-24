@@ -13,6 +13,8 @@ export const MOBILE_ERROR_CODES = {
   /** Another identity write for the subaccount committed with a later nonce. Re-read before retrying. */
   STALE_IDENTITY_UPDATE: 6105,
   PROFILE_NOT_FOUND: 6106,
+  /** Profiles lookup is empty, holds duplicates, or exceeds the batch maximum. Do not retry unchanged. */
+  INVALID_PROFILES_REQUEST: 6107,
   /** Follow mutation names the same source and target, or an isolated participant. Do not retry unchanged. */
   INVALID_FOLLOW_TARGET: 6110,
   /** Signed follower is not yet in the canonical Query DB subaccount index. Retry after index catch-up. */

@@ -36,12 +36,6 @@ export type MobileSignedInner =
       is_following: boolean;
     }
   | {
-      type: 'follow_summary';
-      subaccount: Hex;
-      /** `null` requests the backend default of 2; otherwise 0–10, where 0 omits the preview identities. */
-      followed_by_limit: number | null;
-    }
-  | {
       type: 'followers';
       subaccount: Hex;
       /** `null` requests the first page; otherwise an opaque cursor from the previous page. */

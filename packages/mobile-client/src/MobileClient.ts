@@ -9,9 +9,9 @@ import {
   mapMobileFeedPage,
   mapMobileFollowListPage,
   mapMobileFollowMutationResult,
-  mapMobileFollowSummary,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
+  mapMobileProfilesIncludeToServer,
   mapMobilePublicProfile,
   mapMobileRegisteredWallet,
 } from './dataMappers';
@@ -26,15 +26,14 @@ import {
   GetMobileFeedParams,
   GetMobileFollowersParams,
   GetMobileFollowingParams,
-  GetMobileFollowSummaryParams,
   GetMobileNotificationPreferencesParams,
+  GetMobileProfilesParams,
   GetMobilePublicProfileParams,
   GetMobileRegisteredWalletParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
   MobileFollowListPage,
   MobileFollowMutationResult,
-  MobileFollowSummary,
   MobileNotificationPreferences,
   MobilePublicProfile,
   MobileRegisteredWallet,
@@ -144,6 +143,9 @@ export class MobileClient {
    * `displayName` `null` until a username is claimed. Private Mode does not hide the profile itself, only the
    * account's activity.
    *
+   * Returns the base fields only — no follower totals and no follow summary. Use
+   * {@link MobileClient.getProfiles} when the UI needs either, even for a single subaccount.
+   *
    * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the subaccount is in the
    * engine-created isolated namespace, which cannot own a profile.
    */
@@ -156,6 +158,33 @@ export class MobileClient {
     };
     const data = await this.publicQuery(body);
     return mapMobilePublicProfile(data.profile);
+  }
+
+  /**
+   * Looks up several public profiles at once, optionally with follower totals and a follow summary. Returns
+   * one profile per requested subaccount, in the requested order, so callers can correlate positionally.
+   *
+   * This is the only route that returns follower totals or a follow summary, so use it for a single
+   * subaccount too when the UI needs them. It is unsigned, which means `include.followSummary.viewAs` is an
+   * unauthenticated claim: the follow *lists* remain signed precisely because they prove the viewer.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_PROFILES_REQUEST` if `subaccounts` is empty,
+   * holds duplicates, or exceeds `MOBILE_PROFILES_MAX_BATCH_SIZE` (25), or `PROFILE_NOT_FOUND` if any
+   * requested subaccount — or the follow summary's `viewAs` — is in the engine-created isolated namespace.
+   * One isolated member fails the whole batch rather than being omitted.
+   */
+  async getProfiles(
+    params: GetMobileProfilesParams,
+  ): Promise<MobilePublicProfile[]> {
+    const body: MobileServerPublicQueryRequest<'profiles'> = {
+      type: 'profiles',
+      subaccounts: params.subaccounts.map(subaccountToHex),
+      include: params.include
+        ? mapMobileProfilesIncludeToServer(params.include)
+        : undefined,
+    };
+    const data = await this.publicQuery(body);
+    return data.profiles.map(mapMobilePublicProfile);
   }
 
   /**
@@ -271,32 +300,6 @@ export class MobileClient {
   /*
   Signed queries
    */
-
-  /**
-   * Reads the signing Viewer's relationship with one Profile, plus the Followed By preview: accounts the
-   * Viewer follows that also follow that Profile. `isFollowing` lives here rather than on the unsigned
-   * profile lookup because an unsigned viewer identity would be an unauthenticated claim.
-   *
-   * Does not return the Profile's follower or following totals — pair it with
-   * {@link MobileClient.getPublicProfile} when the UI needs both.
-   *
-   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the viewed Profile is in the
-   * engine-created isolated namespace, or `INVALID_FOLLOW_LIMIT` if `followedByLimit` is outside 0–10.
-   */
-  async getFollowSummary(
-    params: GetMobileFollowSummaryParams,
-  ): Promise<MobileFollowSummary> {
-    const signedRequest = await this.getSignedRequest(
-      'follow_summary',
-      params,
-      {
-        subaccount: subaccountToHex(params.target),
-        followed_by_limit: params.followedByLimit ?? null,
-      },
-    );
-    const data = await this.signedQuery(signedRequest);
-    return mapMobileFollowSummary(data);
-  }
 
   /**
    * Fetches a page of the accounts that follow the given Profile.

@@ -10,12 +10,13 @@ export const MOBILE_FOLLOW_LIST_MAX_PAGE_SIZE = 50;
 export const MOBILE_FOLLOW_LIST_DEFAULT_PAGE_SIZE = 25;
 
 /**
- * Maximum number of Followed By preview identities a follow summary can request. Requests outside 0–10 fail
- * with `INVALID_FOLLOW_LIMIT`; 0 asks for `followedByCount` without any previews.
+ * Number of Followed By preview identities a follow summary carries. Fixed by the backend rather than
+ * requested, so use it to size the preview UI; `followedByCount` still reports the full intersection.
  */
-export const MOBILE_FOLLOWED_BY_MAX_LIMIT = 10;
+export const MOBILE_FOLLOWED_BY_PREVIEW_LIMIT = 2;
 
 /**
- * Number of Followed By preview identities the backend returns when `followedByLimit` is omitted.
+ * Maximum number of subaccounts a single profiles lookup accepts. An empty list, a duplicate, or more than
+ * this many fail with `INVALID_PROFILES_REQUEST`.
  */
-export const MOBILE_FOLLOWED_BY_DEFAULT_LIMIT = 2;
+export const MOBILE_PROFILES_MAX_BATCH_SIZE = 25;

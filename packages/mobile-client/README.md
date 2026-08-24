@@ -46,7 +46,13 @@ await mobile.setUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getPublicProfile`, `getFeed`, `getNotificationPreferences`, `getRegisteredWallet`.
+`getUsernameAvailability`, `getPublicProfile`, `getProfiles`, `getFeed`, `getNotificationPreferences`,
+`getRegisteredWallet`.
+
+`getPublicProfile` is deliberately lightweight and never reads the follow graph. `getProfiles` batches up to 25
+subaccounts and is the only route that returns follower totals (`include.followCounts`) or a follow summary
+(`include.followSummary.viewAs`); use it for a single subaccount too when the UI needs either. Because it is
+unsigned, that `viewAs` is an unauthenticated claim.
 
 ### Public Executes
 
@@ -55,8 +61,9 @@ push token rather than a wallet signature, so they still work at logout when a s
 
 ### Signed Queries
 
-`getFollowSummary`, `getFollowers`, `getFollowing`. Every follow graph read is signed because the results are
-relative to the signing Viewer, including each paginated request.
+`getFollowers`, `getFollowing`. Both follow list reads are signed because the rows carry an `isFollowing`
+relative to the signing Viewer, which has to be proven rather than claimed — including on each paginated
+request.
 
 ### Signed Executes
 

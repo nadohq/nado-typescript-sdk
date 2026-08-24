@@ -29,12 +29,6 @@ export function canonicalizeMobileInner(
         subaccount: inner.subaccount,
         is_following: inner.is_following,
       };
-    case 'follow_summary':
-      return {
-        type: 'follow_summary',
-        subaccount: inner.subaccount,
-        followed_by_limit: inner.followed_by_limit,
-      };
     case 'followers':
       return {
         type: 'followers',

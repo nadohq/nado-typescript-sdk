@@ -31,8 +31,27 @@ export interface MobileServerIdentitySummary {
 }
 
 /**
- * Server-side public profile shape (snake_case). Name fields are `null` until the subaccount claims a
- * username.
+ * Server-side follow summary (snake_case), nested in a `profiles` entry when the `follow_summary` include is
+ * requested. `is_following` is the direct `view_as -> this profile` relationship; every `followed_by` entry
+ * satisfies both `view_as -> entry` and `entry -> this profile`, so each one is already familiar to the
+ * viewer and carries no `is_following` of its own.
+ */
+export interface MobileServerFollowSummary {
+  is_following: boolean;
+  /** Exact size of the two-edge intersection, independent of how many previews came back. */
+  followed_by_count: number;
+  /** Capped at `MOBILE_FOLLOWED_BY_PREVIEW_LIMIT` (2) by the backend; not client-configurable. */
+  followed_by: MobileServerIdentitySummary[];
+}
+
+/**
+ * Server-side public profile shape (snake_case), shared by the singular `profile` and batched `profiles`
+ * queries. Name fields are `null` until the subaccount claims a username; a subaccount with no identity row
+ * still yields an entry, with `null` names and `private_mode: false`.
+ *
+ * The three optional fields are omitted from the wire entirely unless the matching `profiles` include asked
+ * for them, which is why they are optional rather than nullable — absent means "not requested", not "none".
+ * The singular `profile` query never returns any of them.
  */
 export interface MobileServerProfile {
   subaccount: Hex;
@@ -41,10 +60,12 @@ export interface MobileServerProfile {
   private_mode: boolean;
   /**
    * Exact count at query time — the backend counts rather than reading a cached counter. Unnamed and private
-   * accounts are included: Private Mode hides activity, not relationships.
+   * accounts are included: Private Mode hides activity, not relationships. Requires `follow_counts`.
    */
-  follower_count: number;
-  following_count: number;
+  follower_count?: number;
+  following_count?: number;
+  /** Requires the `follow_summary` include, and is relative to that include's `view_as`. */
+  follow_summary?: MobileServerFollowSummary;
 }
 
 /**

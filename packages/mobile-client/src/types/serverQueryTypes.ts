@@ -4,7 +4,6 @@ import {
   MobileNotificationPlatform,
   MobileServerFeedTrade,
   MobileServerFollowListAccount,
-  MobileServerIdentitySummary,
   MobileServerNotificationPreferences,
   MobileServerProfile,
 } from './serverModelTypes';
@@ -39,6 +38,14 @@ export interface MobileServerUsernameAvailabilityResponse {
  */
 export interface MobileServerProfileResponse {
   profile: MobileServerProfile;
+}
+
+/**
+ * Payload of the `profiles` public query success response. One entry per requested subaccount, in the exact
+ * order they were requested, so callers can correlate positionally as well as by `subaccount`.
+ */
+export interface MobileServerProfilesResponse {
+  profiles: MobileServerProfile[];
 }
 
 /**
@@ -83,6 +90,7 @@ export interface MobileServerRegisteredWalletResponse {
 export interface MobileServerPublicQueryResponseByType {
   username_availability: MobileServerUsernameAvailabilityResponse;
   profile: MobileServerProfileResponse;
+  profiles: MobileServerProfilesResponse;
   feed: MobileServerFeedResponse;
   notification_preferences: MobileServerNotificationPreferencesResponse;
   registered_wallet: MobileServerRegisteredWalletResponse;
@@ -99,18 +107,6 @@ export type MobileServerPublicQuerySuccessResponse<
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
 
 /**
- * Payload of the `follow_summary` signed query success response. `is_following` is the direct
- * `Viewer -> viewed Profile` relationship; every `followed_by` entry satisfies both `Viewer -> entry` and
- * `entry -> viewed Profile`, so each one is already familiar and carries no `is_following` of its own.
- */
-export interface MobileServerFollowSummaryResponse {
-  is_following: boolean;
-  /** Exact size of the two-edge intersection, independent of how many previews were requested. */
-  followed_by_count: number;
-  followed_by: MobileServerIdentitySummary[];
-}
-
-/**
  * Payload of the `followers` and `following` signed query success responses. Both list directions share one
  * shape; only the relationship that selected the rows differs.
  */
@@ -125,7 +121,6 @@ export interface MobileServerFollowListResponse {
  * {@link MobileServerPublicQueryResponseByType}.
  */
 export interface MobileServerSignedQueryResponseByType {
-  follow_summary: MobileServerFollowSummaryResponse;
   followers: MobileServerFollowListResponse;
   following: MobileServerFollowListResponse;
 }

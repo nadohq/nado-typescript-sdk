@@ -10,7 +10,6 @@ import {
   assertBoolean,
   assertDefined,
   assertHexString,
-  assertNonNegativeInteger,
   assertNullableString,
   assertString,
 } from '../utils/assertions';
@@ -73,14 +72,11 @@ void describe(
       assertBoolean(identity.privateMode, 'identity.privateMode');
       assertNullableString(identity.username, 'identity.username');
       assertNullableString(identity.displayName, 'identity.displayName');
-      assertNonNegativeInteger(
-        identity.followerCount,
-        'identity.followerCount',
-      );
-      assertNonNegativeInteger(
-        identity.followingCount,
-        'identity.followingCount',
-      );
+      // The singular lookup is deliberately lightweight: it never reads the follow graph, so the totals and
+      // the summary are absent here. getProfiles is the only route that returns them (see profiles.test.ts).
+      assert.equal(identity.followerCount, undefined);
+      assert.equal(identity.followingCount, undefined);
+      assert.equal(identity.followSummary, undefined);
     });
 
     void test('resolves a public profile for an unclaimed subaccount', async () => {
@@ -95,9 +91,6 @@ void describe(
       assert.equal(profile.username, null);
       assert.equal(profile.displayName, null);
       assert.equal(profile.privateMode, false);
-      // A subaccount nobody could have followed yet has exact zero counts rather than an absent field.
-      assert.equal(profile.followerCount, 0);
-      assert.equal(profile.followingCount, 0);
     });
 
     void test('returns PROFILE_NOT_FOUND for an isolated subaccount', async () => {

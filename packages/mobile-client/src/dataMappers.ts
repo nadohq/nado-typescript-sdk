@@ -1,3 +1,4 @@
+import { subaccountToHex } from '@nadohq/shared';
 import {
   MobileFeedPage,
   MobileFeedTrade,
@@ -7,12 +8,14 @@ import {
   MobileIdentitySummary,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
+  MobileProfilesInclude,
   MobilePublicProfile,
   MobileRegisteredWallet,
 } from './types/clientTypes';
 import { MobileServerFollowMutationResponse } from './types/serverExecuteTypes';
 import {
   MobileServerFeedTrade,
+  MobileServerFollowSummary,
   MobileServerIdentitySummary,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
@@ -21,12 +24,14 @@ import {
 import {
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
-  MobileServerFollowSummaryResponse,
   MobileServerRegisteredWalletResponse,
 } from './types/serverQueryTypes';
+import { MobileServerProfilesInclude } from './types/serverRequestTypes';
 
 /**
- * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation.
+ * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation. The three
+ * include-gated fields stay `undefined` when the backend omitted them, rather than being coerced to `null`
+ * or zero, so callers can tell "not requested" from a real value.
  */
 export function mapMobilePublicProfile(
   server: MobileServerProfile,
@@ -38,6 +43,9 @@ export function mapMobilePublicProfile(
     privateMode: server.private_mode,
     followerCount: server.follower_count,
     followingCount: server.following_count,
+    followSummary: server.follow_summary
+      ? mapMobileFollowSummary(server.follow_summary)
+      : undefined,
   };
 }
 
@@ -56,10 +64,10 @@ function mapMobileIdentitySummary(
 }
 
 /**
- * Maps a server-side follow summary response to its client-side representation.
+ * Maps a server-side follow summary to its client-side representation.
  */
-export function mapMobileFollowSummary(
-  server: MobileServerFollowSummaryResponse,
+function mapMobileFollowSummary(
+  server: MobileServerFollowSummary,
 ): MobileFollowSummary {
   return {
     isFollowing: server.is_following,
@@ -119,6 +127,20 @@ function mapMobileNotificationPreferenceScope(
     return { type: 'subaccount', subaccount: server.subaccount };
   }
   return { type: 'product', productId: server.product_id };
+}
+
+/**
+ * Maps client-side profiles includes (camelCase) to the server-side (snake_case) wire shape.
+ */
+export function mapMobileProfilesIncludeToServer(
+  include: MobileProfilesInclude,
+): MobileServerProfilesInclude {
+  return {
+    follow_counts: include.followCounts,
+    follow_summary: include.followSummary
+      ? { view_as: subaccountToHex(include.followSummary.viewAs) }
+      : undefined,
+  };
 }
 
 /**

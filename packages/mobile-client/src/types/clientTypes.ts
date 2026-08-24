@@ -9,7 +9,12 @@ import {
 
 /**
  * A subaccount's public profile, as returned by an unsigned profile lookup. Private Mode hides the account's
- * activity, not its profile, so `privateMode` is exposed here too.
+ * activity, not its profile, so `privateMode` is exposed here too. A subaccount with no identity row still
+ * yields a profile, with `null` names and `privateMode: false`.
+ *
+ * The last three fields are `undefined` unless the matching {@link MobileClient.getProfiles} option asked
+ * for them — absent means "not requested" rather than "none". {@link MobileClient.getPublicProfile} never
+ * returns them.
  */
 export interface MobilePublicProfile {
   subaccount: Hex;
@@ -20,10 +25,12 @@ export interface MobilePublicProfile {
   privateMode: boolean;
   /**
    * Exact count at query time rather than a cached counter, including unnamed and private accounts — Private
-   * Mode hides activity, not relationships.
+   * Mode hides activity, not relationships. Requires `includeFollowCounts`.
    */
-  followerCount: number;
-  followingCount: number;
+  followerCount?: number;
+  followingCount?: number;
+  /** Requires `followSummaryViewAs`, and is relative to that subaccount. */
+  followSummary?: MobileFollowSummary;
 }
 
 /**
@@ -41,16 +48,19 @@ export interface MobileIdentitySummary {
 }
 
 /**
- * A Viewer's relationship with one Profile, plus the Followed By preview: accounts the Viewer follows that
- * also follow that Profile. Every preview entry is therefore already familiar to the Viewer, which is why it
+ * A viewer's relationship with one Profile, plus the Followed By preview: accounts the viewer follows that
+ * also follow that Profile. Every preview entry is therefore already familiar to the viewer, which is why it
  * carries no `isFollowing` of its own.
  */
 export interface MobileFollowSummary {
-  /** The direct `Viewer -> viewed Profile` relationship. */
+  /** The direct `viewer -> viewed Profile` relationship. */
   isFollowing: boolean;
-  /** Exact size of the two-edge intersection, independent of how many previews were requested. */
+  /** Exact size of the two-edge intersection, independent of how many previews came back. */
   followedByCount: number;
-  /** Newest `preview -> viewed Profile` relationship first, with a bytes32 tie-break. */
+  /**
+   * Newest `preview -> viewed Profile` relationship first, with a bytes32 tie-break. Capped at
+   * `MOBILE_FOLLOWED_BY_PREVIEW_LIMIT` (2) by the backend and not client-configurable.
+   */
   followedBy: MobileIdentitySummary[];
 }
 
@@ -222,6 +232,33 @@ export interface GetMobileUsernameAvailabilityParams {
 export type GetMobilePublicProfileParams = Subaccount;
 
 /**
+ * Opt-in extras for a profiles lookup. Each one adds fields that are otherwise absent from every returned
+ * profile, and costs extra rate-limit weight per profile, so ask only for what the UI shows.
+ */
+export interface MobileProfilesInclude {
+  /** Populates `followerCount` and `followingCount`. */
+  followCounts?: boolean;
+  /**
+   * Populates `followSummary`, relative to `viewAs`. Unlike the signed follow list reads, this viewer
+   * identity is an unauthenticated claim — the route takes no signature — so do not treat the result as
+   * proof of who is asking.
+   */
+  followSummary?: { viewAs: Subaccount };
+}
+
+/**
+ * Params for {@link MobileClient.getProfiles}.
+ */
+export interface GetMobileProfilesParams {
+  /**
+   * 1–`MOBILE_PROFILES_MAX_BATCH_SIZE` (25) distinct subaccounts. Duplicates and an empty list are rejected
+   * rather than deduplicated, and results come back in this exact order.
+   */
+  subaccounts: Subaccount[];
+  include?: MobileProfilesInclude;
+}
+
+/**
  * Params for {@link MobileClient.getFeed}.
  */
 export interface GetMobileFeedParams {
@@ -269,17 +306,6 @@ export interface MobileFollowRequestParams extends MobileSignedRequestParams {
 export interface MobileSetFollowParams extends MobileFollowRequestParams {
   /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
   isFollowing: boolean;
-}
-
-/**
- * Params for {@link MobileClient.getFollowSummary}.
- */
-export interface GetMobileFollowSummaryParams extends MobileFollowRequestParams {
-  /**
-   * Number of Followed By preview identities to return, 0–`MOBILE_FOLLOWED_BY_MAX_LIMIT` (10); the backend
-   * defaults to `MOBILE_FOLLOWED_BY_DEFAULT_LIMIT` (2) when omitted. Pass 0 for the count alone.
-   */
-  followedByLimit?: number;
 }
 
 /**

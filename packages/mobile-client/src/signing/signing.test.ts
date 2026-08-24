@@ -32,8 +32,6 @@ const PINNED_HASHES = {
     '0x1ff8529b7c1a0111313eed98536e591555a3bcab51133776ce30c6ef32b559b3',
   set_follow_false:
     '0xec9e9e8f32ac4fcf3015f8b7f20c338623ff85db0488703c7fb688519a46e2e5',
-  follow_summary:
-    '0x9872d3eb331bd76476d6b22003f8e929de88b44fea6a65492ed48b14ecdbf99f',
   followers:
     '0x44f3cd2c991196cf949a25cebe0e16a4e5e8a14846d35751f3931de3c8ffcabd',
   following:
@@ -94,16 +92,6 @@ describe('[mobile-client]: signing (offline)', () => {
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.set_follow_false);
-    });
-
-    it('follow_summary', () => {
-      const inner: MobileSignedInner = {
-        type: 'follow_summary',
-        subaccount: FIXTURE_TARGET_SUBACCOUNT,
-        followed_by_limit: 2,
-      };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.follow_summary);
     });
 
     it('followers', () => {
