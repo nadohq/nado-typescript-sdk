@@ -11,10 +11,29 @@ export interface MobileServerProfilesInclude {
   /** Adds `follower_count` and `following_count` to every entry. Omitted or `false` leaves both absent. */
   follow_counts?: boolean;
   /**
-   * Adds `follow_summary` to every entry, relative to the `view_as` subaccount. Unlike the signed follow
-   * list reads, `view_as` is an unauthenticated claim on this public route.
+   * Adds `follow_summary` to every entry, relative to the `view_as` subaccount. As on every public route,
+   * `view_as` is an unauthenticated claim.
    */
   follow_summary?: { view_as: Hex };
+}
+
+/**
+ * Params shared by the `followers` and `following` public queries: only the relationship that selects the
+ * rows differs between the two.
+ */
+export interface MobileServerFollowListRequest {
+  /** The viewed Profile, i.e. the account whose Followers or Following are being listed. */
+  subaccount: Hex;
+  /**
+   * Viewer perspective the rows are resolved against. Omitted asks for no perspective, which drops
+   * `is_following` from every row and falls back to plain recency order. Like the `profiles` query's
+   * `view_as`, this is an unauthenticated claim on an unsigned route.
+   */
+  view_as?: Hex;
+  /** Opaque keyset cursor from a prior page's `next_cursor`. Omitted requests the first page. */
+  cursor?: string;
+  /** Page size, 1–50; the backend defaults to 25 when omitted. */
+  limit?: number;
 }
 
 /**
@@ -30,6 +49,8 @@ export interface MobileServerPublicQueryRequestByType {
     subaccounts: Hex[];
     include?: MobileServerProfilesInclude;
   };
+  followers: MobileServerFollowListRequest;
+  following: MobileServerFollowListRequest;
   feed: {
     /**
      * Minimum notional as a whole-dollar JSON integer (NOT an x18 string), at least $1,000. Omitted or
@@ -75,30 +96,20 @@ export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
 /**
- * Discriminant `type` values for signed `query` requests: the read-only subset of {@link MobileSignedInner}
- * tags. Unlike the public queries, these carry no separate params map — a signed request body *is* its inner
- * payload flattened with the envelope, so {@link MobileSignedInner} is the single source of truth for both
- * the fields and their significant order.
+ * Discriminant `type` values for signed `execute` requests. Every signed route the SDK calls is a write, so
+ * this is the full set of {@link MobileSignedInner} tags. Unlike the public queries these carry no separate
+ * params map — a signed request body *is* its inner payload flattened with the envelope, so
+ * {@link MobileSignedInner} is the single source of truth for both the fields and their significant order.
  */
-export type MobileServerSignedQueryRequestType = 'followers' | 'following';
-
-/**
- * Discriminant `type` values for signed `execute` requests: the write subset of {@link MobileSignedInner}
- * tags, i.e. everything that is not a signed query.
- */
-export type MobileServerExecuteRequestType = Exclude<
-  MobileSignedInner['type'],
-  MobileServerSignedQueryRequestType
->;
+export type MobileServerExecuteRequestType = MobileSignedInner['type'];
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
- * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, `execute_*` for signed
- * writes (e.g. `execute_set_username`), and `query_*` for signed reads (e.g. `query_followers`). The prefix
- * names the route, so it never carries the `mobile:` prefix that the EIP-712 method does.
+ * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
+ * writes (e.g. `execute_set_username`). The prefix names the route, so it never carries the `mobile:` prefix
+ * that the EIP-712 method does.
  */
 export type MobileServerRequestType =
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
-  | `execute_${MobileServerExecuteRequestType}`
-  | `query_${MobileServerSignedQueryRequestType}`;
+  | `execute_${MobileServerExecuteRequestType}`;

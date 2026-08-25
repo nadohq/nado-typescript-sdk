@@ -1,5 +1,6 @@
 import { subaccountToHex } from '@nadohq/shared';
 import {
+  GetMobileFollowListParams,
   MobileFeedPage,
   MobileFeedTrade,
   MobileFollowListPage,
@@ -26,7 +27,10 @@ import {
   MobileServerFollowListResponse,
   MobileServerRegisteredWalletResponse,
 } from './types/serverQueryTypes';
-import { MobileServerProfilesInclude } from './types/serverRequestTypes';
+import {
+  MobileServerFollowListRequest,
+  MobileServerProfilesInclude,
+} from './types/serverRequestTypes';
 
 /**
  * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation. The three
@@ -77,7 +81,8 @@ function mapMobileFollowSummary(
 }
 
 /**
- * Maps a server-side Followers or Following response to a client-side {@link MobileFollowListPage}.
+ * Maps a server-side Followers or Following response to a client-side {@link MobileFollowListPage}. Rows
+ * keep `isFollowing` absent when the request named no `viewAs`, rather than defaulting it to `false`.
  */
 export function mapMobileFollowListPage(
   server: MobileServerFollowListResponse,
@@ -140,6 +145,21 @@ export function mapMobileProfilesIncludeToServer(
     follow_summary: include.followSummary
       ? { view_as: subaccountToHex(include.followSummary.viewAs) }
       : undefined,
+  };
+}
+
+/**
+ * Maps the client-side params of a Followers or Following page to the server-side wire shape. Both list
+ * directions take identical params and differ only in the `type` the caller dispatches on.
+ */
+export function mapMobileFollowListParamsToServer(
+  params: GetMobileFollowListParams,
+): MobileServerFollowListRequest {
+  return {
+    subaccount: subaccountToHex(params.target),
+    view_as: params.viewAs ? subaccountToHex(params.viewAs) : undefined,
+    cursor: params.cursor,
+    limit: params.limit,
   };
 }
 

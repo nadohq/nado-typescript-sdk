@@ -69,13 +69,16 @@ export interface MobileServerProfile {
 }
 
 /**
- * Server-side row of a Followers or Following page (snake_case). `is_following` describes the *Viewer's*
- * relationship to this account, not the listed relationship that put it in the page, so it is `false` on the
- * Viewer's own row.
+ * Server-side row of a Followers or Following page (snake_case).
  */
 export interface MobileServerFollowListAccount {
   identity: MobileServerIdentitySummary;
-  is_following: boolean;
+  /**
+   * The `view_as` Viewer's relationship to this account, not the listed relationship that put it in the
+   * page, so it is `false` on the Viewer's own row. Omitted entirely when the request named no `view_as`,
+   * rather than being sent as a misleading `false`.
+   */
+  is_following?: boolean;
   /** The listed account's own follower count, exact at query time. */
   follower_count: number;
 }
