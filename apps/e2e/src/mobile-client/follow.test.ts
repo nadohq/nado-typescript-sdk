@@ -28,8 +28,8 @@ import { RunContext } from '../utils/types';
 // previous runs and other environments left behind, so assertions cover shape and invariants rather than
 // specific accounts. Mutations are limited to rejected requests, which fail validation before any write.
 //
-// The follow summary is not covered here: it is no longer a signed route of its own, and now arrives as an
-// include on the batched profiles query. See profiles.test.ts.
+// The list reads are unsigned; only Set Follow still signs. The follow summary is not covered here: it
+// arrives as an include on the batched profiles query. See profiles.test.ts.
 void describe(
   '[mobile-client]: follow',
   { timeout: TEST_TIMEOUTS.DEFAULT },
@@ -41,10 +41,9 @@ void describe(
       tc = createTestContext();
     });
 
-    void test('fetches a page of followers', async () => {
+    void test('fetches a page of followers without a viewer perspective', async () => {
       const limit = 5;
       const page = await tc.mobile.getFollowers({
-        ...getMobileSignedParams(tc),
         target: {
           subaccountOwner: tc.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
@@ -53,19 +52,52 @@ void describe(
       });
       debugPrint('Followers page', page);
       assertFollowListPageShape(page, limit);
+
+      // Without `viewAs` there is no viewer to resolve the relationship against, so the backend omits the
+      // field rather than reporting a misleading `false`.
+      for (const account of page.accounts) {
+        assert.equal(
+          account.isFollowing,
+          undefined,
+          'a page read without viewAs should carry no isFollowing',
+        );
+      }
     });
 
-    void test('fetches a page of following', async () => {
+    void test('fetches a page of followers as a viewer', async () => {
       const limit = 5;
-      const page = await tc.mobile.getFollowing({
-        ...getMobileSignedParams(tc),
-        target: {
-          subaccountOwner: tc.walletClientAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-        },
+      const viewer = {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      };
+      const page = await tc.mobile.getFollowers({
+        target: viewer,
+        viewAs: viewer,
         limit,
       });
-      debugPrint('Following page', page);
+      debugPrint('Followers page as viewer', page);
+      assertFollowListPageShape(page, limit);
+
+      for (const [index, account] of page.accounts.entries()) {
+        assertBoolean(
+          account.isFollowing,
+          `page.accounts[${index}].isFollowing`,
+        );
+      }
+    });
+
+    void test('fetches a page of following as a viewer', async () => {
+      const limit = 5;
+      const viewer = {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      };
+      const page = await tc.mobile.getFollowing({
+        target: viewer,
+        viewAs: viewer,
+        limit,
+      });
+      debugPrint('Following page as viewer', page);
       assertFollowListPageShape(page, limit);
 
       // Reading your own Following list makes every row familiar by definition.
@@ -98,8 +130,24 @@ void describe(
       await assertRejectsWithMobileErrorCode(
         () =>
           tc.mobile.getFollowers({
-            ...getMobileSignedParams(tc),
             target: {
+              subaccountOwner: tc.walletClientAddress,
+              subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
+            },
+          }),
+        MOBILE_ERROR_CODES.PROFILE_NOT_FOUND,
+      );
+    });
+
+    void test('rejects an isolated viewer with PROFILE_NOT_FOUND', async () => {
+      await assertRejectsWithMobileErrorCode(
+        () =>
+          tc.mobile.getFollowers({
+            target: {
+              subaccountOwner: tc.walletClientAddress,
+              subaccountName: TEST_SUBACCOUNT_NAME,
+            },
+            viewAs: {
               subaccountOwner: tc.walletClientAddress,
               subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
             },
@@ -112,7 +160,6 @@ void describe(
       await assertRejectsWithMobileErrorCode(
         () =>
           tc.mobile.getFollowers({
-            ...getMobileSignedParams(tc),
             target: {
               subaccountOwner: tc.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
@@ -127,7 +174,6 @@ void describe(
       await assertRejectsWithMobileErrorCode(
         () =>
           tc.mobile.getFollowing({
-            ...getMobileSignedParams(tc),
             target: {
               subaccountOwner: tc.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
@@ -141,7 +187,8 @@ void describe(
 );
 
 /**
- * Asserts the shape of a Followers or Following page and each of its rows.
+ * Asserts the shape every Followers or Following page carries regardless of whether a viewer was named;
+ * `isFollowing` is checked per test because its presence is exactly what `viewAs` decides.
  */
 function assertFollowListPageShape(
   page: MobileFollowListPage,
@@ -155,7 +202,6 @@ function assertFollowListPageShape(
     page.accounts,
     (account, label) => {
       assertMobileIdentitySummaryShape(account.identity, `${label}.identity`);
-      assertBoolean(account.isFollowing, `${label}.isFollowing`);
       assertNonNegativeInteger(account.followerCount, `${label}.followerCount`);
     },
     'page.accounts',

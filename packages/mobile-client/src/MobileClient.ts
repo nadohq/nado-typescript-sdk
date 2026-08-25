@@ -26,6 +26,7 @@ import {
   GetMobileFeedParams,
   GetMobileFollowersParams,
   GetMobileFollowingParams,
+  GetMobileFollowListParams,
   GetMobileNotificationPreferencesParams,
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
@@ -55,13 +56,12 @@ import {
 import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
-  MobileServerSignedQuerySuccessResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
+  MobileServerFollowListRequest,
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
-  MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
 import {
   isMobileServerFailureResponse,
@@ -144,8 +144,7 @@ export class MobileClient {
    * does not hide the profile itself, only the account's activity.
    *
    * This is the only profile route, so use it for a single subaccount too. It is unsigned, which means
-   * `include.followSummary.viewAs` is an unauthenticated claim: the follow *lists* remain signed precisely
-   * because they prove the viewer.
+   * `include.followSummary.viewAs` is an unauthenticated claim.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_PROFILES_REQUEST` if `subaccounts` is empty,
    * holds duplicates, or exceeds `MOBILE_PROFILES_MAX_BATCH_SIZE` (25), or `PROFILE_NOT_FOUND` if any
@@ -164,6 +163,44 @@ export class MobileClient {
     };
     const data = await this.publicQuery(body);
     return data.profiles.map(mapMobilePublicProfile);
+  }
+
+  /**
+   * Fetches a page of the accounts that follow the given Profile.
+   *
+   * Ordering depends on `viewAs`. With it, accounts the Viewer already follows come first, unfamiliar
+   * accounts second, and every row carries an `isFollowing`. Without it, the page is ordered by the listed
+   * relationship alone and no row carries an `isFollowing`. In both cases the newest listed relationship
+   * comes first within a group, with a bytes32 tie-break. The grouping is evaluated per request against the
+   * live graph, so following an account from inside the list moves it between groups on the next page —
+   * deduplicate by subaccount and do not re-sort locally.
+   *
+   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the viewed Profile or `viewAs`
+   * is isolated, `INVALID_FOLLOW_CURSOR` if the cursor is malformed or was issued for a different `viewAs`,
+   * Profile, or list direction (discard it and restart from the first page), or `INVALID_FOLLOW_LIMIT` if
+   * `limit` is outside 1–50.
+   */
+  async getFollowers(
+    params: GetMobileFollowersParams,
+  ): Promise<MobileFollowListPage> {
+    const data = await this.publicQuery(
+      this.getFollowListRequest('followers', params),
+    );
+    return mapMobileFollowListPage(data);
+  }
+
+  /**
+   * Fetches a page of the accounts the given Profile follows. Ordering, cursor rules, and errors match
+   * {@link MobileClient.getFollowers}. When `viewAs` reads its own Following list every row is familiar, so
+   * every `isFollowing` is `true`.
+   */
+  async getFollowing(
+    params: GetMobileFollowingParams,
+  ): Promise<MobileFollowListPage> {
+    const data = await this.publicQuery(
+      this.getFollowListRequest('following', params),
+    );
+    return mapMobileFollowListPage(data);
   }
 
   /**
@@ -277,52 +314,6 @@ export class MobileClient {
   }
 
   /*
-  Signed queries
-   */
-
-  /**
-   * Fetches a page of the accounts that follow the given Profile.
-   *
-   * Familiar accounts (those the signing Viewer follows) come first, unfamiliar second, and within each group
-   * the newest listed relationship first with a bytes32 tie-break. The grouping is evaluated per request
-   * against the live graph, so following an account from inside the list moves it between groups on the next
-   * page — deduplicate by subaccount and do not re-sort locally.
-   *
-   * @throws {MobileServerFailureError} With error code `PROFILE_NOT_FOUND` if the viewed Profile is isolated,
-   * `INVALID_FOLLOW_CURSOR` if the cursor is malformed or was issued for a different Viewer, Profile, or list
-   * direction (discard it and restart from the first page), or `INVALID_FOLLOW_LIMIT` if `limit` is outside
-   * 1–50.
-   */
-  async getFollowers(
-    params: GetMobileFollowersParams,
-  ): Promise<MobileFollowListPage> {
-    const signedRequest = await this.getSignedRequest('followers', params, {
-      subaccount: subaccountToHex(params.target),
-      cursor: params.cursor ?? null,
-      limit: params.limit ?? null,
-    });
-    const data = await this.signedQuery(signedRequest);
-    return mapMobileFollowListPage(data);
-  }
-
-  /**
-   * Fetches a page of the accounts the given Profile follows. Ordering, cursor rules, and errors match
-   * {@link MobileClient.getFollowers}. When the Viewer reads their own Following list every row is familiar,
-   * so every `isFollowing` is `true`.
-   */
-  async getFollowing(
-    params: GetMobileFollowingParams,
-  ): Promise<MobileFollowListPage> {
-    const signedRequest = await this.getSignedRequest('following', params, {
-      subaccount: subaccountToHex(params.target),
-      cursor: params.cursor ?? null,
-      limit: params.limit ?? null,
-    });
-    const data = await this.signedQuery(signedRequest);
-    return mapMobileFollowListPage(data);
-  }
-
-  /*
   Signed executes
    */
 
@@ -413,8 +404,22 @@ export class MobileClient {
   Base Fns
    */
 
-  // Returns the request narrowed to `type` so `execute` and `signedQuery` can infer their response from the
-  // request they are given, instead of being told the type a second time at the call site.
+  // Both list directions take identical params and differ only in the `type` they dispatch on.
+  private getFollowListRequest<T extends 'followers' | 'following'>(
+    type: T,
+    params: GetMobileFollowListParams,
+  ): { type: T } & MobileServerFollowListRequest {
+    return {
+      type,
+      subaccount: subaccountToHex(params.target),
+      view_as: params.viewAs ? subaccountToHex(params.viewAs) : undefined,
+      cursor: params.cursor,
+      limit: params.limit,
+    };
+  }
+
+  // Returns the request narrowed to `type` so `execute` can infer its response from the request it is given,
+  // instead of being told the type a second time at the call site.
   protected async getSignedRequest<T extends MobileSignedInner['type']>(
     type: T,
     params: MobileSignedRequestParams,
@@ -482,21 +487,6 @@ export class MobileClient {
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
     return response.data as MobileServerExecuteSuccessResponse<T>;
-  }
-
-  protected async signedQuery<T extends MobileServerSignedQueryRequestType>(
-    body: MobileSignedRequest & { type: T },
-  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
-    const response = await this.axiosInstance.post<unknown>(
-      `${this.opts.url}/mobile/query`,
-      body,
-    );
-
-    this.checkResponseStatus(response);
-    this.checkServerStatus(response);
-
-    // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
-    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   /**

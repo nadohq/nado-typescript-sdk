@@ -10,7 +10,6 @@ import {
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
-  MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
 
 /**
@@ -39,6 +38,16 @@ export interface MobileServerUsernameAvailabilityResponse {
  */
 export interface MobileServerProfilesResponse {
   profiles: MobileServerProfile[];
+}
+
+/**
+ * Payload of the `followers` and `following` public query success responses. Both list directions share one
+ * shape; only the relationship that selected the rows differs.
+ */
+export interface MobileServerFollowListResponse {
+  accounts: MobileServerFollowListAccount[];
+  /** `null` means the list is complete. */
+  next_cursor: string | null;
 }
 
 /**
@@ -83,6 +92,8 @@ export interface MobileServerRegisteredWalletResponse {
 export interface MobileServerPublicQueryResponseByType {
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
+  followers: MobileServerFollowListResponse;
+  following: MobileServerFollowListResponse;
   feed: MobileServerFeedResponse;
   notification_preferences: MobileServerNotificationPreferencesResponse;
   registered_wallet: MobileServerRegisteredWalletResponse;
@@ -97,31 +108,3 @@ export type MobileServerPublicQuerySuccessResponse<
   T extends MobileServerPublicQueryRequestType =
     MobileServerPublicQueryRequestType,
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
-
-/**
- * Payload of the `followers` and `following` signed query success responses. Both list directions share one
- * shape; only the relationship that selected the rows differs.
- */
-export interface MobileServerFollowListResponse {
-  accounts: MobileServerFollowListAccount[];
-  /** `null` means the list is complete. */
-  next_cursor: string | null;
-}
-
-/**
- * Success payloads for each signed `query`, keyed by request `type` — the signed counterpart to
- * {@link MobileServerPublicQueryResponseByType}.
- */
-export interface MobileServerSignedQueryResponseByType {
-  followers: MobileServerFollowListResponse;
-  following: MobileServerFollowListResponse;
-}
-
-/**
- * Full success response for a signed `query`: the {@link MobileServerSuccessResponse} envelope with the
- * query's payload inlined alongside `status`.
- */
-export type MobileServerSignedQuerySuccessResponse<
-  T extends MobileServerSignedQueryRequestType =
-    MobileServerSignedQueryRequestType,
-> = MobileServerSuccessResponse & MobileServerSignedQueryResponseByType[T];

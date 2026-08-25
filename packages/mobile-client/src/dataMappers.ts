@@ -77,7 +77,8 @@ function mapMobileFollowSummary(
 }
 
 /**
- * Maps a server-side Followers or Following response to a client-side {@link MobileFollowListPage}.
+ * Maps a server-side Followers or Following response to a client-side {@link MobileFollowListPage}. Rows
+ * keep `isFollowing` absent when the request named no `viewAs`, rather than defaulting it to `false`.
  */
 export function mapMobileFollowListPage(
   server: MobileServerFollowListResponse,
