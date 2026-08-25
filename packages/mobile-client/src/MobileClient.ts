@@ -8,6 +8,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapMobileFeedPage,
   mapMobileFollowListPage,
+  mapMobileFollowListParamsToServer,
   mapMobileFollowMutationResult,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
@@ -26,7 +27,6 @@ import {
   GetMobileFeedParams,
   GetMobileFollowersParams,
   GetMobileFollowingParams,
-  GetMobileFollowListParams,
   GetMobileNotificationPreferencesParams,
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
@@ -59,7 +59,6 @@ import {
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
-  MobileServerFollowListRequest,
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
 } from './types/serverRequestTypes';
@@ -183,9 +182,11 @@ export class MobileClient {
   async getFollowers(
     params: GetMobileFollowersParams,
   ): Promise<MobileFollowListPage> {
-    const data = await this.publicQuery(
-      this.getFollowListRequest('followers', params),
-    );
+    const body: MobileServerPublicQueryRequest<'followers'> = {
+      type: 'followers',
+      ...mapMobileFollowListParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
     return mapMobileFollowListPage(data);
   }
 
@@ -197,9 +198,11 @@ export class MobileClient {
   async getFollowing(
     params: GetMobileFollowingParams,
   ): Promise<MobileFollowListPage> {
-    const data = await this.publicQuery(
-      this.getFollowListRequest('following', params),
-    );
+    const body: MobileServerPublicQueryRequest<'following'> = {
+      type: 'following',
+      ...mapMobileFollowListParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
     return mapMobileFollowListPage(data);
   }
 
@@ -403,20 +406,6 @@ export class MobileClient {
   /*
   Base Fns
    */
-
-  // Both list directions take identical params and differ only in the `type` they dispatch on.
-  private getFollowListRequest<T extends 'followers' | 'following'>(
-    type: T,
-    params: GetMobileFollowListParams,
-  ): { type: T } & MobileServerFollowListRequest {
-    return {
-      type,
-      subaccount: subaccountToHex(params.target),
-      view_as: params.viewAs ? subaccountToHex(params.viewAs) : undefined,
-      cursor: params.cursor,
-      limit: params.limit,
-    };
-  }
 
   // Returns the request narrowed to `type` so `execute` can infer its response from the request it is given,
   // instead of being told the type a second time at the call site.
