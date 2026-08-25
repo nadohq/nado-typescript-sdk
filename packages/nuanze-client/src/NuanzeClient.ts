@@ -1,13 +1,84 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { mapNuanzeMarketsResponse } from './dataMappers';
 import {
+  mapNuanzeCollateralFlowSeriesResponse,
+  mapNuanzeCollateralFlowSummaryResponse,
+  mapNuanzeCollateralFlowsResponse,
+  mapNuanzeFundingRatesResponse,
+  mapNuanzeLeaderboardResponse,
+  mapNuanzeMarketByTickerResponse,
+  mapNuanzeMarketCandlesResponse,
+  mapNuanzeMarketPositioningResponse,
+  mapNuanzeMarketPositionsResponse,
+  mapNuanzeMarketTradesResponse,
+  mapNuanzeMarketsResponse,
+  mapNuanzeNewsResponse,
+  mapNuanzePlatformSummaryResponse,
+  mapNuanzeWalletPnlResponse,
+  mapNuanzeWalletPnlSeriesResponse,
+  mapNuanzeWalletPositionsResponse,
+  mapNuanzeWalletSummaryResponse,
+  mapNuanzeWalletTradesResponse,
+} from './dataMappers';
+import {
+  GetNuanzeCollateralFlowSeriesParams,
+  GetNuanzeCollateralFlowSeriesResponse,
+  GetNuanzeCollateralFlowSummaryParams,
+  GetNuanzeCollateralFlowSummaryResponse,
+  GetNuanzeCollateralFlowsParams,
+  GetNuanzeCollateralFlowsResponse,
+  GetNuanzeFundingRatesParams,
+  GetNuanzeFundingRatesResponse,
+  GetNuanzeLeaderboardParams,
+  GetNuanzeLeaderboardResponse,
+  GetNuanzeMarketByTickerParams,
+  GetNuanzeMarketByTickerResponse,
+  GetNuanzeMarketCandlesParams,
+  GetNuanzeMarketCandlesResponse,
+  GetNuanzeMarketPositioningParams,
+  GetNuanzeMarketPositioningResponse,
+  GetNuanzeMarketPositionsParams,
+  GetNuanzeMarketPositionsResponse,
+  GetNuanzeMarketTradesParams,
+  GetNuanzeMarketTradesResponse,
   GetNuanzeMarketsParams,
   GetNuanzeMarketsResponse,
+  GetNuanzeNewsParams,
+  GetNuanzeNewsResponse,
+  GetNuanzeOpenApiDocumentResponse,
+  GetNuanzePlatformSummaryParams,
+  GetNuanzePlatformSummaryResponse,
+  GetNuanzeWalletPnlParams,
+  GetNuanzeWalletPnlResponse,
+  GetNuanzeWalletPnlSeriesParams,
+  GetNuanzeWalletPnlSeriesResponse,
+  GetNuanzeWalletPositionsParams,
+  GetNuanzeWalletPositionsResponse,
+  GetNuanzeWalletSummaryParams,
+  GetNuanzeWalletSummaryResponse,
+  GetNuanzeWalletTradesParams,
+  GetNuanzeWalletTradesResponse,
 } from './types/clientTypes';
 import { NuanzeServerFailureError } from './types/NuanzeServerFailureError';
+import { NuanzeServerMarketPositioningResponse } from './types/serverModelTypes';
 import {
-  isNuanzeServerFailureResponse,
+  NuanzeServerCollateralFlowSeriesResponse,
+  NuanzeServerCollateralFlowSummaryResponse,
+  NuanzeServerCollateralFlowsResponse,
+  NuanzeServerFundingRatesResponse,
+  NuanzeServerLeaderboardResponse,
+  NuanzeServerMarketByTickerResponse,
+  NuanzeServerMarketCandlesResponse,
+  NuanzeServerMarketPositionsResponse,
+  NuanzeServerMarketTradesResponse,
   NuanzeServerMarketsResponse,
+  NuanzeServerNewsResponse,
+  NuanzeServerPlatformSummaryResponse,
+  NuanzeServerWalletPnlResponse,
+  NuanzeServerWalletPnlSeriesResponse,
+  NuanzeServerWalletPositionsResponse,
+  NuanzeServerWalletSummaryResponse,
+  NuanzeServerWalletTradesResponse,
+  isNuanzeServerFailureResponse,
 } from './types/serverQueryTypes';
 
 /**
@@ -43,7 +114,33 @@ export class NuanzeClient {
       withCredentials: false,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
+      // Repeatable `productId` must serialize as `productId=1&productId=2` (OpenAPI explode).
+      paramsSerializer: { indexes: false },
     });
+  }
+
+  /**
+   * Gets the deployed OpenAPI 3.1 document. Immutable for a release and cached for 300 seconds
+   * with ETag.
+   */
+  async getOpenApiDocument(): Promise<GetNuanzeOpenApiDocumentResponse> {
+    return this.getJson<GetNuanzeOpenApiDocumentResponse>('/openapi.json');
+  }
+
+  /**
+   * Lists published editorial stories, sorted by `publishedAt` descending then `id` descending.
+   * The opaque cursor is exclusive and bound to normalized filters. Raw article ingestion, scoring,
+   * queue, and newsdesk fields are excluded.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
+   * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
+   */
+  async getNews(
+    params: GetNuanzeNewsParams = {},
+  ): Promise<GetNuanzeNewsResponse> {
+    return mapNuanzeNewsResponse(
+      await this.getJson<NuanzeServerNewsResponse>('/news', params),
+    );
   }
 
   /**
@@ -57,14 +154,329 @@ export class NuanzeClient {
   async getMarkets(
     params: GetNuanzeMarketsParams = {},
   ): Promise<GetNuanzeMarketsResponse> {
-    const response = await this.axiosInstance.get<NuanzeServerMarketsResponse>(
-      `${this.opts.url}/markets`,
-      { params },
+    return mapNuanzeMarketsResponse(
+      await this.getJson<NuanzeServerMarketsResponse>('/markets', params),
     );
+  }
 
+  /**
+   * Resolves a market by ticker. Lookup is case-insensitive and accepts canonical tickers or
+   * legacy source symbols. An explicit unavailable venue returns `MARKET_NOT_FOUND`. With no
+   * venue, `strictVenue=true` returns `AMBIGUOUS_MARKET` for multi-venue assets; otherwise the
+   * primary venue is used.
+   *
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or
+   * `BAD_REQUEST` on invalid selectors, and `MARKET_NOT_FOUND` when the ticker does not resolve.
+   */
+  async getMarketByTicker(
+    params: GetNuanzeMarketByTickerParams,
+  ): Promise<GetNuanzeMarketByTickerResponse> {
+    const { ticker, ...query } = params;
+    return mapNuanzeMarketByTickerResponse(
+      await this.getJson<NuanzeServerMarketByTickerResponse>(
+        `/markets/${encodeURIComponent(ticker)}`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists the latest funding observation per active perpetual market, refreshed about every five
+   * minutes.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid.
+   */
+  async getFundingRates(
+    params: GetNuanzeFundingRatesParams = {},
+  ): Promise<GetNuanzeFundingRatesResponse> {
+    return mapNuanzeFundingRatesResponse(
+      await this.getJson<NuanzeServerFundingRatesResponse>(
+        '/funding/rates',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets the account PnL leaderboard. Equity-basis account PnL includes realized and unrealized
+   * movement plus funding and is not realized PnL. All-time analytics cost five rate-limit units.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid.
+   */
+  async getLeaderboard(
+    params: GetNuanzeLeaderboardParams = {},
+  ): Promise<GetNuanzeLeaderboardResponse> {
+    return mapNuanzeLeaderboardResponse(
+      await this.getJson<NuanzeServerLeaderboardResponse>(
+        '/leaderboard',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets platform activity summary from five-minute aggregates.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if the window is not a documented value.
+   */
+  async getPlatformSummary(
+    params: GetNuanzePlatformSummaryParams = {},
+  ): Promise<GetNuanzePlatformSummaryResponse> {
+    return mapNuanzePlatformSummaryResponse(
+      await this.getJson<NuanzeServerPlatformSummaryResponse>(
+        '/platform/summary',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets replica-backed wallet analytics. Without `subaccountName`, latest cumulative values are
+   * selected per known subaccount and then summed. The response is a snapshot and does not claim
+   * live health, withdrawable collateral, open-order, or signer state.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_ADDRESS` or `BAD_REQUEST` on invalid input,
+   * and `WALLET_NOT_FOUND` when the address has no wallet data.
+   */
+  async getWalletSummary(
+    params: GetNuanzeWalletSummaryParams,
+  ): Promise<GetNuanzeWalletSummaryResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletSummaryResponse(
+      await this.getJson<NuanzeServerWalletSummaryResponse>(
+        `/wallets/${encodeURIComponent(address)}`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists at most 500 current replica position rows across all known subaccounts by default. Rows
+   * remain per subaccount. Spot rows are excluded unless `includeSpot=true`. This is not an
+   * execution-grade live feed.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_ADDRESS` or `BAD_REQUEST` on invalid input,
+   * and `WALLET_NOT_FOUND` when the address has no wallet data.
+   */
+  async getWalletPositions(
+    params: GetNuanzeWalletPositionsParams,
+  ): Promise<GetNuanzeWalletPositionsResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletPositionsResponse(
+      await this.getJson<NuanzeServerWalletPositionsResponse>(
+        `/wallets/${encodeURIComponent(address)}/positions`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists market trades: one taker-side row per match, sorted by `matchedAt` then `id` descending.
+   * The exclusive cursor is bound to operation and normalized filters. `from` is inclusive and
+   * `to` exclusive. Wallet identity is absent.
+   *
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
+   * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, `RANGE_TOO_LARGE`, or `BAD_REQUEST` on invalid
+   * input, and `MARKET_NOT_FOUND` when the ticker does not resolve.
+   */
+  async getMarketTrades(
+    params: GetNuanzeMarketTradesParams,
+  ): Promise<GetNuanzeMarketTradesResponse> {
+    const { ticker, ...query } = params;
+    return mapNuanzeMarketTradesResponse(
+      await this.getJson<NuanzeServerMarketTradesResponse>(
+        `/markets/${encodeURIComponent(ticker)}/trades`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists market candles. Source storage is 1h; 4h and 1d are UTC-aligned rollups and missing bars
+   * are not interpolated. The newest `limit` matching bars are selected and returned
+   * oldest-to-newest, at most 750, with no pagination. A current bucket has `complete=false`.
+   *
+   * @throws {NuanzeServerFailureError} With `UNSUPPORTED_INTERVAL`, `RANGE_TOO_LARGE`,
+   * `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or `BAD_REQUEST` on invalid input, and
+   * `MARKET_NOT_FOUND` when the ticker does not resolve.
+   */
+  async getMarketCandles(
+    params: GetNuanzeMarketCandlesParams,
+  ): Promise<GetNuanzeMarketCandlesResponse> {
+    const { ticker, ...query } = params;
+    return mapNuanzeMarketCandlesResponse(
+      await this.getJson<NuanzeServerMarketCandlesResponse>(
+        `/markets/${encodeURIComponent(ticker)}/candles`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists wallet-owned maker and taker execution rows, sorted by `matchedAt` then `id` descending.
+   * The cursor is exclusive and filter-bound. `from` is inclusive and `to` exclusive.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_ADDRESS`, `INVALID_CURSOR`,
+   * `CURSOR_FILTER_MISMATCH`, `RANGE_TOO_LARGE`, or `BAD_REQUEST` on invalid input, and
+   * `WALLET_NOT_FOUND` when the address has no wallet data.
+   */
+  async getWalletTrades(
+    params: GetNuanzeWalletTradesParams,
+  ): Promise<GetNuanzeWalletTradesResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletTradesResponse(
+      await this.getJson<NuanzeServerWalletTradesResponse>(
+        `/wallets/${encodeURIComponent(address)}/trades`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Gets wallet account PnL. 24h is rolling and uses hourly snapshots with a daily fallback
+   * baseline. Longer windows use daily snapshots; `all` starts at earliest coverage. PnL includes
+   * realized and unrealized movement plus funding.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_ADDRESS` or `BAD_REQUEST` on invalid input,
+   * and `WALLET_NOT_FOUND` when the address has no wallet data.
+   */
+  async getWalletPnl(
+    params: GetNuanzeWalletPnlParams,
+  ): Promise<GetNuanzeWalletPnlResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletPnlResponse(
+      await this.getJson<NuanzeServerWalletPnlResponse>(
+        `/wallets/${encodeURIComponent(address)}/pnl`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Gets a wallet account series of at most 1,000 deterministically sampled points ordered by
+   * timestamp. Series contain a boundary anchor and a carried-forward request-time tip; synthetic
+   * points are identified. Latest buckets may be provisional.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_ADDRESS` or `BAD_REQUEST` on invalid input,
+   * and `WALLET_NOT_FOUND` when the address has no wallet data.
+   */
+  async getWalletPnlSeries(
+    params: GetNuanzeWalletPnlSeriesParams,
+  ): Promise<GetNuanzeWalletPnlSeriesResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletPnlSeriesResponse(
+      await this.getJson<NuanzeServerWalletPnlSeriesResponse>(
+        `/wallets/${encodeURIComponent(address)}/pnl/series`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists public collateral events, sorted by timestamp then `id` descending. Repeated `productId`
+   * uses OR semantics. `minUsd` excludes unvalued events; without it unvalued events remain.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
+   * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
+   */
+  async getCollateralFlows(
+    params: GetNuanzeCollateralFlowsParams = {},
+  ): Promise<GetNuanzeCollateralFlowsResponse> {
+    return mapNuanzeCollateralFlowsResponse(
+      await this.getJson<NuanzeServerCollateralFlowsResponse>('/flows', params),
+    );
+  }
+
+  /**
+   * Gets collateral flow aggregates: deposited, withdrawn, net, and gross, with valuation coverage
+   * and a prior equal-window comparison. `all` has no prior window.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid.
+   */
+  async getCollateralFlowSummary(
+    params: GetNuanzeCollateralFlowSummaryParams = {},
+  ): Promise<GetNuanzeCollateralFlowSummaryResponse> {
+    return mapNuanzeCollateralFlowSummaryResponse(
+      await this.getJson<NuanzeServerCollateralFlowSummaryResponse>(
+        '/flows/summary',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets collateral flow series of at most 1,000 UTC buckets. Allowed timeframe/bucket pairs are
+   * 24h/hour, 7d/hour or day (default hour), 30d/day, and all/day.
+   *
+   * @throws {NuanzeServerFailureError} With `UNSUPPORTED_BUCKET` or `BAD_REQUEST` when the pair or
+   * filters are invalid.
+   */
+  async getCollateralFlowSeries(
+    params: GetNuanzeCollateralFlowSeriesParams = {},
+  ): Promise<GetNuanzeCollateralFlowSeriesResponse> {
+    return mapNuanzeCollateralFlowSeriesResponse(
+      await this.getJson<NuanzeServerCollateralFlowSeriesResponse>(
+        '/flows/series',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets privacy-preserving aggregate positioning for an active perpetual. Cross and isolated legs
+   * are summed within owner/subaccount/product before direction classification. Every cell requires
+   * at least 20 distinct contributing owners. No identity, individual position, entry price, PnL,
+   * margin, or leverage fields are returned. This operation costs five rate-limit units.
+   *
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or
+   * `BAD_REQUEST` on invalid input, and `MARKET_NOT_FOUND` when the ticker does not resolve to a
+   * perp.
+   */
+  async getMarketPositioning(
+    params: GetNuanzeMarketPositioningParams,
+  ): Promise<GetNuanzeMarketPositioningResponse> {
+    const { ticker, ...query } = params;
+    return mapNuanzeMarketPositioningResponse(
+      await this.getJson<NuanzeServerMarketPositioningResponse>(
+        `/markets/${encodeURIComponent(ticker)}/positioning`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Lists open perpetual position legs for the resolved market, ordered by absolute notional
+   * descending. Spot markets are not supported. Legs below $10 absolute notional are excluded.
+   * Wallet addresses are returned.
+   *
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
+   * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and
+   * `MARKET_NOT_FOUND` when the ticker does not resolve to a perp.
+   */
+  async getMarketPositions(
+    params: GetNuanzeMarketPositionsParams,
+  ): Promise<GetNuanzeMarketPositionsResponse> {
+    const { ticker, ...query } = params;
+    return mapNuanzeMarketPositionsResponse(
+      await this.getJson<NuanzeServerMarketPositionsResponse>(
+        `/markets/${encodeURIComponent(ticker)}/positions`,
+        query,
+      ),
+    );
+  }
+
+  /**
+   * Performs a GET against `{baseUrl}{path}` and classifies the status before returning the body.
+   */
+  private async getJson<T>(path: string, params?: object): Promise<T> {
+    const response = await this.axiosInstance.get<T>(
+      `${this.opts.url}${path}`,
+      {
+        params,
+      },
+    );
     this.checkResponseStatus(response);
-
-    return mapNuanzeMarketsResponse(response.data);
+    return response.data;
   }
 
   /**

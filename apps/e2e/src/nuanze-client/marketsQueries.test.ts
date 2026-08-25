@@ -108,6 +108,45 @@ void describe(
         assertNonEmptyString(error.requestId, 'error.requestId');
       }
     });
+
+    void test('resolves a market by ticker', async () => {
+      const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      assert.ok(first, 'expected at least one perp market to resolve');
+
+      const response = await tc.nuanze.getMarketByTicker({
+        ticker: first.ticker.toLowerCase(),
+        venue: 'perp',
+      });
+      debugPrint('Market by ticker', response);
+
+      assert.equal(response.ticker, first.ticker);
+      assert.equal(response.venue, 'perp');
+      assertMarketShape(response, 'market');
+      assert.ok(
+        response.availableVenues.includes('perp'),
+        'availableVenues should include perp',
+      );
+      assert.match(
+        response.componentUpdatedAt.market,
+        ISO_UTC,
+        'componentUpdatedAt.market',
+      );
+    });
+
+    void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
+      try {
+        await tc.nuanze.getMarketByTicker({ ticker: 'NOTAREALTICKERXYZ' });
+        assert.fail('expected MARKET_NOT_FOUND for an unknown ticker');
+      } catch (error) {
+        assert.ok(
+          error instanceof NuanzeServerFailureError,
+          'should throw NuanzeServerFailureError',
+        );
+        assert.equal(error.errorCode, 'MARKET_NOT_FOUND');
+        assert.equal(error.httpStatus, 404);
+        assertNonEmptyString(error.requestId, 'error.requestId');
+      }
+    });
   },
 );
 

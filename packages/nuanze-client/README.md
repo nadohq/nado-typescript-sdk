@@ -29,7 +29,27 @@ Nuanze runs a single public deployment that serves mainnet data, so every entry 
 
 ## API Surface
 
-`getMarkets`.
+Each method maps one-to-one onto a public GET operation:
+
+- `getOpenApiDocument`
+- `getNews`
+- `getMarkets`
+- `getMarketByTicker`
+- `getFundingRates`
+- `getLeaderboard`
+- `getPlatformSummary`
+- `getWalletSummary`
+- `getWalletPositions`
+- `getMarketTrades`
+- `getMarketCandles`
+- `getWalletTrades`
+- `getWalletPnl`
+- `getWalletPnlSeries`
+- `getCollateralFlows`
+- `getCollateralFlowSummary`
+- `getCollateralFlowSeries`
+- `getMarketPositioning`
+- `getMarketPositions`
 
 Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, matching the API contract.
 
