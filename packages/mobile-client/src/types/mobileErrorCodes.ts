@@ -13,6 +13,18 @@ export const MOBILE_ERROR_CODES = {
   /** Another identity write for the subaccount committed with a later nonce. Re-read before retrying. */
   STALE_IDENTITY_UPDATE: 6105,
   PROFILE_NOT_FOUND: 6106,
+  /** Profiles lookup is empty, holds duplicates, or exceeds the batch maximum. Do not retry unchanged. */
+  INVALID_PROFILES_REQUEST: 6107,
+  /** Follow mutation names the same source and target, or an isolated participant. Do not retry unchanged. */
+  INVALID_FOLLOW_TARGET: 6110,
+  /** Signed follower is not yet in the canonical Query DB subaccount index. Retry after index catch-up. */
+  FOLLOWER_NOT_ELIGIBLE: 6111,
+  /** Follow target is not yet in the canonical Query DB subaccount index. Refresh after a new record. */
+  FOLLOWING_NOT_FOUND: 6112,
+  /** Follow list cursor is malformed or bound to a different list request. Restart from `cursor: null`. */
+  INVALID_FOLLOW_CURSOR: 6113,
+  /** A follow list or followed-by limit is outside its accepted range. Fix it; do not retry unchanged. */
+  INVALID_FOLLOW_LIMIT: 6114,
   INVALID_EXPO_TOKEN: 6200,
   INVALID_DEVICE_METADATA: 6201,
   INVALID_PREFERENCES: 6202,

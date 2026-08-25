@@ -1,24 +1,37 @@
+import { subaccountToHex } from '@nadohq/shared';
 import {
   MobileFeedPage,
   MobileFeedTrade,
+  MobileFollowListPage,
+  MobileFollowMutationResult,
+  MobileFollowSummary,
+  MobileIdentitySummary,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
+  MobileProfilesInclude,
   MobilePublicProfile,
   MobileRegisteredWallet,
 } from './types/clientTypes';
+import { MobileServerFollowMutationResponse } from './types/serverExecuteTypes';
 import {
   MobileServerFeedTrade,
+  MobileServerFollowSummary,
+  MobileServerIdentitySummary,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
 } from './types/serverModelTypes';
 import {
   MobileServerFeedResponse,
+  MobileServerFollowListResponse,
   MobileServerRegisteredWalletResponse,
 } from './types/serverQueryTypes';
+import { MobileServerProfilesInclude } from './types/serverRequestTypes';
 
 /**
- * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation.
+ * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation. The three
+ * include-gated fields stay `undefined` when the backend omitted them, rather than being coerced to `null`
+ * or zero, so callers can tell "not requested" from a real value.
  */
 export function mapMobilePublicProfile(
   server: MobileServerProfile,
@@ -28,6 +41,66 @@ export function mapMobilePublicProfile(
     username: server.username,
     displayName: server.display_name,
     privateMode: server.private_mode,
+    followerCount: server.follower_count,
+    followingCount: server.following_count,
+    followSummary: server.follow_summary
+      ? mapMobileFollowSummary(server.follow_summary)
+      : undefined,
+  };
+}
+
+/**
+ * Maps a server-side identity summary (snake_case) to its client-side (camelCase) representation.
+ */
+function mapMobileIdentitySummary(
+  server: MobileServerIdentitySummary,
+): MobileIdentitySummary {
+  return {
+    subaccount: server.subaccount,
+    username: server.username,
+    displayName: server.display_name,
+    avatarUrl: server.avatar_url,
+  };
+}
+
+/**
+ * Maps a server-side follow summary to its client-side representation.
+ */
+function mapMobileFollowSummary(
+  server: MobileServerFollowSummary,
+): MobileFollowSummary {
+  return {
+    isFollowing: server.is_following,
+    followedByCount: server.followed_by_count,
+    followedBy: server.followed_by.map(mapMobileIdentitySummary),
+  };
+}
+
+/**
+ * Maps a server-side Followers or Following response to a client-side {@link MobileFollowListPage}.
+ */
+export function mapMobileFollowListPage(
+  server: MobileServerFollowListResponse,
+): MobileFollowListPage {
+  return {
+    accounts: server.accounts.map((account) => ({
+      identity: mapMobileIdentitySummary(account.identity),
+      isFollowing: account.is_following,
+      followerCount: account.follower_count,
+    })),
+    nextCursor: server.next_cursor,
+  };
+}
+
+/**
+ * Maps a server-side follow or unfollow response to its client-side representation.
+ */
+export function mapMobileFollowMutationResult(
+  server: MobileServerFollowMutationResponse,
+): MobileFollowMutationResult {
+  return {
+    isFollowing: server.is_following,
+    followerCount: server.follower_count,
   };
 }
 
@@ -54,6 +127,20 @@ function mapMobileNotificationPreferenceScope(
     return { type: 'subaccount', subaccount: server.subaccount };
   }
   return { type: 'product', productId: server.product_id };
+}
+
+/**
+ * Maps client-side profiles includes (camelCase) to the server-side (snake_case) wire shape.
+ */
+export function mapMobileProfilesIncludeToServer(
+  include: MobileProfilesInclude,
+): MobileServerProfilesInclude {
+  return {
+    follow_counts: include.followCounts,
+    follow_summary: include.followSummary
+      ? { view_as: subaccountToHex(include.followSummary.viewAs) }
+      : undefined,
+  };
 }
 
 /**
@@ -86,11 +173,8 @@ function mapMobileNotificationPreferenceScopeToServer(
  */
 function mapMobileFeedTrade(server: MobileServerFeedTrade): MobileFeedTrade {
   return {
+    ...mapMobileIdentitySummary(server),
     orderDigest: server.order_digest,
-    subaccount: server.subaccount,
-    username: server.username,
-    displayName: server.display_name,
-    avatarUrl: server.avatar_url,
     productId: server.product_id,
     quantity: server.quantity,
     notional: server.notional,

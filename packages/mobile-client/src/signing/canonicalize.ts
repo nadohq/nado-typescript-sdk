@@ -23,6 +23,26 @@ export function canonicalizeMobileInner(
         locale: inner.locale,
         app_version: inner.app_version,
       };
+    case 'set_follow':
+      return {
+        type: 'set_follow',
+        subaccount: inner.subaccount,
+        is_following: inner.is_following,
+      };
+    case 'followers':
+      return {
+        type: 'followers',
+        subaccount: inner.subaccount,
+        cursor: inner.cursor,
+        limit: inner.limit,
+      };
+    case 'following':
+      return {
+        type: 'following',
+        subaccount: inner.subaccount,
+        cursor: inner.cursor,
+        limit: inner.limit,
+      };
     default: {
       throw new Error(
         `canonicalizeMobileInner: unhandled inner payload type: ${JSON.stringify(inner)}`,

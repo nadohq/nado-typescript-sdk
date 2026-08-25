@@ -195,6 +195,20 @@ export function assertNumber(value: unknown, label: string): void {
 }
 
 /**
+ * Asserts that a value is a non-negative safe integer, for backend counts and other whole-number fields.
+ *
+ * @param value - The value to check.
+ * @param label - Human-readable label included in the failure message.
+ */
+export function assertNonNegativeInteger(value: unknown, label: string): void {
+  assertNumber(value, label);
+  assert.ok(
+    Number.isSafeInteger(value) && (value as number) >= 0,
+    `${label} should be a non-negative safe integer, instead got ${formatValue(value)}`,
+  );
+}
+
+/**
  * Asserts that a value is a string. Empty strings are accepted; use
  * {@link assertNonEmptyString} when a non-empty value is required.
  *
