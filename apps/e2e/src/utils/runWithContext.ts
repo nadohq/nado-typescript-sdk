@@ -4,6 +4,7 @@ import {
   IndexerClient,
 } from '@nadohq/indexer-client';
 import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
+import { NUANZE_CLIENT_ENDPOINTS, NuanzeClient } from '@nadohq/nuanze-client';
 import { CHAIN_ENV_TO_CHAIN, NADO_DEPLOYMENTS } from '@nadohq/shared';
 import {
   TRIGGER_CLIENT_ENDPOINTS,
@@ -45,6 +46,7 @@ export function createTestContext(): RunContext {
     indexer: INDEXER_CLIENT_ENDPOINTS[env.chainEnv],
     trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
     mobile: MOBILE_CLIENT_ENDPOINTS[env.chainEnv],
+    nuanze: NUANZE_CLIENT_ENDPOINTS[env.chainEnv],
   };
 
   const contracts = NADO_DEPLOYMENTS[env.chainEnv];
@@ -73,6 +75,10 @@ export function createTestContext(): RunContext {
     mobile: new MobileClient({
       url: endpoints.mobile,
       walletClient,
+    }),
+    // Nuanze is read-only and public, so it needs no wallet client
+    nuanze: new NuanzeClient({
+      url: endpoints.nuanze,
     }),
   };
 }

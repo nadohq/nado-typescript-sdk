@@ -16,5 +16,11 @@ Before running any tests, make sure to configure your environment and set up the
 | bun e2e:client  | Runs all client-related E2E tests |
 | bun e2e:engine  | Runs all engine-client E2E tests  |
 | bun e2e:indexer | Runs all indexer-client E2E tests |
+| bun e2e:nuanze  | Runs all nuanze-client E2E tests  |
 | bun e2e:trigger | Runs all trigger-client E2E tests |
 | bun e2e:mobile  | Runs all mobile-client E2E tests  |
+
+The `nuanze-client` suite reads a public API, so it needs no funded account -
+only the `.env` every suite loads. It always runs against production
+(`api.nuanze.co`) regardless of the configured chain env, since Nuanze has a
+single public deployment.

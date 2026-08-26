@@ -12,5 +12,6 @@ export * from './apis/subaccount';
 export * from '@nadohq/engine-client';
 export * from '@nadohq/indexer-client';
 export * from '@nadohq/mobile-client';
+export * from '@nadohq/nuanze-client';
 export * from '@nadohq/shared';
 export * from '@nadohq/trigger-client';

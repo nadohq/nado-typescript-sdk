@@ -27,6 +27,11 @@ Exports queries and executes that talk to the trigger service (used for stop & T
 
 Client for the mobile service — identity, usernames, privacy settings, and push notification devices & preferences.
 
+### `@nadohq/nuanze-client`
+
+Read-only client for the public Nuanze analytics API — markets, wallets, trades, candles, flows, and
+positioning. Credential-free, so it takes no wallet client or linked signer.
+
 ### `@nadohq/shared`
 
 Base utilities, contract interfaces, and EIP712 signing logic. This also includes [

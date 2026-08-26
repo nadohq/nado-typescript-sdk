@@ -50,6 +50,7 @@ export class NadoClient {
         indexerEndpoint: this.context.indexerClient.opts.url,
         triggerEndpoint: this.context.triggerClient.opts.url,
         mobileEndpoint: this.context.mobileClient.opts.url,
+        nuanzeEndpoint: this.context.nuanzeClient.opts.url,
         clientType: this.context.clientType,
       },
       {
