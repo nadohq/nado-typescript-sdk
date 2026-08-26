@@ -34,22 +34,6 @@ export type MobileSignedInner =
       subaccount: Hex;
       /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
       is_following: boolean;
-    }
-  | {
-      type: 'followers';
-      subaccount: Hex;
-      /** `null` requests the first page; otherwise an opaque cursor from the previous page. */
-      cursor: string | null;
-      /** `null` requests the backend default of 25; otherwise 1–50. */
-      limit: number | null;
-    }
-  | {
-      type: 'following';
-      subaccount: Hex;
-      /** `null` requests the first page; otherwise an opaque cursor from the previous page. */
-      cursor: string | null;
-      /** `null` requests the backend default of 25; otherwise 1–50. */
-      limit: number | null;
     };
 
 /**

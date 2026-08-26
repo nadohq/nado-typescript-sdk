@@ -29,20 +29,6 @@ export function canonicalizeMobileInner(
         subaccount: inner.subaccount,
         is_following: inner.is_following,
       };
-    case 'followers':
-      return {
-        type: 'followers',
-        subaccount: inner.subaccount,
-        cursor: inner.cursor,
-        limit: inner.limit,
-      };
-    case 'following':
-      return {
-        type: 'following',
-        subaccount: inner.subaccount,
-        cursor: inner.cursor,
-        limit: inner.limit,
-      };
     default: {
       throw new Error(
         `canonicalizeMobileInner: unhandled inner payload type: ${JSON.stringify(inner)}`,

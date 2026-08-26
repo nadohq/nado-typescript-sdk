@@ -32,10 +32,6 @@ const PINNED_HASHES = {
     '0x1ff8529b7c1a0111313eed98536e591555a3bcab51133776ce30c6ef32b559b3',
   set_follow_false:
     '0xec9e9e8f32ac4fcf3015f8b7f20c338623ff85db0488703c7fb688519a46e2e5',
-  followers:
-    '0x44f3cd2c991196cf949a25cebe0e16a4e5e8a14846d35751f3931de3c8ffcabd',
-  following:
-    '0xaddabad62abf1919dcd4250eee20359970cbfb59f4c81536551462f8918e5ddd',
 } as const;
 
 // Every follow fixture on the backend targets this subaccount.
@@ -92,28 +88,6 @@ describe('[mobile-client]: signing (offline)', () => {
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.set_follow_false);
-    });
-
-    it('followers', () => {
-      const inner: MobileSignedInner = {
-        type: 'followers',
-        subaccount: FIXTURE_TARGET_SUBACCOUNT,
-        cursor: null,
-        limit: 50,
-      };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.followers);
-    });
-
-    it('following', () => {
-      const inner: MobileSignedInner = {
-        type: 'following',
-        subaccount: FIXTURE_TARGET_SUBACCOUNT,
-        cursor: null,
-        limit: 50,
-      };
-      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
-      expect(hash).toBe(PINNED_HASHES.following);
     });
   });
 

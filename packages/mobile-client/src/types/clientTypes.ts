@@ -69,10 +69,12 @@ export interface MobileFollowSummary {
 export interface MobileFollowListAccount {
   identity: MobileIdentitySummary;
   /**
-   * Whether the *Viewer* follows this account — not the listed relationship that put it in the page. The
-   * Viewer can appear in another Profile's list, and does not follow themself, so their own row is `false`.
+   * Whether the `viewAs` Viewer follows this account — not the listed relationship that put it in the page.
+   * The Viewer can appear in another Profile's list, and does not follow themself, so their own row is
+   * `false`. `undefined` when the request named no `viewAs`, which is a missing perspective rather than a
+   * known "not following".
    */
-  isFollowing: boolean;
+  isFollowing?: boolean;
   /** This account's own follower count. */
   followerCount: number;
 }
@@ -233,9 +235,8 @@ export interface MobileProfilesInclude {
   /** Populates `followerCount` and `followingCount`. */
   followCounts?: boolean;
   /**
-   * Populates `followSummary`, relative to `viewAs`. Unlike the signed follow list reads, this viewer
-   * identity is an unauthenticated claim — the route takes no signature — so do not treat the result as
-   * proof of who is asking.
+   * Populates `followSummary`, relative to `viewAs`. This viewer identity is an unauthenticated claim — the
+   * route takes no signature — so do not treat the result as proof of who is asking.
    */
   followSummary?: { viewAs: Subaccount };
 }
@@ -286,18 +287,12 @@ export interface MobileSetPrivateModeParams extends MobileSignedRequestParams {
 }
 
 /**
- * Common params for the signed follow requests. The subaccount carried by {@link MobileSignedRequestParams}
- * is the signing Viewer (the Follower, for mutations); `target` is the other party.
+ * Params for {@link MobileClient.setFollow}. The subaccount carried by {@link MobileSignedRequestParams} is
+ * the signing Follower; `target` is the Profile on the other end of the relationship.
  */
-export interface MobileFollowRequestParams extends MobileSignedRequestParams {
-  /** The Profile being followed, unfollowed, or read. Must not be the signing subaccount. */
+export interface MobileSetFollowParams extends MobileSignedRequestParams {
+  /** The Profile being followed or unfollowed. Must not be the signing subaccount. */
   target: Subaccount;
-}
-
-/**
- * Params for {@link MobileClient.setFollow}.
- */
-export interface MobileSetFollowParams extends MobileFollowRequestParams {
   /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
   isFollowing: boolean;
 }
@@ -305,11 +300,20 @@ export interface MobileSetFollowParams extends MobileFollowRequestParams {
 /**
  * Common params for a Followers or Following page.
  */
-export interface GetMobileFollowListParams extends MobileFollowRequestParams {
+export interface GetMobileFollowListParams {
+  /** The Profile whose Followers or Following are being listed. */
+  target: Subaccount;
+  /**
+   * Viewer to resolve the page against, which turns on familiar-first ordering and populates every row's
+   * {@link MobileFollowListAccount.isFollowing}. Omit it for a plain recency-ordered list with no
+   * `isFollowing` at all. The route is unsigned, so this is an unauthenticated claim rather than proof of
+   * who is asking.
+   */
+  viewAs?: Subaccount;
   /**
    * Opaque cursor from the previous page's {@link MobileFollowListPage.nextCursor}. Omit for the first page.
-   * A cursor is bound to its Viewer, Profile, and list direction — reusing it elsewhere fails with
-   * `INVALID_FOLLOW_CURSOR`.
+   * A cursor is bound to its `viewAs` (including its absence), Profile, and list direction — reusing it
+   * elsewhere fails with `INVALID_FOLLOW_CURSOR`.
    */
   cursor?: string;
   /**
