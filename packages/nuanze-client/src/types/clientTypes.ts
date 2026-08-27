@@ -8,6 +8,7 @@ import {
   NuanzeFlowBucket,
   NuanzeFlowEventTypeFilter,
   NuanzeFlowTimeframe,
+  NuanzeFollowedLeaderboardItem,
   NuanzeFundingRate,
   NuanzeLeaderboardItem,
   NuanzeLeaderboardTimeframe,
@@ -174,6 +175,34 @@ export interface GetNuanzeLeaderboardResponse {
   offset: number;
   /** Total ranked rows. */
   total: number;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
+ * Params for `NuanzeClient.getFollowedLeaderboard`. `timeframe` is required and applies to
+ * every per-subaccount figure.
+ */
+export interface GetNuanzeFollowedLeaderboardParams {
+  /**
+   * Followed subaccounts as bytes32 hex (owner + name). Mixed case is accepted and
+   * normalized to lowercase. 1-300 items; the response preserves this order.
+   */
+  subaccounts: string[];
+  /** Ranking window for every per-subaccount figure. */
+  timeframe: NuanzeLeaderboardTimeframe;
+}
+
+/**
+ * Response of `NuanzeClient.getFollowedLeaderboard`.
+ */
+export interface GetNuanzeFollowedLeaderboardResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /** One row per requested hex, in request order. */
+  items: NuanzeFollowedLeaderboardItem[];
+  /** Number of rows returned. Equals `items.length` and the request length. */
+  count: number;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }

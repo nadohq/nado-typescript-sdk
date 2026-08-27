@@ -4,6 +4,7 @@ import {
   NuanzeCandle,
   NuanzeCollateralFlow,
   NuanzeCollateralFlowPoint,
+  NuanzeFollowedLeaderboardItem,
   NuanzeFundamentalsKeyData,
   NuanzeFundamentalsPerformance,
   NuanzeFundamentalsValuation,
@@ -28,6 +29,7 @@ import {
   GetNuanzeCollateralFlowSeriesResponse,
   GetNuanzeCollateralFlowSummaryResponse,
   GetNuanzeCollateralFlowsResponse,
+  GetNuanzeFollowedLeaderboardResponse,
   GetNuanzeFundingRatesResponse,
   GetNuanzeLeaderboardResponse,
   GetNuanzeMarketByTickerResponse,
@@ -49,6 +51,7 @@ import {
   NuanzeServerCohortPositioningCell,
   NuanzeServerCollateralFlow,
   NuanzeServerCollateralFlowPoint,
+  NuanzeServerFollowedLeaderboardItem,
   NuanzeServerFundamentalsKeyData,
   NuanzeServerFundamentalsPerformance,
   NuanzeServerFundamentalsValuation,
@@ -76,6 +79,7 @@ import {
   NuanzeServerCollateralFlowSeriesResponse,
   NuanzeServerCollateralFlowSummaryResponse,
   NuanzeServerCollateralFlowsResponse,
+  NuanzeServerFollowedLeaderboardResponse,
   NuanzeServerFundingRatesResponse,
   NuanzeServerLeaderboardResponse,
   NuanzeServerMarketCandlesResponse,
@@ -340,6 +344,39 @@ export function mapNuanzeLeaderboardResponse(
     limit: server.limit,
     offset: server.offset,
     total: server.total,
+    asOf: server.asOf,
+  };
+}
+
+/**
+ * Maps a server-side followed-leaderboard row.
+ */
+export function mapNuanzeFollowedLeaderboardItem(
+  server: NuanzeServerFollowedLeaderboardItem,
+): NuanzeFollowedLeaderboardItem {
+  return {
+    subaccountHex: server.subaccountHex,
+    pnl: mapNuanzeDecimal(server.pnl),
+    wins: server.wins,
+    losses: server.losses,
+    winRate: mapNuanzeDecimal(server.winRate),
+    trades: server.trades,
+    productIds: server.productIds,
+    productCount: server.productCount,
+    globalRank: server.globalRank,
+  };
+}
+
+/**
+ * Maps a server-side `POST /wallets/leaderboard` response.
+ */
+export function mapNuanzeFollowedLeaderboardResponse(
+  server: NuanzeServerFollowedLeaderboardResponse,
+): GetNuanzeFollowedLeaderboardResponse {
+  return {
+    timeframe: server.timeframe,
+    items: server.items.map(mapNuanzeFollowedLeaderboardItem),
+    count: server.count,
     asOf: server.asOf,
   };
 }

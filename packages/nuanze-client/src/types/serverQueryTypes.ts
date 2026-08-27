@@ -16,6 +16,7 @@ import {
   NuanzeServerCandle,
   NuanzeServerCollateralFlow,
   NuanzeServerCollateralFlowPoint,
+  NuanzeServerFollowedLeaderboardItem,
   NuanzeServerFundingRate,
   NuanzeServerLeaderboardItem,
   NuanzeServerMarket,
@@ -82,6 +83,16 @@ export interface NuanzeServerLeaderboardResponse {
   limit: number;
   offset: number;
   total: number;
+  asOf: string;
+}
+
+/**
+ * `POST /wallets/leaderboard` response as returned on the wire.
+ */
+export interface NuanzeServerFollowedLeaderboardResponse {
+  timeframe: NuanzeLeaderboardTimeframe;
+  items: NuanzeServerFollowedLeaderboardItem[];
+  count: number;
   asOf: string;
 }
 

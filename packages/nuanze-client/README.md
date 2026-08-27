@@ -29,7 +29,8 @@ Nuanze runs a single public deployment that serves mainnet data, so every entry 
 
 ## API Surface
 
-Each method maps one-to-one onto a public GET operation:
+Each method maps one-to-one onto a public operation. Most are GET; `getFollowedLeaderboard` is a
+non-mutating POST whose body carries the followed set:
 
 - `getOpenApiDocument`
 - `getNews`
@@ -38,6 +39,7 @@ Each method maps one-to-one onto a public GET operation:
 - `getFundingRates`
 - `getLeaderboard`
 - `getPlatformSummary`
+- `getFollowedLeaderboard`
 - `getWalletSummary`
 - `getWalletPositions`
 - `getMarketTrades`

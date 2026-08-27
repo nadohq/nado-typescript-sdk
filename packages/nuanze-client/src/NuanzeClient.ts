@@ -3,6 +3,7 @@ import {
   mapNuanzeCollateralFlowSeriesResponse,
   mapNuanzeCollateralFlowSummaryResponse,
   mapNuanzeCollateralFlowsResponse,
+  mapNuanzeFollowedLeaderboardResponse,
   mapNuanzeFundingRatesResponse,
   mapNuanzeLeaderboardResponse,
   mapNuanzeMarketByTickerResponse,
@@ -26,6 +27,8 @@ import {
   GetNuanzeCollateralFlowSummaryResponse,
   GetNuanzeCollateralFlowsParams,
   GetNuanzeCollateralFlowsResponse,
+  GetNuanzeFollowedLeaderboardParams,
+  GetNuanzeFollowedLeaderboardResponse,
   GetNuanzeFundingRatesParams,
   GetNuanzeFundingRatesResponse,
   GetNuanzeLeaderboardParams,
@@ -64,6 +67,7 @@ import {
   NuanzeServerCollateralFlowSeriesResponse,
   NuanzeServerCollateralFlowSummaryResponse,
   NuanzeServerCollateralFlowsResponse,
+  NuanzeServerFollowedLeaderboardResponse,
   NuanzeServerFundingRatesResponse,
   NuanzeServerLeaderboardResponse,
   NuanzeServerMarketByTickerResponse,
@@ -98,7 +102,9 @@ export interface NuanzeClientOpts {
  * Read-only and credential-free, so unlike the other service clients it takes no wallet client or
  * linked signer. It also sends no `x-nado-client-type` header: Nuanze is a public API that does not
  * attribute traffic per client, and its `Access-Control-Allow-Headers` does not list the header, so
- * sending it would fail CORS preflight in the browser. The API meters a weighted token bucket per
+ * sending it would fail CORS preflight in the browser. Most operations are GET;
+ * {@link NuanzeClient.getFollowedLeaderboard} is a non-mutating POST whose body carries a followed
+ * set larger than a query string can reliably hold. The API meters a weighted token bucket per
  * client IP and reports its state in the `RateLimit-Limit`, `RateLimit-Remaining`, and
  * `RateLimit-Reset` response headers; add an interceptor on {@link axiosInstance} to observe them.
  */
@@ -225,6 +231,27 @@ export class NuanzeClient {
     return mapNuanzePlatformSummaryResponse(
       await this.getJson<NuanzeServerPlatformSummaryResponse>(
         '/platform/summary',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets leaderboard stats for a set of followed subaccounts. POST rather than GET so the body can
+   * carry up to 300 `subaccountHex` values. The response preserves request order. Subaccounts with
+   * no data in the window are backfilled with `pnl: null`, `globalRank: null`, zero counts, and an
+   * empty `productIds`. Costs five rate-limit units. The response is not cached.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_SUBACCOUNT` if a hex is not 32-byte
+   * 0x-prefixed, and `BAD_REQUEST` if the set is empty, exceeds 300, or `timeframe` is not a
+   * documented value.
+   */
+  async getFollowedLeaderboard(
+    params: GetNuanzeFollowedLeaderboardParams,
+  ): Promise<GetNuanzeFollowedLeaderboardResponse> {
+    return mapNuanzeFollowedLeaderboardResponse(
+      await this.postJson<NuanzeServerFollowedLeaderboardResponse>(
+        '/wallets/leaderboard',
         params,
       ),
     );
@@ -469,12 +496,27 @@ export class NuanzeClient {
    * Performs a GET against `{baseUrl}{path}` and classifies the status before returning the body.
    */
   private async getJson<T>(path: string, params?: object): Promise<T> {
-    const response = await this.axiosInstance.get<T>(
-      `${this.opts.url}${path}`,
-      {
-        params,
-      },
-    );
+    return this.requestJson<T>('GET', path, { params });
+  }
+
+  /**
+   * Performs a POST against `{baseUrl}{path}` with a JSON body and classifies the status before
+   * returning the response. Used only for the non-mutating followed-leaderboard operation.
+   */
+  private async postJson<T>(path: string, data: object): Promise<T> {
+    return this.requestJson<T>('POST', path, { data });
+  }
+
+  private async requestJson<T>(
+    method: 'GET' | 'POST',
+    path: string,
+    config: { params?: object; data?: object } = {},
+  ): Promise<T> {
+    const response = await this.axiosInstance.request<T>({
+      method,
+      url: `${this.opts.url}${path}`,
+      ...config,
+    });
     this.checkResponseStatus(response);
     return response.data;
   }

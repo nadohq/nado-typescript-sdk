@@ -164,6 +164,21 @@ export interface NuanzeServerLeaderboardItem {
 }
 
 /**
+ * Followed-leaderboard row as returned on the wire.
+ */
+export interface NuanzeServerFollowedLeaderboardItem {
+  subaccountHex: string;
+  pnl: string | null;
+  wins: number;
+  losses: number;
+  winRate: string | null;
+  trades: number;
+  productIds: number[];
+  productCount: number;
+  globalRank: number | null;
+}
+
+/**
  * Platform percentage deltas as returned on the wire.
  */
 export interface NuanzeServerPlatformDeltas {
