@@ -89,8 +89,10 @@ const client = createNadoClient(
     contractAddresses: { ... },
     engineEndpoint: 'https://...',
     indexerEndpoint: 'https://...',
+    rewardsEndpoint: 'https://...', // optional
     triggerEndpoint: 'https://...',
     mobileEndpoint: 'https://...',
+    nuanzeEndpoint: 'https://...',
   },
   { publicClient, walletClient },
 );
