@@ -26,6 +26,7 @@ export interface RunContext {
     engine: string;
     trigger: string;
     indexer: string;
+    rewards: string;
     mobile: string;
     nuanze: string;
   };

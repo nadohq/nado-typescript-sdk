@@ -142,8 +142,11 @@ import {
 } from './types';
 
 export interface IndexerClientOpts {
-  // Server base URL, without a version segment (ex. `https://archive.prod.nado.xyz`)
+  // Server base URL, without a version segment (ex. `https://api.prod.nado.xyz/archive`)
   url: string;
+  // Rewards service base URL, including the version segment (ex. `https://api.prod.nado.xyz/rewards/v1`).
+  // Defaults to `${url}/rewards/v1`.
+  rewardsUrl?: string;
   // Wallet Client for EIP712 signing
   walletClient?: WalletClientWithAccount;
   // Linked signer registered through the engine, if provided, execute requests will use this signer
@@ -174,7 +177,7 @@ export class IndexerBaseClient {
     });
     this.v1Url = `${opts.url}/v1`;
     this.v2Url = `${opts.url}/v2`;
-    this.rewardsUrl = `${opts.url}/rewards/v1`;
+    this.rewardsUrl = opts.rewardsUrl ?? `${opts.url}/rewards/v1`;
   }
 
   /**

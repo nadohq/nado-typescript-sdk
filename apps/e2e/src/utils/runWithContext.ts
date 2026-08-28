@@ -2,6 +2,7 @@ import { ENGINE_CLIENT_ENDPOINTS, EngineClient } from '@nadohq/engine-client';
 import {
   INDEXER_CLIENT_ENDPOINTS,
   IndexerClient,
+  REWARDS_CLIENT_ENDPOINTS,
 } from '@nadohq/indexer-client';
 import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
 import { NUANZE_CLIENT_ENDPOINTS, NuanzeClient } from '@nadohq/nuanze-client';
@@ -44,6 +45,7 @@ export function createTestContext(): RunContext {
   const endpoints = {
     engine: ENGINE_CLIENT_ENDPOINTS[env.chainEnv],
     indexer: INDEXER_CLIENT_ENDPOINTS[env.chainEnv],
+    rewards: REWARDS_CLIENT_ENDPOINTS[env.chainEnv],
     trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
     mobile: MOBILE_CLIENT_ENDPOINTS[env.chainEnv],
     nuanze: NUANZE_CLIENT_ENDPOINTS[env.chainEnv],
@@ -66,6 +68,7 @@ export function createTestContext(): RunContext {
     }),
     indexer: new IndexerClient({
       url: endpoints.indexer,
+      rewardsUrl: endpoints.rewards,
       walletClient,
     }),
     trigger: new TriggerClient({

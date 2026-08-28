@@ -48,6 +48,7 @@ export class NadoClient {
         contractAddresses: this.context.contractAddresses,
         engineEndpoint: this.context.engineClient.opts.url,
         indexerEndpoint: this.context.indexerClient.opts.url,
+        rewardsEndpoint: this.context.indexerClient.opts.rewardsUrl,
         triggerEndpoint: this.context.triggerClient.opts.url,
         mobileEndpoint: this.context.mobileClient.opts.url,
         nuanzeEndpoint: this.context.nuanzeClient.opts.url,
