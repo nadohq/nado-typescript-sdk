@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/trigger-client",
-  "version": "0.38.0",
+  "version": "0.40.0",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nado trigger service — stop-loss, take-profit, and TWAP orders",
@@ -41,8 +41,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/engine-client": "^0.38.0",
-    "@nadohq/shared": "^0.38.0",
+    "@nadohq/engine-client": "^0.40.0",
+    "@nadohq/shared": "^0.40.0",
     "axios": "1.16.1",
     "ts-mixer": "6.0.4"
   },
@@ -54,5 +54,5 @@
     "bignumber.js": "11.1.1",
     "viem": "2.52.0"
   },
-  "gitHead": "c7606b994e819a25e1bd8df874463ecb4bbfc689"
+  "gitHead": "1a1e9b62edb6b6578d8dc00dbf4591c6852a5c78"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@nadohq/nuanze-client",
-  "version": "0.38.0",
+  "version": "0.40.0",
   "type": "module",
   "sideEffects": false,
   "description": "HTTP client for the Nuanze public analytics API - markets, wallets, trades, candles, flows, positioning, and open positions",
@@ -41,7 +41,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@nadohq/shared": "^0.38.0",
+    "@nadohq/shared": "^0.40.0",
     "axios": "1.16.1"
   },
   "peerDependencies": {
@@ -49,5 +49,6 @@
   },
   "devDependencies": {
     "bignumber.js": "11.1.1"
-  }
+  },
+  "gitHead": "1a1e9b62edb6b6578d8dc00dbf4591c6852a5c78"
 }
