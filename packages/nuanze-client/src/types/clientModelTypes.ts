@@ -256,6 +256,18 @@ export type NuanzeMarketPositionSortDirection =
   (typeof NUANZE_MARKET_POSITION_SORT_DIRECTIONS)[number];
 
 /**
+ * Every direction accepted for globally ranked open positions.
+ */
+export const NUANZE_OPEN_POSITION_SORT_DIRECTIONS =
+  NUANZE_MARKET_POSITION_SORT_DIRECTIONS;
+
+/**
+ * Signed unrealized-PnL ordering direction for globally ranked open positions.
+ */
+export type NuanzeOpenPositionSortDirection =
+  (typeof NUANZE_OPEN_POSITION_SORT_DIRECTIONS)[number];
+
+/**
  * Every {@link NuanzePositioningGroupBy} the API can report.
  */
 export const NUANZE_POSITIONING_GROUP_BYS = [
@@ -392,11 +404,30 @@ export interface NuanzeMarket extends NuanzeMarketIdentity {
   /** Latest price snapshot, or null when none exists yet. */
   latest: NuanzeLatestTicker | null;
   /**
-   * Signed perp market skew using owner/subaccount positions above $10 absolute notional, or null
-   * when unavailable. Spot markets always return null.
+   * Signed perp trader-positioning skew, or null when unavailable. Spot markets always return
+   * null.
+   *
+   * Of the qualifying open perpetual positions in this market, what share is long versus short?
+   * Each qualifying owner/subaccount position counts as one, regardless of size. `0.5` means 75%
+   * of those positions are long and 25% are short: `(long - short) / (long + short)`. Convert
+   * with `longPct = (1 + skew) / 2`. It is not the long share of open interest, capital, or
+   * volume — market-wide long and short notional are approximately equal by construction.
+   *
+   * Classification uses current account-snapshot rows at the owner/subaccount grain. Cross and
+   * isolated legs on the same subaccount are one position; subaccounts of the same wallet are
+   * not netted, so a hedge is counted on both sides. A row qualifies when `abs(notional) > $10`
+   * (equality is excluded). Dust and flat rows drop out of that filter, so there is no separate
+   * wallet-level net-flat pass.
+   *
+   * The value is a current-state snapshot with typical indexer latency of up to about one hour,
+   * not a 24-hour or historical series. It does not consolidate sybil wallets or unique people,
+   * and it is descriptive context rather than a trading signal.
    */
   skew: BigNumber | null;
-  /** When skew was last calculated, or null when unavailable. */
+  /**
+   * When {@link NuanzeMarket.skew} was last calculated from the hourly account-snapshot pass, as
+   * a UTC ISO 8601 string, or null when skew is unavailable.
+   */
   skewUpdatedAt: string | null;
   /** When market metadata was last synced, as a UTC ISO 8601 string. */
   updatedAt: string;
@@ -785,6 +816,20 @@ export interface NuanzeMarketPosition {
   margin: BigNumber | null;
   /** Entry price, or null when unavailable. */
   entryPrice: BigNumber | null;
+}
+
+/**
+ * Current open perpetual position leg in the global signed-unrealized-PnL ranking.
+ */
+export interface NuanzeOpenPosition extends NuanzeMarketPosition {
+  /** Public product ID for this row's market. */
+  productId: number;
+  /** Canonical market ticker. */
+  ticker: string;
+  /** Global open positions contain perpetuals only. */
+  venue: 'perp';
+  /** Source snapshot time for this position leg, as a UTC ISO 8601 string. */
+  snapshotAt: string;
 }
 
 /**

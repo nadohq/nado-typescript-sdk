@@ -23,6 +23,7 @@ import {
   NuanzeServerMarketDetail,
   NuanzeServerMarketPosition,
   NuanzeServerMarketTrade,
+  NuanzeServerOpenPosition,
   NuanzeServerPlatformDeltas,
   NuanzeServerSeriesPoint,
   NuanzeServerWalletPosition,
@@ -261,6 +262,16 @@ export interface NuanzeServerMarketPositionsResponse {
   ticker: string;
   venue: NuanzeMarketVenue;
   positions: NuanzeServerMarketPosition[];
+  nextCursor: string | null;
+  dataUpdatedAt: string | null;
+  asOf: string;
+}
+
+/**
+ * `GET /positions` response as returned on the wire.
+ */
+export interface NuanzeServerOpenPositionsResponse {
+  positions: NuanzeServerOpenPosition[];
   nextCursor: string | null;
   dataUpdatedAt: string | null;
   asOf: string;

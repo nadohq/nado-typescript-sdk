@@ -13,6 +13,7 @@ import {
   mapNuanzeMarketTradesResponse,
   mapNuanzeMarketsResponse,
   mapNuanzeNewsResponse,
+  mapNuanzeOpenPositionsResponse,
   mapNuanzePlatformSummaryResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
@@ -47,6 +48,8 @@ import {
   GetNuanzeMarketsResponse,
   GetNuanzeNewsParams,
   GetNuanzeNewsResponse,
+  GetNuanzeOpenPositionsParams,
+  GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
   GetNuanzeWalletPnlParams,
@@ -75,6 +78,7 @@ import {
   NuanzeServerMarketTradesResponse,
   NuanzeServerMarketsResponse,
   NuanzeServerNewsResponse,
+  NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
@@ -480,6 +484,27 @@ export class NuanzeClient {
       await this.getJson<NuanzeServerMarketPositionsResponse>(
         `/markets/${encodeURIComponent(ticker)}/positions`,
         query,
+      ),
+    );
+  }
+
+  /**
+   * Lists current open perpetual position legs across every market by signed unrealized PnL.
+   * Descending returns the largest gainers and ascending returns the largest losers. This is a
+   * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
+   * Each row includes market identity and its source snapshot timestamp. Costs five rate-limit
+   * units.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
+   * `BAD_REQUEST` when the query or cursor is invalid.
+   */
+  async getOpenPositions(
+    params: GetNuanzeOpenPositionsParams = {},
+  ): Promise<GetNuanzeOpenPositionsResponse> {
+    return mapNuanzeOpenPositionsResponse(
+      await this.getJson<NuanzeServerOpenPositionsResponse>(
+        '/positions',
+        params,
       ),
     );
   }

@@ -17,6 +17,7 @@ import {
   NuanzeMarketPosition,
   NuanzeMarketPositioningBase,
   NuanzeMarketTrade,
+  NuanzeOpenPosition,
   NuanzePlatformDeltas,
   NuanzePositioningCellBase,
   NuanzePositioningTotals,
@@ -39,6 +40,7 @@ import {
   GetNuanzeMarketTradesResponse,
   GetNuanzeMarketsResponse,
   GetNuanzeNewsResponse,
+  GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryResponse,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesResponse,
@@ -66,6 +68,7 @@ import {
   NuanzeServerMarketPositioningResponse,
   NuanzeServerMarketTrade,
   NuanzeServerNotionalBucketPositioningCell,
+  NuanzeServerOpenPosition,
   NuanzeServerPlatformDeltas,
   NuanzeServerPositioningCellBase,
   NuanzeServerPositioningTotals,
@@ -87,6 +90,7 @@ import {
   NuanzeServerMarketTradesResponse,
   NuanzeServerMarketsResponse,
   NuanzeServerNewsResponse,
+  NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
@@ -849,6 +853,35 @@ export function mapNuanzeMarketPositionsResponse(
     ticker: server.ticker,
     venue: server.venue,
     positions: server.positions.map(mapNuanzeMarketPosition),
+    nextCursor: server.nextCursor,
+    dataUpdatedAt: server.dataUpdatedAt,
+    asOf: server.asOf,
+  };
+}
+
+/**
+ * Maps one server-side globally ranked open position leg.
+ */
+export function mapNuanzeOpenPosition(
+  server: NuanzeServerOpenPosition,
+): NuanzeOpenPosition {
+  return {
+    productId: server.productId,
+    ticker: server.ticker,
+    venue: server.venue,
+    snapshotAt: server.snapshotAt,
+    ...mapNuanzeMarketPosition(server),
+  };
+}
+
+/**
+ * Maps a server-side `GET /positions` response.
+ */
+export function mapNuanzeOpenPositionsResponse(
+  server: NuanzeServerOpenPositionsResponse,
+): GetNuanzeOpenPositionsResponse {
+  return {
+    positions: server.positions.map(mapNuanzeOpenPosition),
     nextCursor: server.nextCursor,
     dataUpdatedAt: server.dataUpdatedAt,
     asOf: server.asOf,

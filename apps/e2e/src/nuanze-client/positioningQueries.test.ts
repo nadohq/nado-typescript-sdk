@@ -1,8 +1,10 @@
 import {
   NUANZE_MARGIN_KINDS,
   NUANZE_MIN_POSITION_USDS,
+  NUANZE_OPEN_POSITION_SORT_DIRECTIONS,
   NUANZE_POSITION_SIDES,
   NuanzeMarketPosition,
+  NuanzeOpenPosition,
   NuanzeServerFailureError,
 } from '@nadohq/nuanze-client';
 import assert from 'node:assert/strict';
@@ -123,6 +125,38 @@ void describe(
       }
     });
 
+    void test('lists globally ranked current open positions in both directions', async () => {
+      for (const sortDirection of NUANZE_OPEN_POSITION_SORT_DIRECTIONS) {
+        await delay(TEST_DELAYS.STANDARD);
+        const response = await tc.nuanze.getOpenPositions({
+          limit: 20,
+          sortDirection,
+        });
+        debugPrint(`Global open positions ${sortDirection}`, response);
+
+        assertArrayElements(
+          response.positions,
+          assertOpenPositionShape,
+          'positions',
+        );
+        assert.ok(
+          response.dataUpdatedAt === null ||
+            ISO_UTC.test(response.dataUpdatedAt),
+          'dataUpdatedAt should be null or a UTC ISO timestamp',
+        );
+        for (let i = 1; i < response.positions.length; i++) {
+          const previous = response.positions[i - 1];
+          const current = response.positions[i];
+          assert.ok(
+            sortDirection === 'desc'
+              ? previous.upnl.gte(current.upnl)
+              : previous.upnl.lte(current.upnl),
+            `global positions should be ordered by signed PnL ${sortDirection}`,
+          );
+        }
+      }
+    });
+
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
         await tc.nuanze.getMarketPositioning({ ticker: 'NOTAREALTICKERXYZ' });
@@ -166,4 +200,18 @@ function assertMarketPositionShape(
   if (position.entryPrice !== null) {
     assertBigNumberFinite(position.entryPrice, `${label}.entryPrice`);
   }
+}
+
+function assertOpenPositionShape(
+  position: NuanzeOpenPosition,
+  label: string,
+): void {
+  assertMarketPositionShape(position, label);
+  assert.ok(
+    Number.isSafeInteger(position.productId) && position.productId >= 0,
+    `${label}.productId`,
+  );
+  assertNonEmptyString(position.ticker, `${label}.ticker`);
+  assert.equal(position.venue, 'perp');
+  assert.match(position.snapshotAt, ISO_UTC, `${label}.snapshotAt`);
 }
