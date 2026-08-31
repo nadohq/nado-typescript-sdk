@@ -435,7 +435,7 @@ export class MobileClient {
     body: { type: T } & MobileServerPublicQueryRequestByType[T],
   ): Promise<MobileServerPublicQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
-      `${this.opts.url}/mobile/public_query`,
+      `${this.opts.url}/public_query`,
       body,
     );
 
@@ -450,7 +450,7 @@ export class MobileClient {
     body: MobileServerPublicExecuteRequest,
   ): Promise<MobileServerSuccessResponse> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
-      `${this.opts.url}/mobile/public_execute`,
+      `${this.opts.url}/public_execute`,
       body,
     );
 
@@ -467,7 +467,7 @@ export class MobileClient {
     body: MobileSignedRequest & { type: T },
   ): Promise<MobileServerExecuteSuccessResponse<T>> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
-      `${this.opts.url}/mobile/execute`,
+      `${this.opts.url}/execute`,
       body,
     );
 

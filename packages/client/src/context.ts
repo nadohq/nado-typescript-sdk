@@ -2,6 +2,7 @@ import { ENGINE_CLIENT_ENDPOINTS, EngineClient } from '@nadohq/engine-client';
 import {
   INDEXER_CLIENT_ENDPOINTS,
   IndexerClient,
+  REWARDS_CLIENT_ENDPOINTS,
 } from '@nadohq/indexer-client';
 import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
 import { NUANZE_CLIENT_ENDPOINTS, NuanzeClient } from '@nadohq/nuanze-client';
@@ -46,6 +47,9 @@ interface NadoClientContextOpts {
   contractAddresses: NadoDeploymentAddresses;
   engineEndpoint: string;
   indexerEndpoint: string;
+  // Rewards service base URL, including the version segment (ex. `https://api.prod.nado.xyz/rewards/v1`).
+  // Defaults to `${indexerEndpoint}/rewards/v1`.
+  rewardsEndpoint?: string;
   triggerEndpoint: string;
   mobileEndpoint: string;
   nuanzeEndpoint: string;
@@ -89,6 +93,7 @@ export function createClientContext(
     contractAddresses,
     engineEndpoint,
     indexerEndpoint,
+    rewardsEndpoint,
     triggerEndpoint,
     mobileEndpoint,
     nuanzeEndpoint,
@@ -104,6 +109,7 @@ export function createClientContext(
       contractAddresses: NADO_DEPLOYMENTS[chainEnv],
       engineEndpoint: ENGINE_CLIENT_ENDPOINTS[chainEnv],
       indexerEndpoint: INDEXER_CLIENT_ENDPOINTS[chainEnv],
+      rewardsEndpoint: REWARDS_CLIENT_ENDPOINTS[chainEnv],
       triggerEndpoint: TRIGGER_CLIENT_ENDPOINTS[chainEnv],
       mobileEndpoint: MOBILE_CLIENT_ENDPOINTS[chainEnv],
       nuanzeEndpoint: NUANZE_CLIENT_ENDPOINTS[chainEnv],
@@ -164,6 +170,7 @@ export function createClientContext(
     }),
     indexerClient: new IndexerClient({
       url: indexerEndpoint,
+      rewardsUrl: rewardsEndpoint,
       walletClient,
       linkedSignerWalletClient,
       clientType,
