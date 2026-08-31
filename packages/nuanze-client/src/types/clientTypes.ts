@@ -657,7 +657,7 @@ export interface GetNuanzeMarketPositionsParams {
   /** Page size, 1-200, default 50. */
   limit?: number;
   /**
-   * Primary ordering field, default `notional`. Notional and size use absolute values; PnL remains
+   * Primary ordering field, default `notional`. Notional and amount use absolute values; PnL remains
    * signed.
    */
   sortBy?: NuanzeMarketPositionSortBy;

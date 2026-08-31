@@ -464,9 +464,9 @@ export class NuanzeClient {
 
   /**
    * Lists open perpetual position legs for the resolved market. Results default to absolute
-   * notional descending and can be ordered by signed unrealized PnL or absolute base size in either
-   * direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
-   * Wallet addresses and signed exact base sizes are returned.
+   * notional descending and can be ordered by signed unrealized PnL or absolute base amount in
+   * either direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
+   * Wallet addresses and signed exact base amounts are returned.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
    * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and

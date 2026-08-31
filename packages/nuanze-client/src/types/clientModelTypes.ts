@@ -234,11 +234,11 @@ export type NuanzeMarginKind = (typeof NUANZE_MARGIN_KINDS)[number];
 export const NUANZE_MARKET_POSITION_SORT_BYS = [
   'notional',
   'pnl',
-  'size',
+  'amount',
 ] as const;
 
 /**
- * Primary field used to order market positions. Notional and size are compared by absolute value;
+ * Primary field used to order market positions. Notional and amount are compared by absolute value;
  * PnL remains signed.
  */
 export type NuanzeMarketPositionSortBy =
@@ -772,7 +772,7 @@ export interface NuanzeMarketPosition {
   marginKind: NuanzeMarginKind;
   /** Position direction. */
   side: NuanzePositionSide;
-  /** Signed exact base size. */
+  /** Signed exact base amount. Positive is long and negative is short. */
   amount: BigNumber;
   /** Absolute notional. Legs below $10 are excluded by the API. */
   notional: BigNumber;
