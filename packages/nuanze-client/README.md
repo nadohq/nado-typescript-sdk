@@ -32,7 +32,6 @@ Nuanze runs a single public deployment that serves mainnet data, so every entry 
 Each method maps one-to-one onto a public operation. Most are GET; `getFollowedLeaderboard` is a
 non-mutating POST whose body carries the followed set:
 
-- `getOpenApiDocument`
 - `getNews`
 - `getMarkets`
 - `getMarketByTicker`

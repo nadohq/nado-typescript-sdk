@@ -229,6 +229,33 @@ export const NUANZE_MARGIN_KINDS = ['cross', 'isolated'] as const;
 export type NuanzeMarginKind = (typeof NUANZE_MARGIN_KINDS)[number];
 
 /**
+ * Every field accepted for ordering market positions.
+ */
+export const NUANZE_MARKET_POSITION_SORT_BYS = [
+  'notional',
+  'pnl',
+  'size',
+] as const;
+
+/**
+ * Primary field used to order market positions. Notional and size are compared by absolute value;
+ * PnL remains signed.
+ */
+export type NuanzeMarketPositionSortBy =
+  (typeof NUANZE_MARKET_POSITION_SORT_BYS)[number];
+
+/**
+ * Every direction accepted for ordering market positions.
+ */
+export const NUANZE_MARKET_POSITION_SORT_DIRECTIONS = ['asc', 'desc'] as const;
+
+/**
+ * Direction used to order market positions.
+ */
+export type NuanzeMarketPositionSortDirection =
+  (typeof NUANZE_MARKET_POSITION_SORT_DIRECTIONS)[number];
+
+/**
  * Every {@link NuanzePositioningGroupBy} the API can report.
  */
 export const NUANZE_POSITIONING_GROUP_BYS = [
@@ -364,6 +391,13 @@ export interface NuanzeMarket extends NuanzeMarketIdentity {
   minSize: BigNumber;
   /** Latest price snapshot, or null when none exists yet. */
   latest: NuanzeLatestTicker | null;
+  /**
+   * Signed perp market skew using owner/subaccount positions above $10 absolute notional, or null
+   * when unavailable. Spot markets always return null.
+   */
+  skew: BigNumber | null;
+  /** When skew was last calculated, or null when unavailable. */
+  skewUpdatedAt: string | null;
   /** When market metadata was last synced, as a UTC ISO 8601 string. */
   updatedAt: string;
 }
@@ -738,6 +772,8 @@ export interface NuanzeMarketPosition {
   marginKind: NuanzeMarginKind;
   /** Position direction. */
   side: NuanzePositionSide;
+  /** Signed exact base size. */
+  amount: BigNumber;
   /** Absolute notional. Legs below $10 are excluded by the API. */
   notional: BigNumber;
   /** Unrealized PnL. */

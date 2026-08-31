@@ -15,6 +15,8 @@ import {
   NuanzeMarket,
   NuanzeMarketDetail,
   NuanzeMarketPosition,
+  NuanzeMarketPositionSortBy,
+  NuanzeMarketPositionSortDirection,
   NuanzeMarketPositioningCohortResponse,
   NuanzeMarketPositioningNotionalBucketResponse,
   NuanzeMarketPositioningSideResponse,
@@ -61,20 +63,6 @@ export interface GetNuanzeMarketsResponse {
   count: number;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
-}
-
-/**
- * Response of `NuanzeClient.getOpenApiDocument`. Pass-through OpenAPI 3.1 JSON.
- */
-export interface GetNuanzeOpenApiDocumentResponse {
-  /** OpenAPI version. The deployed contract is `3.1.0`. */
-  openapi: string;
-  /** Document info object. */
-  info: Record<string, unknown>;
-  /** Path item object map. */
-  paths: Record<string, unknown>;
-  /** Additional OpenAPI fields such as `components`. */
-  [key: string]: unknown;
 }
 
 /**
@@ -668,6 +656,13 @@ export interface GetNuanzeMarketPositionsParams {
   productId?: number;
   /** Page size, 1-200, default 50. */
   limit?: number;
+  /**
+   * Primary ordering field, default `notional`. Notional and size use absolute values; PnL remains
+   * signed.
+   */
+  sortBy?: NuanzeMarketPositionSortBy;
+  /** Primary ordering direction, default `desc`. */
+  sortDirection?: NuanzeMarketPositionSortDirection;
   /** Opaque exclusive cursor bound to the resolved product. */
   cursor?: string;
 }
@@ -684,7 +679,7 @@ export interface GetNuanzeMarketPositionsResponse {
   ticker: string;
   /** Venue the product trades on. */
   venue: NuanzeMarketVenue;
-  /** Open legs ordered by absolute notional descending. */
+  /** Open legs in the requested order. */
   positions: NuanzeMarketPosition[];
   /** Cursor for the next page, or null when exhausted. */
   nextCursor: string | null;

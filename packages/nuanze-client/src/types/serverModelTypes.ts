@@ -38,6 +38,8 @@ export interface NuanzeServerMarket extends NuanzeMarketIdentity {
   sizeIncrement: string;
   minSize: string;
   latest: NuanzeServerLatestTicker | null;
+  skew: string | null;
+  skewUpdatedAt: string | null;
   updatedAt: string;
 }
 
@@ -230,6 +232,7 @@ export interface NuanzeServerMarketPosition {
   symbol: string;
   marginKind: NuanzeMarginKind;
   side: NuanzePositionSide;
+  amount: string;
   notional: string;
   upnl: string;
   margin: string | null;

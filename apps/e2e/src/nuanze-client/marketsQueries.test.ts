@@ -167,6 +167,12 @@ function assertMarketShape(market: NuanzeMarket, label: string): void {
   assertBigNumberPositive(market.priceIncrement, `${label}.priceIncrement`);
   assertBigNumberPositive(market.sizeIncrement, `${label}.sizeIncrement`);
   assertBigNumberPositive(market.minSize, `${label}.minSize`);
+  if (market.skew !== null) {
+    assertBigNumberFinite(market.skew, `${label}.skew`);
+  }
+  if (market.skewUpdatedAt !== null) {
+    assert.match(market.skewUpdatedAt, ISO_UTC, `${label}.skewUpdatedAt`);
+  }
   assert.match(market.updatedAt, ISO_UTC, `${label}.updatedAt`);
 
   if (market.latest === null) {

@@ -47,7 +47,6 @@ import {
   GetNuanzeMarketsResponse,
   GetNuanzeNewsParams,
   GetNuanzeNewsResponse,
-  GetNuanzeOpenApiDocumentResponse,
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
   GetNuanzeWalletPnlParams,
@@ -121,16 +120,8 @@ export class NuanzeClient {
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
       // Repeatable `productId` must serialize as `productId=1&productId=2` (OpenAPI explode).
-      paramsSerializer: { indexes: false },
+      paramsSerializer: { indexes: null },
     });
-  }
-
-  /**
-   * Gets the deployed OpenAPI 3.1 document. Immutable for a release and cached for 300 seconds
-   * with ETag.
-   */
-  async getOpenApiDocument(): Promise<GetNuanzeOpenApiDocumentResponse> {
-    return this.getJson<GetNuanzeOpenApiDocumentResponse>('/openapi.json');
   }
 
   /**
@@ -472,9 +463,10 @@ export class NuanzeClient {
   }
 
   /**
-   * Lists open perpetual position legs for the resolved market, ordered by absolute notional
-   * descending. Spot markets are not supported. Legs below $10 absolute notional are excluded.
-   * Wallet addresses are returned.
+   * Lists open perpetual position legs for the resolved market. Results default to absolute
+   * notional descending and can be ordered by signed unrealized PnL or absolute base size in either
+   * direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
+   * Wallet addresses and signed exact base sizes are returned.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
    * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and

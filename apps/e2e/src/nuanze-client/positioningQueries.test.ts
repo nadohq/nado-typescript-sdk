@@ -99,6 +99,30 @@ void describe(
       }
     });
 
+    void test('lists top PnL market positions', async () => {
+      await delay(TEST_DELAYS.STANDARD);
+      const response = await tc.nuanze.getMarketPositions({
+        ticker,
+        venue: 'perp',
+        limit: 20,
+        sortBy: 'pnl',
+        sortDirection: 'desc',
+      });
+      debugPrint('Top PnL market positions', response);
+
+      assertArrayElements(
+        response.positions,
+        assertMarketPositionShape,
+        'positions',
+      );
+      for (let i = 1; i < response.positions.length; i++) {
+        assert.ok(
+          response.positions[i - 1].upnl.gte(response.positions[i].upnl),
+          'positions should be ordered by signed PnL descending',
+        );
+      }
+    });
+
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
         await tc.nuanze.getMarketPositioning({ ticker: 'NOTAREALTICKERXYZ' });
@@ -133,6 +157,7 @@ function assertMarketPositionShape(
     `${label}.marginKind`,
   );
   assertEnumMember(position.side, NUANZE_POSITION_SIDES, `${label}.side`);
+  assertBigNumberFinite(position.amount, `${label}.amount`);
   assertBigNumberFinite(position.notional, `${label}.notional`);
   assertBigNumberFinite(position.upnl, `${label}.upnl`);
   if (position.margin !== null) {

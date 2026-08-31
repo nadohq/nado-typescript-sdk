@@ -133,6 +133,8 @@ export function mapNuanzeMarket(server: NuanzeServerMarket): NuanzeMarket {
     minSize: toBigNumber(server.minSize),
     latest:
       server.latest === null ? null : mapNuanzeLatestTicker(server.latest),
+    skew: mapNuanzeDecimal(server.skew),
+    skewUpdatedAt: server.skewUpdatedAt,
     updatedAt: server.updatedAt,
   };
 }
@@ -827,6 +829,7 @@ export function mapNuanzeMarketPosition(
     symbol: server.symbol,
     marginKind: server.marginKind,
     side: server.side,
+    amount: toBigNumber(server.amount),
     notional: toBigNumber(server.notional),
     upnl: toBigNumber(server.upnl),
     margin: mapNuanzeDecimal(server.margin),
