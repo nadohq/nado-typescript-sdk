@@ -13,6 +13,7 @@ import {
   mapNuanzeMarketTradesResponse,
   mapNuanzeMarketsResponse,
   mapNuanzeNewsResponse,
+  mapNuanzeOpenPositionsResponse,
   mapNuanzePlatformSummaryResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
@@ -47,6 +48,8 @@ import {
   GetNuanzeMarketsResponse,
   GetNuanzeNewsParams,
   GetNuanzeNewsResponse,
+  GetNuanzeOpenPositionsParams,
+  GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
   GetNuanzeWalletPnlParams,
@@ -75,6 +78,7 @@ import {
   NuanzeServerMarketTradesResponse,
   NuanzeServerMarketsResponse,
   NuanzeServerNewsResponse,
+  NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
@@ -464,9 +468,9 @@ export class NuanzeClient {
 
   /**
    * Lists open perpetual position legs for the resolved market. Results default to absolute
-   * notional descending and can be ordered by signed unrealized PnL or absolute base size in either
-   * direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
-   * Wallet addresses and signed exact base sizes are returned.
+   * notional descending and can be ordered by signed unrealized PnL or absolute base amount in
+   * either direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
+   * Wallet addresses and signed exact base amounts are returned.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
    * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and
@@ -480,6 +484,27 @@ export class NuanzeClient {
       await this.getJson<NuanzeServerMarketPositionsResponse>(
         `/markets/${encodeURIComponent(ticker)}/positions`,
         query,
+      ),
+    );
+  }
+
+  /**
+   * Lists current open perpetual position legs across every market by signed unrealized PnL.
+   * Descending returns the largest gainers and ascending returns the largest losers. This is a
+   * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
+   * Each row includes market identity and its source snapshot timestamp. Costs five rate-limit
+   * units.
+   *
+   * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
+   * `BAD_REQUEST` when the query or cursor is invalid.
+   */
+  async getOpenPositions(
+    params: GetNuanzeOpenPositionsParams = {},
+  ): Promise<GetNuanzeOpenPositionsResponse> {
+    return mapNuanzeOpenPositionsResponse(
+      await this.getJson<NuanzeServerOpenPositionsResponse>(
+        '/positions',
+        params,
       ),
     );
   }

@@ -27,6 +27,8 @@ import {
   NuanzeNewsEventType,
   NuanzeNewsSentiment,
   NuanzeNewsStory,
+  NuanzeOpenPosition,
+  NuanzeOpenPositionSortDirection,
   NuanzePlatformDeltas,
   NuanzePlatformWindow,
   NuanzePnlWindow,
@@ -657,7 +659,7 @@ export interface GetNuanzeMarketPositionsParams {
   /** Page size, 1-200, default 50. */
   limit?: number;
   /**
-   * Primary ordering field, default `notional`. Notional and size use absolute values; PnL remains
+   * Primary ordering field, default `notional`. Notional and amount use absolute values; PnL remains
    * signed.
    */
   sortBy?: NuanzeMarketPositionSortBy;
@@ -684,6 +686,33 @@ export interface GetNuanzeMarketPositionsResponse {
   /** Cursor for the next page, or null when exhausted. */
   nextCursor: string | null;
   /** When position snapshots were last updated, or null when unknown. */
+  dataUpdatedAt: string | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
+ * Params for `NuanzeClient.getOpenPositions`. This is a current global snapshot and has no
+ * timeframe parameter.
+ */
+export interface GetNuanzeOpenPositionsParams {
+  /** Page size, 1-200, default 50. */
+  limit?: number;
+  /** Signed unrealized-PnL direction, default `desc` (largest gainers first). */
+  sortDirection?: NuanzeOpenPositionSortDirection;
+  /** Opaque exclusive cursor bound to the sort direction. */
+  cursor?: string;
+}
+
+/**
+ * Response of `NuanzeClient.getOpenPositions`.
+ */
+export interface GetNuanzeOpenPositionsResponse {
+  /** Current open perpetual legs in signed unrealized-PnL order across all markets. */
+  positions: NuanzeOpenPosition[];
+  /** Cursor for the next page, or null when exhausted. */
+  nextCursor: string | null;
+  /** Newest source snapshot among qualifying positions, or null when none exist. */
   dataUpdatedAt: string | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;

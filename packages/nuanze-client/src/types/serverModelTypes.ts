@@ -240,6 +240,16 @@ export interface NuanzeServerMarketPosition {
 }
 
 /**
+ * Globally ranked current open position leg as returned on the wire.
+ */
+export interface NuanzeServerOpenPosition extends NuanzeServerMarketPosition {
+  productId: number;
+  ticker: string;
+  venue: 'perp';
+  snapshotAt: string;
+}
+
+/**
  * Candle as returned on the wire.
  */
 export interface NuanzeServerCandle {

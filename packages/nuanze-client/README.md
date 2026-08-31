@@ -1,8 +1,8 @@
 # `@nadohq/nuanze-client`
 
 HTTP client for the Nuanze public analytics API. Serves markets, wallets, trades, candles, collateral flows,
-and positioning. Read-only and credential-free, so unlike the other service clients it takes no wallet client
-or linked signer.
+positioning, and globally ranked current open positions. Read-only and credential-free, so unlike the other
+service clients it takes no wallet client or linked signer.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -51,6 +51,7 @@ non-mutating POST whose body carries the followed set:
 - `getCollateralFlowSeries`
 - `getMarketPositioning`
 - `getMarketPositions`
+- `getOpenPositions`
 
 Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, matching the API contract.
 
