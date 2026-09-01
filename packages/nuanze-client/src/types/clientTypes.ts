@@ -143,7 +143,7 @@ export interface GetNuanzeFundingRatesResponse {
  * Params for `NuanzeClient.getLeaderboard`.
  */
 export interface GetNuanzeLeaderboardParams {
-  /** Ranking window, default `30d`. All-time costs five rate-limit units. */
+  /** Ranking window, default `30d`. */
   timeframe?: NuanzeLeaderboardTimeframe;
   /** Page size, 1-200, default 100. */
   limit?: number;

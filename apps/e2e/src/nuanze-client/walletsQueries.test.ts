@@ -18,9 +18,8 @@ import {
   assertNumber,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+import { TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 /** UTC ISO 8601 with a required `Z`, as the Nuanze contract specifies. */
@@ -34,7 +33,6 @@ void describe(
     let address: string;
 
     before(async () => {
-      await delay(TEST_DELAYS.LONG);
       tc = createTestContext();
       const board = await tc.nuanze.getLeaderboard({ limit: 1 });
       assert.ok(

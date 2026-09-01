@@ -107,7 +107,7 @@ export const NUANZE_LEADERBOARD_TIMEFRAMES = [
 ] as const;
 
 /**
- * Leaderboard ranking window. All-time analytics cost five rate-limit units.
+ * Leaderboard ranking window.
  */
 export type NuanzeLeaderboardTimeframe =
   (typeof NUANZE_LEADERBOARD_TIMEFRAMES)[number];

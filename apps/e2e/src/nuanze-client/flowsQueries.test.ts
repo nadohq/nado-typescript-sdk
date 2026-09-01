@@ -17,9 +17,8 @@ import {
   assertNumber,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+import { TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 /** UTC ISO 8601 with a required `Z`, as the Nuanze contract specifies. */
@@ -31,8 +30,7 @@ void describe(
   () => {
     let tc: RunContext;
 
-    before(async () => {
-      await delay(TEST_DELAYS.LONG);
+    before(() => {
       tc = createTestContext();
     });
 
