@@ -19,6 +19,7 @@ import {
   IndexerServerNlpSnapshot,
   IndexerServerOraclePrice,
   IndexerServerOrder,
+  IndexerServerPosition,
   IndexerServerProductPayment,
   IndexerServerProductSnapshot,
   IndexerServerSnapshotsInterval,
@@ -155,6 +156,24 @@ export interface IndexerServerMatchEventsParams {
   idx?: string;
 }
 
+/**
+ * Params for the positions query. All parameters except `subaccount` are optional filters.
+ */
+export interface IndexerServerPositionsParams {
+  // Subaccount hex identifier. Isolated positions are also returned under the parent subaccount
+  subaccount: string;
+  // When provided, only return positions of the specified product
+  product_id?: number;
+  // If not given, will return both isolated & cross positions
+  isolated?: boolean;
+  // If not given, will return both open & closed positions
+  open?: boolean;
+  // open_id for pagination, inclusive (only positions with open_id <= idx are returned)
+  idx?: number | string;
+  // Max number of positions to return. Defaults to 100, max 500
+  limit?: number;
+}
+
 export interface IndexerServerLinkedSignerParams {
   subaccount: string;
 }
@@ -281,6 +300,7 @@ export interface IndexerServerQueryRequestByType {
   orders: IndexerServerOrdersParams;
   perp_prices: IndexerServerPerpPricesParams;
   portfolio: IndexerServerPortfolioParams;
+  positions: IndexerServerPositionsParams;
   price: IndexerServerPriceParams;
   product_snapshots: IndexerServerMultiProductsParams;
   products: IndexerServerProductsParams;
@@ -429,6 +449,18 @@ export interface IndexerServerOrdersResponse {
 
 export interface IndexerServerMatchEventsResponse {
   matches: IndexerServerMatchEvent[];
+  txs: IndexerServerTx[];
+}
+
+/**
+ * Response for the positions query. Positions are in descending order by `open_id`.
+ * `events` / `txs` are the events and transactions at each position's boundaries
+ * (open and close, or open and latest update while still open), joined to positions
+ * via `open_id` / `close_id` / `submission_idx`.
+ */
+export interface IndexerServerPositionsResponse {
+  positions: IndexerServerPosition[];
+  events: IndexerServerEvent[];
   txs: IndexerServerTx[];
 }
 
@@ -702,6 +734,7 @@ export interface IndexerServerQueryResponseByType {
   orders: IndexerServerOrdersResponse;
   perp_prices: IndexerServerPerpPricesResponse;
   portfolio: IndexerServerPortfolioResponse;
+  positions: IndexerServerPositionsResponse;
   price: IndexerServerPriceResponse;
   product_snapshots: IndexerServerMultiProductsResponse;
   products: IndexerServerProductsResponse;
