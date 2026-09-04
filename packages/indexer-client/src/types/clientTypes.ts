@@ -562,6 +562,112 @@ export interface IndexerMatchEvent extends Subaccount {
 export type GetIndexerMatchEventsResponse = IndexerMatchEvent[];
 
 /**
+ * Position history
+ */
+
+/**
+ * Params for querying a subaccount's historical positions. All parameters except
+ * `subaccount` are optional filters.
+ */
+export interface GetIndexerPositionsParams {
+  /**
+   * Subaccount to query. Isolated positions are also returned under the parent
+   * subaccount, so always query with the parent.
+   */
+  subaccount: Subaccount;
+  /** When provided, only return positions of the specified product. */
+  productId?: number;
+  /** `true`: only isolated positions, `false`: only cross positions. Omit for both. */
+  isolated?: boolean;
+  /** `true`: only positions that are still open, `false`: only closed positions. Omit for both. */
+  open?: boolean;
+  /**
+   * Max `openId`, inclusive. To paginate, pass the last returned position's
+   * `openId - 1` as the next request's `startCursor`.
+   */
+  startCursor?: string;
+  /** Max number of positions to return. Defaults to 100, max 500. */
+  limit?: number;
+}
+
+/**
+ * A historical position for a subaccount in a product. A position opens when the balance
+ * goes from zero to non-zero or flips direction, and closes when the balance returns to
+ * zero or flips again. All amount fields are absolute values; the side of the position is
+ * given by `direction`.
+ */
+export interface IndexerPosition {
+  /** Subaccount hex ID associated with the position. */
+  subaccount: string;
+  productId: number;
+  isolated: boolean;
+  /** Direction of the position. `true` for long, `false` for short. */
+  direction: boolean;
+  /** `submissionIndex` of the transaction that opened the position. */
+  openId: string;
+  /** `submissionIndex` of the transaction that closed the position; `-1` if still open. */
+  closeId: string;
+  /** `submissionIndex` of the last transaction that updated the position. */
+  submissionIndex: string;
+  /** Current size of the position; `0` once the position is closed. */
+  amount: BigNumber;
+  /** Peak size reached by the position. */
+  maxAmount: BigNumber;
+  /** Total amount opened on this position. */
+  totalOpenAmount: BigNumber;
+  /** Total amount closed on this position. */
+  totalCloseAmount: BigNumber;
+  /** Volume-weighted average entry price of the position. */
+  averageEntryPrice: BigNumber;
+  /** Volume-weighted average exit price of the position. */
+  averageExitPrice: BigNumber;
+  /** Total amount closed by liquidations on this position. */
+  liquidatedAmount: BigNumber;
+  /**
+   * Peak leverage reached by the isolated position; `0` for cross positions.
+   * Set to `i128::MAX` (decimal adjusted) when the position's equity is below zero.
+   */
+  maxIsolatedLeverage: BigNumber;
+  /** Total fees paid on fills that increased the position. */
+  openFee: BigNumber;
+  /** Total fees paid on fills that decreased the position. */
+  closeFee: BigNumber;
+  /** Realized PnL for this position. */
+  realizedPnl: BigNumber;
+  /** Unix epoch in seconds of when the position was opened. */
+  openTimestamp: BigNumber;
+  /** Unix epoch in seconds of when the position was last updated. */
+  updateTimestamp: BigNumber;
+  /** The transaction type that opened the position, e.g. `match_orders`. */
+  openReason: IndexerEventType;
+  /** The transaction type that closed the position; `null` if still open. */
+  closeReason: IndexerEventType | null;
+  /** Net funding payment on this position. Only for perp positions. */
+  netFundingPayment: BigNumber;
+  /** Net interest payment on this position. Only for spot positions. */
+  netInterestPayment: BigNumber;
+  /** Digest of the order that opened the position; `null` if not opened by a match. */
+  openDigest: string | null;
+  /** Digest of the order that closed the position; `null` if not closed by a match or still open. */
+  closeDigest: string | null;
+  netEntryUnrealized: BigNumber;
+}
+
+/**
+ * Response for the positions query.
+ */
+export interface GetIndexerPositionsResponse {
+  /** Positions in descending order by `openId`. */
+  positions: IndexerPosition[];
+  /**
+   * Events (with their transactions) at each position's boundaries: open and close, or
+   * open and latest update while still open. Join them to positions via
+   * `openId` / `closeId` / `submissionIndex`.
+   */
+  events: IndexerEventWithTx[];
+}
+
+/**
  * Quote price
  */
 

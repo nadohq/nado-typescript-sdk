@@ -12,11 +12,13 @@ import type {
   IndexerNlpSnapshot,
   IndexerOrder,
   IndexerPerpPrices,
+  IndexerPosition,
   IndexerProductSnapshot,
   IndexerV2Symbol,
   IndexerV2TickerResponse,
   ListIndexerSubaccountsResponse,
 } from '@nadohq/indexer-client';
+import { INDEXER_EVENT_TYPES } from '@nadohq/indexer-client';
 import type {
   MobileFollowSummary,
   MobileIdentitySummary,
@@ -35,6 +37,7 @@ import {
   assertBigNumberNonNegative,
   assertBoolean,
   assertDefined,
+  assertEnumMember,
   assertHexString,
   assertNonNegativeInteger,
   assertNullableString,
@@ -225,6 +228,86 @@ export function assertIndexerEventShape(
   assertDefined(event.trackedVars, `${label}.trackedVars`);
   assertBigNumberFinite(event.timestamp, `${label}.timestamp`);
   assertBoolean(event.isolated, `${label}.isolated`);
+}
+
+// ---------------------------------------------------------------------------
+// Indexer position shape
+// ---------------------------------------------------------------------------
+
+/**
+ * Validates the shape of an {@link IndexerPosition} element.
+ */
+export function assertIndexerPositionShape(
+  position: IndexerPosition,
+  label: string,
+): void {
+  assertString(position.subaccount, `${label}.subaccount`);
+  assertNumber(position.productId, `${label}.productId`);
+  assertBoolean(position.isolated, `${label}.isolated`);
+  assertBoolean(position.direction, `${label}.direction`);
+  assertString(position.openId, `${label}.openId`);
+  assertString(position.closeId, `${label}.closeId`);
+  assertString(position.submissionIndex, `${label}.submissionIndex`);
+  assertBigNumberNonNegative(position.amount, `${label}.amount`);
+  assertBigNumberNonNegative(position.maxAmount, `${label}.maxAmount`);
+  assertBigNumberNonNegative(
+    position.totalOpenAmount,
+    `${label}.totalOpenAmount`,
+  );
+  assertBigNumberNonNegative(
+    position.totalCloseAmount,
+    `${label}.totalCloseAmount`,
+  );
+  assertBigNumberFinite(
+    position.averageEntryPrice,
+    `${label}.averageEntryPrice`,
+  );
+  assertBigNumberFinite(position.averageExitPrice, `${label}.averageExitPrice`);
+  assertBigNumberNonNegative(
+    position.liquidatedAmount,
+    `${label}.liquidatedAmount`,
+  );
+  assertBigNumberFinite(
+    position.maxIsolatedLeverage,
+    `${label}.maxIsolatedLeverage`,
+  );
+  assertBigNumberFinite(position.openFee, `${label}.openFee`);
+  assertBigNumberFinite(position.closeFee, `${label}.closeFee`);
+  assertBigNumberFinite(position.realizedPnl, `${label}.realizedPnl`);
+  assertBigNumberFinite(position.openTimestamp, `${label}.openTimestamp`);
+  assertBigNumberFinite(position.updateTimestamp, `${label}.updateTimestamp`);
+  assertEnumMember(
+    position.openReason,
+    INDEXER_EVENT_TYPES,
+    `${label}.openReason`,
+  );
+  assertBigNumberFinite(
+    position.netFundingPayment,
+    `${label}.netFundingPayment`,
+  );
+  assertBigNumberFinite(
+    position.netInterestPayment,
+    `${label}.netInterestPayment`,
+  );
+  assertBigNumberFinite(
+    position.netEntryUnrealized,
+    `${label}.netEntryUnrealized`,
+  );
+  // A closed position has a real closeId & reason; an open one has the -1 sentinel and nulls
+  const isClosed = position.closeId !== '-1';
+  if (isClosed) {
+    assertEnumMember(
+      position.closeReason,
+      INDEXER_EVENT_TYPES,
+      `${label}.closeReason`,
+    );
+  } else {
+    assert.equal(
+      position.closeReason,
+      null,
+      `${label}.closeReason should be null while the position is open`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

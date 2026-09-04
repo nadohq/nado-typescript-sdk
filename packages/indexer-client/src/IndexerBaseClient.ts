@@ -39,6 +39,7 @@ import {
   mapIndexerOrder,
   mapIndexerPerpPrices,
   mapIndexerPortfolio,
+  mapIndexerPosition,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
   mapIndexerV2Symbols,
@@ -103,6 +104,8 @@ import {
   GetIndexerPointsResponse,
   GetIndexerPortfolioParams,
   GetIndexerPortfolioResponse,
+  GetIndexerPositionsParams,
+  GetIndexerPositionsResponse,
   GetIndexerPrivateAlphaChoiceParams,
   GetIndexerPrivateAlphaChoiceResponse,
   GetIndexerProductSnapshotsParams,
@@ -624,6 +627,53 @@ export class IndexerBaseClient {
         ...subaccountFromHex(matchEvent.order.sender),
       };
     });
+  }
+
+  /**
+   * Retrieves a subaccount's historical positions, ordered descending by `openId`.
+   * Positions are tracked for every product except the quote product.
+   *
+   * The response also includes the boundary events (with their transactions) at each
+   * position's open and close, or open and latest update while still open; join them
+   * to positions via `openId` / `closeId` / `submissionIndex`.
+   *
+   * To paginate, pass the last returned position's `openId - 1` as the next request's
+   * `startCursor`.
+   *
+   * @param params
+   */
+  async getPositions(
+    params: GetIndexerPositionsParams,
+  ): Promise<GetIndexerPositionsResponse> {
+    const baseResponse = await this.query('positions', {
+      subaccount: subaccountToHex({
+        subaccountOwner: params.subaccount.subaccountOwner,
+        subaccountName: params.subaccount.subaccountName,
+      }),
+      product_id: params.productId,
+      isolated: params.isolated,
+      open: params.open,
+      idx: params.startCursor,
+      limit: params.limit,
+    });
+
+    // Unlike `getEvents`, boundary events aren't strictly ordered against txs, so join by submission index
+    const txsBySubmissionIdx = new Map(
+      baseResponse.txs.map((tx) => [tx.submission_idx, tx]),
+    );
+
+    return {
+      positions: baseResponse.positions.map(mapIndexerPosition),
+      events: baseResponse.events.map((event) => {
+        const tx = txsBySubmissionIdx.get(event.submission_idx);
+        if (!tx) {
+          throw Error(
+            `No tx found for position boundary event with submission_idx ${event.submission_idx}`,
+          );
+        }
+        return mapIndexerEventWithTx(event, tx);
+      }),
+    };
   }
 
   /**

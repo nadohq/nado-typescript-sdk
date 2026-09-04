@@ -4,12 +4,6 @@ export interface NadoMatchOrdersTx {
   };
 }
 
-export interface NadoMatchOrdersRfqTx {
-  match_orders_r_f_q: {
-    product_id: number;
-  };
-}
-
 export interface NadoLiquidateSubaccountTx {
   liquidate_subaccount: {
     sender: string;
@@ -63,7 +57,6 @@ export interface NadoTransferQuoteTx {
 
 export type NadoTx =
   | NadoMatchOrdersTx
-  | NadoMatchOrdersRfqTx
   | NadoLiquidateSubaccountTx
   | NadoDepositCollateralTx
   | NadoTransferQuoteTx

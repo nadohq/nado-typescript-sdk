@@ -33,6 +33,7 @@ import {
   IndexerPerpBalance,
   IndexerPerpPrices,
   IndexerPortfolioPoint,
+  IndexerPosition,
   IndexerProductPayment,
   IndexerServerBalance,
   IndexerServerCandlestick,
@@ -50,6 +51,7 @@ import {
   IndexerServerPerpPrices,
   IndexerServerPortfolioPoint,
   IndexerServerPortfolioResponse,
+  IndexerServerPosition,
   IndexerServerProduct,
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
@@ -201,6 +203,45 @@ export function mapIndexerMatchEventBalances(
     quote: eventBalances.quote
       ? (mapIndexerServerBalance(eventBalances.quote) as IndexerSpotBalance)
       : undefined,
+  };
+}
+
+/**
+ * Maps a position returned by the indexer positions query to its client representation.
+ * @param position - The position in server (snake_case, x18 prices) format.
+ * @returns The position with camelCase fields and BigNumber values.
+ */
+export function mapIndexerPosition(
+  position: IndexerServerPosition,
+): IndexerPosition {
+  return {
+    subaccount: position.subaccount,
+    productId: position.product_id,
+    isolated: position.isolated,
+    direction: position.direction,
+    openId: position.open_id,
+    closeId: position.close_id,
+    submissionIndex: position.submission_idx,
+    amount: toBigNumber(position.amount),
+    maxAmount: toBigNumber(position.max_amount),
+    totalOpenAmount: toBigNumber(position.total_open_amount),
+    totalCloseAmount: toBigNumber(position.total_close_amount),
+    averageEntryPrice: removeDecimals(position.average_entry_price),
+    averageExitPrice: removeDecimals(position.average_exit_price),
+    liquidatedAmount: toBigNumber(position.liquidated_amount),
+    maxIsolatedLeverage: removeDecimals(position.max_isolated_leverage_x18),
+    openFee: toBigNumber(position.open_fee),
+    closeFee: toBigNumber(position.close_fee),
+    realizedPnl: toBigNumber(position.realized_pnl),
+    openTimestamp: toBigNumber(position.open_timestamp),
+    updateTimestamp: toBigNumber(position.update_timestamp),
+    openReason: position.open_reason,
+    closeReason: position.close_reason,
+    netFundingPayment: toBigNumber(position.net_funding_payment),
+    netInterestPayment: toBigNumber(position.net_interest_payment),
+    openDigest: position.open_digest,
+    closeDigest: position.close_digest,
+    netEntryUnrealized: toBigNumber(position.net_entry_unrealized),
   };
 }
 

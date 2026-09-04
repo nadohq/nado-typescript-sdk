@@ -171,6 +171,65 @@ export interface IndexerServerMatchEventBalances {
 }
 
 /**
+ * Positions
+ */
+
+/**
+ * A single historical position. All amount fields are absolute values; the side of the
+ * position is given by `direction`.
+ */
+export interface IndexerServerPosition {
+  subaccount: string;
+  product_id: number;
+  isolated: boolean;
+  // true for long, false for short
+  direction: boolean;
+  // submission_idx of the transaction that opened the position
+  open_id: string;
+  // submission_idx of the transaction that closed the position; -1 if still open
+  close_id: string;
+  // submission_idx of the last transaction that updated the position
+  submission_idx: string;
+  // Current size of the position; 0 once the position is closed
+  amount: string;
+  // Peak size reached by the position
+  max_amount: string;
+  total_open_amount: string;
+  total_close_amount: string;
+  // Volume-weighted average entry price (x18)
+  average_entry_price: string;
+  // Volume-weighted average exit price (x18)
+  average_exit_price: string;
+  // Total amount closed by liquidations on this position
+  liquidated_amount: string;
+  // Peak leverage reached by the isolated position; 0 for cross positions.
+  // Set to i128::MAX when the position's equity is below zero
+  max_isolated_leverage_x18: string;
+  // Total fees paid on fills that increased the position
+  open_fee: string;
+  // Total fees paid on fills that decreased the position
+  close_fee: string;
+  realized_pnl: string;
+  // Unix epoch in seconds of when the position was opened
+  open_timestamp: string;
+  // Unix epoch in seconds of when the position was last updated
+  update_timestamp: string;
+  // The transaction type that opened the position, e.g. `match_orders`
+  open_reason: IndexerEventType;
+  // The transaction type that closed the position; null if still open
+  close_reason: IndexerEventType | null;
+  // Net funding payment on this position. Only for perp positions
+  net_funding_payment: string;
+  // Net interest payment on this position. Only for spot positions
+  net_interest_payment: string;
+  // Digest of the order that opened the position; null if not opened by a match
+  open_digest: string | null;
+  // Digest of the order that closed the position; null if not closed by a match or still open
+  close_digest: string | null;
+  net_entry_unrealized: string;
+}
+
+/**
  * Oracle price
  */
 
