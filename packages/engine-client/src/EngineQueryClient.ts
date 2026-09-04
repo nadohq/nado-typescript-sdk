@@ -409,6 +409,8 @@ export class EngineQueryClient extends EngineBaseClient {
     return {
       asks: baseResponse.asks.map(mapEngineServerTickLiquidity),
       bids: baseResponse.bids.map(mapEngineServerTickLiquidity),
+      productId: baseResponse.product_id,
+      timestamp: baseResponse.timestamp,
     };
   }
 
