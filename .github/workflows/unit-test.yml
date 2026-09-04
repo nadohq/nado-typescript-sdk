@@ -15,11 +15,9 @@ jobs:
         with:
           node-version: 'lts/*'
       - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Check git workspace isn't dirty
         run: git diff --exit-code --quiet
