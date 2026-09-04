@@ -216,6 +216,8 @@ export interface GetNuanzeFollowedLeaderboardParams {
   timeframe: NuanzeLeaderboardTimeframe;
   /** Include followed subaccounts with no PnL in the requested window, default true. */
   includeUntraded?: boolean;
+  /** Include followed subaccounts with Private Mode enabled, default false. */
+  includePrivate?: boolean;
   /** Page size, 1-200, default 100. */
   limit?: number;
   /**
@@ -742,7 +744,9 @@ export interface GetNuanzeOpenPositionsParams {
   limit?: number;
   /** Signed unrealized-PnL direction, default `desc` (largest gainers first). */
   sortDirection?: NuanzeOpenPositionSortDirection;
-  /** Opaque exclusive cursor bound to the sort direction. */
+  /** Include positions from subaccounts with Private Mode enabled, default false. */
+  includePrivate?: boolean;
+  /** Opaque exclusive cursor bound to the sort direction and private visibility. */
   cursor?: string;
 }
 

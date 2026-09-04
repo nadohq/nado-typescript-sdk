@@ -204,12 +204,14 @@ void describe(
           username: FOLLOWED_LEADERBOARD_USERNAME,
           timeframe: '24h',
           includeUntraded: true,
+          includePrivate: true,
           limit: 2,
         }),
         tc.nuanze.getFollowedLeaderboard({
           username: FOLLOWED_LEADERBOARD_USERNAME,
           timeframe: '24h',
           includeUntraded: false,
+          includePrivate: false,
           limit: 2,
         }),
       ]);
@@ -298,6 +300,25 @@ void describe(
         assert.fail(
           'expected BAD_REQUEST for an invalid includeUntraded value',
         );
+      } catch (error) {
+        assert.ok(
+          error instanceof NuanzeServerFailureError,
+          'should throw NuanzeServerFailureError',
+        );
+        assert.equal(error.errorCode, 'BAD_REQUEST');
+        assert.equal(error.httpStatus, 400);
+        assertNonEmptyString(error.requestId, 'error.requestId');
+      }
+    });
+
+    void test('forwards followed leaderboard private visibility for server validation', async () => {
+      try {
+        await tc.nuanze.getFollowedLeaderboard({
+          username: FOLLOWED_LEADERBOARD_USERNAME,
+          timeframe: '24h',
+          includePrivate: 'invalid' as unknown as boolean,
+        });
+        assert.fail('expected BAD_REQUEST for an invalid includePrivate value');
       } catch (error) {
         assert.ok(
           error instanceof NuanzeServerFailureError,
