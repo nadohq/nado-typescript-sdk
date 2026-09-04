@@ -660,7 +660,7 @@ export interface NuanzeMarketDetail extends NuanzeMarket {
 }
 
 /**
- * Per-subaccount row from `POST /wallets/leaderboard`. Untraded followed subaccounts are included
+ * Per-subaccount row from `GET /wallets/leaderboard`. Untraded followed subaccounts are included
  * by default with null PnL/rank/name fields where unavailable, zero counts, and no products.
  */
 export interface NuanzeFollowedLeaderboardItem {

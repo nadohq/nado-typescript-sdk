@@ -216,6 +216,13 @@ export interface GetNuanzeFollowedLeaderboardParams {
   timeframe: NuanzeLeaderboardTimeframe;
   /** Include followed subaccounts with no PnL in the requested window, default true. */
   includeUntraded?: boolean;
+  /** Page size, 1-200, default 100. */
+  limit?: number;
+  /**
+   * Opaque cursor from the previous page. It is bound to the username and normalized filters and
+   * must be returned unchanged.
+   */
+  cursor?: string;
 }
 
 /**
@@ -226,8 +233,8 @@ export interface GetNuanzeFollowedLeaderboardResponse {
   timeframe: NuanzeLeaderboardTimeframe;
   /** Actively followed subaccounts, sorted by PnL descending with nulls last. */
   items: NuanzeFollowedLeaderboardItem[];
-  /** Number of rows returned. Equals `items.length`. */
-  count: number;
+  /** Opaque cursor for the next page, or null when this is the final page. */
+  nextCursor: string | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }

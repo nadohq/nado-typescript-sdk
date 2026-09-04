@@ -204,11 +204,13 @@ void describe(
           username: FOLLOWED_LEADERBOARD_USERNAME,
           timeframe: '24h',
           includeUntraded: true,
+          limit: 2,
         }),
         tc.nuanze.getFollowedLeaderboard({
           username: FOLLOWED_LEADERBOARD_USERNAME,
           timeframe: '24h',
           includeUntraded: false,
+          limit: 2,
         }),
       ]);
       debugPrint('Followed leaderboard', inclusive);
@@ -220,7 +222,12 @@ void describe(
           'asOf should be a UTC ISO timestamp',
         );
         assert.equal(response.timeframe, '24h');
-        assert.equal(response.count, response.items.length);
+        assert.ok(response.items.length <= 2, 'items should respect limit');
+        assert.ok(
+          response.nextCursor === null ||
+            typeof response.nextCursor === 'string',
+          'nextCursor should be a string or null',
+        );
         assertArrayElements(
           response.items,
           assertFollowedLeaderboardItemShape,
@@ -231,8 +238,8 @@ void describe(
 
       assert.ok(inclusive.items.length > 1, 'fixture should follow accounts');
       assert.ok(
-        tradedOnly.count <= inclusive.count,
-        'excluding untraded accounts should not increase count',
+        tradedOnly.items.length <= inclusive.items.length,
+        'excluding untraded accounts should not increase page size',
       );
       const inclusiveSubaccounts = new Set(
         inclusive.items.map((item) => item.subaccountHex),
@@ -248,6 +255,37 @@ void describe(
           'traded-only rows should be a subset of inclusive rows',
         );
       }
+    });
+
+    void test('continues followed leaderboard pagination without duplicates', async () => {
+      const params = {
+        username: FOLLOWED_LEADERBOARD_USERNAME,
+        timeframe: '30d' as const,
+        includeUntraded: true,
+        limit: 2,
+      };
+      const first = await tc.nuanze.getFollowedLeaderboard(params);
+      const { nextCursor } = first;
+      assertNonEmptyString(nextCursor, 'first.nextCursor');
+      assert.ok(nextCursor !== null);
+
+      const second = await tc.nuanze.getFollowedLeaderboard({
+        ...params,
+        cursor: nextCursor,
+      });
+      const firstSubaccounts = new Set(
+        first.items.map((item) => item.subaccountHex),
+      );
+      for (const item of second.items) {
+        assert.ok(
+          !firstSubaccounts.has(item.subaccountHex),
+          'cursor page should not repeat a followed subaccount',
+        );
+      }
+      assertNullablePnlDescending(
+        [...first.items, ...second.items],
+        'followed cursor items',
+      );
     });
 
     void test('forwards followed leaderboard filters for server validation', async () => {

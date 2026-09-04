@@ -29,8 +29,7 @@ Nuanze runs a single public deployment that serves mainnet data, so every entry 
 
 ## API Surface
 
-Each method maps one-to-one onto a public operation. Most are GET; `getFollowedLeaderboard` is a
-non-mutating POST whose body names the username whose followed accounts should be ranked:
+Each method maps one-to-one onto a public GET operation:
 
 - `getNews`
 - `getMarkets`

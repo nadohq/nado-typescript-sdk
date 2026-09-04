@@ -418,7 +418,7 @@ export function mapNuanzeSubaccountLeaderboardResponse(
 }
 
 /**
- * Maps a server-side `POST /wallets/leaderboard` response.
+ * Maps a server-side `GET /wallets/leaderboard` response.
  */
 export function mapNuanzeFollowedLeaderboardResponse(
   server: NuanzeServerFollowedLeaderboardResponse,
@@ -426,7 +426,7 @@ export function mapNuanzeFollowedLeaderboardResponse(
   return {
     timeframe: server.timeframe,
     items: server.items.map(mapNuanzeFollowedLeaderboardItem),
-    count: server.count,
+    nextCursor: server.nextCursor,
     asOf: server.asOf,
   };
 }

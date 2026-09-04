@@ -100,12 +100,12 @@ export interface NuanzeServerSubaccountLeaderboardResponse {
 }
 
 /**
- * `POST /wallets/leaderboard` response as returned on the wire.
+ * `GET /wallets/leaderboard` response as returned on the wire.
  */
 export interface NuanzeServerFollowedLeaderboardResponse {
   timeframe: NuanzeLeaderboardTimeframe;
   items: NuanzeServerFollowedLeaderboardItem[];
-  count: number;
+  nextCursor: string | null;
   asOf: string;
 }
 

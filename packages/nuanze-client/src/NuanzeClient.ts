@@ -109,9 +109,7 @@ export interface NuanzeClientOpts {
  * Read-only and credential-free, so unlike the other service clients it takes no wallet client or
  * linked signer. It also sends no `x-nado-client-type` header: Nuanze is a public API that does not
  * attribute traffic per client, and its `Access-Control-Allow-Headers` does not list the header, so
- * sending it would fail CORS preflight in the browser. Most operations are GET;
- * {@link NuanzeClient.getFollowedLeaderboard} is a non-mutating POST whose body identifies the
- * username whose follow graph should be ranked.
+ * sending it would fail CORS preflight in the browser. All operations are GET.
  */
 export class NuanzeClient {
   readonly opts: NuanzeClientOpts;
@@ -253,9 +251,9 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets leaderboard stats for the subaccounts a username actively follows, capped at 300 and
-   * sorted by PnL descending with nulls last. Subaccounts with no PnL in the window are included by
-   * default with null PnL/rank, zero counts, and no products. The response is not cached.
+   * Gets a keyset-paginated leaderboard for every subaccount a username actively follows, sorted
+   * by PnL descending with nulls last. Subaccounts with no PnL in the window are included by
+   * default with null PnL/rank, zero counts, and no products.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid, or
    * `USERNAME_NOT_FOUND` when the supplied username has no claimed identity.
@@ -264,7 +262,7 @@ export class NuanzeClient {
     params: GetNuanzeFollowedLeaderboardParams,
   ): Promise<GetNuanzeFollowedLeaderboardResponse> {
     return mapNuanzeFollowedLeaderboardResponse(
-      await this.postJson<NuanzeServerFollowedLeaderboardResponse>(
+      await this.getJson<NuanzeServerFollowedLeaderboardResponse>(
         '/wallets/leaderboard',
         params,
       ),
@@ -531,24 +529,15 @@ export class NuanzeClient {
    * Performs a GET against `{baseUrl}{path}` and classifies the status before returning the body.
    */
   private async getJson<T>(path: string, params?: object): Promise<T> {
-    return this.requestJson<T>('GET', path, { params });
-  }
-
-  /**
-   * Performs a POST against `{baseUrl}{path}` with a JSON body and classifies the status before
-   * returning the response. Used only for the non-mutating followed-leaderboard operation.
-   */
-  private async postJson<T>(path: string, data: object): Promise<T> {
-    return this.requestJson<T>('POST', path, { data });
+    return this.requestJson<T>(path, { params });
   }
 
   private async requestJson<T>(
-    method: 'GET' | 'POST',
     path: string,
-    config: { params?: object; data?: object } = {},
+    config: { params?: object } = {},
   ): Promise<T> {
     const response = await this.axiosInstance.request<T>({
-      method,
+      method: 'GET',
       url: `${this.opts.url}${path}`,
       ...config,
     });
