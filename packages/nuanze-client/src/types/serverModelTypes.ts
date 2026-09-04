@@ -163,6 +163,8 @@ export interface NuanzeServerLeaderboardItem {
   wins: number;
   losses: number;
   winRate: string | null;
+  productIds: number[];
+  productCount: number;
 }
 
 /**
@@ -170,6 +172,25 @@ export interface NuanzeServerLeaderboardItem {
  */
 export interface NuanzeServerFollowedLeaderboardItem {
   subaccountHex: string;
+  username: string | null;
+  displayName: string | null;
+  pnl: string | null;
+  wins: number;
+  losses: number;
+  winRate: string | null;
+  trades: number;
+  productIds: number[];
+  productCount: number;
+  globalRank: number | null;
+}
+
+/**
+ * Public subaccount leaderboard row as returned on the wire.
+ */
+export interface NuanzeServerSubaccountLeaderboardItem {
+  subaccountHex: string;
+  username: string;
+  displayName: string | null;
   pnl: string | null;
   wins: number;
   losses: number;

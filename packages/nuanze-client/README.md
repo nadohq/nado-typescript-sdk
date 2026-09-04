@@ -30,13 +30,14 @@ Nuanze runs a single public deployment that serves mainnet data, so every entry 
 ## API Surface
 
 Each method maps one-to-one onto a public operation. Most are GET; `getFollowedLeaderboard` is a
-non-mutating POST whose body carries the followed set:
+non-mutating POST whose body names the username whose followed accounts should be ranked:
 
 - `getNews`
 - `getMarkets`
 - `getMarketByTicker`
 - `getFundingRates`
 - `getLeaderboard`
+- `getSubaccountLeaderboard`
 - `getPlatformSummary`
 - `getFollowedLeaderboard`
 - `getWalletSummary`

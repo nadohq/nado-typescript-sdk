@@ -15,6 +15,7 @@ import {
   mapNuanzeNewsResponse,
   mapNuanzeOpenPositionsResponse,
   mapNuanzePlatformSummaryResponse,
+  mapNuanzeSubaccountLeaderboardResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
   mapNuanzeWalletPositionsResponse,
@@ -52,6 +53,8 @@ import {
   GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
+  GetNuanzeSubaccountLeaderboardParams,
+  GetNuanzeSubaccountLeaderboardResponse,
   GetNuanzeWalletPnlParams,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesParams,
@@ -80,6 +83,7 @@ import {
   NuanzeServerNewsResponse,
   NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
+  NuanzeServerSubaccountLeaderboardResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
   NuanzeServerWalletPositionsResponse,
@@ -106,8 +110,8 @@ export interface NuanzeClientOpts {
  * linked signer. It also sends no `x-nado-client-type` header: Nuanze is a public API that does not
  * attribute traffic per client, and its `Access-Control-Allow-Headers` does not list the header, so
  * sending it would fail CORS preflight in the browser. Most operations are GET;
- * {@link NuanzeClient.getFollowedLeaderboard} is a non-mutating POST whose body carries a followed
- * set larger than a query string can reliably hold.
+ * {@link NuanzeClient.getFollowedLeaderboard} is a non-mutating POST whose body identifies the
+ * username whose follow graph should be ranked.
  */
 export class NuanzeClient {
   readonly opts: NuanzeClientOpts;
@@ -214,6 +218,25 @@ export class NuanzeClient {
   }
 
   /**
+   * Gets the global public leaderboard of username-claimed subaccounts. Results are sorted by
+   * equity-basis account PnL descending with nulls last. `globalRank` is independent of the active
+   * privacy and trading filters. Pagination uses a filter-bound opaque cursor.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
+   * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
+   */
+  async getSubaccountLeaderboard(
+    params: GetNuanzeSubaccountLeaderboardParams = {},
+  ): Promise<GetNuanzeSubaccountLeaderboardResponse> {
+    return mapNuanzeSubaccountLeaderboardResponse(
+      await this.getJson<NuanzeServerSubaccountLeaderboardResponse>(
+        '/leaderboard/subaccounts',
+        params,
+      ),
+    );
+  }
+
+  /**
    * Gets platform activity summary from five-minute aggregates.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if the window is not a documented value.
@@ -230,14 +253,12 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets leaderboard stats for a set of followed subaccounts. POST rather than GET so the body can
-   * carry up to 300 `subaccountHex` values. The response preserves request order. Subaccounts with
-   * no data in the window are backfilled with `pnl: null`, `globalRank: null`, zero counts, and an
-   * empty `productIds`. The response is not cached.
+   * Gets leaderboard stats for the subaccounts a username actively follows, capped at 300 and
+   * sorted by PnL descending with nulls last. Subaccounts with no PnL in the window are included by
+   * default with null PnL/rank, zero counts, and no products. The response is not cached.
    *
-   * @throws {NuanzeServerFailureError} With `INVALID_SUBACCOUNT` if a hex is not 32-byte
-   * 0x-prefixed, and `BAD_REQUEST` if the set is empty, exceeds 300, or `timeframe` is not a
-   * documented value.
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid, or
+   * `USERNAME_NOT_FOUND` when the supplied username has no claimed identity.
    */
   async getFollowedLeaderboard(
     params: GetNuanzeFollowedLeaderboardParams,

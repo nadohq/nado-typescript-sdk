@@ -660,15 +660,18 @@ export interface NuanzeMarketDetail extends NuanzeMarket {
 }
 
 /**
- * Per-subaccount row from `POST /wallets/leaderboard`. Unknown or window-younger
- * subaccounts are backfilled with `pnl: null`, `globalRank: null`, zero counts, and
- * an empty `productIds`.
+ * Per-subaccount row from `POST /wallets/leaderboard`. Untraded followed subaccounts are included
+ * by default with null PnL/rank/name fields where unavailable, zero counts, and no products.
  */
 export interface NuanzeFollowedLeaderboardItem {
   /**
    * Lowercase bytes32 subaccount hex (owner + name), the SDK `subaccountToHex` form.
    */
   subaccountHex: string;
+  /** Canonical username, or null when the followed subaccount has not claimed one. */
+  username: string | null;
+  /** User-facing display name, or null when the followed subaccount has not claimed one. */
+  displayName: string | null;
   /**
    * Equity-basis account PnL for the requested timeframe, or null when the subaccount
    * has no data in the window.
@@ -689,6 +692,42 @@ export interface NuanzeFollowedLeaderboardItem {
   /**
    * Rank among all subaccounts by this timeframe's PnL (`1` = highest), or null when
    * the subaccount has no PnL in the window.
+   */
+  globalRank: number | null;
+}
+
+/**
+ * Username-claimed subaccount row from `GET /leaderboard/subaccounts`.
+ */
+export interface NuanzeSubaccountLeaderboardItem {
+  /**
+   * Lowercase bytes32 subaccount hex (owner + name), the SDK `subaccountToHex` form.
+   */
+  subaccountHex: string;
+  /** Canonical username claimed by this subaccount. */
+  username: string;
+  /** User-facing display name, or null when unavailable. */
+  displayName: string | null;
+  /**
+   * Equity-basis account PnL for the requested timeframe, or null for an untraded subaccount
+   * returned when `includeUntraded` is enabled.
+   */
+  pnl: BigNumber | null;
+  /** Close-derived win count. */
+  wins: number;
+  /** Close-derived loss count. */
+  losses: number;
+  /** Win rate, or null when there are no closed trades. */
+  winRate: BigNumber | null;
+  /** Perp fill count in the window. */
+  trades: number;
+  /** Traded product IDs, sorted by fill count descending. */
+  productIds: number[];
+  /** Number of distinct traded products. Equals `productIds.length`. */
+  productCount: number;
+  /**
+   * Rank across all subaccounts for the timeframe, independent of page filters, or null when the
+   * subaccount has no PnL in the window.
    */
   globalRank: number | null;
 }
@@ -719,6 +758,10 @@ export interface NuanzeLeaderboardItem {
   losses: number;
   /** Win rate, or null when there are no closed trades. */
   winRate: BigNumber | null;
+  /** Traded product IDs, sorted by fill count descending. */
+  productIds: number[];
+  /** Number of distinct traded products. Equals `productIds.length`. */
+  productCount: number;
 }
 
 /**
