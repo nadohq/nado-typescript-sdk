@@ -253,7 +253,8 @@ export class NuanzeClient {
   /**
    * Gets a keyset-paginated leaderboard for every subaccount a username actively follows, sorted
    * by PnL descending with nulls last. Subaccounts with no PnL in the window are included by
-   * default with null PnL/rank, zero counts, and no products.
+   * default with null PnL/rank, zero counts, and no products. Private subaccounts are excluded
+   * unless `includePrivate=true`.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid, or
    * `USERNAME_NOT_FOUND` when the supplied username has no claimed identity.
@@ -509,7 +510,8 @@ export class NuanzeClient {
    * Lists current open perpetual position legs across every market by signed unrealized PnL.
    * Descending returns the largest gainers and ascending returns the largest losers. This is a
    * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
-   * Each row includes market identity and its source snapshot timestamp.
+   * Private subaccounts are excluded unless `includePrivate=true`. Each row includes market
+   * identity and its source snapshot timestamp.
    *
    * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
    * `BAD_REQUEST` when the query or cursor is invalid.

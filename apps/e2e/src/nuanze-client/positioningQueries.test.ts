@@ -152,6 +152,33 @@ void describe(
       }
     });
 
+    void test('binds global open-position cursors to private visibility', async () => {
+      const first = await tc.nuanze.getOpenPositions({
+        limit: 2,
+        includePrivate: false,
+      });
+      const { nextCursor } = first;
+      assertNonEmptyString(nextCursor, 'first.nextCursor');
+      assert.ok(nextCursor !== null);
+
+      try {
+        await tc.nuanze.getOpenPositions({
+          limit: 2,
+          includePrivate: true,
+          cursor: nextCursor,
+        });
+        assert.fail('expected CURSOR_FILTER_MISMATCH for changed filters');
+      } catch (error) {
+        assert.ok(
+          error instanceof NuanzeServerFailureError,
+          'should throw NuanzeServerFailureError',
+        );
+        assert.equal(error.errorCode, 'CURSOR_FILTER_MISMATCH');
+        assert.equal(error.httpStatus, 400);
+        assertNonEmptyString(error.requestId, 'error.requestId');
+      }
+    });
+
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
         await tc.nuanze.getMarketPositioning({ ticker: 'NOTAREALTICKERXYZ' });
