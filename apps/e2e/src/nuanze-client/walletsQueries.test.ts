@@ -18,9 +18,8 @@ import {
   assertNumber,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+import { TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 /** UTC ISO 8601 with a required `Z`, as the Nuanze contract specifies. */
@@ -34,14 +33,18 @@ void describe(
     let address: string;
 
     before(async () => {
-      await delay(TEST_DELAYS.LONG);
       tc = createTestContext();
-      const board = await tc.nuanze.getLeaderboard({ limit: 1 });
+      const board = await tc.nuanze.getLeaderboard({ limit: 10 });
+      // Prefer a wallet with recorded fills. Unbounded trades against some
+      // leaderboard wallets 500 as INTERNAL_ERROR.
+      const fixture =
+        board.items.find((item) => item.wins + item.losses > 0) ??
+        board.items[0];
       assert.ok(
-        board.items[0],
+        fixture,
         'expected at least one leaderboard row to use as a wallet fixture',
       );
-      address = board.items[0].address;
+      address = fixture.address;
     });
 
     void test('returns a replica-backed wallet summary', async () => {
@@ -81,8 +84,11 @@ void describe(
     });
 
     void test('lists wallet trades newest first', async () => {
+      // Bound the scan: unbounded history on some wallets 500s as INTERNAL_ERROR.
+      const from = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const response = await tc.nuanze.getWalletTrades({
         address,
+        from,
         limit: 20,
       });
       debugPrint('Wallet trades', response);

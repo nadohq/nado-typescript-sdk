@@ -36,6 +36,7 @@ import {
   NuanzeSeriesMetric,
   NuanzeSeriesPoint,
   NuanzeSourceInterval,
+  NuanzeSubaccountLeaderboardItem,
   NuanzeWalletPosition,
   NuanzeWalletTrade,
 } from './clientModelTypes';
@@ -143,7 +144,7 @@ export interface GetNuanzeFundingRatesResponse {
  * Params for `NuanzeClient.getLeaderboard`.
  */
 export interface GetNuanzeLeaderboardParams {
-  /** Ranking window, default `30d`. All-time costs five rate-limit units. */
+  /** Ranking window, default `30d`. */
   timeframe?: NuanzeLeaderboardTimeframe;
   /** Page size, 1-200, default 100. */
   limit?: number;
@@ -170,17 +171,58 @@ export interface GetNuanzeLeaderboardResponse {
 }
 
 /**
+ * Params for `NuanzeClient.getSubaccountLeaderboard`.
+ */
+export interface GetNuanzeSubaccountLeaderboardParams {
+  /** Ranking window, default `30d`. */
+  timeframe?: NuanzeLeaderboardTimeframe;
+  /** Page size, 1-200, default 100. */
+  limit?: number;
+  /**
+   * Opaque cursor from the previous page. It is bound to the normalized filters and must be
+   * returned unchanged.
+   */
+  cursor?: string;
+  /** Include subaccounts with Private Mode enabled, default false. */
+  includePrivate?: boolean;
+  /** Include subaccounts with no PnL in the requested window, default false. */
+  includeUntraded?: boolean;
+}
+
+/**
+ * Response of `NuanzeClient.getSubaccountLeaderboard`.
+ */
+export interface GetNuanzeSubaccountLeaderboardResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /** Total username-claimed subaccounts matching the active filters. */
+  totalCount: number;
+  /** Ranked rows for this page. */
+  items: NuanzeSubaccountLeaderboardItem[];
+  /** Opaque cursor for the next page, or null when this is the final page. */
+  nextCursor: string | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
  * Params for `NuanzeClient.getFollowedLeaderboard`. `timeframe` is required and applies to
  * every per-subaccount figure.
  */
 export interface GetNuanzeFollowedLeaderboardParams {
-  /**
-   * Followed subaccounts as bytes32 hex (owner + name). Mixed case is accepted and
-   * normalized to lowercase. 1-300 items; the response preserves this order.
-   */
-  subaccounts: string[];
+  /** Username whose active follow graph should be ranked. */
+  username: string;
   /** Ranking window for every per-subaccount figure. */
   timeframe: NuanzeLeaderboardTimeframe;
+  /** Include followed subaccounts with no PnL in the requested window, default true. */
+  includeUntraded?: boolean;
+  /** Page size, 1-200, default 100. */
+  limit?: number;
+  /**
+   * Opaque cursor from the previous page. It is bound to the username and normalized filters and
+   * must be returned unchanged.
+   */
+  cursor?: string;
 }
 
 /**
@@ -189,10 +231,10 @@ export interface GetNuanzeFollowedLeaderboardParams {
 export interface GetNuanzeFollowedLeaderboardResponse {
   /** Echoed timeframe. */
   timeframe: NuanzeLeaderboardTimeframe;
-  /** One row per requested hex, in request order. */
+  /** Actively followed subaccounts, sorted by PnL descending with nulls last. */
   items: NuanzeFollowedLeaderboardItem[];
-  /** Number of rows returned. Equals `items.length` and the request length. */
-  count: number;
+  /** Opaque cursor for the next page, or null when this is the final page. */
+  nextCursor: string | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }

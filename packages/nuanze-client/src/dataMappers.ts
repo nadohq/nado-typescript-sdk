@@ -23,6 +23,7 @@ import {
   NuanzePositioningTotals,
   NuanzeSeriesPoint,
   NuanzeStockFundamentals,
+  NuanzeSubaccountLeaderboardItem,
   NuanzeWalletPosition,
   NuanzeWalletTrade,
 } from './types/clientModelTypes';
@@ -42,6 +43,7 @@ import {
   GetNuanzeNewsResponse,
   GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryResponse,
+  GetNuanzeSubaccountLeaderboardResponse,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesResponse,
   GetNuanzeWalletPositionsResponse,
@@ -75,6 +77,7 @@ import {
   NuanzeServerSeriesPoint,
   NuanzeServerSidePositioningCell,
   NuanzeServerStockFundamentals,
+  NuanzeServerSubaccountLeaderboardItem,
   NuanzeServerWalletPosition,
   NuanzeServerWalletTrade,
 } from './types/serverModelTypes';
@@ -92,6 +95,7 @@ import {
   NuanzeServerNewsResponse,
   NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
+  NuanzeServerSubaccountLeaderboardResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
   NuanzeServerWalletPositionsResponse,
@@ -335,6 +339,8 @@ export function mapNuanzeLeaderboardItem(
     wins: server.wins,
     losses: server.losses,
     winRate: mapNuanzeDecimal(server.winRate),
+    productIds: server.productIds,
+    productCount: server.productCount,
   };
 }
 
@@ -362,6 +368,8 @@ export function mapNuanzeFollowedLeaderboardItem(
 ): NuanzeFollowedLeaderboardItem {
   return {
     subaccountHex: server.subaccountHex,
+    username: server.username,
+    displayName: server.displayName,
     pnl: mapNuanzeDecimal(server.pnl),
     wins: server.wins,
     losses: server.losses,
@@ -374,7 +382,43 @@ export function mapNuanzeFollowedLeaderboardItem(
 }
 
 /**
- * Maps a server-side `POST /wallets/leaderboard` response.
+ * Maps a server-side public subaccount leaderboard row.
+ */
+export function mapNuanzeSubaccountLeaderboardItem(
+  server: NuanzeServerSubaccountLeaderboardItem,
+): NuanzeSubaccountLeaderboardItem {
+  return {
+    subaccountHex: server.subaccountHex,
+    username: server.username,
+    displayName: server.displayName,
+    pnl: mapNuanzeDecimal(server.pnl),
+    wins: server.wins,
+    losses: server.losses,
+    winRate: mapNuanzeDecimal(server.winRate),
+    trades: server.trades,
+    productIds: server.productIds,
+    productCount: server.productCount,
+    globalRank: server.globalRank,
+  };
+}
+
+/**
+ * Maps a server-side `GET /leaderboard/subaccounts` response.
+ */
+export function mapNuanzeSubaccountLeaderboardResponse(
+  server: NuanzeServerSubaccountLeaderboardResponse,
+): GetNuanzeSubaccountLeaderboardResponse {
+  return {
+    timeframe: server.timeframe,
+    totalCount: server.totalCount,
+    items: server.items.map(mapNuanzeSubaccountLeaderboardItem),
+    nextCursor: server.nextCursor,
+    asOf: server.asOf,
+  };
+}
+
+/**
+ * Maps a server-side `GET /wallets/leaderboard` response.
  */
 export function mapNuanzeFollowedLeaderboardResponse(
   server: NuanzeServerFollowedLeaderboardResponse,
@@ -382,7 +426,7 @@ export function mapNuanzeFollowedLeaderboardResponse(
   return {
     timeframe: server.timeframe,
     items: server.items.map(mapNuanzeFollowedLeaderboardItem),
-    count: server.count,
+    nextCursor: server.nextCursor,
     asOf: server.asOf,
   };
 }

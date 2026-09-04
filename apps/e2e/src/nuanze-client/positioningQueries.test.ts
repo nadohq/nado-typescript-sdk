@@ -17,9 +17,8 @@ import {
   assertNonEmptyString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
-import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+import { TEST_TIMEOUTS } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 /** UTC ISO 8601 with a required `Z`, as the Nuanze contract specifies. */
@@ -33,7 +32,6 @@ void describe(
     let ticker: string;
 
     before(async () => {
-      await delay(TEST_DELAYS.LONG);
       tc = createTestContext();
       const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
@@ -75,7 +73,6 @@ void describe(
     });
 
     void test('lists per-trader market positions with addresses', async () => {
-      await delay(TEST_DELAYS.STANDARD);
       const response = await tc.nuanze.getMarketPositions({
         ticker,
         venue: 'perp',
@@ -102,7 +99,6 @@ void describe(
     });
 
     void test('lists top PnL market positions', async () => {
-      await delay(TEST_DELAYS.STANDARD);
       const response = await tc.nuanze.getMarketPositions({
         ticker,
         venue: 'perp',
@@ -127,7 +123,6 @@ void describe(
 
     void test('lists globally ranked current open positions in both directions', async () => {
       for (const sortDirection of NUANZE_OPEN_POSITION_SORT_DIRECTIONS) {
-        await delay(TEST_DELAYS.STANDARD);
         const response = await tc.nuanze.getOpenPositions({
           limit: 20,
           sortDirection,

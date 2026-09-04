@@ -15,6 +15,7 @@ import {
   mapNuanzeNewsResponse,
   mapNuanzeOpenPositionsResponse,
   mapNuanzePlatformSummaryResponse,
+  mapNuanzeSubaccountLeaderboardResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
   mapNuanzeWalletPositionsResponse,
@@ -52,6 +53,8 @@ import {
   GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
+  GetNuanzeSubaccountLeaderboardParams,
+  GetNuanzeSubaccountLeaderboardResponse,
   GetNuanzeWalletPnlParams,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesParams,
@@ -80,6 +83,7 @@ import {
   NuanzeServerNewsResponse,
   NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
+  NuanzeServerSubaccountLeaderboardResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
   NuanzeServerWalletPositionsResponse,
@@ -105,11 +109,7 @@ export interface NuanzeClientOpts {
  * Read-only and credential-free, so unlike the other service clients it takes no wallet client or
  * linked signer. It also sends no `x-nado-client-type` header: Nuanze is a public API that does not
  * attribute traffic per client, and its `Access-Control-Allow-Headers` does not list the header, so
- * sending it would fail CORS preflight in the browser. Most operations are GET;
- * {@link NuanzeClient.getFollowedLeaderboard} is a non-mutating POST whose body carries a followed
- * set larger than a query string can reliably hold. The API meters a weighted token bucket per
- * client IP and reports its state in the `RateLimit-Limit`, `RateLimit-Remaining`, and
- * `RateLimit-Reset` response headers; add an interceptor on {@link axiosInstance} to observe them.
+ * sending it would fail CORS preflight in the browser. All operations are GET.
  */
 export class NuanzeClient {
   readonly opts: NuanzeClientOpts;
@@ -200,7 +200,7 @@ export class NuanzeClient {
 
   /**
    * Gets the account PnL leaderboard. Equity-basis account PnL includes realized and unrealized
-   * movement plus funding and is not realized PnL. All-time analytics cost five rate-limit units.
+   * movement plus funding and is not realized PnL.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid.
    */
@@ -210,6 +210,25 @@ export class NuanzeClient {
     return mapNuanzeLeaderboardResponse(
       await this.getJson<NuanzeServerLeaderboardResponse>(
         '/leaderboard',
+        params,
+      ),
+    );
+  }
+
+  /**
+   * Gets the global public leaderboard of username-claimed subaccounts. Results are sorted by
+   * equity-basis account PnL descending with nulls last. `globalRank` is independent of the active
+   * privacy and trading filters. Pagination uses a filter-bound opaque cursor.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
+   * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
+   */
+  async getSubaccountLeaderboard(
+    params: GetNuanzeSubaccountLeaderboardParams = {},
+  ): Promise<GetNuanzeSubaccountLeaderboardResponse> {
+    return mapNuanzeSubaccountLeaderboardResponse(
+      await this.getJson<NuanzeServerSubaccountLeaderboardResponse>(
+        '/leaderboard/subaccounts',
         params,
       ),
     );
@@ -232,20 +251,18 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets leaderboard stats for a set of followed subaccounts. POST rather than GET so the body can
-   * carry up to 300 `subaccountHex` values. The response preserves request order. Subaccounts with
-   * no data in the window are backfilled with `pnl: null`, `globalRank: null`, zero counts, and an
-   * empty `productIds`. Costs five rate-limit units. The response is not cached.
+   * Gets a keyset-paginated leaderboard for every subaccount a username actively follows, sorted
+   * by PnL descending with nulls last. Subaccounts with no PnL in the window are included by
+   * default with null PnL/rank, zero counts, and no products.
    *
-   * @throws {NuanzeServerFailureError} With `INVALID_SUBACCOUNT` if a hex is not 32-byte
-   * 0x-prefixed, and `BAD_REQUEST` if the set is empty, exceeds 300, or `timeframe` is not a
-   * documented value.
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid, or
+   * `USERNAME_NOT_FOUND` when the supplied username has no claimed identity.
    */
   async getFollowedLeaderboard(
     params: GetNuanzeFollowedLeaderboardParams,
   ): Promise<GetNuanzeFollowedLeaderboardResponse> {
     return mapNuanzeFollowedLeaderboardResponse(
-      await this.postJson<NuanzeServerFollowedLeaderboardResponse>(
+      await this.getJson<NuanzeServerFollowedLeaderboardResponse>(
         '/wallets/leaderboard',
         params,
       ),
@@ -448,7 +465,7 @@ export class NuanzeClient {
    * Gets privacy-preserving aggregate positioning for an active perpetual. Cross and isolated legs
    * are summed within owner/subaccount/product before direction classification. Every cell requires
    * at least 20 distinct contributing owners. No identity, individual position, entry price, PnL,
-   * margin, or leverage fields are returned. This operation costs five rate-limit units.
+   * margin, or leverage fields are returned.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or
    * `BAD_REQUEST` on invalid input, and `MARKET_NOT_FOUND` when the ticker does not resolve to a
@@ -492,8 +509,7 @@ export class NuanzeClient {
    * Lists current open perpetual position legs across every market by signed unrealized PnL.
    * Descending returns the largest gainers and ascending returns the largest losers. This is a
    * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
-   * Each row includes market identity and its source snapshot timestamp. Costs five rate-limit
-   * units.
+   * Each row includes market identity and its source snapshot timestamp.
    *
    * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
    * `BAD_REQUEST` when the query or cursor is invalid.
@@ -513,24 +529,15 @@ export class NuanzeClient {
    * Performs a GET against `{baseUrl}{path}` and classifies the status before returning the body.
    */
   private async getJson<T>(path: string, params?: object): Promise<T> {
-    return this.requestJson<T>('GET', path, { params });
-  }
-
-  /**
-   * Performs a POST against `{baseUrl}{path}` with a JSON body and classifies the status before
-   * returning the response. Used only for the non-mutating followed-leaderboard operation.
-   */
-  private async postJson<T>(path: string, data: object): Promise<T> {
-    return this.requestJson<T>('POST', path, { data });
+    return this.requestJson<T>(path, { params });
   }
 
   private async requestJson<T>(
-    method: 'GET' | 'POST',
     path: string,
-    config: { params?: object; data?: object } = {},
+    config: { params?: object } = {},
   ): Promise<T> {
     const response = await this.axiosInstance.request<T>({
-      method,
+      method: 'GET',
       url: `${this.opts.url}${path}`,
       ...config,
     });

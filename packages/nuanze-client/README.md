@@ -29,14 +29,14 @@ Nuanze runs a single public deployment that serves mainnet data, so every entry 
 
 ## API Surface
 
-Each method maps one-to-one onto a public operation. Most are GET; `getFollowedLeaderboard` is a
-non-mutating POST whose body carries the followed set:
+Each method maps one-to-one onto a public GET operation:
 
 - `getNews`
 - `getMarkets`
 - `getMarketByTicker`
 - `getFundingRates`
 - `getLeaderboard`
+- `getSubaccountLeaderboard`
 - `getPlatformSummary`
 - `getFollowedLeaderboard`
 - `getWalletSummary`
@@ -59,13 +59,6 @@ Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, 
 
 Failures arrive as `NuanzeServerFailureError`, carrying `errorCode` (comparable against
 `NUANZE_ERROR_CODES`), `httpStatus`, and the `requestId` to quote when reporting the failure.
-
-## Rate Limits
-
-The API meters a weighted token bucket per client IP and reports its state in the `RateLimit-Limit`,
-`RateLimit-Remaining`, and `RateLimit-Reset` response headers. The client never retries, sleeps, or
-self-throttles; add an interceptor on `nuanze.axiosInstance` to observe the headers or to apply per-request
-timeouts and cancellation.
 
 ## License
 

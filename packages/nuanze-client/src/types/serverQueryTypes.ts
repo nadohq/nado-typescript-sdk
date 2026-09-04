@@ -26,6 +26,7 @@ import {
   NuanzeServerOpenPosition,
   NuanzeServerPlatformDeltas,
   NuanzeServerSeriesPoint,
+  NuanzeServerSubaccountLeaderboardItem,
   NuanzeServerWalletPosition,
   NuanzeServerWalletTrade,
 } from './serverModelTypes';
@@ -88,12 +89,23 @@ export interface NuanzeServerLeaderboardResponse {
 }
 
 /**
- * `POST /wallets/leaderboard` response as returned on the wire.
+ * `GET /leaderboard/subaccounts` response as returned on the wire.
+ */
+export interface NuanzeServerSubaccountLeaderboardResponse {
+  timeframe: NuanzeLeaderboardTimeframe;
+  totalCount: number;
+  items: NuanzeServerSubaccountLeaderboardItem[];
+  nextCursor: string | null;
+  asOf: string;
+}
+
+/**
+ * `GET /wallets/leaderboard` response as returned on the wire.
  */
 export interface NuanzeServerFollowedLeaderboardResponse {
   timeframe: NuanzeLeaderboardTimeframe;
   items: NuanzeServerFollowedLeaderboardItem[];
-  count: number;
+  nextCursor: string | null;
   asOf: string;
 }
 

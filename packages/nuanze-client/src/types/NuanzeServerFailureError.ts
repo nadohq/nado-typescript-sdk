@@ -14,7 +14,7 @@ export class NuanzeServerFailureError extends Error {
   readonly errorCode: NuanzeErrorCode;
 
   /**
-   * HTTP status of the response, e.g. `404` for `MARKET_NOT_FOUND` or `429` for `RATE_LIMITED`.
+   * HTTP status of the response, e.g. `404` for `MARKET_NOT_FOUND`.
    */
   readonly httpStatus: number;
 
