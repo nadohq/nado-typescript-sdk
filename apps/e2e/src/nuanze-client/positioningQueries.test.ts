@@ -15,6 +15,7 @@ import {
   assertBoolean,
   assertEnumMember,
   assertNonEmptyString,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
@@ -206,6 +207,12 @@ function assertMarketPositionShape(
     `${label}.subaccountOwner`,
   );
   assertNonEmptyString(position.subaccountName, `${label}.subaccountName`);
+  if (position.username !== null) {
+    assertString(position.username, `${label}.username`);
+  }
+  if (position.displayName !== null) {
+    assertString(position.displayName, `${label}.displayName`);
+  }
   assertNonEmptyString(position.symbol, `${label}.symbol`);
   assertEnumMember(
     position.marginKind,

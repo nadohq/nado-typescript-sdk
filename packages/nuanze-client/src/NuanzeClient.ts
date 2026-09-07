@@ -251,13 +251,12 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets a keyset-paginated leaderboard for every subaccount a username actively follows, sorted
-   * by PnL descending with nulls last. Subaccounts with no PnL in the window are included by
-   * default with null PnL/rank, zero counts, and no products. Private subaccounts are excluded
-   * unless `includePrivate=true`.
+   * Gets a keyset-paginated leaderboard for every subaccount a supplied bytes32 subaccount actively
+   * follows, sorted by PnL descending with nulls last. The follower does not need a claimed
+   * username. Subaccounts with no PnL in the window are included by default with null PnL/rank,
+   * zero counts, and no products. Private subaccounts are excluded unless `includePrivate=true`.
    *
-   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid, or
-   * `USERNAME_NOT_FOUND` when the supplied username has no claimed identity.
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid.
    */
   async getFollowedLeaderboard(
     params: GetNuanzeFollowedLeaderboardParams,
@@ -488,7 +487,8 @@ export class NuanzeClient {
    * Lists open perpetual position legs for the resolved market. Results default to absolute
    * notional descending and can be ordered by signed unrealized PnL or absolute base amount in
    * either direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
-   * Wallet addresses and signed exact base amounts are returned.
+   * Wallet addresses, nullable synced usernames and display names, and signed exact base amounts
+   * are returned.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
    * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and

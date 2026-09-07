@@ -874,6 +874,8 @@ export function mapNuanzeMarketPosition(
   return {
     subaccountOwner: server.subaccountOwner,
     subaccountName: server.subaccountName,
+    username: server.username,
+    displayName: server.displayName,
     symbol: server.symbol,
     marginKind: server.marginKind,
     side: server.side,

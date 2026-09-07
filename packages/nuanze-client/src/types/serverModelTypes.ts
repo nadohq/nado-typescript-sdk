@@ -250,6 +250,8 @@ export interface NuanzeServerMarketTrade {
 export interface NuanzeServerMarketPosition {
   subaccountOwner: string;
   subaccountName: string;
+  username: string | null;
+  displayName: string | null;
   symbol: string;
   marginKind: NuanzeMarginKind;
   side: NuanzePositionSide;

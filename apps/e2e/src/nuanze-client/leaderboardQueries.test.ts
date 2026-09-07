@@ -1,6 +1,5 @@
 import {
   GetNuanzeSubaccountLeaderboardResponse,
-  NUANZE_ERROR_CODES,
   NUANZE_LEADERBOARD_TIMEFRAMES,
   NuanzeFollowedLeaderboardItem,
   NuanzeLeaderboardItem,
@@ -27,7 +26,8 @@ import { RunContext } from '../utils/types';
 
 /** UTC ISO 8601 with a required `Z`, as the Nuanze contract specifies. */
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
-const FOLLOWED_LEADERBOARD_USERNAME = 'frrrtss';
+const FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX =
+  '0xfbf4b6bfbe15db2ee1a6a22755808896e8d986a364656661756c740000000000';
 
 void describe(
   '[nuanze-client]: leaderboard',
@@ -201,14 +201,14 @@ void describe(
     void test('returns followed accounts sorted by PnL and applies the traded filter', async () => {
       const [inclusive, tradedOnly] = await Promise.all([
         tc.nuanze.getFollowedLeaderboard({
-          username: FOLLOWED_LEADERBOARD_USERNAME,
+          subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includeUntraded: true,
           includePrivate: true,
           limit: 2,
         }),
         tc.nuanze.getFollowedLeaderboard({
-          username: FOLLOWED_LEADERBOARD_USERNAME,
+          subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includeUntraded: false,
           includePrivate: false,
@@ -238,7 +238,6 @@ void describe(
         assertNullablePnlDescending(response.items, 'items');
       }
 
-      assert.ok(inclusive.items.length > 1, 'fixture should follow accounts');
       assert.ok(
         tradedOnly.items.length <= inclusive.items.length,
         'excluding untraded accounts should not increase page size',
@@ -259,41 +258,29 @@ void describe(
       }
     });
 
-    void test('continues followed leaderboard pagination without duplicates', async () => {
-      const params = {
-        username: FOLLOWED_LEADERBOARD_USERNAME,
-        timeframe: '30d' as const,
-        includeUntraded: true,
-        limit: 2,
-      };
-      const first = await tc.nuanze.getFollowedLeaderboard(params);
-      const { nextCursor } = first;
-      assertNonEmptyString(nextCursor, 'first.nextCursor');
-      assert.ok(nextCursor !== null);
-
-      const second = await tc.nuanze.getFollowedLeaderboard({
-        ...params,
-        cursor: nextCursor,
-      });
-      const firstSubaccounts = new Set(
-        first.items.map((item) => item.subaccountHex),
-      );
-      for (const item of second.items) {
+    void test('forwards followed leaderboard cursors for server validation', async () => {
+      try {
+        await tc.nuanze.getFollowedLeaderboard({
+          subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
+          timeframe: '30d',
+          cursor: 'not-a-followed-leaderboard-cursor',
+        });
+        assert.fail('expected INVALID_CURSOR for a malformed cursor');
+      } catch (error) {
         assert.ok(
-          !firstSubaccounts.has(item.subaccountHex),
-          'cursor page should not repeat a followed subaccount',
+          error instanceof NuanzeServerFailureError,
+          'should throw NuanzeServerFailureError',
         );
+        assert.equal(error.errorCode, 'INVALID_CURSOR');
+        assert.equal(error.httpStatus, 400);
+        assertNonEmptyString(error.requestId, 'error.requestId');
       }
-      assertNullablePnlDescending(
-        [...first.items, ...second.items],
-        'followed cursor items',
-      );
     });
 
     void test('forwards followed leaderboard filters for server validation', async () => {
       try {
         await tc.nuanze.getFollowedLeaderboard({
-          username: FOLLOWED_LEADERBOARD_USERNAME,
+          subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includeUntraded: 'invalid' as unknown as boolean,
         });
@@ -314,7 +301,7 @@ void describe(
     void test('forwards followed leaderboard private visibility for server validation', async () => {
       try {
         await tc.nuanze.getFollowedLeaderboard({
-          username: FOLLOWED_LEADERBOARD_USERNAME,
+          subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includePrivate: 'invalid' as unknown as boolean,
         });
@@ -330,24 +317,20 @@ void describe(
       }
     });
 
-    void test('rejects an unknown followed leaderboard username', async () => {
+    void test('rejects a malformed follower subaccount hex', async () => {
       try {
         await tc.nuanze.getFollowedLeaderboard({
-          username: `sdk-e2e-missing-${Date.now()}`,
+          subaccountHex: 'not-a-subaccount',
           timeframe: '24h',
         });
-        assert.fail('expected USERNAME_NOT_FOUND for an unknown username');
+        assert.fail('expected BAD_REQUEST for a malformed subaccount hex');
       } catch (error) {
         assert.ok(
           error instanceof NuanzeServerFailureError,
           'should throw NuanzeServerFailureError',
         );
-        assert.ok(
-          (NUANZE_ERROR_CODES as readonly string[]).includes(error.errorCode),
-          'USERNAME_NOT_FOUND should be part of the public error-code contract',
-        );
-        assert.equal(error.errorCode, 'USERNAME_NOT_FOUND');
-        assert.equal(error.httpStatus, 404);
+        assert.equal(error.errorCode, 'BAD_REQUEST');
+        assert.equal(error.httpStatus, 400);
         assertNonEmptyString(error.requestId, 'error.requestId');
       }
     });

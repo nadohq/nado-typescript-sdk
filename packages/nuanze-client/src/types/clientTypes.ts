@@ -210,8 +210,8 @@ export interface GetNuanzeSubaccountLeaderboardResponse {
  * every per-subaccount figure.
  */
 export interface GetNuanzeFollowedLeaderboardParams {
-  /** Username whose active follow graph should be ranked. */
-  username: string;
+  /** Lowercase or mixed-case bytes32 hex of the follower subaccount whose active graph is ranked. */
+  subaccountHex: string;
   /** Ranking window for every per-subaccount figure. */
   timeframe: NuanzeLeaderboardTimeframe;
   /** Include followed subaccounts with no PnL in the requested window, default true. */
@@ -221,8 +221,8 @@ export interface GetNuanzeFollowedLeaderboardParams {
   /** Page size, 1-200, default 100. */
   limit?: number;
   /**
-   * Opaque cursor from the previous page. It is bound to the username and normalized filters and
-   * must be returned unchanged.
+   * Opaque cursor from the previous page. It is bound to the follower subaccount and normalized
+   * filters and must be returned unchanged.
    */
   cursor?: string;
 }
