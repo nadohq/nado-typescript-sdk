@@ -840,6 +840,10 @@ export interface NuanzeMarketPosition {
   subaccountOwner: string;
   /** Subaccount name. */
   subaccountName: string;
+  /** Claimed username, or null when the subaccount has no synced identity or none claimed. */
+  username: string | null;
+  /** Display name, or null when the subaccount has no synced identity or none set. */
+  displayName: string | null;
   /** Venue-native symbol. */
   symbol: string;
   /** Margin mode. Isolated margin is isolated equity and is null when non-positive. */
@@ -864,7 +868,10 @@ export interface NuanzeMarketPosition {
 /**
  * Current open perpetual position leg in the global signed-unrealized-PnL ranking.
  */
-export interface NuanzeOpenPosition extends NuanzeMarketPosition {
+export interface NuanzeOpenPosition extends Omit<
+  NuanzeMarketPosition,
+  'username' | 'displayName'
+> {
   /** Public product ID for this row's market. */
   productId: number;
   /** Canonical market ticker. */

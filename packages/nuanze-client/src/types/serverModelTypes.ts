@@ -250,6 +250,8 @@ export interface NuanzeServerMarketTrade {
 export interface NuanzeServerMarketPosition {
   subaccountOwner: string;
   subaccountName: string;
+  username: string | null;
+  displayName: string | null;
   symbol: string;
   marginKind: NuanzeMarginKind;
   side: NuanzePositionSide;
@@ -263,7 +265,10 @@ export interface NuanzeServerMarketPosition {
 /**
  * Globally ranked current open position leg as returned on the wire.
  */
-export interface NuanzeServerOpenPosition extends NuanzeServerMarketPosition {
+export interface NuanzeServerOpenPosition extends Omit<
+  NuanzeServerMarketPosition,
+  'username' | 'displayName'
+> {
   productId: number;
   ticker: string;
   venue: 'perp';

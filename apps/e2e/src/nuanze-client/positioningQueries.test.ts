@@ -15,6 +15,7 @@ import {
   assertBoolean,
   assertEnumMember,
   assertNonEmptyString,
+  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
@@ -200,6 +201,19 @@ function assertMarketPositionShape(
   position: NuanzeMarketPosition,
   label: string,
 ): void {
+  assertPositionShape(position, label);
+  if (position.username !== null) {
+    assertString(position.username, `${label}.username`);
+  }
+  if (position.displayName !== null) {
+    assertString(position.displayName, `${label}.displayName`);
+  }
+}
+
+function assertPositionShape(
+  position: Omit<NuanzeMarketPosition, 'username' | 'displayName'>,
+  label: string,
+): void {
   assert.match(
     position.subaccountOwner,
     /^0x[0-9a-f]{40}$/,
@@ -228,7 +242,9 @@ function assertOpenPositionShape(
   position: NuanzeOpenPosition,
   label: string,
 ): void {
-  assertMarketPositionShape(position, label);
+  assertPositionShape(position, label);
+  assert.equal('username' in position, false, `${label}.username`);
+  assert.equal('displayName' in position, false, `${label}.displayName`);
   assert.ok(
     Number.isSafeInteger(position.productId) && position.productId >= 0,
     `${label}.productId`,

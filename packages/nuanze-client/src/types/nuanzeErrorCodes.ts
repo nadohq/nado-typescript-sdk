@@ -1,7 +1,5 @@
 /**
- * Error codes returned by the Nuanze API, in the order the service declares them. The codes are part
- * of the published contract and additive only, so a client release can only ever lag behind on new
- * ones - it never has to unlearn a code.
+ * Error codes in the current published Nuanze API contract, in service declaration order.
  */
 export const NUANZE_ERROR_CODES = [
   'BAD_REQUEST',
@@ -13,16 +11,15 @@ export const NUANZE_ERROR_CODES = [
   'MARKET_SELECTOR_MISMATCH',
   'MARKET_NOT_FOUND',
   'WALLET_NOT_FOUND',
-  'USERNAME_NOT_FOUND',
   'UNSUPPORTED_INTERVAL',
   'UNSUPPORTED_BUCKET',
   'RANGE_TOO_LARGE',
-  'NOT_FOUND',
-  'METHOD_NOT_ALLOWED',
   'PAYLOAD_TOO_LARGE',
-  'INTERNAL_ERROR',
-  'DEPENDENCY_UNAVAILABLE',
+  'METHOD_NOT_ALLOWED',
+  'RATE_LIMITED',
   'GATEWAY_TIMEOUT',
+  'DEPENDENCY_UNAVAILABLE',
+  'INTERNAL_ERROR',
 ] as const;
 
 /**
