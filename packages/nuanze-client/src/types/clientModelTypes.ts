@@ -868,7 +868,10 @@ export interface NuanzeMarketPosition {
 /**
  * Current open perpetual position leg in the global signed-unrealized-PnL ranking.
  */
-export interface NuanzeOpenPosition extends NuanzeMarketPosition {
+export interface NuanzeOpenPosition extends Omit<
+  NuanzeMarketPosition,
+  'username' | 'displayName'
+> {
   /** Public product ID for this row's market. */
   productId: number;
   /** Canonical market ticker. */

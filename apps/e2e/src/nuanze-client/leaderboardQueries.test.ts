@@ -323,13 +323,15 @@ void describe(
           subaccountHex: 'not-a-subaccount',
           timeframe: '24h',
         });
-        assert.fail('expected BAD_REQUEST for a malformed subaccount hex');
+        assert.fail(
+          'expected INVALID_SUBACCOUNT for a malformed subaccount hex',
+        );
       } catch (error) {
         assert.ok(
           error instanceof NuanzeServerFailureError,
           'should throw NuanzeServerFailureError',
         );
-        assert.equal(error.errorCode, 'BAD_REQUEST');
+        assert.equal(error.errorCode, 'INVALID_SUBACCOUNT');
         assert.equal(error.httpStatus, 400);
         assertNonEmptyString(error.requestId, 'error.requestId');
       }
