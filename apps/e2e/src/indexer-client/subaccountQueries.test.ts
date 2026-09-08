@@ -241,9 +241,7 @@ void describe(
       );
     });
 
-    // TODO: Re-enable both tests once deployed Archive APIs accept the `positions` query variant.
-    // Testnet and mainnet currently reject it with HTTP 422: unknown variant `positions`.
-    void test.skip('getPositions returns position history with boundary events', async () => {
+    void test('getPositions returns position history with boundary events', async () => {
       const positionsResponse = await client.getPositions({
         subaccount,
         limit: 5,
