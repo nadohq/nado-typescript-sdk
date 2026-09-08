@@ -216,9 +216,10 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets the global public leaderboard of username-claimed subaccounts. Results are sorted by
-   * equity-basis account PnL descending with nulls last. `globalRank` is independent of the active
-   * privacy and trading filters. Pagination uses a filter-bound opaque cursor.
+   * Gets the global public leaderboard of subaccounts. Results are sorted by equity-basis account
+   * PnL descending with nulls last. Username and display name are null when unavailable.
+   * `globalRank` is independent of the active privacy and trading filters. Pagination uses a
+   * filter-bound opaque cursor.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
    * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
@@ -511,7 +512,7 @@ export class NuanzeClient {
    * Descending returns the largest gainers and ascending returns the largest losers. This is a
    * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
    * Private subaccounts are excluded unless `includePrivate=true`. Each row includes market
-   * identity and its source snapshot timestamp.
+   * identity, nullable synced username and display name, and its source snapshot timestamp.
    *
    * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
    * `BAD_REQUEST` when the query or cursor is invalid.

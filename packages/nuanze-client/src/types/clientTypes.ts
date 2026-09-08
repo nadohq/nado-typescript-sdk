@@ -195,7 +195,7 @@ export interface GetNuanzeSubaccountLeaderboardParams {
 export interface GetNuanzeSubaccountLeaderboardResponse {
   /** Echoed timeframe. */
   timeframe: NuanzeLeaderboardTimeframe;
-  /** Total username-claimed subaccounts matching the active filters. */
+  /** Total subaccounts matching the active filters. */
   totalCount: number;
   /** Ranked rows for this page. */
   items: NuanzeSubaccountLeaderboardItem[];

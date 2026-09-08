@@ -927,7 +927,7 @@ export function mapNuanzeOpenPosition(
     ticker: server.ticker,
     venue: server.venue,
     snapshotAt: server.snapshotAt,
-    ...mapNuanzePositionBase(server),
+    ...mapNuanzeMarketPosition(server),
   };
 }
 

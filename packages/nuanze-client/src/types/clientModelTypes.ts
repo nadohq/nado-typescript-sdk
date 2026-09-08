@@ -704,8 +704,8 @@ export interface NuanzeSubaccountLeaderboardItem {
    * Lowercase bytes32 subaccount hex (owner + name), the SDK `subaccountToHex` form.
    */
   subaccountHex: string;
-  /** Canonical username claimed by this subaccount. */
-  username: string;
+  /** Canonical username, or null when the subaccount has not claimed one. */
+  username: string | null;
   /** User-facing display name, or null when unavailable. */
   displayName: string | null;
   /**
@@ -868,10 +868,7 @@ export interface NuanzeMarketPosition {
 /**
  * Current open perpetual position leg in the global signed-unrealized-PnL ranking.
  */
-export interface NuanzeOpenPosition extends Omit<
-  NuanzeMarketPosition,
-  'username' | 'displayName'
-> {
+export interface NuanzeOpenPosition extends NuanzeMarketPosition {
   /** Public product ID for this row's market. */
   productId: number;
   /** Canonical market ticker. */
