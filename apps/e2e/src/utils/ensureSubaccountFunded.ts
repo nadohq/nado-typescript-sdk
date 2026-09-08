@@ -30,6 +30,7 @@ export async function ensureSubaccountFunded(
       productId: QUOTE_PRODUCT_ID,
     }),
     context.publicClient,
+    2,
   );
 
   await waitForTransaction(

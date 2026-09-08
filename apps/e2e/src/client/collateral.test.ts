@@ -64,6 +64,7 @@ void describe(
             productId: QUOTE_PRODUCT_ID,
           }),
           publicClient,
+          2,
         );
 
         assertDefined(receipt, 'mintReceipt');
@@ -77,6 +78,7 @@ void describe(
             productId: QUOTE_PRODUCT_ID,
           }),
           publicClient,
+          2,
         );
 
         assertDefined(receipt, 'approveReceipt');
