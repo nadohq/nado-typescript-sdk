@@ -273,7 +273,7 @@ void describe(
       }
     });
 
-    void test.skip('getPositions applies product & open filters', async () => {
+    void test('getPositions applies product & open filters', async () => {
       const closedPositions = await client.getPositions({
         subaccount,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
