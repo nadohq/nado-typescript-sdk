@@ -397,7 +397,9 @@ function assertSubaccountLeaderboardItemShape(
   label: string,
 ): void {
   assertSubaccountStatsShape(item, label);
-  assertNonEmptyString(item.username, `${label}.username`);
+  if (item.username !== null) {
+    assertString(item.username, `${label}.username`);
+  }
   if (item.displayName !== null) {
     assertString(item.displayName, `${label}.displayName`);
   }

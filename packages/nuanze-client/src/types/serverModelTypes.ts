@@ -189,7 +189,7 @@ export interface NuanzeServerFollowedLeaderboardItem {
  */
 export interface NuanzeServerSubaccountLeaderboardItem {
   subaccountHex: string;
-  username: string;
+  username: string | null;
   displayName: string | null;
   pnl: string | null;
   wins: number;
@@ -265,10 +265,7 @@ export interface NuanzeServerMarketPosition {
 /**
  * Globally ranked current open position leg as returned on the wire.
  */
-export interface NuanzeServerOpenPosition extends Omit<
-  NuanzeServerMarketPosition,
-  'username' | 'displayName'
-> {
+export interface NuanzeServerOpenPosition extends NuanzeServerMarketPosition {
   productId: number;
   ticker: string;
   venue: 'perp';

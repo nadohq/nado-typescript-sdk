@@ -246,7 +246,6 @@ void describe('[engine-client]: builder', () => {
             productId: QUOTE_PRODUCT_ID,
           }),
           publicClient,
-          2,
         );
 
         const senderSubaccount = subaccountToHex({

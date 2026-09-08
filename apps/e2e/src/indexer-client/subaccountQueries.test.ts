@@ -30,6 +30,7 @@ import { createTestContext } from '../utils/runWithContext';
 import {
   assertIndexerEventShape,
   assertIndexerOrderShape,
+  assertIndexerPositionShape,
   assertLinkedSignerShape,
   assertMatchEventShape,
 } from '../utils/shapeAssertions';
@@ -240,25 +241,68 @@ void describe(
       );
     });
 
-    void test('getPositions reports the unsupported backend query', async () => {
-      await assert.rejects(
-        client.getPositions({
-          subaccount,
-          limit: 5,
-        }),
-        assertUnsupportedPositionsQuery,
+    void test('getPositions returns position history with boundary events', async () => {
+      const positionsResponse = await client.getPositions({
+        subaccount,
+        limit: 5,
+      });
+
+      debugPrint('Positions', positionsResponse);
+      assertDefined(positionsResponse, 'positionsResponse');
+      assertArray(positionsResponse.positions, 'positionsResponse.positions');
+      assertArrayElements(
+        positionsResponse.positions,
+        assertIndexerPositionShape,
+        'positionsResponse.positions',
       );
+      assertArray(positionsResponse.events, 'positionsResponse.events');
+      assertArrayElements(
+        positionsResponse.events,
+        assertIndexerEventShape,
+        'positionsResponse.events',
+      );
+
+      // Positions are ordered descending by openId
+      for (let i = 1; i < positionsResponse.positions.length; i++) {
+        assert.ok(
+          toBigNumber(positionsResponse.positions[i - 1].openId).gte(
+            toBigNumber(positionsResponse.positions[i].openId),
+          ),
+          `positions should be in descending order by openId (index ${i})`,
+        );
+      }
     });
 
-    void test('getPositions reports unsupported filtered queries', async () => {
-      await assert.rejects(
-        client.getPositions({
-          subaccount,
-          productId: TEST_PRODUCT_IDS.PERP_BTC,
-          open: false,
-          limit: 5,
-        }),
-        assertUnsupportedPositionsQuery,
+    void test('getPositions applies product & open filters', async () => {
+      const closedPositions = await client.getPositions({
+        subaccount,
+        productId: TEST_PRODUCT_IDS.PERP_BTC,
+        open: false,
+        limit: 5,
+      });
+
+      debugPrint('Closed positions', closedPositions);
+      assertArray(closedPositions.positions, 'closedPositions.positions');
+      assertArrayElements(
+        closedPositions.positions,
+        (position, label) => {
+          assertIndexerPositionShape(position, label);
+          assert.equal(
+            position.productId,
+            TEST_PRODUCT_IDS.PERP_BTC,
+            `${label}.productId should match the product filter`,
+          );
+          assert.notEqual(
+            position.closeId,
+            '-1',
+            `${label} should be closed when filtering with open: false`,
+          );
+          assert.ok(
+            position.amount.isZero(),
+            `${label}.amount should be 0 for a closed position`,
+          );
+        },
+        'closedPositions.positions',
       );
     });
 
@@ -682,12 +726,3 @@ void describe(
     });
   },
 );
-
-function assertUnsupportedPositionsQuery(error: unknown): boolean {
-  assert.ok(error instanceof Error, 'should throw an Error');
-  assert.equal(
-    error.message,
-    'Unexpected response from server: 422 Unprocessable Entity',
-  );
-  return true;
-}

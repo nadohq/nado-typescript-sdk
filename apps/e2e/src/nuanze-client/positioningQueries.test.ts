@@ -242,9 +242,7 @@ function assertOpenPositionShape(
   position: NuanzeOpenPosition,
   label: string,
 ): void {
-  assertPositionShape(position, label);
-  assert.equal('username' in position, false, `${label}.username`);
-  assert.equal('displayName' in position, false, `${label}.displayName`);
+  assertMarketPositionShape(position, label);
   assert.ok(
     Number.isSafeInteger(position.productId) && position.productId >= 0,
     `${label}.productId`,
