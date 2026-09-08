@@ -241,7 +241,9 @@ void describe(
       );
     });
 
-    void test('getPositions returns position history with boundary events', async () => {
+    // TODO: Re-enable both tests once deployed Archive APIs accept the `positions` query variant.
+    // Testnet and mainnet currently reject it with HTTP 422: unknown variant `positions`.
+    void test.skip('getPositions returns position history with boundary events', async () => {
       const positionsResponse = await client.getPositions({
         subaccount,
         limit: 5,
@@ -273,7 +275,7 @@ void describe(
       }
     });
 
-    void test('getPositions applies product & open filters', async () => {
+    void test.skip('getPositions applies product & open filters', async () => {
       const closedPositions = await client.getPositions({
         subaccount,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
