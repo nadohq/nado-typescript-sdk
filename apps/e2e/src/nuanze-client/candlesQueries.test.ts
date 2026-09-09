@@ -1,6 +1,7 @@
 import {
   NUANZE_CANDLE_INTERVALS,
   NuanzeCandleInterval,
+  NuanzeMarketVenue,
   NuanzeServerFailureError,
 } from '@nadohq/nuanze-client';
 import assert from 'node:assert/strict';
@@ -25,12 +26,76 @@ void describe(
   () => {
     let tc: RunContext;
     let ticker: string;
+    let productId: number;
+    let venue: 'perp';
 
     before(async () => {
       tc = createTestContext();
       const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
       ticker = first.ticker;
+      productId = first.productId;
+      venue = 'perp';
+    });
+
+    void test('resolves the same market by ticker or productId', async () => {
+      const byTicker = await tc.nuanze.getMarketCandles({
+        ticker,
+        venue,
+        interval: '1h',
+        limit: 24,
+      });
+      const byProductId = await tc.nuanze.getMarketCandles({
+        productId,
+        venue,
+        interval: '1h',
+        limit: 24,
+      });
+      debugPrint('Market candles by ticker selector', byTicker);
+      debugPrint('Market candles by productId selector', byProductId);
+
+      assertSameMarketIdentity(
+        byTicker,
+        { productId, ticker, venue },
+        'byTicker',
+      );
+      assertSameMarketIdentity(
+        byProductId,
+        { productId, ticker, venue },
+        'byProductId',
+      );
+      assertSameMarketIdentity(byTicker, byProductId, 'selectors');
+      assertEnumMember(
+        byTicker.interval,
+        NUANZE_CANDLE_INTERVALS,
+        'byTicker.interval',
+      );
+      assertEnumMember(
+        byProductId.interval,
+        NUANZE_CANDLE_INTERVALS,
+        'byProductId.interval',
+      );
+
+      for (const [i, candle] of byTicker.candles.entries()) {
+        const label = `byTicker.candles[${i}]`;
+        assert.match(candle.openTime, ISO_UTC, `${label}.openTime`);
+        assertBigNumberFinite(candle.open, `${label}.open`);
+        assertBigNumberFinite(candle.high, `${label}.high`);
+        assertBigNumberFinite(candle.low, `${label}.low`);
+        assertBigNumberFinite(candle.close, `${label}.close`);
+        assertBigNumberFinite(candle.volume, `${label}.volume`);
+        assertBoolean(candle.complete, `${label}.complete`);
+      }
+      for (const [i, candle] of byProductId.candles.entries()) {
+        const label = `byProductId.candles[${i}]`;
+        assert.match(candle.openTime, ISO_UTC, `${label}.openTime`);
+        assertBigNumberFinite(candle.open, `${label}.open`);
+        assertBigNumberFinite(candle.high, `${label}.high`);
+        assertBigNumberFinite(candle.low, `${label}.low`);
+        assertBigNumberFinite(candle.close, `${label}.close`);
+        assertBigNumberFinite(candle.volume, `${label}.volume`);
+        assertBoolean(candle.complete, `${label}.complete`);
+      }
     });
 
     void test('returns candles oldest to newest', async () => {
@@ -95,3 +160,13 @@ void describe(
     });
   },
 );
+
+function assertSameMarketIdentity(
+  actual: { productId: number; ticker: string; venue: NuanzeMarketVenue },
+  expected: { productId: number; ticker: string; venue: NuanzeMarketVenue },
+  label: string,
+): void {
+  assert.equal(actual.productId, expected.productId, `${label}.productId`);
+  assert.equal(actual.ticker, expected.ticker, `${label}.ticker`);
+  assert.equal(actual.venue, expected.venue, `${label}.venue`);
+}

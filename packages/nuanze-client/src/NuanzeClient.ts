@@ -65,6 +65,7 @@ import {
   GetNuanzeWalletSummaryResponse,
   GetNuanzeWalletTradesParams,
   GetNuanzeWalletTradesResponse,
+  NuanzeMarketSelector,
 } from './types/clientTypes';
 import { NuanzeServerFailureError } from './types/NuanzeServerFailureError';
 import { NuanzeServerMarketPositioningResponse } from './types/serverModelTypes';
@@ -161,23 +162,20 @@ export class NuanzeClient {
   }
 
   /**
-   * Resolves a market by ticker. Lookup is case-insensitive and accepts canonical tickers or
-   * legacy source symbols. An explicit unavailable venue returns `MARKET_NOT_FOUND`. With no
-   * venue, `strictVenue=true` returns `AMBIGUOUS_MARKET` for multi-venue assets; otherwise the
-   * primary venue is used.
+   * Resolves a market by {@link NuanzeMarketSelector}. Supply at least `ticker` or `productId`;
+   * when both are given, `productId` is used for the path segment and `ticker` is ignored.
+   * Ticker lookup is case-insensitive and accepts canonical tickers or legacy source symbols.
+   * An explicit unavailable venue returns `MARKET_NOT_FOUND`. With no venue, `strictVenue=true`
+   * returns `AMBIGUOUS_MARKET` for multi-venue assets; otherwise the primary venue is used.
    *
-   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or
-   * `BAD_REQUEST` on invalid selectors, and `MARKET_NOT_FOUND` when the ticker does not resolve.
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET` or `BAD_REQUEST` on invalid
+   * selectors, and `MARKET_NOT_FOUND` when the selector does not resolve.
    */
   async getMarketByTicker(
     params: GetNuanzeMarketByTickerParams,
   ): Promise<GetNuanzeMarketByTickerResponse> {
-    const { ticker, ...query } = params;
     return mapNuanzeMarketByTickerResponse(
-      await this.getJson<NuanzeServerMarketByTickerResponse>(
-        `/markets/${encodeURIComponent(ticker)}`,
-        query,
-      ),
+      await this.getMarketJson<NuanzeServerMarketByTickerResponse>(params),
     );
   }
 
@@ -311,43 +309,45 @@ export class NuanzeClient {
   }
 
   /**
-   * Lists market trades: one taker-side row per match, sorted by `matchedAt` then `id` descending.
-   * The exclusive cursor is bound to operation and normalized filters. `from` is inclusive and
-   * `to` exclusive. Wallet identity is absent.
+   * Lists market trades for a {@link NuanzeMarketSelector}: one taker-side row per match, sorted
+   * by `matchedAt` then `id` descending. Supply at least `ticker` or `productId`; when both are
+   * given, `productId` is used for the path segment and `ticker` is ignored. The exclusive cursor
+   * is bound to operation and normalized filters. `from` is inclusive and `to` exclusive. Wallet
+   * identity is absent.
    *
-   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
-   * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, `RANGE_TOO_LARGE`, or `BAD_REQUEST` on invalid
-   * input, and `MARKET_NOT_FOUND` when the ticker does not resolve.
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `INVALID_CURSOR`,
+   * `CURSOR_FILTER_MISMATCH`, `RANGE_TOO_LARGE`, or `BAD_REQUEST` on invalid input, and
+   * `MARKET_NOT_FOUND` when the selector does not resolve.
    */
   async getMarketTrades(
     params: GetNuanzeMarketTradesParams,
   ): Promise<GetNuanzeMarketTradesResponse> {
-    const { ticker, ...query } = params;
     return mapNuanzeMarketTradesResponse(
-      await this.getJson<NuanzeServerMarketTradesResponse>(
-        `/markets/${encodeURIComponent(ticker)}/trades`,
-        query,
+      await this.getMarketJson<NuanzeServerMarketTradesResponse>(
+        params,
+        '/trades',
       ),
     );
   }
 
   /**
-   * Lists market candles. Source storage is 1h; 4h and 1d are UTC-aligned rollups and missing bars
-   * are not interpolated. The newest `limit` matching bars are selected and returned
-   * oldest-to-newest, at most 750, with no pagination. A current bucket has `complete=false`.
+   * Lists market candles for a {@link NuanzeMarketSelector}. Supply at least `ticker` or
+   * `productId`; when both are given, `productId` is used for the path segment and `ticker` is
+   * ignored. Source storage is 1h; 4h and 1d are UTC-aligned rollups and missing bars are not
+   * interpolated. The newest `limit` matching bars are selected and returned oldest-to-newest,
+   * at most 750, with no pagination. A current bucket has `complete=false`.
    *
    * @throws {NuanzeServerFailureError} With `UNSUPPORTED_INTERVAL`, `RANGE_TOO_LARGE`,
-   * `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or `BAD_REQUEST` on invalid input, and
-   * `MARKET_NOT_FOUND` when the ticker does not resolve.
+   * `AMBIGUOUS_MARKET`, or `BAD_REQUEST` on invalid input, and `MARKET_NOT_FOUND` when the
+   * selector does not resolve.
    */
   async getMarketCandles(
     params: GetNuanzeMarketCandlesParams,
   ): Promise<GetNuanzeMarketCandlesResponse> {
-    const { ticker, ...query } = params;
     return mapNuanzeMarketCandlesResponse(
-      await this.getJson<NuanzeServerMarketCandlesResponse>(
-        `/markets/${encodeURIComponent(ticker)}/candles`,
-        query,
+      await this.getMarketJson<NuanzeServerMarketCandlesResponse>(
+        params,
+        '/candles',
       ),
     );
   }
@@ -463,46 +463,46 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets privacy-preserving aggregate positioning for an active perpetual. Cross and isolated legs
-   * are summed within owner/subaccount/product before direction classification. Every cell requires
-   * at least 20 distinct contributing owners. No identity, individual position, entry price, PnL,
-   * margin, or leverage fields are returned.
+   * Gets privacy-preserving aggregate positioning for an active perpetual identified by
+   * {@link NuanzeMarketSelector}. Supply at least `ticker` or `productId`; when both are given,
+   * `productId` is used for the path segment and `ticker` is ignored. Cross and isolated legs
+   * are summed within owner/subaccount/product before direction classification. Every cell
+   * requires at least 20 distinct contributing owners. No identity, individual position, entry
+   * price, PnL, margin, or leverage fields are returned.
    *
-   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`, or
-   * `BAD_REQUEST` on invalid input, and `MARKET_NOT_FOUND` when the ticker does not resolve to a
-   * perp.
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET` or `BAD_REQUEST` on invalid input,
+   * and `MARKET_NOT_FOUND` when the selector does not resolve to a perp.
    */
   async getMarketPositioning(
     params: GetNuanzeMarketPositioningParams,
   ): Promise<GetNuanzeMarketPositioningResponse> {
-    const { ticker, ...query } = params;
     return mapNuanzeMarketPositioningResponse(
-      await this.getJson<NuanzeServerMarketPositioningResponse>(
-        `/markets/${encodeURIComponent(ticker)}/positioning`,
-        query,
+      await this.getMarketJson<NuanzeServerMarketPositioningResponse>(
+        params,
+        '/positioning',
       ),
     );
   }
 
   /**
-   * Lists open perpetual position legs for the resolved market. Results default to absolute
-   * notional descending and can be ordered by signed unrealized PnL or absolute base amount in
-   * either direction. Spot markets are not supported. Legs below $10 absolute notional are excluded.
-   * Wallet addresses, nullable synced usernames and display names, and signed exact base amounts
-   * are returned.
+   * Lists open perpetual position legs for a market identified by {@link NuanzeMarketSelector}.
+   * Supply at least `ticker` or `productId`; when both are given, `productId` is used for the
+   * path segment and `ticker` is ignored. Results default to absolute notional descending and
+   * can be ordered by signed unrealized PnL or absolute base amount in either direction. Spot
+   * markets are not supported. Legs below $10 absolute notional are excluded. Wallet addresses,
+   * nullable synced usernames and display names, and signed exact base amounts are returned.
    *
-   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `MARKET_SELECTOR_MISMATCH`,
-   * `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and
-   * `MARKET_NOT_FOUND` when the ticker does not resolve to a perp.
+   * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `INVALID_CURSOR`,
+   * `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and `MARKET_NOT_FOUND` when the
+   * selector does not resolve to a perp.
    */
   async getMarketPositions(
     params: GetNuanzeMarketPositionsParams,
   ): Promise<GetNuanzeMarketPositionsResponse> {
-    const { ticker, ...query } = params;
     return mapNuanzeMarketPositionsResponse(
-      await this.getJson<NuanzeServerMarketPositionsResponse>(
-        `/markets/${encodeURIComponent(ticker)}/positions`,
-        query,
+      await this.getMarketJson<NuanzeServerMarketPositionsResponse>(
+        params,
+        '/positions',
       ),
     );
   }
@@ -533,6 +533,21 @@ export class NuanzeClient {
    */
   private async getJson<T>(path: string, params?: object): Promise<T> {
     return this.requestJson<T>(path, { params });
+  }
+
+  private async getMarketJson<T>(
+    params: NuanzeMarketSelector & object,
+    suffix = '',
+  ): Promise<T> {
+    const { productId, ticker, ...query } = params;
+    const selector = productId ?? ticker;
+    if (selector === undefined) {
+      throw new Error('A market ticker or productId is required.');
+    }
+    return this.getJson<T>(
+      `/markets/${encodeURIComponent(selector.toString())}${suffix}`,
+      query,
+    );
   }
 
   private async requestJson<T>(

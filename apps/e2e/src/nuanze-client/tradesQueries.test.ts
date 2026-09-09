@@ -27,12 +27,53 @@ void describe(
   () => {
     let tc: RunContext;
     let ticker: string;
+    let productId: number;
+    let venue: (typeof NUANZE_MARKET_VENUES)[number];
 
     before(async () => {
       tc = createTestContext();
       const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
       ticker = first.ticker;
+      productId = first.productId;
+      venue = first.venue;
+    });
+
+    void test('resolves the same market by ticker or productId', async () => {
+      const byTicker = await tc.nuanze.getMarketTrades({
+        ticker,
+        venue,
+        limit: 20,
+      });
+      const byProductId = await tc.nuanze.getMarketTrades({
+        productId,
+        venue,
+        limit: 20,
+      });
+      debugPrint('Market trades by ticker selector', byTicker);
+      debugPrint('Market trades by productId selector', byProductId);
+
+      assertSameMarketIdentity(
+        byTicker,
+        { productId, ticker, venue },
+        'byTicker',
+      );
+      assertSameMarketIdentity(
+        byProductId,
+        { productId, ticker, venue },
+        'byProductId',
+      );
+      assertSameMarketIdentity(byTicker, byProductId, 'selectors');
+      assertArrayElements(
+        byTicker.trades,
+        assertMarketTradeShape,
+        'byTicker.trades',
+      );
+      assertArrayElements(
+        byProductId.trades,
+        assertMarketTradeShape,
+        'byProductId.trades',
+      );
     });
 
     void test('lists one page of taker-side market trades', async () => {
@@ -79,6 +120,16 @@ void describe(
     });
   },
 );
+
+function assertSameMarketIdentity(
+  actual: Pick<NuanzeMarketTrade, 'productId' | 'ticker' | 'venue'>,
+  expected: Pick<NuanzeMarketTrade, 'productId' | 'ticker' | 'venue'>,
+  label: string,
+): void {
+  assert.equal(actual.productId, expected.productId, `${label}.productId`);
+  assert.equal(actual.ticker, expected.ticker, `${label}.ticker`);
+  assert.equal(actual.venue, expected.venue, `${label}.venue`);
+}
 
 function assertMarketTradeShape(trade: NuanzeMarketTrade, label: string): void {
   assertNumber(trade.id, `${label}.id`);

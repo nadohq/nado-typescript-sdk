@@ -4,6 +4,7 @@ import {
   NUANZE_OPEN_POSITION_SORT_DIRECTIONS,
   NUANZE_POSITION_SIDES,
   NuanzeMarketPosition,
+  NuanzeMarketVenue,
   NuanzeOpenPosition,
   NuanzeServerFailureError,
 } from '@nadohq/nuanze-client';
@@ -31,12 +32,80 @@ void describe(
   () => {
     let tc: RunContext;
     let ticker: string;
+    let productId: number;
+    let venue: 'perp';
 
     before(async () => {
       tc = createTestContext();
       const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
       ticker = first.ticker;
+      productId = first.productId;
+      venue = 'perp';
+    });
+
+    void test('resolves the same market positioning by ticker or productId', async () => {
+      const byTicker = await tc.nuanze.getMarketPositioning({
+        ticker,
+        venue,
+      });
+      const byProductId = await tc.nuanze.getMarketPositioning({
+        productId,
+        venue,
+      });
+      debugPrint('Market positioning by ticker selector', byTicker);
+      debugPrint('Market positioning by productId selector', byProductId);
+
+      assertSameMarketIdentity(
+        byTicker,
+        { productId, ticker, venue },
+        'byTicker',
+      );
+      assertSameMarketIdentity(
+        byProductId,
+        { productId, ticker, venue },
+        'byProductId',
+      );
+      assertSameMarketIdentity(byTicker, byProductId, 'selectors');
+      assert.equal(byTicker.groupBy, 'side');
+      assert.equal(byProductId.groupBy, 'side');
+    });
+
+    void test('resolves the same market positions by ticker or productId', async () => {
+      const byTicker = await tc.nuanze.getMarketPositions({
+        ticker,
+        venue,
+        limit: 20,
+      });
+      const byProductId = await tc.nuanze.getMarketPositions({
+        productId,
+        venue,
+        limit: 20,
+      });
+      debugPrint('Market positions by ticker selector', byTicker);
+      debugPrint('Market positions by productId selector', byProductId);
+
+      assertSameMarketIdentity(
+        byTicker,
+        { productId, ticker, venue },
+        'byTicker',
+      );
+      assertSameMarketIdentity(
+        byProductId,
+        { productId, ticker, venue },
+        'byProductId',
+      );
+      assertSameMarketIdentity(byTicker, byProductId, 'selectors');
+      assertArrayElements(
+        byTicker.positions,
+        assertMarketPositionShape,
+        'byTicker.positions',
+      );
+      assertArrayElements(
+        byProductId.positions,
+        assertMarketPositionShape,
+        'byProductId.positions',
+      );
     });
 
     void test('returns side-grouped aggregate positioning without identities', async () => {
@@ -196,6 +265,16 @@ void describe(
     });
   },
 );
+
+function assertSameMarketIdentity(
+  actual: { productId: number; ticker: string; venue: NuanzeMarketVenue },
+  expected: { productId: number; ticker: string; venue: NuanzeMarketVenue },
+  label: string,
+): void {
+  assert.equal(actual.productId, expected.productId, `${label}.productId`);
+  assert.equal(actual.ticker, expected.ticker, `${label}.ticker`);
+  assert.equal(actual.venue, expected.venue, `${label}.venue`);
+}
 
 function assertMarketPositionShape(
   position: NuanzeMarketPosition,
