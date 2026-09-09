@@ -131,6 +131,93 @@ void describe(
       );
     });
 
+    void test('resolves the same market by ticker or productId', async () => {
+      const [market] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      assert.ok(market, 'expected at least one perp market to resolve');
+
+      const byTicker = await tc.nuanze.getMarketByTicker({
+        ticker: market.ticker,
+        venue: 'perp',
+      });
+      const byProductId = await tc.nuanze.getMarketByTicker({
+        productId: market.productId,
+        venue: 'perp',
+      });
+      debugPrint('Market by ticker selector', byTicker);
+      debugPrint('Market by productId selector', byProductId);
+
+      assertSameMarketIdentity(byTicker, market, 'byTicker');
+      assertSameMarketIdentity(byProductId, market, 'byProductId');
+      assertSameMarketIdentity(byTicker, byProductId, 'selectors');
+      assertMarketShape(byTicker, 'byTicker');
+      assertMarketShape(byProductId, 'byProductId');
+    });
+
+    void test('accepts an existing ticker selector parameter shape', async () => {
+      const [market] = (await tc.nuanze.getMarkets()).markets;
+      assert.ok(market, 'expected at least one market to resolve');
+      const createSelector = (): { ticker: string; productId?: number } => ({
+        ticker: market.ticker,
+      });
+      const selector: { ticker: string; productId?: number } = createSelector();
+
+      const response = await tc.nuanze.getMarketByTicker(selector);
+
+      assert.equal(response.ticker, market.ticker);
+      assertMarketShape(response, 'market');
+    });
+
+    void test('accepts an existing productId selector parameter shape', async () => {
+      const [market] = (await tc.nuanze.getMarkets()).markets;
+      assert.ok(market, 'expected at least one market to resolve');
+      const createSelector = (): { productId: number; ticker?: string } => ({
+        productId: market.productId,
+      });
+      const selector: { productId: number; ticker?: string } = createSelector();
+
+      const response = await tc.nuanze.getMarketByTicker(selector);
+
+      assertSameMarketIdentity(response, market, 'market');
+      assertMarketShape(response, 'market');
+    });
+
+    void test('prefers productId when ticker and productId disagree', async () => {
+      const markets = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      assert.ok(
+        markets.length >= 2,
+        'expected at least two perp markets for precedence',
+      );
+      const [tickerMarket, productIdMarket] = markets;
+      assert.notEqual(
+        tickerMarket.productId,
+        productIdMarket.productId,
+        'precedence test needs distinct productIds',
+      );
+
+      const byProductId = await tc.nuanze.getMarketByTicker({
+        productId: productIdMarket.productId,
+        venue: 'perp',
+      });
+      const byPrecedence = await tc.nuanze.getMarketByTicker({
+        ticker: tickerMarket.ticker,
+        productId: productIdMarket.productId,
+        venue: 'perp',
+      });
+      debugPrint('Market by conflicting selectors', byPrecedence);
+
+      assertSameMarketIdentity(byPrecedence, byProductId, 'precedence');
+      assertSameMarketIdentity(
+        byPrecedence,
+        productIdMarket,
+        'productIdMarket',
+      );
+      assert.notEqual(
+        byPrecedence.productId,
+        tickerMarket.productId,
+        'productId should override the ticker selector',
+      );
+    });
+
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
         await tc.nuanze.getMarketByTicker({ ticker: 'NOTAREALTICKERXYZ' });
@@ -152,6 +239,16 @@ void describe(
  * Asserts the invariants a market holds regardless of market conditions. Prices move constantly, so
  * only shapes, types, and relations are checked, never exact values.
  */
+function assertSameMarketIdentity(
+  actual: Pick<NuanzeMarket, 'productId' | 'ticker' | 'venue'>,
+  expected: Pick<NuanzeMarket, 'productId' | 'ticker' | 'venue'>,
+  label: string,
+): void {
+  assert.equal(actual.productId, expected.productId, `${label}.productId`);
+  assert.equal(actual.ticker, expected.ticker, `${label}.ticker`);
+  assert.equal(actual.venue, expected.venue, `${label}.venue`);
+}
+
 function assertMarketShape(market: NuanzeMarket, label: string): void {
   assertNumber(market.productId, `${label}.productId`);
   assertNonEmptyString(market.symbol, `${label}.symbol`);

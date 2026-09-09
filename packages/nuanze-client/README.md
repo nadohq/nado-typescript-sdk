@@ -27,6 +27,27 @@ const markets = await nadoClient.context.nuanzeClient.getMarkets();
 Nuanze runs a single public deployment that serves mainnet data, so every entry in
 `NUANZE_CLIENT_ENDPOINTS` points at the same host.
 
+### Market selectors
+
+Scoped market methods (`getMarketByTicker`, `getMarketTrades`, `getMarketCandles`,
+`getMarketPositioning`, and `getMarketPositions`) require at least `ticker` or `productId`. When
+both are supplied, `productId` is used for the path segment and `ticker` is ignored.
+
+```ts
+// Ticker only (case-insensitive; canonical ticker or legacy symbol)
+const eth = await nuanze.getMarketByTicker({ ticker: 'ETH' });
+
+// Product ID only
+const ethPerp = await nuanze.getMarketByTicker({ productId: 4 });
+
+// Both: productId wins; ticker is ignored (BTC here is only illustrative)
+const candles = await nuanze.getMarketCandles({
+  ticker: 'BTC',
+  productId: 4,
+  interval: '1h',
+});
+```
+
 ## API Surface
 
 Each method maps one-to-one onto a public GET operation:

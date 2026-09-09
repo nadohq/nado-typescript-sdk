@@ -64,7 +64,8 @@ export interface NuanzeServerNewsResponse {
 }
 
 /**
- * `GET /markets/{ticker}` response as returned on the wire.
+ * `GET /markets/{ticker}` response as returned on the wire. The `{ticker}` path segment accepts a
+ * canonical ticker, legacy source symbol, or numeric product ID.
  */
 export type NuanzeServerMarketByTickerResponse = NuanzeServerMarketDetail;
 
@@ -159,7 +160,8 @@ export interface NuanzeServerWalletPositionsResponse {
 }
 
 /**
- * `GET /markets/{ticker}/trades` response as returned on the wire.
+ * `GET /markets/{ticker}/trades` response as returned on the wire. The `{ticker}` path segment
+ * accepts a canonical ticker, legacy source symbol, or numeric product ID.
  */
 export interface NuanzeServerMarketTradesResponse {
   productId: number;
@@ -172,7 +174,8 @@ export interface NuanzeServerMarketTradesResponse {
 }
 
 /**
- * `GET /markets/{ticker}/candles` response as returned on the wire.
+ * `GET /markets/{ticker}/candles` response as returned on the wire. The `{ticker}` path segment
+ * accepts a canonical ticker, legacy source symbol, or numeric product ID.
  */
 export interface NuanzeServerMarketCandlesResponse {
   productId: number;
@@ -266,7 +269,8 @@ export interface NuanzeServerCollateralFlowSeriesResponse {
 }
 
 /**
- * `GET /markets/{ticker}/positions` response as returned on the wire.
+ * `GET /markets/{ticker}/positions` response as returned on the wire. The `{ticker}` path segment
+ * accepts a canonical ticker, legacy source symbol, or numeric product ID.
  */
 export interface NuanzeServerMarketPositionsResponse {
   productId: number;

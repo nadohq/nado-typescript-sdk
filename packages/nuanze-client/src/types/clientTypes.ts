@@ -97,15 +97,35 @@ export interface GetNuanzeNewsResponse {
 }
 
 /**
- * Params for `NuanzeClient.getMarketByTicker`.
+ * Selects a market for scoped GET operations under `/markets/{ticker}`. The `{ticker}` path
+ * segment accepts a canonical ticker, legacy source symbol, or numeric product ID. At least one
+ * of `ticker` or `productId` is required. When both are supplied, `productId` is encoded as the
+ * path segment and `ticker` is ignored (neither field is sent as a query parameter).
  */
-export interface GetNuanzeMarketByTickerParams {
-  /** Case-insensitive canonical ticker or accepted legacy source symbol. */
-  ticker: string;
+export type NuanzeMarketSelector =
+  | {
+      /**
+       * Canonical ticker or legacy source symbol. Case-insensitive. Used as the path segment when
+       * `productId` is omitted; ignored when `productId` is supplied.
+       */
+      ticker: string;
+      /**
+       * Public product ID. When supplied, used as the path segment and `ticker` is ignored.
+       */
+      productId?: number;
+    }
+  | {
+      ticker?: string;
+      /** Public product ID used as the path segment. */
+      productId: number;
+    };
+
+/**
+ * Params for `NuanzeClient.getMarketByTicker`. Requires {@link NuanzeMarketSelector}.
+ */
+export type GetNuanzeMarketByTickerParams = NuanzeMarketSelector & {
   /** Restrict to one venue. Omit to use the asset's primary venue. */
   venue?: NuanzeMarketVenue;
-  /** Pin an exact product; must match ticker and venue. */
-  productId?: number;
   /**
    * When true and `venue` is omitted, reject a multi-venue canonical ticker with
    * `AMBIGUOUS_MARKET`. Default false.
@@ -113,7 +133,7 @@ export interface GetNuanzeMarketByTickerParams {
   strictVenue?: boolean;
   /** Max published stories to include, 1-30, default 12. */
   newsLimit?: number;
-}
+};
 
 /**
  * Response of `NuanzeClient.getMarketByTicker`.
@@ -356,15 +376,11 @@ export interface GetNuanzeWalletPositionsResponse {
 }
 
 /**
- * Params for `NuanzeClient.getMarketTrades`.
+ * Params for `NuanzeClient.getMarketTrades`. Requires {@link NuanzeMarketSelector}.
  */
-export interface GetNuanzeMarketTradesParams {
-  /** Case-insensitive canonical ticker or accepted legacy source symbol. */
-  ticker: string;
+export type GetNuanzeMarketTradesParams = NuanzeMarketSelector & {
   /** Restrict to one venue. Omit to use the asset's primary venue. */
   venue?: NuanzeMarketVenue;
-  /** Pin an exact product; must match ticker and venue. */
-  productId?: number;
   /**
    * When true and `venue` is omitted, reject a multi-venue canonical ticker with
    * `AMBIGUOUS_MARKET`. Default false.
@@ -378,7 +394,7 @@ export interface GetNuanzeMarketTradesParams {
   to?: string;
   /** Opaque exclusive cursor bound to the normalized filters. */
   cursor?: string;
-}
+};
 
 /**
  * Response of `NuanzeClient.getMarketTrades`.
@@ -401,15 +417,11 @@ export interface GetNuanzeMarketTradesResponse {
 }
 
 /**
- * Params for `NuanzeClient.getMarketCandles`.
+ * Params for `NuanzeClient.getMarketCandles`. Requires {@link NuanzeMarketSelector}.
  */
-export interface GetNuanzeMarketCandlesParams {
-  /** Case-insensitive canonical ticker or accepted legacy source symbol. */
-  ticker: string;
+export type GetNuanzeMarketCandlesParams = NuanzeMarketSelector & {
   /** Restrict to one venue. Omit to use the asset's primary venue. */
   venue?: NuanzeMarketVenue;
-  /** Pin an exact product; must match ticker and venue. */
-  productId?: number;
   /**
    * When true and `venue` is omitted, reject a multi-venue canonical ticker with
    * `AMBIGUOUS_MARKET`. Default false.
@@ -423,7 +435,7 @@ export interface GetNuanzeMarketCandlesParams {
   to?: string;
   /** Newest matching bars to return, 1-750, default 200. Returned oldest-to-newest. */
   limit?: number;
-}
+};
 
 /**
  * Response of `NuanzeClient.getMarketCandles`.
@@ -662,15 +674,12 @@ export interface GetNuanzeCollateralFlowSeriesResponse {
 }
 
 /**
- * Params for `NuanzeClient.getMarketPositioning`. Resolves only an active perpetual.
+ * Params for `NuanzeClient.getMarketPositioning`. Requires {@link NuanzeMarketSelector}. Resolves
+ * only an active perpetual.
  */
-export interface GetNuanzeMarketPositioningParams {
-  /** Case-insensitive canonical ticker or accepted legacy source symbol. */
-  ticker: string;
+export type GetNuanzeMarketPositioningParams = NuanzeMarketSelector & {
   /** If supplied, only `perp` is valid. */
   venue?: 'perp';
-  /** Pin an exact product; must match ticker and venue. */
-  productId?: number;
   /**
    * When true and `venue` is omitted, reject a multi-venue canonical ticker with
    * `AMBIGUOUS_MARKET`. Default false.
@@ -680,7 +689,7 @@ export interface GetNuanzeMarketPositioningParams {
   groupBy?: NuanzePositioningGroupBy;
   /** Inclusion threshold as a USD string, default `'10'`. */
   minPositionUsd?: NuanzeMinPositionUsd;
-}
+};
 
 /**
  * Response of `NuanzeClient.getMarketPositioning`. Discriminated by `groupBy`.
@@ -691,15 +700,12 @@ export type GetNuanzeMarketPositioningResponse =
   | NuanzeMarketPositioningNotionalBucketResponse;
 
 /**
- * Params for `NuanzeClient.getMarketPositions`. Resolves only an active perpetual.
+ * Params for `NuanzeClient.getMarketPositions`. Requires {@link NuanzeMarketSelector}. Resolves
+ * only an active perpetual.
  */
-export interface GetNuanzeMarketPositionsParams {
-  /** Case-insensitive canonical ticker or accepted legacy source symbol. */
-  ticker: string;
+export type GetNuanzeMarketPositionsParams = NuanzeMarketSelector & {
   /** If supplied, only `perp` is valid. */
   venue?: 'perp';
-  /** Pin an exact product; must match ticker and venue. */
-  productId?: number;
   /** Page size, 1-200, default 50. */
   limit?: number;
   /**
@@ -711,7 +717,7 @@ export interface GetNuanzeMarketPositionsParams {
   sortDirection?: NuanzeMarketPositionSortDirection;
   /** Opaque exclusive cursor bound to the resolved product. */
   cursor?: string;
-}
+};
 
 /**
  * Response of `NuanzeClient.getMarketPositions`.
