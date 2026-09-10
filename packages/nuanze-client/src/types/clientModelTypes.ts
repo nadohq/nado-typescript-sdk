@@ -833,9 +833,9 @@ export interface NuanzeMarketTrade {
 }
 
 /**
- * Fields shared by market-scoped and globally ranked open position legs.
+ * Open perpetual position leg for a resolved market. Wallet addresses are returned.
  */
-interface NuanzePositionBase {
+export interface NuanzeMarketPosition {
   /** Lowercased owner address. */
   subaccountOwner: string;
   /** Subaccount name. */
@@ -863,12 +863,6 @@ interface NuanzePositionBase {
   margin: BigNumber | null;
   /** Entry price, or null when unavailable. */
   entryPrice: BigNumber | null;
-}
-
-/**
- * Open perpetual position leg for a resolved market. Wallet addresses are returned.
- */
-export interface NuanzeMarketPosition extends NuanzePositionBase {
   /**
    * Effective isolated leverage computed from unrounded notional and isolated equity.
    * Null for cross positions or when isolated equity is unavailable.
@@ -879,7 +873,7 @@ export interface NuanzeMarketPosition extends NuanzePositionBase {
 /**
  * Current open perpetual position leg in the global signed-unrealized-PnL ranking.
  */
-export interface NuanzeOpenPosition extends NuanzePositionBase {
+export interface NuanzeOpenPosition extends NuanzeMarketPosition {
   /** Public product ID for this row's market. */
   productId: number;
   /** Canonical market ticker. */

@@ -517,6 +517,8 @@ export class NuanzeClient {
    * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
    * Private subaccounts are excluded unless `includePrivate=true`. Each row includes market
    * identity, nullable synced username and display name, and its source snapshot timestamp.
+   * Isolated positions include effective leverage computed by Nuanze; cross positions return
+   * null leverage.
    *
    * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
    * `BAD_REQUEST` when the query or cursor is invalid.

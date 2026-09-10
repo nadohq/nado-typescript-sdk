@@ -245,9 +245,9 @@ export interface NuanzeServerMarketTrade {
 }
 
 /**
- * Fields shared by market-scoped and globally ranked position legs.
+ * Per-trader market position leg as returned on the wire.
  */
-interface NuanzeServerPositionBase {
+export interface NuanzeServerMarketPosition {
   subaccountOwner: string;
   subaccountName: string;
   username: string | null;
@@ -260,19 +260,13 @@ interface NuanzeServerPositionBase {
   upnl: string;
   margin: string | null;
   entryPrice: string | null;
-}
-
-/**
- * Per-trader market position leg as returned on the wire.
- */
-export interface NuanzeServerMarketPosition extends NuanzeServerPositionBase {
   leverage: string | null;
 }
 
 /**
  * Globally ranked current open position leg as returned on the wire.
  */
-export interface NuanzeServerOpenPosition extends NuanzeServerPositionBase {
+export interface NuanzeServerOpenPosition extends NuanzeServerMarketPosition {
   productId: number;
   ticker: string;
   venue: 'perp';

@@ -282,6 +282,13 @@ function assertMarketPositionShape(
 ): void {
   assertPositionShape(position, label);
   assertPositionIdentity(position, label);
+  assertPositionLeverage(position, label);
+}
+
+function assertPositionLeverage(
+  position: NuanzeMarketPosition | NuanzeOpenPosition,
+  label: string,
+): void {
   if (position.marginKind === 'cross' || position.margin === null) {
     assert.equal(position.leverage, null, `${label}.leverage`);
   } else {
@@ -337,7 +344,7 @@ function assertOpenPositionShape(
 ): void {
   assertPositionShape(position, label);
   assertPositionIdentity(position, label);
-  assert.ok(!('leverage' in position), `${label}.leverage must be absent`);
+  assertPositionLeverage(position, label);
   assert.ok(
     Number.isSafeInteger(position.productId) && position.productId >= 0,
     `${label}.productId`,
