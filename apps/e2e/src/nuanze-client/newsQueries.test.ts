@@ -2,6 +2,7 @@ import {
   NUANZE_NEWS_ENTITY_ROLES,
   NUANZE_NEWS_EVENT_TYPES,
   NUANZE_NEWS_SENTIMENTS,
+  NuanzeClient,
   NuanzeNewsStory,
   NuanzeServerFailureError,
 } from '@nadohq/nuanze-client';
@@ -27,13 +28,17 @@ void describe(
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let tc: RunContext;
+    let newsClient: NuanzeClient;
 
     before(() => {
       tc = createTestContext();
+      newsClient = process.env.NUANZE_E2E_URL
+        ? new NuanzeClient({ url: process.env.NUANZE_E2E_URL })
+        : tc.nuanze;
     });
 
     void test('lists published stories newest first', async () => {
-      const response = await tc.nuanze.getNews({ limit: 10 });
+      const response = await newsClient.getNews({ limit: 10 });
       debugPrint('News', response);
 
       assert.match(
@@ -49,9 +54,86 @@ void describe(
       assertArrayElements(response.stories, assertNewsStoryShape, 'stories');
     });
 
+    void test('filters by ticker and productId across cursor pages', async () => {
+      const [markets, recentNews] = await Promise.all([
+        newsClient.getMarkets(),
+        newsClient.getNews({ limit: 100, tradableOnly: true }),
+      ]);
+      const storiesByProduct = new Map<number, Set<string>>();
+      for (const story of recentNews.stories) {
+        for (const entity of story.entities) {
+          if (entity.productId === null) continue;
+          const storyIds =
+            storiesByProduct.get(entity.productId) ?? new Set<string>();
+          storyIds.add(story.id);
+          storiesByProduct.set(entity.productId, storyIds);
+        }
+      }
+
+      const selectedMarket = markets.markets.find(
+        (market) => (storiesByProduct.get(market.productId)?.size ?? 0) >= 2,
+      );
+      assert.ok(
+        selectedMarket,
+        'expected a listed market with at least two recent news stories',
+      );
+
+      const assetProductIds = new Set(
+        markets.markets
+          .filter(
+            (market) =>
+              market.ticker.toLowerCase() ===
+              selectedMarket.ticker.toLowerCase(),
+          )
+          .map((market) => market.productId),
+      );
+      const tickerPage = await newsClient.getNews({
+        limit: 100,
+        ticker: selectedMarket.ticker.toLowerCase(),
+      });
+      assert.ok(tickerPage.stories.length >= 2, 'ticker feed should have news');
+      assert.ok(
+        tickerPage.stories.every((story) =>
+          storyHasProduct(story, assetProductIds),
+        ),
+        'every ticker-filtered story should reference the selected asset',
+      );
+
+      const firstPage = await newsClient.getNews({
+        limit: 1,
+        ticker: selectedMarket.ticker,
+        productId: selectedMarket.productId,
+      });
+      assert.equal(firstPage.stories.length, 1);
+      assert.ok(
+        storyHasProduct(
+          firstPage.stories[0],
+          new Set([selectedMarket.productId]),
+        ),
+        'the first page should reference the exact product',
+      );
+      assert.ok(firstPage.nextCursor, 'the first page should have a cursor');
+
+      const secondPage = await newsClient.getNews({
+        limit: 1,
+        ticker: selectedMarket.ticker,
+        productId: selectedMarket.productId,
+        cursor: firstPage.nextCursor,
+      });
+      assert.equal(secondPage.stories.length, 1);
+      assert.notEqual(secondPage.stories[0].id, firstPage.stories[0].id);
+      assert.ok(
+        storyHasProduct(
+          secondPage.stories[0],
+          new Set([selectedMarket.productId]),
+        ),
+        'the second page should retain the exact product filter',
+      );
+    });
+
     void test('rejects an unknown sentiment with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getNews({
+        await newsClient.getNews({
           sentiment: 'euphoric' as (typeof NUANZE_NEWS_SENTIMENTS)[number],
         });
         assert.fail('expected BAD_REQUEST for an unknown sentiment');
@@ -67,6 +149,15 @@ void describe(
     });
   },
 );
+
+function storyHasProduct(
+  story: NuanzeNewsStory,
+  productIds: ReadonlySet<number>,
+): boolean {
+  return story.entities.some(
+    (entity) => entity.productId !== null && productIds.has(entity.productId),
+  );
+}
 
 function assertNewsStoryShape(story: NuanzeNewsStory, label: string): void {
   assertNonEmptyString(story.id, `${label}.id`);

@@ -281,6 +281,20 @@ function assertMarketPositionShape(
   label: string,
 ): void {
   assertPositionShape(position, label);
+  assertPositionIdentity(position, label);
+  if (position.marginKind === 'cross' || position.margin === null) {
+    assert.equal(position.leverage, null, `${label}.leverage`);
+  } else {
+    assert.ok(position.leverage !== null, `${label}.leverage`);
+    assertBigNumberFinite(position.leverage, `${label}.leverage`);
+    assert.ok(position.leverage.gt(0), `${label}.leverage must be positive`);
+  }
+}
+
+function assertPositionIdentity(
+  position: NuanzeMarketPosition | NuanzeOpenPosition,
+  label: string,
+): void {
   if (position.username !== null) {
     assertString(position.username, `${label}.username`);
   }
@@ -290,7 +304,7 @@ function assertMarketPositionShape(
 }
 
 function assertPositionShape(
-  position: Omit<NuanzeMarketPosition, 'username' | 'displayName'>,
+  position: NuanzeMarketPosition | NuanzeOpenPosition,
   label: string,
 ): void {
   assert.match(
@@ -321,7 +335,9 @@ function assertOpenPositionShape(
   position: NuanzeOpenPosition,
   label: string,
 ): void {
-  assertMarketPositionShape(position, label);
+  assertPositionShape(position, label);
+  assertPositionIdentity(position, label);
+  assert.ok(!('leverage' in position), `${label}.leverage must be absent`);
   assert.ok(
     Number.isSafeInteger(position.productId) && position.productId >= 0,
     `${label}.productId`,
