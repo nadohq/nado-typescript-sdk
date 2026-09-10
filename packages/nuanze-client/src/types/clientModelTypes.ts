@@ -863,6 +863,11 @@ export interface NuanzeMarketPosition {
   margin: BigNumber | null;
   /** Entry price, or null when unavailable. */
   entryPrice: BigNumber | null;
+  /**
+   * Effective isolated leverage computed from unrounded notional and isolated equity.
+   * Null for cross positions or when isolated equity is unavailable.
+   */
+  leverage: BigNumber | null;
 }
 
 /**

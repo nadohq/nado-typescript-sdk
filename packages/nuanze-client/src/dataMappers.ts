@@ -866,14 +866,16 @@ export function mapNuanzeMarketPositioningResponse(
 }
 
 /**
- * Maps fields shared by per-market and globally ranked position legs.
+ * Maps a server-side market position leg, including its synced identity.
  */
-function mapNuanzePositionBase(
-  server: Omit<NuanzeServerMarketPosition, 'username' | 'displayName'>,
-): Omit<NuanzeMarketPosition, 'username' | 'displayName'> {
+export function mapNuanzeMarketPosition(
+  server: NuanzeServerMarketPosition,
+): NuanzeMarketPosition {
   return {
     subaccountOwner: server.subaccountOwner,
     subaccountName: server.subaccountName,
+    username: server.username,
+    displayName: server.displayName,
     symbol: server.symbol,
     marginKind: server.marginKind,
     side: server.side,
@@ -882,19 +884,7 @@ function mapNuanzePositionBase(
     upnl: toBigNumber(server.upnl),
     margin: mapNuanzeDecimal(server.margin),
     entryPrice: mapNuanzeDecimal(server.entryPrice),
-  };
-}
-
-/**
- * Maps a server-side market position leg, including its synced identity.
- */
-export function mapNuanzeMarketPosition(
-  server: NuanzeServerMarketPosition,
-): NuanzeMarketPosition {
-  return {
-    ...mapNuanzePositionBase(server),
-    username: server.username,
-    displayName: server.displayName,
+    leverage: mapNuanzeDecimal(server.leverage),
   };
 }
 

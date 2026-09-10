@@ -260,6 +260,7 @@ export interface NuanzeServerMarketPosition {
   upnl: string;
   margin: string | null;
   entryPrice: string | null;
+  leverage: string | null;
 }
 
 /**

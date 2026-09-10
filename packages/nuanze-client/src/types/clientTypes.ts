@@ -74,6 +74,13 @@ export interface GetNuanzeMarketsResponse {
 export interface GetNuanzeNewsParams {
   /** Page size, 1-100, default 30. */
   limit?: number;
+  /**
+   * Exact canonical ticker, matched case-insensitively across every product for the asset. Spot
+   * and perpetual markets are not distinguished. When productId is also supplied, both must match.
+   */
+  ticker?: string;
+  /** Exact public product ID. When ticker is also supplied, both filters must match. */
+  productId?: number;
   /** Restrict to one sentiment. */
   sentiment?: NuanzeNewsSentiment;
   /** Restrict to one event type. */

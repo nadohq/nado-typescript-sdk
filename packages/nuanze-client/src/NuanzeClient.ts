@@ -131,8 +131,10 @@ export class NuanzeClient {
 
   /**
    * Lists published editorial stories, sorted by `publishedAt` descending then `id` descending.
-   * The opaque cursor is exclusive and bound to normalized filters. Raw article ingestion, scoring,
-   * queue, and newsdesk fields are excluded.
+   * Ticker filters include every product for the asset without distinguishing spot from perpetual
+   * markets; an optional product ID narrows to one exact product. The opaque cursor is exclusive
+   * and bound to normalized filters. Raw article ingestion, scoring, queue, and newsdesk fields are
+   * excluded.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
    * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
@@ -491,6 +493,8 @@ export class NuanzeClient {
    * can be ordered by signed unrealized PnL or absolute base amount in either direction. Spot
    * markets are not supported. Legs below $10 absolute notional are excluded. Wallet addresses,
    * nullable synced usernames and display names, and signed exact base amounts are returned.
+   * Isolated positions include effective leverage computed by Nuanze; cross positions return
+   * null leverage.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET`, `INVALID_CURSOR`,
    * `CURSOR_FILTER_MISMATCH`, or `BAD_REQUEST` on invalid input, and `MARKET_NOT_FOUND` when the
@@ -513,6 +517,8 @@ export class NuanzeClient {
    * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
    * Private subaccounts are excluded unless `includePrivate=true`. Each row includes market
    * identity, nullable synced username and display name, and its source snapshot timestamp.
+   * Isolated positions include effective leverage computed by Nuanze; cross positions return
+   * null leverage.
    *
    * @throws {NuanzeServerFailureError} With `INVALID_CURSOR`, `CURSOR_FILTER_MISMATCH`, or
    * `BAD_REQUEST` when the query or cursor is invalid.
