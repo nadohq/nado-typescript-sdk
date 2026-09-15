@@ -17,6 +17,7 @@ import {
 } from '@nadohq/shared';
 import {
   Candlestick,
+  GetIndexerPortfolioCalendarResponse,
   GetIndexerPortfolioResponse,
   IndexerEvent,
   IndexerEventWithTx,
@@ -32,6 +33,7 @@ import {
   IndexerOrder,
   IndexerPerpBalance,
   IndexerPerpPrices,
+  IndexerPortfolioCalendarDay,
   IndexerPortfolioPoint,
   IndexerPosition,
   IndexerProductPayment,
@@ -49,6 +51,8 @@ import {
   IndexerServerNlpSnapshot,
   IndexerServerOrder,
   IndexerServerPerpPrices,
+  IndexerServerPortfolioCalendarDay,
+  IndexerServerPortfolioCalendarResponse,
   IndexerServerPortfolioPoint,
   IndexerServerPortfolioResponse,
   IndexerServerPosition,
@@ -323,6 +327,27 @@ export function mapIndexerPortfolio(
       },
     ]),
   ) as GetIndexerPortfolioResponse;
+}
+
+function mapIndexerPortfolioCalendarDay(
+  day: IndexerServerPortfolioCalendarDay,
+): IndexerPortfolioCalendarDay {
+  return {
+    date: toBigNumber(day.date),
+    pnl: toBigNumber(day.pnl),
+    volume: toBigNumber(day.volume),
+    tradeCount: toBigNumber(day.tradeCount),
+    productIds: day.productIds,
+  };
+}
+
+export function mapIndexerPortfolioCalendar(
+  response: IndexerServerPortfolioCalendarResponse,
+): GetIndexerPortfolioCalendarResponse {
+  return {
+    spot: response.spot.map(mapIndexerPortfolioCalendarDay),
+    perp: response.perp.map(mapIndexerPortfolioCalendarDay),
+  };
 }
 
 export function mapIndexerMakerStatistics(
