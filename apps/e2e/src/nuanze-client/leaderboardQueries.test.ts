@@ -1,7 +1,6 @@
 import {
   GetNuanzeSubaccountLeaderboardResponse,
   NUANZE_LEADERBOARD_TIMEFRAMES,
-  NuanzeClient,
   NuanzeFollowedLeaderboardItem,
   NuanzeLeaderboardItem,
   NuanzeLeaderboardTimeframe,
@@ -29,22 +28,15 @@ import { RunContext } from '../utils/types';
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX =
   '0xfbf4b6bfbe15db2ee1a6a22755808896e8d986a364656661756c740000000000';
-const VIEWAS_ENDPOINT_SKIP = process.env.NUANZE_E2E_URL
-  ? false
-  : 'requires NUANZE_E2E_URL until leaderboard viewAs is deployed';
 
 void describe(
   '[nuanze-client]: leaderboard',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
-    let leaderboardClient: NuanzeClient;
+    let leaderboardClient: RunContext['nuanze'];
 
     before(() => {
-      tc = createTestContext();
-      leaderboardClient = process.env.NUANZE_E2E_URL
-        ? new NuanzeClient({ url: process.env.NUANZE_E2E_URL })
-        : tc.nuanze;
+      leaderboardClient = createTestContext().nuanze;
     });
 
     void test('returns a ranked page of account PnL', async () => {
@@ -345,189 +337,155 @@ void describe(
       }
     });
 
-    void test(
-      'returns a ranked wallet viewer inline via viewAs',
-      { skip: VIEWAS_ENDPOINT_SKIP },
-      async () => {
-        const collection = await leaderboardClient.getLeaderboard({
-          timeframe: '30d',
-          limit: 10,
-        });
-        const expected = collection.items[0];
-        assert.ok(expected, 'leaderboard should contain a wallet');
+    void test('returns a ranked wallet viewer inline via viewAs', async () => {
+      const collection = await leaderboardClient.getLeaderboard({
+        timeframe: '30d',
+        limit: 10,
+      });
+      const expected = collection.items[0];
+      assert.ok(expected, 'leaderboard should contain a wallet');
 
-        // A small limit plus a nonzero offset proves the viewer lookup is
-        // independent of pagination.
-        const response = await leaderboardClient.getLeaderboard({
+      // A small limit plus a nonzero offset proves the viewer lookup is
+      // independent of pagination.
+      const response = await leaderboardClient.getLeaderboard({
+        timeframe: '30d',
+        limit: 1,
+        offset: 5,
+        viewAs: expected.address,
+      });
+      debugPrint('Leaderboard viewAs viewer', response.viewer);
+
+      assert.ok(response.viewer, 'viewAs wallet should have a ranked viewer');
+      assertLeaderboardItemShape(response.viewer, 'viewer');
+      assert.equal(response.viewer.address, expected.address);
+      assert.equal(response.viewer.rank, expected.rank);
+    });
+
+    void test('returns a ranked subaccount viewer inline via viewAs', async () => {
+      const params = {
+        timeframe: '30d' as const,
+        limit: 10,
+        includePrivate: true,
+        includeUntraded: false,
+        includeUnclaimed: true,
+      };
+      const collection =
+        await leaderboardClient.getSubaccountLeaderboard(params);
+      const expected = collection.items[0];
+      assert.ok(expected, 'subaccount leaderboard should contain an item');
+
+      const response = await leaderboardClient.getSubaccountLeaderboard({
+        ...params,
+        viewAs: expected.subaccountHex,
+      });
+      debugPrint('Subaccount leaderboard viewAs viewer', response.viewer);
+
+      assert.ok(
+        response.viewer,
+        'viewAs subaccount should have a ranked viewer',
+      );
+      assert.equal(response.viewer.filteredRank, 1);
+      assert.ok(response.viewer.item, 'viewer should include the full item');
+      assertSubaccountLeaderboardItemShape(response.viewer.item, 'viewer.item');
+      assert.notEqual(
+        response.viewer.item.pnl,
+        null,
+        'traded viewer item should have PnL',
+      );
+      assert.equal(response.viewer.item.subaccountHex, expected.subaccountHex);
+      assert.equal(response.viewer.item.globalRank, expected.globalRank);
+    });
+
+    void test('keeps a full unclaimed viewer item when its filtered rank is excluded', async (context) => {
+      const collection = await leaderboardClient.getSubaccountLeaderboard({
+        timeframe: '30d',
+        limit: 200,
+        includePrivate: true,
+        includeUntraded: false,
+        includeUnclaimed: true,
+      });
+      const expected = collection.items.find((item) => item.username === null);
+      if (!expected) {
+        context.skip('dataset has no traded unclaimed subaccount');
+        return;
+      }
+
+      const response = await leaderboardClient.getSubaccountLeaderboard({
+        timeframe: '30d',
+        limit: 10,
+        includePrivate: true,
+        includeUntraded: false,
+        includeUnclaimed: false,
+        viewAs: expected.subaccountHex,
+      });
+      debugPrint('Filtered subaccount leaderboard viewer', response.viewer);
+
+      assert.ok(response.viewer, 'viewer should remain available');
+      assert.equal(response.viewer.filteredRank, null);
+      assert.ok(response.viewer.item, 'source item should remain available');
+      assertSubaccountLeaderboardItemShape(response.viewer.item, 'viewer.item');
+      assert.notEqual(
+        response.viewer.item.pnl,
+        null,
+        'traded viewer item should have PnL',
+      );
+      assert.equal(response.viewer.item.subaccountHex, expected.subaccountHex);
+      assert.equal(response.viewer.item.globalRank, expected.globalRank);
+    });
+
+    void test('returns a null viewer for absent public identifiers', async () => {
+      const [wallet, subaccount] = await Promise.all([
+        leaderboardClient.getLeaderboard({
           timeframe: '30d',
           limit: 1,
-          offset: 5,
-          viewAs: expected.address,
-        });
-        debugPrint('Leaderboard viewAs viewer', response.viewer);
-
-        assert.ok(response.viewer, 'viewAs wallet should have a ranked viewer');
-        assertLeaderboardItemShape(response.viewer, 'viewer');
-        assert.equal(response.viewer.address, expected.address);
-        assert.equal(response.viewer.rank, expected.rank);
-      },
-    );
-
-    void test(
-      'returns a ranked subaccount viewer inline via viewAs',
-      { skip: VIEWAS_ENDPOINT_SKIP },
-      async () => {
-        const params = {
-          timeframe: '30d' as const,
-          limit: 10,
+          viewAs: '0x000000000000000000000000000000000000dead',
+        }),
+        leaderboardClient.getSubaccountLeaderboard({
+          timeframe: '30d',
+          limit: 1,
           includePrivate: true,
-          includeUntraded: false,
+          includeUntraded: true,
           includeUnclaimed: true,
-        };
-        const collection =
-          await leaderboardClient.getSubaccountLeaderboard(params);
-        const expected = collection.items[0];
-        assert.ok(expected, 'subaccount leaderboard should contain an item');
+          viewAs:
+            '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        }),
+      ]);
 
-        const response = await leaderboardClient.getSubaccountLeaderboard({
-          ...params,
-          viewAs: expected.subaccountHex,
+      assert.equal(wallet.viewer, null);
+      assert.equal(subaccount.viewer, null);
+    });
+
+    void test('rejects malformed viewAs identifiers', async () => {
+      try {
+        await leaderboardClient.getLeaderboard({
+          viewAs: 'not-an-address',
         });
-        debugPrint('Subaccount leaderboard viewAs viewer', response.viewer);
-
+        assert.fail('expected INVALID_ADDRESS for a malformed viewAs');
+      } catch (error) {
         assert.ok(
-          response.viewer,
-          'viewAs subaccount should have a ranked viewer',
+          error instanceof NuanzeServerFailureError,
+          'should throw NuanzeServerFailureError',
         );
-        assert.equal(response.viewer.filteredRank, 1);
-        assert.ok(response.viewer.item, 'viewer should include the full item');
-        assertSubaccountLeaderboardItemShape(
-          response.viewer.item,
-          'viewer.item',
-        );
-        assert.notEqual(
-          response.viewer.item.pnl,
-          null,
-          'traded viewer item should have PnL',
-        );
-        assert.equal(
-          response.viewer.item.subaccountHex,
-          expected.subaccountHex,
-        );
-        assert.equal(response.viewer.item.globalRank, expected.globalRank);
-      },
-    );
+        assert.equal(error.errorCode, 'INVALID_ADDRESS');
+        assert.equal(error.httpStatus, 400);
+        assertNonEmptyString(error.requestId, 'error.requestId');
+      }
 
-    void test(
-      'keeps a full unclaimed viewer item when its filtered rank is excluded',
-      { skip: VIEWAS_ENDPOINT_SKIP },
-      async (context) => {
-        const collection = await leaderboardClient.getSubaccountLeaderboard({
-          timeframe: '30d',
-          limit: 200,
-          includePrivate: true,
-          includeUntraded: false,
-          includeUnclaimed: true,
+      try {
+        await leaderboardClient.getSubaccountLeaderboard({
+          viewAs: 'not-a-subaccount',
         });
-        const expected = collection.items.find(
-          (item) => item.username === null,
+        assert.fail('expected INVALID_SUBACCOUNT for a malformed viewAs');
+      } catch (error) {
+        assert.ok(
+          error instanceof NuanzeServerFailureError,
+          'should throw NuanzeServerFailureError',
         );
-        if (!expected) {
-          context.skip('dataset has no traded unclaimed subaccount');
-          return;
-        }
-
-        const response = await leaderboardClient.getSubaccountLeaderboard({
-          timeframe: '30d',
-          limit: 10,
-          includePrivate: true,
-          includeUntraded: false,
-          includeUnclaimed: false,
-          viewAs: expected.subaccountHex,
-        });
-        debugPrint('Filtered subaccount leaderboard viewer', response.viewer);
-
-        assert.ok(response.viewer, 'viewer should remain available');
-        assert.equal(response.viewer.filteredRank, null);
-        assert.ok(response.viewer.item, 'source item should remain available');
-        assertSubaccountLeaderboardItemShape(
-          response.viewer.item,
-          'viewer.item',
-        );
-        assert.notEqual(
-          response.viewer.item.pnl,
-          null,
-          'traded viewer item should have PnL',
-        );
-        assert.equal(
-          response.viewer.item.subaccountHex,
-          expected.subaccountHex,
-        );
-        assert.equal(response.viewer.item.globalRank, expected.globalRank);
-      },
-    );
-
-    void test(
-      'returns a null viewer for absent public identifiers',
-      { skip: VIEWAS_ENDPOINT_SKIP },
-      async () => {
-        const [wallet, subaccount] = await Promise.all([
-          leaderboardClient.getLeaderboard({
-            timeframe: '30d',
-            limit: 1,
-            viewAs: '0x000000000000000000000000000000000000dead',
-          }),
-          leaderboardClient.getSubaccountLeaderboard({
-            timeframe: '30d',
-            limit: 1,
-            includePrivate: true,
-            includeUntraded: true,
-            includeUnclaimed: true,
-            viewAs:
-              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          }),
-        ]);
-
-        assert.equal(wallet.viewer, null);
-        assert.equal(subaccount.viewer, null);
-      },
-    );
-
-    void test(
-      'rejects malformed viewAs identifiers',
-      { skip: VIEWAS_ENDPOINT_SKIP },
-      async () => {
-        try {
-          await leaderboardClient.getLeaderboard({
-            viewAs: 'not-an-address',
-          });
-          assert.fail('expected INVALID_ADDRESS for a malformed viewAs');
-        } catch (error) {
-          assert.ok(
-            error instanceof NuanzeServerFailureError,
-            'should throw NuanzeServerFailureError',
-          );
-          assert.equal(error.errorCode, 'INVALID_ADDRESS');
-          assert.equal(error.httpStatus, 400);
-          assertNonEmptyString(error.requestId, 'error.requestId');
-        }
-
-        try {
-          await leaderboardClient.getSubaccountLeaderboard({
-            viewAs: 'not-a-subaccount',
-          });
-          assert.fail('expected INVALID_SUBACCOUNT for a malformed viewAs');
-        } catch (error) {
-          assert.ok(
-            error instanceof NuanzeServerFailureError,
-            'should throw NuanzeServerFailureError',
-          );
-          assert.equal(error.errorCode, 'INVALID_SUBACCOUNT');
-          assert.equal(error.httpStatus, 400);
-          assertNonEmptyString(error.requestId, 'error.requestId');
-        }
-      },
-    );
+        assert.equal(error.errorCode, 'INVALID_SUBACCOUNT');
+        assert.equal(error.httpStatus, 400);
+        assertNonEmptyString(error.requestId, 'error.requestId');
+      }
+    });
   },
 );
 
