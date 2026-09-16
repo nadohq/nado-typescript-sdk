@@ -1,6 +1,7 @@
 import {
   GetNuanzeSubaccountLeaderboardResponse,
   NUANZE_LEADERBOARD_TIMEFRAMES,
+  NuanzeClient,
   NuanzeFollowedLeaderboardItem,
   NuanzeLeaderboardItem,
   NuanzeLeaderboardTimeframe,
@@ -28,19 +29,26 @@ import { RunContext } from '../utils/types';
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX =
   '0xfbf4b6bfbe15db2ee1a6a22755808896e8d986a364656661756c740000000000';
+const POSITION_ENDPOINT_SKIP = process.env.NUANZE_E2E_URL
+  ? false
+  : 'requires NUANZE_E2E_URL until leaderboard position endpoints are deployed';
 
 void describe(
   '[nuanze-client]: leaderboard',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let tc: RunContext;
+    let leaderboardClient: NuanzeClient;
 
     before(() => {
       tc = createTestContext();
+      leaderboardClient = process.env.NUANZE_E2E_URL
+        ? new NuanzeClient({ url: process.env.NUANZE_E2E_URL })
+        : tc.nuanze;
     });
 
     void test('returns a ranked page of account PnL', async () => {
-      const response = await tc.nuanze.getLeaderboard({
+      const response = await leaderboardClient.getLeaderboard({
         timeframe: '30d',
         limit: 10,
         offset: 1,
@@ -79,7 +87,7 @@ void describe(
 
     void test('rejects an unknown timeframe with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getLeaderboard({
+        await leaderboardClient.getLeaderboard({
           timeframe: '90d' as NuanzeLeaderboardTimeframe,
         });
         assert.fail('expected BAD_REQUEST for an unknown timeframe');
@@ -97,12 +105,12 @@ void describe(
     void test('applies public subaccount filters and orders rows by PnL', async () => {
       const params = { timeframe: '24h' as const, limit: 10 };
       const [filtered, withPrivate, withUntraded] = await Promise.all([
-        tc.nuanze.getSubaccountLeaderboard(params),
-        tc.nuanze.getSubaccountLeaderboard({
+        leaderboardClient.getSubaccountLeaderboard(params),
+        leaderboardClient.getSubaccountLeaderboard({
           ...params,
           includePrivate: true,
         }),
-        tc.nuanze.getSubaccountLeaderboard({
+        leaderboardClient.getSubaccountLeaderboard({
           ...params,
           includeUntraded: true,
         }),
@@ -139,12 +147,12 @@ void describe(
         includePrivate: true,
         includeUntraded: true,
       };
-      const first = await tc.nuanze.getSubaccountLeaderboard(params);
+      const first = await leaderboardClient.getSubaccountLeaderboard(params);
       const { nextCursor } = first;
       assertNonEmptyString(nextCursor, 'first.nextCursor');
       assert.ok(nextCursor !== null);
 
-      const second = await tc.nuanze.getSubaccountLeaderboard({
+      const second = await leaderboardClient.getSubaccountLeaderboard({
         ...params,
         cursor: nextCursor,
       });
@@ -164,7 +172,7 @@ void describe(
     });
 
     void test('rejects a subaccount cursor reused with changed filters', async () => {
-      const first = await tc.nuanze.getSubaccountLeaderboard({
+      const first = await leaderboardClient.getSubaccountLeaderboard({
         timeframe: '7d',
         limit: 2,
         includePrivate: true,
@@ -179,7 +187,7 @@ void describe(
       ];
       for (const filters of changedFilters) {
         try {
-          await tc.nuanze.getSubaccountLeaderboard({
+          await leaderboardClient.getSubaccountLeaderboard({
             timeframe: '7d',
             limit: 2,
             cursor: nextCursor,
@@ -200,14 +208,14 @@ void describe(
 
     void test('returns followed accounts sorted by PnL and applies the traded filter', async () => {
       const [inclusive, tradedOnly] = await Promise.all([
-        tc.nuanze.getFollowedLeaderboard({
+        leaderboardClient.getFollowedLeaderboard({
           subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includeUntraded: true,
           includePrivate: true,
           limit: 2,
         }),
-        tc.nuanze.getFollowedLeaderboard({
+        leaderboardClient.getFollowedLeaderboard({
           subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includeUntraded: false,
@@ -260,7 +268,7 @@ void describe(
 
     void test('forwards followed leaderboard cursors for server validation', async () => {
       try {
-        await tc.nuanze.getFollowedLeaderboard({
+        await leaderboardClient.getFollowedLeaderboard({
           subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '30d',
           cursor: 'not-a-followed-leaderboard-cursor',
@@ -279,7 +287,7 @@ void describe(
 
     void test('forwards followed leaderboard filters for server validation', async () => {
       try {
-        await tc.nuanze.getFollowedLeaderboard({
+        await leaderboardClient.getFollowedLeaderboard({
           subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includeUntraded: 'invalid' as unknown as boolean,
@@ -300,7 +308,7 @@ void describe(
 
     void test('forwards followed leaderboard private visibility for server validation', async () => {
       try {
-        await tc.nuanze.getFollowedLeaderboard({
+        await leaderboardClient.getFollowedLeaderboard({
           subaccountHex: FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX,
           timeframe: '24h',
           includePrivate: 'invalid' as unknown as boolean,
@@ -319,7 +327,7 @@ void describe(
 
     void test('rejects a malformed follower subaccount hex', async () => {
       try {
-        await tc.nuanze.getFollowedLeaderboard({
+        await leaderboardClient.getFollowedLeaderboard({
           subaccountHex: 'not-a-subaccount',
           timeframe: '24h',
         });
@@ -336,6 +344,135 @@ void describe(
         assertNonEmptyString(error.requestId, 'error.requestId');
       }
     });
+
+    void test(
+      'gets a full wallet leaderboard item derived from the collection',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        const collection = await leaderboardClient.getLeaderboard({
+          timeframe: '30d',
+          limit: 10,
+        });
+        const expected = collection.items[0];
+        assert.ok(expected, 'leaderboard should contain a wallet');
+
+        const response = await leaderboardClient.getWalletLeaderboardPosition({
+          address: expected.address,
+          timeframe: '30d',
+        });
+        debugPrint('Wallet leaderboard position', response);
+
+        assert.equal(response.timeframe, '30d');
+        assert.match(response.asOf, ISO_UTC);
+        assert.ok(response.item, 'derived wallet should have a ranked item');
+        assertLeaderboardItemShape(response.item, 'item');
+        assert.equal(response.item.address, expected.address);
+        assert.equal(response.item.rank, expected.rank);
+      },
+    );
+
+    void test(
+      'gets a full subaccount item and filtered rank derived from the collection',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        const params = {
+          timeframe: '30d' as const,
+          limit: 10,
+          includePrivate: true,
+          includeUntraded: false,
+          includeUnclaimed: true,
+        };
+        const collection =
+          await leaderboardClient.getSubaccountLeaderboard(params);
+        const expected = collection.items[0];
+        assert.ok(expected, 'subaccount leaderboard should contain an item');
+
+        const response =
+          await leaderboardClient.getSubaccountLeaderboardPosition({
+            subaccountHex: expected.subaccountHex,
+            timeframe: params.timeframe,
+            includePrivate: params.includePrivate,
+            includeUntraded: params.includeUntraded,
+            includeUnclaimed: params.includeUnclaimed,
+          });
+        debugPrint('Subaccount leaderboard position', response);
+
+        assert.equal(response.timeframe, params.timeframe);
+        assert.match(response.asOf, ISO_UTC);
+        assert.equal(response.filteredRank, 1);
+        assert.ok(
+          response.item,
+          'derived subaccount should have a ranked item',
+        );
+        assertSubaccountLeaderboardItemShape(response.item, 'item');
+        assert.notEqual(response.item.pnl, null, 'traded item should have PnL');
+        assert.equal(response.item.subaccountHex, expected.subaccountHex);
+        assert.equal(response.item.globalRank, expected.globalRank);
+      },
+    );
+
+    void test(
+      'keeps a full unclaimed item when its filtered rank is excluded',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async (context) => {
+        const collection = await leaderboardClient.getSubaccountLeaderboard({
+          timeframe: '30d',
+          limit: 200,
+          includePrivate: true,
+          includeUntraded: false,
+          includeUnclaimed: true,
+        });
+        const expected = collection.items.find(
+          (item) => item.username === null,
+        );
+        if (!expected) {
+          context.skip('dataset has no traded unclaimed subaccount');
+          return;
+        }
+
+        const response =
+          await leaderboardClient.getSubaccountLeaderboardPosition({
+            subaccountHex: expected.subaccountHex,
+            timeframe: '30d',
+            includePrivate: true,
+            includeUntraded: false,
+            includeUnclaimed: false,
+          });
+        debugPrint('Filtered subaccount leaderboard position', response);
+
+        assert.equal(response.filteredRank, null);
+        assert.ok(response.item, 'source item should remain available');
+        assertSubaccountLeaderboardItemShape(response.item, 'item');
+        assert.notEqual(response.item.pnl, null, 'traded item should have PnL');
+        assert.equal(response.item.subaccountHex, expected.subaccountHex);
+        assert.equal(response.item.globalRank, expected.globalRank);
+      },
+    );
+
+    void test(
+      'returns nullable position responses for absent public identifiers',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        const [wallet, subaccount] = await Promise.all([
+          leaderboardClient.getWalletLeaderboardPosition({
+            address: '0x000000000000000000000000000000000000dead',
+            timeframe: '30d',
+          }),
+          leaderboardClient.getSubaccountLeaderboardPosition({
+            subaccountHex:
+              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            timeframe: '30d',
+            includePrivate: true,
+            includeUntraded: true,
+            includeUnclaimed: true,
+          }),
+        ]);
+
+        assert.equal(wallet.item, null);
+        assert.equal(subaccount.item, null);
+        assert.equal(subaccount.filteredRank, null);
+      },
+    );
   },
 );
 

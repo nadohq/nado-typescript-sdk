@@ -697,7 +697,7 @@ export interface NuanzeFollowedLeaderboardItem {
 }
 
 /**
- * Username-claimed subaccount row from `GET /leaderboard/subaccounts`.
+ * Public subaccount row from `GET /leaderboard/subaccounts`.
  */
 export interface NuanzeSubaccountLeaderboardItem {
   /**

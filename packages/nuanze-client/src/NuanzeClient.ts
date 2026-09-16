@@ -15,7 +15,9 @@ import {
   mapNuanzeNewsResponse,
   mapNuanzeOpenPositionsResponse,
   mapNuanzePlatformSummaryResponse,
+  mapNuanzeSubaccountLeaderboardPositionResponse,
   mapNuanzeSubaccountLeaderboardResponse,
+  mapNuanzeWalletLeaderboardPositionResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
   mapNuanzeWalletPositionsResponse,
@@ -54,7 +56,11 @@ import {
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
   GetNuanzeSubaccountLeaderboardParams,
+  GetNuanzeSubaccountLeaderboardPositionParams,
+  GetNuanzeSubaccountLeaderboardPositionResponse,
   GetNuanzeSubaccountLeaderboardResponse,
+  GetNuanzeWalletLeaderboardPositionParams,
+  GetNuanzeWalletLeaderboardPositionResponse,
   GetNuanzeWalletPnlParams,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesParams,
@@ -84,7 +90,9 @@ import {
   NuanzeServerNewsResponse,
   NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
+  NuanzeServerSubaccountLeaderboardPositionResponse,
   NuanzeServerSubaccountLeaderboardResponse,
+  NuanzeServerWalletLeaderboardPositionResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
   NuanzeServerWalletPositionsResponse,
@@ -216,6 +224,26 @@ export class NuanzeClient {
   }
 
   /**
+   * Gets one explicitly identified public wallet's full leaderboard source row for the selected
+   * timeframe. Returns `item: null` only when no source row exists for the wallet. This public GET
+   * requires no authentication.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` or `INVALID_ADDRESS` when params are
+   * invalid.
+   */
+  async getWalletLeaderboardPosition(
+    params: GetNuanzeWalletLeaderboardPositionParams,
+  ): Promise<GetNuanzeWalletLeaderboardPositionResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletLeaderboardPositionResponse(
+      await this.getJson<NuanzeServerWalletLeaderboardPositionResponse>(
+        `/leaderboard/wallets/${encodeURIComponent(address)}`,
+        query,
+      ),
+    );
+  }
+
+  /**
    * Gets the global public leaderboard of subaccounts. Results are sorted by equity-basis account
    * PnL descending with nulls last. Username and display name are null when unavailable.
    * `globalRank` is independent of the active privacy and trading filters. Pagination uses a
@@ -231,6 +259,28 @@ export class NuanzeClient {
       await this.getJson<NuanzeServerSubaccountLeaderboardResponse>(
         '/leaderboard/subaccounts',
         params,
+      ),
+    );
+  }
+
+  /**
+   * Gets one explicitly identified public subaccount's full leaderboard source row and rank within
+   * the population defined by the privacy, trading, and username-claim filters. An existing source
+   * row remains in `item`, including its `globalRank`, when excluded from that population; only
+   * `filteredRank` becomes null. `item` is null only when no source row exists. This public GET
+   * requires no authentication.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` or `INVALID_SUBACCOUNT` when params are
+   * invalid.
+   */
+  async getSubaccountLeaderboardPosition(
+    params: GetNuanzeSubaccountLeaderboardPositionParams,
+  ): Promise<GetNuanzeSubaccountLeaderboardPositionResponse> {
+    const { subaccountHex, ...query } = params;
+    return mapNuanzeSubaccountLeaderboardPositionResponse(
+      await this.getJson<NuanzeServerSubaccountLeaderboardPositionResponse>(
+        `/leaderboard/subaccounts/${encodeURIComponent(subaccountHex)}`,
+        query,
       ),
     );
   }

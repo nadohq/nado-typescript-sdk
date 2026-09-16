@@ -2,7 +2,8 @@
 
 HTTP client for the Nuanze public analytics API. Serves markets, wallets, trades, candles, collateral flows,
 positioning, and globally ranked current open positions. Read-only and credential-free, so unlike the other
-service clients it takes no wallet client or linked signer.
+service clients it takes no wallet client or linked signer. Leaderboard position lookups take explicit public
+wallet or bytes32 subaccount identifiers and require no authentication.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -57,7 +58,9 @@ Each method maps one-to-one onto a public GET operation:
 - `getMarketByTicker`
 - `getFundingRates`
 - `getLeaderboard`
+- `getWalletLeaderboardPosition`
 - `getSubaccountLeaderboard`
+- `getSubaccountLeaderboardPosition`
 - `getPlatformSummary`
 - `getFollowedLeaderboard`
 - `getWalletSummary`
@@ -75,6 +78,10 @@ Each method maps one-to-one onto a public GET operation:
 - `getOpenPositions`
 
 Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, matching the API contract.
+Leaderboard position responses return `item: null` only when no leaderboard source row exists for the supplied
+public identifier. For subaccounts, privacy, trading, and username-claim filters define the filtered-rank
+population without removing an existing full item or its `globalRank`; exclusion sets only `filteredRank` to
+null.
 
 ## Errors
 

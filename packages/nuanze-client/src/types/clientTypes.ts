@@ -198,6 +198,28 @@ export interface GetNuanzeLeaderboardResponse {
 }
 
 /**
+ * Params for `NuanzeClient.getWalletLeaderboardPosition`.
+ */
+export interface GetNuanzeWalletLeaderboardPositionParams {
+  /** Explicit public EVM wallet address to look up. */
+  address: string;
+  /** Ranking window, default `30d`. */
+  timeframe?: NuanzeLeaderboardTimeframe;
+}
+
+/**
+ * Response of `NuanzeClient.getWalletLeaderboardPosition`.
+ */
+export interface GetNuanzeWalletLeaderboardPositionResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /** Full wallet leaderboard source row, or null only when no source row exists for the wallet. */
+  item: NuanzeLeaderboardItem | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
  * Params for `NuanzeClient.getSubaccountLeaderboard`.
  */
 export interface GetNuanzeSubaccountLeaderboardParams {
@@ -214,6 +236,8 @@ export interface GetNuanzeSubaccountLeaderboardParams {
   includePrivate?: boolean;
   /** Include subaccounts with no PnL in the requested window, default false. */
   includeUntraded?: boolean;
+  /** Include subaccounts without a claimed username, default true. */
+  includeUnclaimed?: boolean;
 }
 
 /**
@@ -233,6 +257,36 @@ export interface GetNuanzeSubaccountLeaderboardResponse {
 }
 
 /**
+ * Params for `NuanzeClient.getSubaccountLeaderboardPosition`.
+ */
+export interface GetNuanzeSubaccountLeaderboardPositionParams {
+  /** Explicit public lowercase or mixed-case bytes32 subaccount hex to look up. */
+  subaccountHex: string;
+  /** Ranking window, default `30d`. */
+  timeframe?: NuanzeLeaderboardTimeframe;
+  /** Include private subaccounts in the filtered-rank population, default false. */
+  includePrivate?: boolean;
+  /** Include subaccounts without window PnL in the filtered-rank population, default false. */
+  includeUntraded?: boolean;
+  /** Include subaccounts without claimed usernames in the filtered-rank population, default true. */
+  includeUnclaimed?: boolean;
+}
+
+/**
+ * Response of `NuanzeClient.getSubaccountLeaderboardPosition`.
+ */
+export interface GetNuanzeSubaccountLeaderboardPositionResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /** Rank within the filter-defined population, or null when the source row is excluded or absent. */
+  filteredRank: number | null;
+  /** Full subaccount leaderboard source row, or null only when no source row exists. */
+  item: NuanzeSubaccountLeaderboardItem | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
  * Params for `NuanzeClient.getFollowedLeaderboard`. `timeframe` is required and applies to
  * every per-subaccount figure.
  */
@@ -245,6 +299,8 @@ export interface GetNuanzeFollowedLeaderboardParams {
   includeUntraded?: boolean;
   /** Include followed subaccounts with Private Mode enabled, default false. */
   includePrivate?: boolean;
+  /** Include followed subaccounts without a claimed username, default true. */
+  includeUnclaimed?: boolean;
   /** Page size, 1-200, default 100. */
   limit?: number;
   /**
