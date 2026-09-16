@@ -2,8 +2,9 @@
 
 HTTP client for the Nuanze public analytics API. Serves markets, wallets, trades, candles, collateral flows,
 positioning, and globally ranked current open positions. Read-only and credential-free, so unlike the other
-service clients it takes no wallet client or linked signer. Leaderboard position lookups take explicit public
-wallet or bytes32 subaccount identifiers and require no authentication.
+service clients it takes no wallet client or linked signer. Leaderboard viewer lookups take an explicit public
+wallet address (`getLeaderboard` `viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` `viewAs`) and
+require no authentication.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -58,9 +59,7 @@ Each method maps one-to-one onto a public GET operation:
 - `getMarketByTicker`
 - `getFundingRates`
 - `getLeaderboard`
-- `getWalletLeaderboardPosition`
 - `getSubaccountLeaderboard`
-- `getSubaccountLeaderboardPosition`
 - `getPlatformSummary`
 - `getFollowedLeaderboard`
 - `getWalletSummary`
@@ -78,10 +77,30 @@ Each method maps one-to-one onto a public GET operation:
 - `getOpenPositions`
 
 Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, matching the API contract.
-Leaderboard position responses return `item: null` only when no leaderboard source row exists for the supplied
-public identifier. For subaccounts, privacy, trading, and username-claim filters define the filtered-rank
-population without removing an existing full item or its `globalRank`; exclusion sets only `filteredRank` to
-null.
+Both leaderboard collections accept an optional `viewAs` viewer selector: `getLeaderboard` takes an EVM address
+and returns the wallet's full row plus rank as `viewer`; `getSubaccountLeaderboard` takes a bytes32 subaccount hex
+and returns `{ filteredRank, item }` as `viewer`. A `viewer` is null when `viewAs` is omitted or has no source row.
+For subaccounts, privacy, trading, and username-claim filters define the filtered-rank population without removing
+an existing full item or its `globalRank`; exclusion sets only `filteredRank` to null.
+
+```ts
+const board = await nuanze.getLeaderboard({
+  timeframe: '30d',
+  limit: 10,
+  viewAs: '0x1234567890123456789012345678901234567890',
+});
+if (board.viewer) {
+  console.log(board.viewer.rank, board.viewer.accountPnl.toFixed());
+}
+
+const subs = await nuanze.getSubaccountLeaderboard({
+  timeframe: '30d',
+  viewAs: '0x1234...0012',
+});
+if (subs.viewer) {
+  console.log(subs.viewer.filteredRank, subs.viewer.item?.globalRank);
+}
+```
 
 ## Errors
 

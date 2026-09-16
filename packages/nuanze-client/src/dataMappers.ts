@@ -43,9 +43,7 @@ import {
   GetNuanzeNewsResponse,
   GetNuanzeOpenPositionsResponse,
   GetNuanzePlatformSummaryResponse,
-  GetNuanzeSubaccountLeaderboardPositionResponse,
   GetNuanzeSubaccountLeaderboardResponse,
-  GetNuanzeWalletLeaderboardPositionResponse,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesResponse,
   GetNuanzeWalletPositionsResponse,
@@ -97,9 +95,7 @@ import {
   NuanzeServerNewsResponse,
   NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
-  NuanzeServerSubaccountLeaderboardPositionResponse,
   NuanzeServerSubaccountLeaderboardResponse,
-  NuanzeServerWalletLeaderboardPositionResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
   NuanzeServerWalletPositionsResponse,
@@ -349,7 +345,7 @@ export function mapNuanzeLeaderboardItem(
 }
 
 /**
- * Maps a server-side `GET /leaderboard` response.
+ * Maps a server-side `GET /leaderboard` response, including the nullable `viewAs` viewer.
  */
 export function mapNuanzeLeaderboardResponse(
   server: NuanzeServerLeaderboardResponse,
@@ -360,19 +356,8 @@ export function mapNuanzeLeaderboardResponse(
     limit: server.limit,
     offset: server.offset,
     total: server.total,
-    asOf: server.asOf,
-  };
-}
-
-/**
- * Maps a server-side `GET /leaderboard/wallets/{address}` response.
- */
-export function mapNuanzeWalletLeaderboardPositionResponse(
-  server: NuanzeServerWalletLeaderboardPositionResponse,
-): GetNuanzeWalletLeaderboardPositionResponse {
-  return {
-    timeframe: server.timeframe,
-    item: server.item === null ? null : mapNuanzeLeaderboardItem(server.item),
+    viewer:
+      server.viewer === null ? null : mapNuanzeLeaderboardItem(server.viewer),
     asOf: server.asOf,
   };
 }
@@ -420,7 +405,9 @@ export function mapNuanzeSubaccountLeaderboardItem(
 }
 
 /**
- * Maps a server-side `GET /leaderboard/subaccounts` response.
+ * Maps a server-side `GET /leaderboard/subaccounts` response, including the nullable
+ * `viewAs` viewer. A filter-excluded viewer keeps its full item with `filteredRank` null;
+ * an absent viewer maps to null.
  */
 export function mapNuanzeSubaccountLeaderboardResponse(
   server: NuanzeServerSubaccountLeaderboardResponse,
@@ -430,23 +417,16 @@ export function mapNuanzeSubaccountLeaderboardResponse(
     totalCount: server.totalCount,
     items: server.items.map(mapNuanzeSubaccountLeaderboardItem),
     nextCursor: server.nextCursor,
-    asOf: server.asOf,
-  };
-}
-
-/**
- * Maps a server-side `GET /leaderboard/subaccounts/{subaccountHex}` response.
- */
-export function mapNuanzeSubaccountLeaderboardPositionResponse(
-  server: NuanzeServerSubaccountLeaderboardPositionResponse,
-): GetNuanzeSubaccountLeaderboardPositionResponse {
-  return {
-    timeframe: server.timeframe,
-    filteredRank: server.filteredRank,
-    item:
-      server.item === null
+    viewer:
+      server.viewer === null
         ? null
-        : mapNuanzeSubaccountLeaderboardItem(server.item),
+        : {
+            filteredRank: server.viewer.filteredRank,
+            item:
+              server.viewer.item === null
+                ? null
+                : mapNuanzeSubaccountLeaderboardItem(server.viewer.item),
+          },
     asOf: server.asOf,
   };
 }
