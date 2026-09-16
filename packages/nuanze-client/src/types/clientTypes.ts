@@ -177,6 +177,13 @@ export interface GetNuanzeLeaderboardParams {
   limit?: number;
   /** Offset, 0-10000, default 0. */
   offset?: number;
+  /**
+   * Optional EVM wallet address (`0x` plus 40 hex characters) selecting the viewer
+   * perspective. It is an unauthenticated explicit-identifier claim: it selects whose
+   * row is returned in `viewer` and proves nothing about who is asking. The viewer
+   * lookup is independent of `limit` and `offset` and never alters pagination.
+   */
+  viewAs?: string;
 }
 
 /**
@@ -193,6 +200,11 @@ export interface GetNuanzeLeaderboardResponse {
   offset: number;
   /** Total ranked rows. */
   total: number;
+  /**
+   * Full leaderboard row for the `viewAs` address, or null when `viewAs` was omitted
+   * or no source row exists for the address.
+   */
+  viewer: NuanzeLeaderboardItem | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }
@@ -214,6 +226,17 @@ export interface GetNuanzeSubaccountLeaderboardParams {
   includePrivate?: boolean;
   /** Include subaccounts with no PnL in the requested window, default false. */
   includeUntraded?: boolean;
+  /** Include subaccounts without a claimed username, default true. */
+  includeUnclaimed?: boolean;
+  /**
+   * Optional bytes32 subaccount hex (`0x` plus 64 hex characters, the SDK
+   * `subaccountToHex` form) selecting the viewer perspective. It is an unauthenticated
+   * explicit-identifier claim: it selects whose row is returned in `viewer` and proves
+   * nothing about who is asking. The viewer lookup uses the same timeframe and active
+   * filters as the page but is independent of `limit` and `cursor` and never alters
+   * pagination.
+   */
+  viewAs?: string;
 }
 
 /**
@@ -228,6 +251,18 @@ export interface GetNuanzeSubaccountLeaderboardResponse {
   items: NuanzeSubaccountLeaderboardItem[];
   /** Opaque cursor for the next page, or null when this is the final page. */
   nextCursor: string | null;
+  /**
+   * Viewer for the `viewAs` subaccount, or null when `viewAs` was omitted or no source
+   * row exists for the subaccount. An existing but filter-excluded row keeps its full
+   * `item` (including `globalRank`, which is filter-independent) with `filteredRank`
+   * null; an included row carries both ranks.
+   */
+  viewer: {
+    /** Rank within the filter-defined population, or null when excluded. */
+    filteredRank: number | null;
+    /** Full subaccount leaderboard source row. */
+    item: NuanzeSubaccountLeaderboardItem | null;
+  } | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }
@@ -245,6 +280,8 @@ export interface GetNuanzeFollowedLeaderboardParams {
   includeUntraded?: boolean;
   /** Include followed subaccounts with Private Mode enabled, default false. */
   includePrivate?: boolean;
+  /** Include followed subaccounts without a claimed username, default true. */
+  includeUnclaimed?: boolean;
   /** Page size, 1-200, default 100. */
   limit?: number;
   /**

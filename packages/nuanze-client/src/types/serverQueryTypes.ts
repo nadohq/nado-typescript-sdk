@@ -86,6 +86,7 @@ export interface NuanzeServerLeaderboardResponse {
   limit: number;
   offset: number;
   total: number;
+  viewer: NuanzeServerLeaderboardItem | null;
   asOf: string;
 }
 
@@ -97,6 +98,10 @@ export interface NuanzeServerSubaccountLeaderboardResponse {
   totalCount: number;
   items: NuanzeServerSubaccountLeaderboardItem[];
   nextCursor: string | null;
+  viewer: {
+    filteredRank: number | null;
+    item: NuanzeServerSubaccountLeaderboardItem | null;
+  } | null;
   asOf: string;
 }
 

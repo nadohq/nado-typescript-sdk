@@ -2,7 +2,6 @@ import {
   NUANZE_NEWS_ENTITY_ROLES,
   NUANZE_NEWS_EVENT_TYPES,
   NUANZE_NEWS_SENTIMENTS,
-  NuanzeClient,
   NuanzeNewsStory,
   NuanzeServerFailureError,
 } from '@nadohq/nuanze-client';
@@ -27,14 +26,10 @@ void describe(
   '[nuanze-client]: news',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
-    let newsClient: NuanzeClient;
+    let newsClient: RunContext['nuanze'];
 
     before(() => {
-      tc = createTestContext();
-      newsClient = process.env.NUANZE_E2E_URL
-        ? new NuanzeClient({ url: process.env.NUANZE_E2E_URL })
-        : tc.nuanze;
+      newsClient = createTestContext().nuanze;
     });
 
     void test('lists published stories newest first', async () => {

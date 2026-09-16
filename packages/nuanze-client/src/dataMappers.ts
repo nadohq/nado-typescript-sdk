@@ -345,7 +345,7 @@ export function mapNuanzeLeaderboardItem(
 }
 
 /**
- * Maps a server-side `GET /leaderboard` response.
+ * Maps a server-side `GET /leaderboard` response, including the nullable `viewAs` viewer.
  */
 export function mapNuanzeLeaderboardResponse(
   server: NuanzeServerLeaderboardResponse,
@@ -356,6 +356,8 @@ export function mapNuanzeLeaderboardResponse(
     limit: server.limit,
     offset: server.offset,
     total: server.total,
+    viewer:
+      server.viewer === null ? null : mapNuanzeLeaderboardItem(server.viewer),
     asOf: server.asOf,
   };
 }
@@ -403,7 +405,9 @@ export function mapNuanzeSubaccountLeaderboardItem(
 }
 
 /**
- * Maps a server-side `GET /leaderboard/subaccounts` response.
+ * Maps a server-side `GET /leaderboard/subaccounts` response, including the nullable
+ * `viewAs` viewer. A filter-excluded viewer keeps its full item with `filteredRank` null;
+ * an absent viewer maps to null.
  */
 export function mapNuanzeSubaccountLeaderboardResponse(
   server: NuanzeServerSubaccountLeaderboardResponse,
@@ -413,6 +417,16 @@ export function mapNuanzeSubaccountLeaderboardResponse(
     totalCount: server.totalCount,
     items: server.items.map(mapNuanzeSubaccountLeaderboardItem),
     nextCursor: server.nextCursor,
+    viewer:
+      server.viewer === null
+        ? null
+        : {
+            filteredRank: server.viewer.filteredRank,
+            item:
+              server.viewer.item === null
+                ? null
+                : mapNuanzeSubaccountLeaderboardItem(server.viewer.item),
+          },
     asOf: server.asOf,
   };
 }

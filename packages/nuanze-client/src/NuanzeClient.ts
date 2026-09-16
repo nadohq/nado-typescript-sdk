@@ -200,9 +200,12 @@ export class NuanzeClient {
 
   /**
    * Gets the account PnL leaderboard. Equity-basis account PnL includes realized and unrealized
-   * movement plus funding and is not realized PnL.
+   * movement plus funding and is not realized PnL. Pass `viewAs` with an EVM address to also
+   * receive that wallet's full row plus rank as `viewer`, computed in the same request without
+   * altering pagination; `viewer` is null when `viewAs` is omitted or has no source row.
    *
-   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid.
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid, or
+   * `INVALID_ADDRESS` when `viewAs` is malformed.
    */
   async getLeaderboard(
     params: GetNuanzeLeaderboardParams = {},
@@ -219,10 +222,14 @@ export class NuanzeClient {
    * Gets the global public leaderboard of subaccounts. Results are sorted by equity-basis account
    * PnL descending with nulls last. Username and display name are null when unavailable.
    * `globalRank` is independent of the active privacy and trading filters. Pagination uses a
-   * filter-bound opaque cursor.
+   * filter-bound opaque cursor. Pass `viewAs` with a bytes32 subaccount hex to also receive that
+   * subaccount's `filteredRank` plus full item as `viewer` without altering pagination: `viewer`
+   * is null when `viewAs` is omitted or has no source row, and a filter-excluded row keeps its
+   * item with `filteredRank` null.
    *
-   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`, or
-   * `CURSOR_FILTER_MISMATCH` when filters or the cursor are invalid.
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`,
+   * `CURSOR_FILTER_MISMATCH`, or `INVALID_SUBACCOUNT` when filters, the cursor, or `viewAs`
+   * are invalid.
    */
   async getSubaccountLeaderboard(
     params: GetNuanzeSubaccountLeaderboardParams = {},
