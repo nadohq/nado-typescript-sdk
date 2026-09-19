@@ -1,6 +1,7 @@
 import {
   GetNuanzeSubaccountLeaderboardResponse,
   NUANZE_LEADERBOARD_TIMEFRAMES,
+  NuanzeClient,
   NuanzeFollowedLeaderboardItem,
   NuanzeLeaderboardItem,
   NuanzeLeaderboardTimeframe,
@@ -28,15 +29,22 @@ import { RunContext } from '../utils/types';
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const FOLLOWED_LEADERBOARD_SUBACCOUNT_HEX =
   '0xfbf4b6bfbe15db2ee1a6a22755808896e8d986a364656661756c740000000000';
+const POSITION_ENDPOINT_SKIP = process.env.NUANZE_E2E_URL
+  ? false
+  : 'requires NUANZE_E2E_URL until leaderboard position endpoints are deployed';
 
 void describe(
   '[nuanze-client]: leaderboard',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let leaderboardClient: RunContext['nuanze'];
+    let positionClient: NuanzeClient;
 
     before(() => {
       leaderboardClient = createTestContext().nuanze;
+      positionClient = process.env.NUANZE_E2E_URL
+        ? new NuanzeClient({ url: process.env.NUANZE_E2E_URL })
+        : leaderboardClient;
     });
 
     void test('returns a ranked page of account PnL', async () => {
@@ -486,6 +494,179 @@ void describe(
         assertNonEmptyString(error.requestId, 'error.requestId');
       }
     });
+
+    void test(
+      'gets a wallet leaderboard position derived from the collection',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        const collection = await leaderboardClient.getLeaderboard({
+          timeframe: '30d',
+          limit: 10,
+        });
+        const expected = collection.items[0];
+        assert.ok(expected, 'leaderboard should contain a wallet');
+
+        const response = await positionClient.getWalletLeaderboardPosition({
+          address: expected.address,
+          timeframe: '30d',
+        });
+        debugPrint('Wallet leaderboard position', response);
+
+        assert.equal(response.timeframe, '30d');
+        assert.match(
+          response.asOf,
+          ISO_UTC,
+          'asOf should be a UTC ISO timestamp',
+        );
+        assert.ok(response.item, 'derived wallet should have a ranked item');
+        assertLeaderboardItemShape(response.item, 'item');
+        assert.equal(response.item.address, expected.address);
+        assert.equal(response.item.rank, expected.rank);
+      },
+    );
+
+    void test(
+      'gets a subaccount leaderboard position derived from the collection',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        const params = {
+          timeframe: '30d' as const,
+          limit: 10,
+          includePrivate: true,
+          includeUntraded: false,
+          includeUnclaimed: true,
+        };
+        const collection =
+          await leaderboardClient.getSubaccountLeaderboard(params);
+        const expected = collection.items[0];
+        assert.ok(expected, 'subaccount leaderboard should contain an item');
+
+        const response = await positionClient.getSubaccountLeaderboardPosition({
+          subaccountHex: expected.subaccountHex,
+          timeframe: params.timeframe,
+          includePrivate: params.includePrivate,
+          includeUntraded: params.includeUntraded,
+          includeUnclaimed: params.includeUnclaimed,
+        });
+        debugPrint('Subaccount leaderboard position', response);
+
+        assert.equal(response.timeframe, params.timeframe);
+        assert.match(
+          response.asOf,
+          ISO_UTC,
+          'asOf should be a UTC ISO timestamp',
+        );
+        assert.equal(response.filteredRank, 1);
+        assert.ok(
+          response.item,
+          'derived subaccount should have a ranked item',
+        );
+        assertSubaccountLeaderboardItemShape(response.item, 'item');
+        assert.notEqual(response.item.pnl, null, 'traded item should have PnL');
+        assert.equal(response.item.subaccountHex, expected.subaccountHex);
+        assert.equal(response.item.globalRank, expected.globalRank);
+      },
+    );
+
+    void test(
+      'keeps a full subaccount position item when its filtered rank is excluded',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async (context) => {
+        const collection = await leaderboardClient.getSubaccountLeaderboard({
+          timeframe: '30d',
+          limit: 200,
+          includePrivate: true,
+          includeUntraded: false,
+          includeUnclaimed: true,
+        });
+        const expected = collection.items.find(
+          (item) => item.username === null,
+        );
+        if (!expected) {
+          context.skip('dataset has no traded unclaimed subaccount');
+          return;
+        }
+
+        const response = await positionClient.getSubaccountLeaderboardPosition({
+          subaccountHex: expected.subaccountHex,
+          timeframe: '30d',
+          includePrivate: true,
+          includeUntraded: false,
+          includeUnclaimed: false,
+        });
+        debugPrint('Filtered subaccount leaderboard position', response);
+
+        assert.equal(response.filteredRank, null);
+        assert.ok(response.item, 'source item should remain available');
+        assertSubaccountLeaderboardItemShape(response.item, 'item');
+        assert.notEqual(response.item.pnl, null, 'traded item should have PnL');
+        assert.equal(response.item.subaccountHex, expected.subaccountHex);
+        assert.equal(response.item.globalRank, expected.globalRank);
+      },
+    );
+
+    void test(
+      'returns null position items for absent public identifiers',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        const [wallet, subaccount] = await Promise.all([
+          positionClient.getWalletLeaderboardPosition({
+            address: '0x000000000000000000000000000000000000dead',
+            timeframe: '30d',
+          }),
+          positionClient.getSubaccountLeaderboardPosition({
+            subaccountHex:
+              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            timeframe: '30d',
+            includePrivate: true,
+            includeUntraded: true,
+            includeUnclaimed: true,
+          }),
+        ]);
+
+        assert.equal(wallet.item, null);
+        assert.equal(subaccount.item, null);
+        assert.equal(subaccount.filteredRank, null);
+      },
+    );
+
+    void test(
+      'rejects malformed position identifiers',
+      { skip: POSITION_ENDPOINT_SKIP },
+      async () => {
+        try {
+          await positionClient.getWalletLeaderboardPosition({
+            address: 'not-an-address',
+          });
+          assert.fail('expected INVALID_ADDRESS for a malformed address');
+        } catch (error) {
+          assert.ok(
+            error instanceof NuanzeServerFailureError,
+            'should throw NuanzeServerFailureError',
+          );
+          assert.equal(error.errorCode, 'INVALID_ADDRESS');
+          assert.equal(error.httpStatus, 400);
+          assertNonEmptyString(error.requestId, 'error.requestId');
+        }
+
+        try {
+          await positionClient.getSubaccountLeaderboardPosition({
+            subaccountHex: 'not-a-subaccount',
+          });
+          assert.fail(
+            'expected INVALID_SUBACCOUNT for a malformed subaccount hex',
+          );
+        } catch (error) {
+          assert.ok(
+            error instanceof NuanzeServerFailureError,
+            'should throw NuanzeServerFailureError',
+          );
+          assert.equal(error.errorCode, 'INVALID_SUBACCOUNT');
+          assert.equal(error.httpStatus, 400);
+          assertNonEmptyString(error.requestId, 'error.requestId');
+        }
+      },
+    );
   },
 );
 

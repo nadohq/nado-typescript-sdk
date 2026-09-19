@@ -2,9 +2,10 @@
 
 HTTP client for the Nuanze public analytics API. Serves markets, wallets, trades, candles, collateral flows,
 positioning, and globally ranked current open positions. Read-only and credential-free, so unlike the other
-service clients it takes no wallet client or linked signer. Leaderboard viewer lookups take an explicit public
-wallet address (`getLeaderboard` `viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` `viewAs`) and
-require no authentication.
+service clients it takes no wallet client or linked signer. Leaderboard lookups take explicit public
+identifiers and require no authentication: collection viewer lookups take a wallet address (`getLeaderboard`
+`viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` `viewAs`), while dedicated point reads
+(`getWalletLeaderboardPosition`, `getSubaccountLeaderboardPosition`) fetch one rank by path identifier.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -59,7 +60,9 @@ Each method maps one-to-one onto a public GET operation:
 - `getMarketByTicker`
 - `getFundingRates`
 - `getLeaderboard`
+- `getWalletLeaderboardPosition`
 - `getSubaccountLeaderboard`
+- `getSubaccountLeaderboardPosition`
 - `getPlatformSummary`
 - `getFollowedLeaderboard`
 - `getWalletSummary`
@@ -83,6 +86,13 @@ and returns `{ filteredRank, item }` as `viewer`. A `viewer` is null when `viewA
 For subaccounts, privacy, trading, and username-claim filters define the filtered-rank population without removing
 an existing full item or its `globalRank`; exclusion sets only `filteredRank` to null.
 
+The dedicated point reads coexist with `viewAs`: `getWalletLeaderboardPosition({ address })` GETs
+`/leaderboard/wallets/{address}` and `getSubaccountLeaderboardPosition({ subaccountHex })` GETs
+`/leaderboard/subaccounts/{subaccountHex}`, each returning the same row shape without pagination. Use a point
+read when only one rank is needed; use `viewAs` for an inline lookup scoped to a ranked page. Position
+`item` is null only when no leaderboard source row exists for the identifier, and a filter-excluded subaccount
+keeps its full item (including `globalRank`) with `filteredRank` null.
+
 ```ts
 const board = await nuanze.getLeaderboard({
   timeframe: '30d',
@@ -99,6 +109,22 @@ const subs = await nuanze.getSubaccountLeaderboard({
 });
 if (subs.viewer) {
   console.log(subs.viewer.filteredRank, subs.viewer.item?.globalRank);
+}
+
+const position = await nuanze.getWalletLeaderboardPosition({
+  address: '0x1234567890123456789012345678901234567890',
+  timeframe: '30d',
+});
+if (position.item) {
+  console.log(position.item.rank, position.item.accountPnl.toFixed());
+}
+
+const subPosition = await nuanze.getSubaccountLeaderboardPosition({
+  subaccountHex: '0x1234...0012',
+  timeframe: '30d',
+});
+if (subPosition.item) {
+  console.log(subPosition.filteredRank, subPosition.item.globalRank);
 }
 ```
 
