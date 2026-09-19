@@ -306,6 +306,51 @@ export type GetIndexerPortfolioResponse = Record<
 >;
 
 /**
+ * Portfolio Calendar
+ */
+
+export interface GetIndexerPortfolioCalendarParams {
+  /**
+   * Cross-margin subaccount to query. Its value aggregates the cross-margin
+   * account plus every isolated child; isolated subaccounts are rejected.
+   */
+  subaccount: Subaccount;
+  /** First day of the range, unix seconds, UTC midnight (divisible by 86400). */
+  startTime: number;
+  /** Last day of the range, unix seconds, UTC midnight, inclusive. The range is capped at 500 days. */
+  endTime: number;
+}
+
+export interface IndexerPortfolioCalendarDay {
+  // UTC midnight of the day, unix seconds.
+  date: BigNumber;
+  /**
+   * The scope's trading PnL for the day (USDT0): change in mark-to-market value
+   * over the day with capital flows (deposits/withdrawals/transfers) netted out.
+   */
+  pnl: BigNumber;
+  // The scope's traded quote volume (USDT0) during the day.
+  volume: BigNumber;
+  /**
+   * Number of fills of the scope during the day. A trade is a single fill — an
+   * order matched against multiple resting orders counts once per fill.
+   */
+  tradeCount: BigNumber;
+  // Markets of the scope with at least one fill during the day, ascending. Empty when nothing was traded.
+  productIds: number[];
+}
+
+/**
+ * Both scopes cover the same set of days, ascending. Days before the
+ * subaccount's first recorded activity return zeroed entries with an empty
+ * `productIds`; days after the latest available data are omitted.
+ */
+export interface GetIndexerPortfolioCalendarResponse {
+  spot: IndexerPortfolioCalendarDay[];
+  perp: IndexerPortfolioCalendarDay[];
+}
+
+/**
  * Candlesticks
  */
 

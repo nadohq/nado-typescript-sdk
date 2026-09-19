@@ -79,6 +79,13 @@ export interface IndexerServerPortfolioParams {
   subaccount: string;
 }
 
+export interface IndexerServerPortfolioCalendarParams {
+  subaccount: string;
+  // Unix seconds, UTC midnight
+  start_time: number | string;
+  end_time: number | string;
+}
+
 export interface IndexerServerOraclePricesParams {
   product_ids: number[];
 }
@@ -300,6 +307,7 @@ export interface IndexerServerQueryRequestByType {
   orders: IndexerServerOrdersParams;
   perp_prices: IndexerServerPerpPricesParams;
   portfolio: IndexerServerPortfolioParams;
+  portfolio_calendar: IndexerServerPortfolioCalendarParams;
   positions: IndexerServerPositionsParams;
   price: IndexerServerPriceParams;
   product_snapshots: IndexerServerMultiProductsParams;
@@ -400,6 +408,22 @@ export type IndexerServerPortfolioResponse = [
   IndexerServerPortfolioPeriod,
   IndexerServerPortfolioHistory,
 ][];
+
+export interface IndexerServerPortfolioCalendarDay {
+  // UTC midnight of the day, unix seconds.
+  date: string;
+  pnl: string;
+  volume: string;
+  tradeCount: string;
+  // Markets with at least one fill during the day, ascending. Empty when nothing was traded.
+  productIds: number[];
+}
+
+// Both scopes cover the same set of days, ascending.
+export interface IndexerServerPortfolioCalendarResponse {
+  spot: IndexerServerPortfolioCalendarDay[];
+  perp: IndexerServerPortfolioCalendarDay[];
+}
 
 export interface IndexerServerPerpPrices {
   product_id: number;
@@ -734,6 +758,7 @@ export interface IndexerServerQueryResponseByType {
   orders: IndexerServerOrdersResponse;
   perp_prices: IndexerServerPerpPricesResponse;
   portfolio: IndexerServerPortfolioResponse;
+  portfolio_calendar: IndexerServerPortfolioCalendarResponse;
   positions: IndexerServerPositionsResponse;
   price: IndexerServerPriceResponse;
   product_snapshots: IndexerServerMultiProductsResponse;

@@ -147,6 +147,57 @@ void describe(
       }
     });
 
+    void test('getPortfolioCalendar returns per-day activity for both scopes', async () => {
+      const endDay =
+        Math.floor(nowInSeconds() / TimeInSeconds.DAY) * TimeInSeconds.DAY;
+      const startDay = endDay - 6 * TimeInSeconds.DAY;
+
+      const calendar = await client.getPortfolioCalendar({
+        subaccount,
+        startTime: startDay,
+        endTime: endDay,
+      });
+
+      debugPrint('Portfolio calendar', calendar);
+      assertDefined(calendar, 'calendar');
+
+      const scopes = ['spot', 'perp'] as const;
+
+      for (const scope of scopes) {
+        assertArray(calendar[scope], `calendar.${scope}`);
+        assertArrayElements(
+          calendar[scope],
+          (day, label) => {
+            assertBigNumberFinite(day.date, `${label}.date`);
+            assertBigNumberFinite(day.pnl, `${label}.pnl`);
+            assertBigNumberFinite(day.volume, `${label}.volume`);
+            assertBigNumberFinite(day.tradeCount, `${label}.tradeCount`);
+            assertArray(day.productIds, `${label}.productIds`);
+            assertArrayElements(
+              day.productIds,
+              assertNumber,
+              `${label}.productIds`,
+            );
+          },
+          `calendar.${scope}`,
+        );
+      }
+
+      // Both scopes cover the same set of days.
+      assert.equal(
+        calendar.spot.length,
+        calendar.perp.length,
+        'calendar.spot and calendar.perp should have the same length',
+      );
+      calendar.spot.forEach((day, idx) => {
+        assert.equal(
+          day.date.toString(),
+          calendar.perp[idx]?.date.toString(),
+          `calendar.spot[${idx}].date should match calendar.perp[${idx}].date`,
+        );
+      });
+    });
+
     void test('getLinkedSignerWithRateLimit returns signer info', async () => {
       const linkedSigner = await client.getLinkedSignerWithRateLimit({
         subaccount,

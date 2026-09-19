@@ -39,6 +39,7 @@ import {
   mapIndexerOrder,
   mapIndexerPerpPrices,
   mapIndexerPortfolio,
+  mapIndexerPortfolioCalendar,
   mapIndexerPosition,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
@@ -102,6 +103,8 @@ import {
   GetIndexerPerpPricesResponse,
   GetIndexerPointsParams,
   GetIndexerPointsResponse,
+  GetIndexerPortfolioCalendarParams,
+  GetIndexerPortfolioCalendarResponse,
   GetIndexerPortfolioParams,
   GetIndexerPortfolioResponse,
   GetIndexerPositionsParams,
@@ -354,6 +357,36 @@ export class IndexerBaseClient {
     });
 
     return mapIndexerPortfolio(baseResponse);
+  }
+
+  /**
+   * Retrieves a subaccount's per-UTC-day PnL, traded volume, trade count, and
+   * markets traded between `startTime` and `endTime` (inclusive), split into
+   * `spot` and `perp` scopes. The value aggregates the cross-margin account plus
+   * every isolated child; the queried subaccount must be cross-margin.
+   *
+   * Use this for calendar/heat-map style views of daily performance. For
+   * continuous time series, use `getPortfolio` instead.
+   *
+   * `startTime`/`endTime` must be UTC midnight (divisible by 86400); the range
+   * is capped at 500 days. Days before the subaccount's first recorded activity
+   * return zeroed entries; days after the latest available data are omitted, so
+   * a range ending in the future stops at today. The current (partial) day is
+   * measured up to the latest available snapshot, which can be up to ~20
+   * minutes stale.
+   *
+   * @param params
+   */
+  async getPortfolioCalendar(
+    params: GetIndexerPortfolioCalendarParams,
+  ): Promise<GetIndexerPortfolioCalendarResponse> {
+    const baseResponse = await this.query('portfolio_calendar', {
+      subaccount: subaccountToHex(params.subaccount),
+      start_time: params.startTime,
+      end_time: params.endTime,
+    });
+
+    return mapIndexerPortfolioCalendar(baseResponse);
   }
 
   /**
