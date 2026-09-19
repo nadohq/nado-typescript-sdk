@@ -15,7 +15,9 @@ import {
   mapNuanzeNewsResponse,
   mapNuanzeOpenPositionsResponse,
   mapNuanzePlatformSummaryResponse,
+  mapNuanzeSubaccountLeaderboardPositionResponse,
   mapNuanzeSubaccountLeaderboardResponse,
+  mapNuanzeWalletLeaderboardPositionResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
   mapNuanzeWalletPositionsResponse,
@@ -54,7 +56,11 @@ import {
   GetNuanzePlatformSummaryParams,
   GetNuanzePlatformSummaryResponse,
   GetNuanzeSubaccountLeaderboardParams,
+  GetNuanzeSubaccountLeaderboardPositionParams,
+  GetNuanzeSubaccountLeaderboardPositionResponse,
   GetNuanzeSubaccountLeaderboardResponse,
+  GetNuanzeWalletLeaderboardPositionParams,
+  GetNuanzeWalletLeaderboardPositionResponse,
   GetNuanzeWalletPnlParams,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesParams,
@@ -84,7 +90,9 @@ import {
   NuanzeServerNewsResponse,
   NuanzeServerOpenPositionsResponse,
   NuanzeServerPlatformSummaryResponse,
+  NuanzeServerSubaccountLeaderboardPositionResponse,
   NuanzeServerSubaccountLeaderboardResponse,
+  NuanzeServerWalletLeaderboardPositionResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
   NuanzeServerWalletPositionsResponse,
@@ -219,6 +227,28 @@ export class NuanzeClient {
   }
 
   /**
+   * Gets one wallet's leaderboard position by explicit EVM address. Equity-basis account PnL
+   * includes realized and unrealized movement plus funding and is not realized PnL. `item` is
+   * null only when the wallet leaderboard source row is absent; `rank` is the global rank in
+   * the unfiltered leaderboard, independent of collection `limit` and `offset`. For an inline
+   * lookup scoped to a ranked page, `getLeaderboard` accepts `viewAs` instead.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if a filter value is invalid, or
+   * `INVALID_ADDRESS` when the address is malformed.
+   */
+  async getWalletLeaderboardPosition(
+    params: GetNuanzeWalletLeaderboardPositionParams,
+  ): Promise<GetNuanzeWalletLeaderboardPositionResponse> {
+    const { address, ...query } = params;
+    return mapNuanzeWalletLeaderboardPositionResponse(
+      await this.getJson<NuanzeServerWalletLeaderboardPositionResponse>(
+        `/leaderboard/wallets/${encodeURIComponent(address)}`,
+        query,
+      ),
+    );
+  }
+
+  /**
    * Gets the global public leaderboard of subaccounts. Results are sorted by equity-basis account
    * PnL descending with nulls last. Username and display name are null when unavailable.
    * `globalRank` is independent of the active privacy and trading filters. Pagination uses a
@@ -238,6 +268,31 @@ export class NuanzeClient {
       await this.getJson<NuanzeServerSubaccountLeaderboardResponse>(
         '/leaderboard/subaccounts',
         params,
+      ),
+    );
+  }
+
+  /**
+   * Gets one subaccount's leaderboard position by explicit bytes32 subaccount hex
+   * (the SDK `subaccountToHex` form). `item.globalRank` reflects the subaccount's true position
+   * across the full leaderboard, independent of the `includePrivate`, `includeUntraded`, and
+   * `includeUnclaimed` filters, while `filteredRank` uses the request's active filters: an
+   * absent source row yields `filteredRank` null with `item` null, an existing but
+   * filter-excluded row keeps its full item with `filteredRank` null, and an included row
+   * carries both ranks. For an inline lookup scoped to a ranked page,
+   * `getSubaccountLeaderboard` accepts `viewAs` instead.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when filters are invalid, or
+   * `INVALID_SUBACCOUNT` when the subaccount hex is malformed.
+   */
+  async getSubaccountLeaderboardPosition(
+    params: GetNuanzeSubaccountLeaderboardPositionParams,
+  ): Promise<GetNuanzeSubaccountLeaderboardPositionResponse> {
+    const { subaccountHex, ...query } = params;
+    return mapNuanzeSubaccountLeaderboardPositionResponse(
+      await this.getJson<NuanzeServerSubaccountLeaderboardPositionResponse>(
+        `/leaderboard/subaccounts/${encodeURIComponent(subaccountHex)}`,
+        query,
       ),
     );
   }

@@ -91,6 +91,15 @@ export interface NuanzeServerLeaderboardResponse {
 }
 
 /**
+ * `GET /leaderboard/wallets/{address}` response as returned on the wire.
+ */
+export interface NuanzeServerWalletLeaderboardPositionResponse {
+  timeframe: NuanzeLeaderboardTimeframe;
+  item: NuanzeServerLeaderboardItem | null;
+  asOf: string;
+}
+
+/**
  * `GET /leaderboard/subaccounts` response as returned on the wire.
  */
 export interface NuanzeServerSubaccountLeaderboardResponse {
@@ -102,6 +111,16 @@ export interface NuanzeServerSubaccountLeaderboardResponse {
     filteredRank: number | null;
     item: NuanzeServerSubaccountLeaderboardItem | null;
   } | null;
+  asOf: string;
+}
+
+/**
+ * `GET /leaderboard/subaccounts/{subaccountHex}` response as returned on the wire.
+ */
+export interface NuanzeServerSubaccountLeaderboardPositionResponse {
+  timeframe: NuanzeLeaderboardTimeframe;
+  filteredRank: number | null;
+  item: NuanzeServerSubaccountLeaderboardItem | null;
   asOf: string;
 }
 
