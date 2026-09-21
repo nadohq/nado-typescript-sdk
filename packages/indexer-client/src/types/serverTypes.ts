@@ -414,9 +414,9 @@ export interface IndexerServerPortfolioCalendarDay {
   date: string;
   pnl: string;
   volume: string;
-  tradeCount: string;
+  trade_count: string;
   // Markets with at least one fill during the day, ascending. Empty when nothing was traded.
-  productIds: number[];
+  product_ids: number[];
 }
 
 // Both scopes cover the same set of days, ascending.
