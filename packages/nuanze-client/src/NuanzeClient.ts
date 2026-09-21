@@ -3,6 +3,7 @@ import {
   mapNuanzeCollateralFlowSeriesResponse,
   mapNuanzeCollateralFlowSummaryResponse,
   mapNuanzeCollateralFlowsResponse,
+  mapNuanzeFollowedLeaderboardPositionResponse,
   mapNuanzeFollowedLeaderboardResponse,
   mapNuanzeFundingRatesResponse,
   mapNuanzeLeaderboardResponse,
@@ -32,6 +33,8 @@ import {
   GetNuanzeCollateralFlowsParams,
   GetNuanzeCollateralFlowsResponse,
   GetNuanzeFollowedLeaderboardParams,
+  GetNuanzeFollowedLeaderboardPositionParams,
+  GetNuanzeFollowedLeaderboardPositionResponse,
   GetNuanzeFollowedLeaderboardResponse,
   GetNuanzeFundingRatesParams,
   GetNuanzeFundingRatesResponse,
@@ -79,6 +82,7 @@ import {
   NuanzeServerCollateralFlowSeriesResponse,
   NuanzeServerCollateralFlowSummaryResponse,
   NuanzeServerCollateralFlowsResponse,
+  NuanzeServerFollowedLeaderboardPositionResponse,
   NuanzeServerFollowedLeaderboardResponse,
   NuanzeServerFundingRatesResponse,
   NuanzeServerLeaderboardResponse,
@@ -318,8 +322,15 @@ export class NuanzeClient {
    * follows, sorted by PnL descending with nulls last. The follower does not need a claimed
    * username. Subaccounts with no PnL in the window are included by default with null PnL/rank,
    * zero counts, and no products. Private subaccounts are excluded unless `includePrivate=true`.
+   * Pass `viewAs` with a bytes32 subaccount hex to also receive that followed subaccount's
+   * `filteredRank` (counted among the follower's filter-passing followed subaccounts) plus full
+   * item as `viewer` without altering pagination: `viewer` is null when `viewAs` is omitted or
+   * the follower does not actively follow that subaccount, and a filter-excluded followed row
+   * keeps its item with `filteredRank` null.
    *
-   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when params are invalid.
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST`, `INVALID_CURSOR`,
+   * `CURSOR_FILTER_MISMATCH`, or `INVALID_SUBACCOUNT` when params, the cursor, the follower
+   * hex, or `viewAs` are invalid.
    */
   async getFollowedLeaderboard(
     params: GetNuanzeFollowedLeaderboardParams,
@@ -328,6 +339,33 @@ export class NuanzeClient {
       await this.getJson<NuanzeServerFollowedLeaderboardResponse>(
         '/wallets/leaderboard',
         params,
+      ),
+    );
+  }
+
+  /**
+   * Gets one followed subaccount's position within a follower's leaderboard. `subaccountHex`
+   * identifies the follower whose active follow graph is ranked and `viewAs` the followed
+   * subaccount to position, both as bytes32 subaccount hex (the SDK `subaccountToHex` form).
+   * `item.globalRank` reflects the subaccount's true position across the full global subaccount
+   * leaderboard, independent of the follow graph and of the `includeUntraded`, `includePrivate`,
+   * and `includeUnclaimed` filters, while `filteredRank` counts only the follower's followed
+   * subaccounts passing the request's active filters: a subaccount the follower does not follow
+   * yields `filteredRank` null with `item` null, an existing but filter-excluded followed row
+   * keeps its full item with `filteredRank` null, and an included row carries both ranks. For an
+   * inline lookup scoped to a ranked page, `getFollowedLeaderboard` accepts `viewAs` instead.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when the timeframe or filters are
+   * invalid, or `INVALID_SUBACCOUNT` when either subaccount hex is malformed.
+   */
+  async getFollowedLeaderboardPosition(
+    params: GetNuanzeFollowedLeaderboardPositionParams,
+  ): Promise<GetNuanzeFollowedLeaderboardPositionResponse> {
+    const { viewAs, ...query } = params;
+    return mapNuanzeFollowedLeaderboardPositionResponse(
+      await this.getJson<NuanzeServerFollowedLeaderboardPositionResponse>(
+        `/wallets/leaderboard/followed/${encodeURIComponent(viewAs)}`,
+        query,
       ),
     );
   }

@@ -31,6 +31,7 @@ import {
   GetNuanzeCollateralFlowSeriesResponse,
   GetNuanzeCollateralFlowSummaryResponse,
   GetNuanzeCollateralFlowsResponse,
+  GetNuanzeFollowedLeaderboardPositionResponse,
   GetNuanzeFollowedLeaderboardResponse,
   GetNuanzeFundingRatesResponse,
   GetNuanzeLeaderboardResponse,
@@ -87,6 +88,7 @@ import {
   NuanzeServerCollateralFlowSeriesResponse,
   NuanzeServerCollateralFlowSummaryResponse,
   NuanzeServerCollateralFlowsResponse,
+  NuanzeServerFollowedLeaderboardPositionResponse,
   NuanzeServerFollowedLeaderboardResponse,
   NuanzeServerFundingRatesResponse,
   NuanzeServerLeaderboardResponse,
@@ -469,7 +471,9 @@ export function mapNuanzeSubaccountLeaderboardPositionResponse(
 }
 
 /**
- * Maps a server-side `GET /wallets/leaderboard` response.
+ * Maps a server-side `GET /wallets/leaderboard` response, including the nullable `viewAs`
+ * viewer. A filter-excluded followed viewer keeps its full item with `filteredRank` null; a
+ * viewer the follower does not follow maps to null.
  */
 export function mapNuanzeFollowedLeaderboardResponse(
   server: NuanzeServerFollowedLeaderboardResponse,
@@ -478,6 +482,36 @@ export function mapNuanzeFollowedLeaderboardResponse(
     timeframe: server.timeframe,
     items: server.items.map(mapNuanzeFollowedLeaderboardItem),
     nextCursor: server.nextCursor,
+    viewer:
+      server.viewer === null
+        ? null
+        : {
+            filteredRank: server.viewer.filteredRank,
+            item:
+              server.viewer.item === null
+                ? null
+                : mapNuanzeFollowedLeaderboardItem(server.viewer.item),
+          },
+    asOf: server.asOf,
+  };
+}
+
+/**
+ * Maps a server-side `GET /wallets/leaderboard/followed/{viewAs}` response. A subaccount the
+ * follower does not follow maps to `filteredRank` null with `item` null; an existing but
+ * filter-excluded followed row keeps its full item (including `globalRank`) with `filteredRank`
+ * null.
+ */
+export function mapNuanzeFollowedLeaderboardPositionResponse(
+  server: NuanzeServerFollowedLeaderboardPositionResponse,
+): GetNuanzeFollowedLeaderboardPositionResponse {
+  return {
+    timeframe: server.timeframe,
+    filteredRank: server.filteredRank,
+    item:
+      server.item === null
+        ? null
+        : mapNuanzeFollowedLeaderboardItem(server.item),
     asOf: server.asOf,
   };
 }

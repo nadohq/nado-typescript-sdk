@@ -4,8 +4,9 @@ HTTP client for the Nuanze public analytics API. Serves markets, wallets, trades
 positioning, and globally ranked current open positions. Read-only and credential-free, so unlike the other
 service clients it takes no wallet client or linked signer. Leaderboard lookups take explicit public
 identifiers and require no authentication: collection viewer lookups take a wallet address (`getLeaderboard`
-`viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` `viewAs`), while dedicated point reads
-(`getWalletLeaderboardPosition`, `getSubaccountLeaderboardPosition`) fetch one rank by path identifier.
+`viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` and `getFollowedLeaderboard` `viewAs`), while
+dedicated point reads (`getWalletLeaderboardPosition`, `getSubaccountLeaderboardPosition`,
+`getFollowedLeaderboardPosition`) fetch one rank by path identifier.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -65,6 +66,7 @@ Each method maps one-to-one onto a public GET operation:
 - `getSubaccountLeaderboardPosition`
 - `getPlatformSummary`
 - `getFollowedLeaderboard`
+- `getFollowedLeaderboardPosition`
 - `getWalletSummary`
 - `getWalletPositions`
 - `getMarketTrades`
@@ -80,18 +82,21 @@ Each method maps one-to-one onto a public GET operation:
 - `getOpenPositions`
 
 Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, matching the API contract.
-Both leaderboard collections accept an optional `viewAs` viewer selector: `getLeaderboard` takes an EVM address
-and returns the wallet's full row plus rank as `viewer`; `getSubaccountLeaderboard` takes a bytes32 subaccount hex
-and returns `{ filteredRank, item }` as `viewer`. A `viewer` is null when `viewAs` is omitted or has no source row.
+All leaderboard collections accept an optional `viewAs` viewer selector: `getLeaderboard` takes an EVM address
+and returns the wallet's full row plus rank as `viewer`; `getSubaccountLeaderboard` and `getFollowedLeaderboard`
+take a bytes32 subaccount hex and return `{ filteredRank, item }` as `viewer`. A `viewer` is null when `viewAs` is
+omitted or has no source row (for the followed leaderboard: when the follower does not actively follow it).
 For subaccounts, privacy, trading, and username-claim filters define the filtered-rank population without removing
-an existing full item or its `globalRank`; exclusion sets only `filteredRank` to null.
+an existing full item or its `globalRank`; exclusion sets only `filteredRank` to null. On the followed leaderboard
+`filteredRank` counts only the follower's filter-passing followed subaccounts, while `globalRank` stays global.
 
 The dedicated point reads coexist with `viewAs`: `getWalletLeaderboardPosition({ address })` GETs
-`/leaderboard/wallets/{address}` and `getSubaccountLeaderboardPosition({ subaccountHex })` GETs
-`/leaderboard/subaccounts/{subaccountHex}`, each returning the same row shape without pagination. Use a point
-read when only one rank is needed; use `viewAs` for an inline lookup scoped to a ranked page. Position
-`item` is null only when no leaderboard source row exists for the identifier, and a filter-excluded subaccount
-keeps its full item (including `globalRank`) with `filteredRank` null.
+`/leaderboard/wallets/{address}`, `getSubaccountLeaderboardPosition({ subaccountHex })` GETs
+`/leaderboard/subaccounts/{subaccountHex}`, and `getFollowedLeaderboardPosition({ subaccountHex, viewAs })` GETs
+`/wallets/leaderboard/followed/{viewAs}` scoped to the `subaccountHex` follower, each returning the same row shape
+without pagination. Use a point read when only one rank is needed; use `viewAs` for an inline lookup scoped to a
+ranked page. Position `item` is null only when no leaderboard source row exists for the identifier, and a
+filter-excluded subaccount keeps its full item (including `globalRank`) with `filteredRank` null.
 
 ```ts
 const board = await nuanze.getLeaderboard({
@@ -125,6 +130,15 @@ const subPosition = await nuanze.getSubaccountLeaderboardPosition({
 });
 if (subPosition.item) {
   console.log(subPosition.filteredRank, subPosition.item.globalRank);
+}
+
+const followedPosition = await nuanze.getFollowedLeaderboardPosition({
+  subaccountHex: '0xabcd...0000', // follower
+  viewAs: '0x1234...0012', // followed subaccount to position
+  timeframe: '30d',
+});
+if (followedPosition.item) {
+  console.log(followedPosition.filteredRank, followedPosition.item.globalRank);
 }
 ```
 

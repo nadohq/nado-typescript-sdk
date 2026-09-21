@@ -131,6 +131,20 @@ export interface NuanzeServerFollowedLeaderboardResponse {
   timeframe: NuanzeLeaderboardTimeframe;
   items: NuanzeServerFollowedLeaderboardItem[];
   nextCursor: string | null;
+  viewer: {
+    filteredRank: number | null;
+    item: NuanzeServerFollowedLeaderboardItem | null;
+  } | null;
+  asOf: string;
+}
+
+/**
+ * `GET /wallets/leaderboard/followed/{viewAs}` response as returned on the wire.
+ */
+export interface NuanzeServerFollowedLeaderboardPositionResponse {
+  timeframe: NuanzeLeaderboardTimeframe;
+  filteredRank: number | null;
+  item: NuanzeServerFollowedLeaderboardItem | null;
   asOf: string;
 }
 
