@@ -336,8 +336,8 @@ function mapIndexerPortfolioCalendarDay(
     date: toBigNumber(day.date),
     pnl: toBigNumber(day.pnl),
     volume: toBigNumber(day.volume),
-    tradeCount: toBigNumber(day.tradeCount),
-    productIds: day.productIds,
+    tradeCount: toBigNumber(day.trade_count),
+    productIds: day.product_ids,
   };
 }
 
