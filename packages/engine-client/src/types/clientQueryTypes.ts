@@ -189,6 +189,8 @@ export interface GetEngineMarketLiquidityParams {
 export interface GetEngineMarketLiquidityResponse {
   bids: EnginePriceTickLiquidity[];
   asks: EnginePriceTickLiquidity[];
+  productId: number;
+  timestamp: string;
 }
 
 export interface GetEngineMarketPriceParams {
