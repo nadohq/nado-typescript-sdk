@@ -210,6 +210,31 @@ export interface GetNuanzeLeaderboardResponse {
 }
 
 /**
+ * Params for `NuanzeClient.getWalletLeaderboardPosition`.
+ */
+export interface GetNuanzeWalletLeaderboardPositionParams {
+  /** Explicit public EVM wallet address (`0x` plus 40 hex characters) to look up. */
+  address: string;
+  /** Ranking window, default `30d`. */
+  timeframe?: NuanzeLeaderboardTimeframe;
+}
+
+/**
+ * Response of `NuanzeClient.getWalletLeaderboardPosition`.
+ */
+export interface GetNuanzeWalletLeaderboardPositionResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /**
+   * Global leaderboard row for the address, independent of collection pagination. Null only
+   * when the wallet leaderboard source row is absent.
+   */
+  item: NuanzeLeaderboardItem | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
  * Params for `NuanzeClient.getSubaccountLeaderboard`.
  */
 export interface GetNuanzeSubaccountLeaderboardParams {
@@ -268,6 +293,46 @@ export interface GetNuanzeSubaccountLeaderboardResponse {
 }
 
 /**
+ * Params for `NuanzeClient.getSubaccountLeaderboardPosition`.
+ */
+export interface GetNuanzeSubaccountLeaderboardPositionParams {
+  /**
+   * Explicit public bytes32 subaccount hex (`0x` plus 64 hex characters, the SDK
+   * `subaccountToHex` form) to look up.
+   */
+  subaccountHex: string;
+  /** Ranking window, default `30d`. */
+  timeframe?: NuanzeLeaderboardTimeframe;
+  /** Include subaccounts with Private Mode enabled in the filtered-rank population, default false. */
+  includePrivate?: boolean;
+  /** Include subaccounts with no PnL in the requested window in the filtered-rank population, default false. */
+  includeUntraded?: boolean;
+  /** Include subaccounts without a claimed username in the filtered-rank population, default true. */
+  includeUnclaimed?: boolean;
+}
+
+/**
+ * Response of `NuanzeClient.getSubaccountLeaderboardPosition`.
+ */
+export interface GetNuanzeSubaccountLeaderboardPositionResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /**
+   * Rank within the filter-defined population. Null when the source row is absent or when the
+   * existing row is excluded by the active privacy, trading, or username-claim filters.
+   */
+  filteredRank: number | null;
+  /**
+   * Full subaccount leaderboard source row, including the filter-independent `globalRank`. Null
+   * only when no source row exists for the subaccount; an existing but filter-excluded row
+   * keeps its full item with `filteredRank` null.
+   */
+  item: NuanzeSubaccountLeaderboardItem | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
  * Params for `NuanzeClient.getFollowedLeaderboard`. `timeframe` is required and applies to
  * every per-subaccount figure.
  */
@@ -289,6 +354,15 @@ export interface GetNuanzeFollowedLeaderboardParams {
    * filters and must be returned unchanged.
    */
   cursor?: string;
+  /**
+   * Optional bytes32 subaccount hex (`0x` plus 64 hex characters, the SDK `subaccountToHex`
+   * form) selecting the viewer perspective within the follower's graph. It is an
+   * unauthenticated explicit-identifier claim: it selects whose row is returned in `viewer`
+   * and proves nothing about who is asking. The viewer lookup uses the same timeframe and
+   * active filters as the page but is independent of `limit` and `cursor` and never alters
+   * pagination.
+   */
+  viewAs?: string;
 }
 
 /**
@@ -301,6 +375,64 @@ export interface GetNuanzeFollowedLeaderboardResponse {
   items: NuanzeFollowedLeaderboardItem[];
   /** Opaque cursor for the next page, or null when this is the final page. */
   nextCursor: string | null;
+  /**
+   * Viewer for the `viewAs` subaccount, or null when `viewAs` was omitted or the follower has
+   * no active follow edge to that subaccount. An existing but filter-excluded followed row
+   * keeps its full `item` (including `globalRank`, which is filter-independent) with
+   * `filteredRank` null; an included row carries both ranks, with `filteredRank` counted among
+   * the follower's filter-passing followed subaccounts only.
+   */
+  viewer: {
+    /** Rank among the follower's filter-passing followed subaccounts, or null when excluded. */
+    filteredRank: number | null;
+    /** Full followed leaderboard row. */
+    item: NuanzeFollowedLeaderboardItem | null;
+  } | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
+ * Params for `NuanzeClient.getFollowedLeaderboardPosition`. `timeframe` is required, as on the
+ * followed collection.
+ */
+export interface GetNuanzeFollowedLeaderboardPositionParams {
+  /** Lowercase or mixed-case bytes32 hex of the follower subaccount whose active graph is ranked. */
+  subaccountHex: string;
+  /**
+   * Bytes32 subaccount hex (`0x` plus 64 hex characters, the SDK `subaccountToHex` form) of the
+   * followed subaccount to position within the follower's leaderboard. Both identifiers are
+   * unauthenticated explicit-identifier claims and prove nothing about who is asking.
+   */
+  viewAs: string;
+  /** Ranking window for every per-subaccount figure. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /** Include followed subaccounts with no PnL in the requested window in the filtered-rank population, default true. */
+  includeUntraded?: boolean;
+  /** Include followed subaccounts with Private Mode enabled in the filtered-rank population, default false. */
+  includePrivate?: boolean;
+  /** Include followed subaccounts without a claimed username in the filtered-rank population, default true. */
+  includeUnclaimed?: boolean;
+}
+
+/**
+ * Response of `NuanzeClient.getFollowedLeaderboardPosition`.
+ */
+export interface GetNuanzeFollowedLeaderboardPositionResponse {
+  /** Echoed timeframe. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /**
+   * Rank among the follower's filter-passing followed subaccounts. Null when the follower does
+   * not actively follow the subaccount or when the followed row is excluded by the active
+   * trading, privacy, or username-claim filters.
+   */
+  filteredRank: number | null;
+  /**
+   * Full followed leaderboard row, including the filter-independent global `globalRank`. Null
+   * only when the follower has no active follow edge to the subaccount; a filter-excluded
+   * followed row keeps its full item with `filteredRank` null.
+   */
+  item: NuanzeFollowedLeaderboardItem | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }
