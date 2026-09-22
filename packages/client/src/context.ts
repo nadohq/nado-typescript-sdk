@@ -6,6 +6,7 @@ import {
 } from '@nadohq/indexer-client';
 import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
 import { NUANZE_CLIENT_ENDPOINTS, NuanzeClient } from '@nadohq/nuanze-client';
+import { OTC_CLIENT_ENDPOINTS, OtcClient } from '@nadohq/otc-client';
 import {
   ChainEnv,
   NADO_ABIS,
@@ -36,7 +37,8 @@ export interface NadoClientContext {
   triggerClient: TriggerClient;
   mobileClient: MobileClient;
   nuanzeClient: NuanzeClient;
-  // If provided, identifies the calling client, sent as a header with every request made by the service clients above
+  otcClient: OtcClient;
+  // If provided, identifies the calling client, sent as a header with every request made by the Nado service clients above (Nuanze excluded)
   clientType?: string;
 }
 
@@ -53,6 +55,7 @@ interface NadoClientContextOpts {
   triggerEndpoint: string;
   mobileEndpoint: string;
   nuanzeEndpoint: string;
+  otcEndpoint: string;
   clientType?: string;
 }
 
@@ -97,6 +100,7 @@ export function createClientContext(
     triggerEndpoint,
     mobileEndpoint,
     nuanzeEndpoint,
+    otcEndpoint,
     clientType,
   } = ((): NadoClientContextOpts => {
     // Custom endpoint options
@@ -113,6 +117,7 @@ export function createClientContext(
       triggerEndpoint: TRIGGER_CLIENT_ENDPOINTS[chainEnv],
       mobileEndpoint: MOBILE_CLIENT_ENDPOINTS[chainEnv],
       nuanzeEndpoint: NUANZE_CLIENT_ENDPOINTS[chainEnv],
+      otcEndpoint: OTC_CLIENT_ENDPOINTS[chainEnv],
       clientType,
     };
   })();
@@ -191,6 +196,7 @@ export function createClientContext(
     nuanzeClient: new NuanzeClient({
       url: nuanzeEndpoint,
     }),
+    otcClient: new OtcClient({ url: otcEndpoint, clientType }),
   };
 }
 

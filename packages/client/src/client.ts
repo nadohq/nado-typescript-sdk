@@ -52,6 +52,7 @@ export class NadoClient {
         triggerEndpoint: this.context.triggerClient.opts.url,
         mobileEndpoint: this.context.mobileClient.opts.url,
         nuanzeEndpoint: this.context.nuanzeClient.opts.url,
+        otcEndpoint: this.context.otcClient.opts.url,
         clientType: this.context.clientType,
       },
       {

@@ -65,7 +65,8 @@ The project follows a monorepo pattern with these core packages:
 4. **`@nadohq/trigger-client`** - Manages trigger service for stop orders
 5. **`@nadohq/mobile-client`** - Client for the mobile service API (usernames, profiles, private mode, push notification devices & preferences)
 6. **`@nadohq/nuanze-client`** - Read-only client for the public Nuanze analytics API
-7. **`@nadohq/shared`** - Contract utilities, ABIs, and on-chain interactions. Also includes common utilities, such as
+7. **`@nadohq/otc-client`** - HTTP client for the OTC service (execute a signed order, read its status, build RFQ quote subscriptions)
+8. **`@nadohq/shared`** - Contract utilities, ABIs, and on-chain interactions. Also includes common utilities, such as
    bignumber.js for mathematical operations.
 
 ### Client Architecture
