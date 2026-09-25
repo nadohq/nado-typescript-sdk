@@ -41,6 +41,7 @@
         "@nadohq/indexer-client": "workspace:*",
         "@nadohq/mobile-client": "workspace:*",
         "@nadohq/nuanze-client": "workspace:*",
+        "@nadohq/otc-client": "workspace:*",
         "@nadohq/shared": "workspace:*",
         "@nadohq/trigger-client": "workspace:*",
         "bignumber.js": "11.1.1",
