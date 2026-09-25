@@ -31,7 +31,8 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
   - `bun run test:e2e:nuanze` - Nuanze-client E2E tests
   - `bun run test:e2e:trigger` - Trigger-client E2E tests
   - `bun run test:e2e:mobile` - Mobile-client E2E tests
-- Without building first (if already built): `bun --cwd apps/e2e e2e` and `e2e:client`, `e2e:engine`, `e2e:indexer`, `e2e:nuanze`, `e2e:trigger`, `e2e:mobile`
+  - `bun run test:e2e:otc` - OTC-client E2E tests
+- Without building first (if already built): `bun --cwd apps/e2e e2e` and `e2e:client`, `e2e:engine`, `e2e:indexer`, `e2e:nuanze`, `e2e:trigger`, `e2e:mobile`, `e2e:otc`
 - **E2E tests always run against the released production APIs.** Never gate tests on environment variables
  (no `skip:` tied to `process.env`, no base-URL overrides such as `NUANZE_E2E_URL`, no "until deployed"
  placeholders). Features land in the API first, then in the SDK; only data-dependent `context.skip(...)` is

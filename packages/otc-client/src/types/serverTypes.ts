@@ -3,7 +3,7 @@ export type OtcQuoteSizeUnit = 'base' | 'quote';
 interface OtcServerExecutionDiagnostics {
   failure_source?: string;
   failure_stage?: string;
-  upstream_error_code?: number;
+  upstream_error_code?: string;
   retryable?: boolean;
   /**
    * Documented values are `retry_same_request`, `sign_new_order`, `reconcile`, `wait`, and

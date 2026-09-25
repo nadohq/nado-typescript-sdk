@@ -6,6 +6,11 @@ import {
 } from '@nadohq/indexer-client';
 import { MOBILE_CLIENT_ENDPOINTS, MobileClient } from '@nadohq/mobile-client';
 import { NUANZE_CLIENT_ENDPOINTS, NuanzeClient } from '@nadohq/nuanze-client';
+import {
+  OTC_CLIENT_ENDPOINTS,
+  OTC_RFQ_WS_CLIENT_ENDPOINTS,
+  OtcClient,
+} from '@nadohq/otc-client';
 import { CHAIN_ENV_TO_CHAIN, NADO_DEPLOYMENTS } from '@nadohq/shared';
 import {
   TRIGGER_CLIENT_ENDPOINTS,
@@ -49,6 +54,8 @@ export function createTestContext(): RunContext {
     trigger: TRIGGER_CLIENT_ENDPOINTS[env.chainEnv],
     mobile: MOBILE_CLIENT_ENDPOINTS[env.chainEnv],
     nuanze: NUANZE_CLIENT_ENDPOINTS[env.chainEnv],
+    otc: OTC_CLIENT_ENDPOINTS[env.chainEnv],
+    otcRfqWs: OTC_RFQ_WS_CLIENT_ENDPOINTS[env.chainEnv],
   };
 
   const contracts = NADO_DEPLOYMENTS[env.chainEnv];
@@ -82,6 +89,10 @@ export function createTestContext(): RunContext {
     // Nuanze is read-only and public, so it needs no wallet client
     nuanze: new NuanzeClient({
       url: endpoints.nuanze,
+    }),
+    // OTC takes an already-signed order, so it needs no wallet client
+    otc: new OtcClient({
+      url: endpoints.otc,
     }),
   };
 }

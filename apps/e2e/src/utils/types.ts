@@ -2,6 +2,7 @@ import { EngineClient } from '@nadohq/engine-client';
 import { IndexerClient } from '@nadohq/indexer-client';
 import { MobileClient } from '@nadohq/mobile-client';
 import { NuanzeClient } from '@nadohq/nuanze-client';
+import { OtcClient } from '@nadohq/otc-client';
 import {
   ChainEnv,
   NadoDeploymentAddresses,
@@ -29,6 +30,8 @@ export interface RunContext {
     rewards: string;
     mobile: string;
     nuanze: string;
+    otc: string;
+    otcRfqWs: string;
   };
   contracts: NadoDeploymentAddresses;
   engine: EngineClient;
@@ -36,4 +39,5 @@ export interface RunContext {
   trigger: TriggerClient;
   mobile: MobileClient;
   nuanze: NuanzeClient;
+  otc: OtcClient;
 }
