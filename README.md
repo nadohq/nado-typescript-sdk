@@ -27,6 +27,11 @@ Exports queries and executes that talk to the trigger service (used for stop & T
 
 Client for the mobile service — identity, usernames, privacy settings, and push notification devices & preferences.
 
+### `@nadohq/otc-client`
+
+HTTP client for the OTC service. Executes an already-signed fill-or-kill order, reads that
+execution's status, and builds quote-subscription messages for the RFQ WebSocket.
+
 ### `@nadohq/nuanze-client`
 
 Read-only client for the public Nuanze analytics API — markets, wallets, trades, candles, flows, and

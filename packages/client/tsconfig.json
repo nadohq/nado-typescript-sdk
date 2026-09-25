@@ -21,6 +21,9 @@
       "path": "../nuanze-client"
     },
     {
+      "path": "../otc-client"
+    },
+    {
       "path": "../trigger-client"
     },
     {
