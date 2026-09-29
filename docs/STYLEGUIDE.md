@@ -8,10 +8,10 @@
   parameters, and return value
 - **ALL exported variables/constants** - Any constant or variable with `export` keyword used outside the current file
 - **ALL exported types and interfaces** - Including their properties and purpose
+- **ALL exported classes** - Including their purpose and constructor parameters
 - **ALL interface/type properties** - Individual property descriptions
 
-**⚠️ When you see `export function`, `export const`, `export type`, or `export interface`, automatically add JSDoc
-format.**
+**⚠️ When you see `export function`, `export const`, `export type`, `export interface`, or `export class`, automatically add JSDoc format.**
 
 ### When NOT to Use JSDoc Format
 
@@ -45,7 +45,7 @@ format.**
 
 **When generating or reviewing code, LLM should:**
 
-1. **Detect export keywords** - Scan for `export function`, `export const`, `export type`, `export interface`
+1. **Detect export keywords** - Scan for `export function`, `export const`, `export type`, `export interface`, `export class`
 2. **Check for JSDoc** - Verify each export has proper `/** ... */` documentation
 3. **Suggest JSDoc format** - Auto-complete JSDoc blocks for any missing documentation
 4. **Flag regular comments** - Convert `//` comments above exports to JSDoc format
