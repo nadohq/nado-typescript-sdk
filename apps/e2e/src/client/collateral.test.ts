@@ -127,6 +127,52 @@ void describe(
         assertDefined(result, 'transferResult2');
         assert.equal(result.status, 'success', 'transfer #2 should succeed');
       });
+
+      void test('transfers quote via transferQuoteV2 with a bounded dynamic fee', async () => {
+        // The fee cap is the highest the dynamic fee can ever be, so it always succeeds
+        const feeQuote = await nadoClient.spot.getDynamicFeeQuote({
+          subaccountOwner: walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          kind: 'transfer_quote',
+          recipientSubaccountName: 'default2',
+        });
+        debugPrint('Transfer fee quote', feeQuote);
+
+        const result = await nadoClient.spot.transferQuoteV2({
+          amount: TRANSFER_BACK_AMOUNT,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          recipientSubaccountName: 'default2',
+          maxFeeX18: feeQuote.feeCap,
+        });
+
+        debugPrint('Transfer quote v2 result', result);
+        assertDefined(result, 'transferV2Result');
+        assert.equal(
+          result.status,
+          'success',
+          'transferQuoteV2 should succeed while the fee is within the bound',
+        );
+      });
+
+      void test('transfers quote back via transferQuoteV2', async () => {
+        // Wait for engine to process the outbound transfer
+        await delay(TEST_DELAYS.LONG);
+        const result = await nadoClient.spot.transferQuoteV2({
+          amount: TRANSFER_BACK_AMOUNT,
+          subaccountName: 'default2',
+          recipientSubaccountName: TEST_SUBACCOUNT_NAME,
+          // Cap for an isolated-recipient transfer is lower, so use the standard cap
+          maxFeeX18: addDecimals(1),
+        });
+
+        debugPrint('Transfer quote v2 back result', result);
+        assertDefined(result, 'transferV2BackResult');
+        assert.equal(
+          result.status,
+          'success',
+          'transferQuoteV2 back should succeed',
+        );
+      });
     });
 
     // ---------------------------------------------------------------

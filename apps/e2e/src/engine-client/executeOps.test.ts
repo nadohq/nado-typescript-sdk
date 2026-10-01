@@ -1,4 +1,8 @@
-import { EngineOrderParams } from '@nadohq/engine-client';
+import {
+  ENGINE_ERROR_CODES,
+  EngineOrderParams,
+  EngineServerFailureError,
+} from '@nadohq/engine-client';
 import {
   addDecimals,
   createDeterministicLinkedSignerPrivateKey,
@@ -13,6 +17,7 @@ import {
 } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
+import type { TestContext } from 'node:test';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { createWalletClient, http, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -109,6 +114,64 @@ void describe('[engine-client]: execute operations', () => {
         'withdrawCollateralV2 should succeed',
       );
     });
+
+    void test('withdraws with a maxFeeX18 bound on the dynamic fee', async () => {
+      // The fee cap is the highest the dynamic fee can ever be, so it always succeeds
+      const feeQuote = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        kind: 'withdrawal',
+        productId: QUOTE_PRODUCT_ID,
+      });
+
+      const result = await tc.engine.withdrawCollateralV2({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: QUOTE_PRODUCT_ID,
+        amount: addDecimals(1, 6),
+        sendTo: zeroAddress,
+        appendix: 0,
+        maxFeeX18: feeQuote.feeCap,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      });
+
+      debugPrint('Withdraw collateral v2 (max fee) result', result);
+      assertDefined(result, 'withdrawV2MaxFeeResult');
+      assert.equal(
+        result.status,
+        'success',
+        'withdrawCollateralV2 with maxFeeX18 should succeed',
+      );
+    });
+
+    void test('rejects a withdrawal when maxFeeX18 is below the required fee', async (context) => {
+      const feeQuote = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        kind: 'withdrawal',
+        productId: QUOTE_PRODUCT_ID,
+      });
+
+      await assertRejectsWithFeeTooLow(
+        context,
+        feeQuote.requiredFee,
+        () =>
+          tc.engine.withdrawCollateralV2({
+            subaccountOwner: tc.walletClientAddress,
+            subaccountName: TEST_SUBACCOUNT_NAME,
+            productId: QUOTE_PRODUCT_ID,
+            amount: addDecimals(1, 6),
+            sendTo: zeroAddress,
+            appendix: 0,
+            // Only execute while the fee is free
+            maxFeeX18: 0,
+            verifyingAddr: tc.endpointAddr,
+            chainId: tc.chainId,
+          }),
+        'withdrawCollateralV2',
+      );
+    });
   });
 
   // ---------------------------------------------------------------
@@ -181,6 +244,126 @@ void describe('[engine-client]: execute operations', () => {
       const balanceAfter = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
       debugPrint('Default balance after transfer back', balanceAfter);
 
+      const delta = balanceAfter.minus(balanceBefore);
+      assert.ok(
+        delta.gt(0),
+        `receiver balance should increase after transfer back, got delta ${delta.toString()}`,
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // transferQuoteV2 — quote transfer charged a dynamic fee
+  // ---------------------------------------------------------------
+  void describe('transferQuoteV2', () => {
+    const TRANSFER_AMOUNT = addDecimals(6);
+    const TRANSFER_BACK_AMOUNT = addDecimals(5);
+
+    async function getQuoteBalance(subaccountName: string): Promise<BigNumber> {
+      const summary = await tc.engine.getSubaccountSummary({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName,
+      });
+      const quote = summary.balances.find(
+        (b) => b.productId === QUOTE_PRODUCT_ID,
+      );
+      assertDefined(quote, `quoteBalance for ${subaccountName}`);
+      return quote.amount;
+    }
+
+    void test('transfers quote to another subaccount with a bounded fee', async () => {
+      // The fee cap is the highest the dynamic fee can ever be, so it always succeeds
+      const feeQuote = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        kind: 'transfer_quote',
+        recipientSubaccountName: 'default2',
+      });
+      debugPrint('Transfer fee quote', feeQuote);
+
+      const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+
+      const result = await tc.engine.transferQuoteV2({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        recipientSubaccountName: 'default2',
+        amount: TRANSFER_AMOUNT,
+        maxFeeX18: feeQuote.feeCap,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      });
+
+      debugPrint('Transfer quote v2 result', result);
+      assertDefined(result, 'transferV2Result');
+      assert.equal(
+        result.status,
+        'success',
+        'transferQuoteV2 should succeed while the fee is within the bound',
+      );
+
+      const balanceAfter = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+      const delta = balanceBefore.minus(balanceAfter);
+      assert.ok(
+        delta.gte(toBigNumber(TRANSFER_AMOUNT)),
+        `sender balance should decrease by at least the transfer amount (${TRANSFER_AMOUNT.toString()}), got delta ${delta.toString()}`,
+      );
+    });
+
+    void test('rejects a transfer when maxFeeX18 is below the required fee', async (context) => {
+      const feeQuote = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        kind: 'transfer_quote',
+        recipientSubaccountName: 'default2',
+      });
+
+      await assertRejectsWithFeeTooLow(
+        context,
+        feeQuote.requiredFee,
+        () =>
+          tc.engine.transferQuoteV2({
+            subaccountOwner: tc.walletClientAddress,
+            subaccountName: TEST_SUBACCOUNT_NAME,
+            recipientSubaccountName: 'default2',
+            amount: TRANSFER_BACK_AMOUNT,
+            // Only execute while the fee is free
+            maxFeeX18: 0,
+            verifyingAddr: tc.endpointAddr,
+            chainId: tc.chainId,
+          }),
+        'transferQuoteV2',
+      );
+    });
+
+    void test('transfers quote back to restore balance', async () => {
+      const feeQuote = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: 'default2',
+        kind: 'transfer_quote',
+        recipientSubaccountName: TEST_SUBACCOUNT_NAME,
+      });
+
+      const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
+
+      const result = await tc.engine.transferQuoteV2({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: 'default2',
+        recipientSubaccountName: TEST_SUBACCOUNT_NAME,
+        amount: TRANSFER_BACK_AMOUNT,
+        maxFeeX18: feeQuote.feeCap,
+        verifyingAddr: tc.endpointAddr,
+        chainId: tc.chainId,
+      });
+
+      debugPrint('Transfer quote v2 back result', result);
+      assertDefined(result, 'transferV2BackResult');
+      assert.equal(
+        result.status,
+        'success',
+        'transferQuoteV2 back should succeed',
+      );
+
+      const balanceAfter = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
       const delta = balanceAfter.minus(balanceBefore);
       assert.ok(
         delta.gt(0),
@@ -367,3 +550,37 @@ void describe('[engine-client]: execute operations', () => {
     });
   });
 });
+
+/**
+ * Asserts the execute rejects with `FEE_TOO_LOW` (2135) when its `maxFeeX18` is below the
+ * required fee. Data-dependent: skips when the dynamic fee is currently free, as a bound of 0
+ * (only execute while the fee is free) would then succeed.
+ */
+async function assertRejectsWithFeeTooLow(
+  context: TestContext,
+  requiredFee: BigNumber,
+  execute: () => Promise<unknown>,
+  label: string,
+) {
+  if (requiredFee.lte(0)) {
+    context.skip('dynamic fee is currently free, cannot assert FeeTooLow');
+    return;
+  }
+
+  await assert.rejects(
+    execute,
+    (err: unknown) => {
+      assert.ok(
+        err instanceof EngineServerFailureError,
+        'error should be EngineServerFailureError',
+      );
+      assert.equal(
+        err.errorCode,
+        ENGINE_ERROR_CODES.FEE_TOO_LOW,
+        `error code should be FEE_TOO_LOW (2135), got ${err.errorCode}`,
+      );
+      return true;
+    },
+    `${label} with maxFeeX18 below the required fee should be rejected`,
+  );
+}

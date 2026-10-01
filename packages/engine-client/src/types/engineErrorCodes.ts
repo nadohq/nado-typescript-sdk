@@ -260,6 +260,8 @@ export const ENGINE_ERROR_CODES = {
   ISOLATED_SUBACCOUNT_LIMIT_REACHED: 2125,
   /** No eligible trigger found for the dependency digest. */
   NO_ELIGIBLE_TRIGGER: 2126,
+  /** Dynamic fee at execution exceeded `max_fee_x18`; re-quote and resubmit. */
+  FEE_TOO_LOW: 2135,
 } as const;
 
 /**

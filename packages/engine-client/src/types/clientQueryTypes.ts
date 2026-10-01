@@ -241,6 +241,53 @@ export interface GetEngineMaxWithdrawableParams extends Subaccount {
 
 export type GetEngineMaxWithdrawableResponse = BigNumber;
 
+/**
+ * Response of {@link EngineQueryClient.getMaxWithdrawableWithDynamicFee}: the max withdrawable
+ * with the current dynamic fee of Withdraw Collateral V2 reserved instead of the flat fee.
+ */
+export interface GetEngineMaxWithdrawableWithDynamicFeeResponse {
+  /** Max withdrawable amount, with the current dynamic fee reserved. */
+  maxWithdrawable: BigNumber;
+  /**
+   * The dynamic fee reserved, in the product's x18 units. Omitted when the subaccount has no
+   * deposits.
+   */
+  fee?: BigNumber;
+}
+
+/**
+ * Params for the `dynamic_fee_quote` query. Withdraw Collateral V2 and Transfer Quote V2 are
+ * charged a dynamic fee: at most the flat V1 fee (the cap), lower when platform-wide V2
+ * withdrawal and transfer demand is low. This query returns the fee a request would be charged
+ * right now. The fee is priced again at execution, so pass a `maxFeeX18` with some headroom.
+ */
+export type GetEngineDynamicFeeQuoteParams =
+  | (Subaccount & {
+      /** Fee for a Withdraw Collateral V2 of the given spot product. */
+      kind: 'withdrawal';
+      /** Spot product to withdraw. */
+      productId: number;
+    })
+  | (Subaccount & {
+      /** Fee for a Transfer Quote V2 to the given recipient subaccount (same wallet). */
+      kind: 'transfer_quote';
+      /** Name of the recipient subaccount, under the same wallet as the sender. */
+      recipientSubaccountName: string;
+    });
+
+/**
+ * Response of the `dynamic_fee_quote` query: the fee a V2 withdrawal or V2 quote transfer would
+ * be charged right now.
+ */
+export interface GetEngineDynamicFeeQuoteResponse {
+  /** Fee a request would be charged now. Never above `feeCap`. */
+  requiredFee: BigNumber;
+  /** The cap: the flat V1 fee for this withdrawal or transfer. */
+  feeCap: BigNumber;
+  /** Current V2 demand, from 0 (fee is free) to 1e18 (fee is the cap). The fee grows with it. */
+  pressure: BigNumber;
+}
+
 export type GetEngineTimeResponse = EngineServerTimeResponse;
 
 export type GetEngineLinkedSignerParams = Subaccount;

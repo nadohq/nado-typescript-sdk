@@ -554,6 +554,39 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertBigNumberNonNegative(result, 'maxWithdrawable');
   });
 
+  void test('getMaxWithdrawableWithDynamicFee returns the reserved fee', async () => {
+    const result = await nadoClient.spot.getMaxWithdrawableWithDynamicFee({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      productId: QUOTE_PRODUCT_ID,
+    });
+
+    debugPrint('Max withdrawable (dynamic fee)', result);
+    assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
+    // `fee` is omitted when the subaccount has no deposits
+    if (result.fee) {
+      assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
+    }
+  });
+
+  void test('getDynamicFeeQuote returns the current withdrawal fee', async () => {
+    const result = await nadoClient.spot.getDynamicFeeQuote({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      kind: 'withdrawal',
+      productId: QUOTE_PRODUCT_ID,
+    });
+
+    debugPrint('Dynamic fee quote (withdrawal)', result);
+    assertBigNumberNonNegative(result.requiredFee, 'requiredFee');
+    assertBigNumberNonNegative(result.feeCap, 'feeCap');
+    assertBigNumberNonNegative(result.pressure, 'pressure');
+    assert.ok(
+      result.requiredFee.lte(result.feeCap),
+      'requiredFee should never exceed feeCap',
+    );
+  });
+
   void test('getMaxMintNlpAmount returns a finite amount', async () => {
     const result = await nadoClient.spot.getMaxMintNlpAmount({
       subaccountOwner: walletClientAddress,

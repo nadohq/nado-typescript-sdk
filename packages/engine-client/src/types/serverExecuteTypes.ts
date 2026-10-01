@@ -41,6 +41,8 @@ export interface EngineServerExecuteResponseDataByType {
   place_order: EngineServerPlaceOrderResponse;
   place_orders: EngineServerPlaceOrdersResponse;
   transfer_quote: null;
+  /** `transfer_quote_v2` returns no response data. */
+  transfer_quote_v2: null;
   update_dependency: EngineServerUpdateDependencyResponse;
   withdraw_collateral: null;
   withdraw_collateral_v2: null;
@@ -131,13 +133,24 @@ export interface EngineServerExecuteRequestByType {
     stop_on_failure: boolean | null;
   };
   transfer_quote: SignedTx<EIP712TransferQuoteValues>;
+  /** Same signed struct as `transfer_quote`, plus an unsigned `max_fee_x18`. */
+  transfer_quote_v2: SignedTx<EIP712TransferQuoteValues> & {
+    /** Highest fee the sender accepts, in USDT0 x18. Required. Not signed. */
+    max_fee_x18: string;
+  };
   update_dependency: SignedTx<EIP712UpdateDependencyValues>;
   withdraw_collateral: WithSpotLeverage<
     SignedTx<EIP712WithdrawCollateralValues>
   >;
   withdraw_collateral_v2: WithSpotLeverage<
     SignedTx<EIP712WithdrawCollateralV2Values>
-  >;
+  > & {
+    /**
+     * Highest fee accepted, in the product's x18 units. If omitted, up to the cap is accepted.
+     * Not signed.
+     */
+    max_fee_x18?: string;
+  };
 }
 
 export type EngineServerExecuteRequestType =

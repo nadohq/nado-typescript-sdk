@@ -1,4 +1,7 @@
-import { ENGINE_SERVER_STATUS_VALUES } from '@nadohq/engine-client';
+import {
+  ENGINE_SERVER_STATUS_VALUES,
+  GetEngineDynamicFeeQuoteResponse,
+} from '@nadohq/engine-client';
 import {
   addDecimals,
   getOrderNonce,
@@ -12,6 +15,7 @@ import { before, beforeEach, describe, test } from 'node:test';
 import {
   assertArrayElements,
   assertBigNumberFinite,
+  assertBigNumberNonNegative,
   assertDefined,
   assertEnumMember,
   assertHexString,
@@ -347,5 +351,65 @@ void describe(
       assertNumber(serverTime, 'edgeControlTime');
       assert.ok(serverTime > 0, 'edgeControlTime should be positive');
     });
+
+    void test('getDynamicFeeQuote returns the current withdrawal fee', async () => {
+      const result = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        kind: 'withdrawal',
+        productId: QUOTE_PRODUCT_ID,
+      });
+
+      debugPrint('Dynamic fee quote (withdrawal)', result);
+      assertDynamicFeeQuoteShape(result, 'dynamicFeeQuoteWithdrawal');
+    });
+
+    void test('getDynamicFeeQuote returns the current transfer fee', async () => {
+      const result = await tc.engine.getDynamicFeeQuote({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        kind: 'transfer_quote',
+        recipientSubaccountName: TEST_SUBACCOUNT_NAME,
+      });
+
+      debugPrint('Dynamic fee quote (transfer)', result);
+      assertDynamicFeeQuoteShape(result, 'dynamicFeeQuoteTransfer');
+    });
+
+    void test('getMaxWithdrawableWithDynamicFee reserves the dynamic fee', async () => {
+      const result = await tc.engine.getMaxWithdrawableWithDynamicFee({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: QUOTE_PRODUCT_ID,
+      });
+
+      debugPrint('Max withdrawable (dynamic fee)', result);
+      assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
+      // `fee` is omitted when the subaccount has no deposits
+      if (result.fee) {
+        assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
+      }
+    });
   },
 );
+
+/**
+ * Asserts the shape of a dynamic fee quote: fees are finite, the required fee never exceeds the
+ * cap, and pressure is within [0, 1e18].
+ */
+function assertDynamicFeeQuoteShape(
+  result: GetEngineDynamicFeeQuoteResponse,
+  label: string,
+) {
+  assertBigNumberFinite(result.requiredFee, `${label}.requiredFee`);
+  assertBigNumberFinite(result.feeCap, `${label}.feeCap`);
+  assertBigNumberFinite(result.pressure, `${label}.pressure`);
+  assert.ok(
+    result.requiredFee.lte(result.feeCap),
+    `${label}: requiredFee should never exceed feeCap`,
+  );
+  assert.ok(
+    result.pressure.gte(0) && result.pressure.lte(toBigNumber('1e18')),
+    `${label}: pressure should be within [0, 1e18]`,
+  );
+}

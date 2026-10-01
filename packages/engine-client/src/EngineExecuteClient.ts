@@ -112,6 +112,23 @@ export class EngineExecuteClient extends EngineBaseClient {
     );
   }
 
+  /**
+   * Transfers quote between subaccounts under the same wallet, charged a dynamic fee of at most
+   * the V1 transfer fee. The fee is priced at execution: if it exceeds `maxFeeX18`, the request
+   * fails with `FEE_TOO_LOW` (2135). Use {@link EngineQueryClient.getDynamicFeeQuote} for the
+   * current fee.
+   * @param params
+   * @returns The execute result, throwing an `EngineServerFailureError` on failure.
+   */
+  async transferQuoteV2(
+    params: EngineExecuteRequestParamsByType['transfer_quote_v2'],
+  ) {
+    return this.execute(
+      'transfer_quote_v2',
+      await this.payloadBuilder.buildTransferQuoteV2Payload(params),
+    );
+  }
+
   async mintNlp(params: EngineExecuteRequestParamsByType['mint_nlp']) {
     return this.execute(
       'mint_nlp',

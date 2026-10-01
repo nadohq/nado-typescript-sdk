@@ -12,11 +12,14 @@ import {
 import BigNumber from 'bignumber.js';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
+  EngineServerDynamicFeeQuoteQueryParams,
   EngineServerStatusResponse,
   EngineServerSubaccountInfoQueryParams,
   EngineSymbolsResponse,
   GetEngineAllMarketsResponse,
   GetEngineContractsResponse,
+  GetEngineDynamicFeeQuoteParams,
+  GetEngineDynamicFeeQuoteResponse,
   GetEngineEstimatedSubaccountSummaryParams,
   GetEngineHealthGroupsResponse,
   GetEngineInsuranceResponse,
@@ -38,6 +41,7 @@ import {
   GetEngineMaxOrderSizeResponse,
   GetEngineMaxWithdrawableParams,
   GetEngineMaxWithdrawableResponse,
+  GetEngineMaxWithdrawableWithDynamicFeeResponse,
   GetEngineNlpLockedBalancesParams,
   GetEngineNlpLockedBalancesResponse,
   GetEngineNlpPoolInfoResponse,
@@ -481,7 +485,40 @@ export class EngineQueryClient extends EngineBaseClient {
   async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
   ): Promise<GetEngineMaxWithdrawableResponse> {
-    const baseResponse = await this.query('max_withdrawable', {
+    const baseResponse = await this.getMaxWithdrawableBase(params);
+    return toBigNumber(baseResponse.max_withdrawable);
+  }
+
+  /**
+   * Retrieves the estimated max withdrawal size for a product, with the current dynamic fee of
+   * Withdraw Collateral V2 reserved instead of the flat fee. The reserved fee is returned as
+   * `fee`. See {@link getMaxWithdrawable} for the flat-fee estimate.
+   * @param params
+   * @returns The max withdrawable with the current dynamic fee reserved, and the reserved fee.
+   */
+  async getMaxWithdrawableWithDynamicFee(
+    params: GetEngineMaxWithdrawableParams,
+  ): Promise<GetEngineMaxWithdrawableWithDynamicFeeResponse> {
+    const baseResponse = await this.getMaxWithdrawableBase(params, true);
+
+    return {
+      maxWithdrawable: toBigNumber(baseResponse.max_withdrawable),
+      fee:
+        baseResponse.fee_x18 != null
+          ? toBigNumber(baseResponse.fee_x18)
+          : undefined,
+    };
+  }
+
+  /**
+   * Runs the `max_withdrawable` query for both {@link getMaxWithdrawable} and
+   * {@link getMaxWithdrawableWithDynamicFee}.
+   */
+  private async getMaxWithdrawableBase(
+    params: GetEngineMaxWithdrawableParams,
+    dynamicFee = false,
+  ) {
+    return this.query('max_withdrawable', {
       product_id: params.productId,
       sender: subaccountToHex({
         subaccountOwner: params.subaccountOwner,
@@ -489,9 +526,42 @@ export class EngineQueryClient extends EngineBaseClient {
       }),
       spot_leverage:
         params.spotLeverage != null ? String(params.spotLeverage) : null,
+      dynamic_fee: dynamicFee ? 'true' : null,
     });
+  }
 
-    return toBigNumber(baseResponse.max_withdrawable);
+  /**
+   * Retrieves the current dynamic fee for a V2 withdrawal or V2 quote transfer.
+   * The fee is priced again at execution, so pass a `maxFeeX18` with some headroom when executing.
+   * @param params
+   * @returns The current required fee, the fee cap, and the V2 demand pressure.
+   */
+  async getDynamicFeeQuote(
+    params: GetEngineDynamicFeeQuoteParams,
+  ): Promise<GetEngineDynamicFeeQuoteResponse> {
+    const sender = subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    });
+    const queryParams: EngineServerDynamicFeeQuoteQueryParams =
+      params.kind === 'withdrawal'
+        ? { kind: params.kind, sender, product_id: params.productId }
+        : {
+            kind: params.kind,
+            sender,
+            recipient: subaccountToHex({
+              subaccountOwner: params.subaccountOwner,
+              subaccountName: params.recipientSubaccountName,
+            }),
+          };
+
+    const baseResponse = await this.query('dynamic_fee_quote', queryParams);
+
+    return {
+      requiredFee: toBigNumber(baseResponse.required_fee_x18),
+      feeCap: toBigNumber(baseResponse.fee_cap_x18),
+      pressure: toBigNumber(baseResponse.pressure_x18),
+    };
   }
 
   /**

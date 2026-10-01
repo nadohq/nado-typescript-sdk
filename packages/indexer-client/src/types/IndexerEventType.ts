@@ -10,6 +10,7 @@ export const INDEXER_EVENT_TYPES = [
   'settle_pnl',
   'match_orders',
   'transfer_quote',
+  'transfer_quote_v2',
   'mint_nlp',
   'burn_nlp',
   'claim_builder_fee',

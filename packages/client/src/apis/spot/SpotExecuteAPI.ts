@@ -14,6 +14,7 @@ import {
   MintMockERC20Params,
   MintNlpParams,
   TransferQuoteParams,
+  TransferQuoteV2Params,
   WithdrawCollateralParams,
   WithdrawCollateralV2Params,
 } from './types';
@@ -43,7 +44,10 @@ export class SpotExecuteAPI extends BaseSpotAPI {
   }
 
   /**
-   * Withdraws collateral to a custom recipient address via the `withdraw_collateral_v2` execute.
+   * Withdraws collateral to a custom recipient address via the `withdraw_collateral_v2` execute,
+   * charged a dynamic fee of at most the V1 withdrawal fee. The fee is priced at execution: if it
+   * exceeds the optional `maxFeeX18`, the request fails with `FEE_TOO_LOW` (2135). Use
+   * `getDynamicFeeQuote` for the current fee.
    *
    * When `sendTo` is the zero address, funds are sent to the subaccount owner. When `sendTo` is a
    * non-zero address, the transaction must be signed by the subaccount owner (linked signers are
@@ -82,6 +86,22 @@ export class SpotExecuteAPI extends BaseSpotAPI {
    */
   async transferQuote(params: TransferQuoteParams) {
     return this.context.engineClient.transferQuote({
+      ...params,
+      subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
+      verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),
+      chainId: this.getWalletClientChainIdIfNeeded(params),
+    });
+  }
+
+  /**
+   * Transfers quote between subaccounts under the same wallet, charged a dynamic fee of at
+   * most the V1 transfer fee. The fee is priced at execution: if it exceeds `maxFeeX18`, the
+   * request fails with `FEE_TOO_LOW` (2135). Use `getDynamicFeeQuote` for the current fee.
+   *
+   * @param params
+   */
+  async transferQuoteV2(params: TransferQuoteV2Params) {
+    return this.context.engineClient.transferQuoteV2({
       ...params,
       subaccountOwner: this.getSubaccountOwnerIfNeeded(params),
       verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),

@@ -46,6 +46,7 @@ export interface NadoDepositCollateralTx {
   };
 }
 
+/** A `transfer_quote` (V1) transaction: a quote transfer charged the flat fee. */
 export interface NadoTransferQuoteTx {
   transfer_quote: {
     sender: string;
@@ -55,11 +56,26 @@ export interface NadoTransferQuoteTx {
   };
 }
 
+/** A `transfer_quote_v2` transaction: a quote transfer charged a dynamic fee. */
+export interface NadoTransferQuoteV2Tx {
+  transfer_quote_v2: {
+    /** Hex encoded bytes32; address + subaccount identifier */
+    sender: string;
+    /** Hex encoded bytes32 transfer recipient */
+    recipient: string;
+    /** Transferred amount, in quote x18 units */
+    amount: string;
+    /** Nonce used when signing */
+    nonce: number;
+  };
+}
+
 export type NadoTx =
   | NadoMatchOrdersTx
   | NadoLiquidateSubaccountTx
   | NadoDepositCollateralTx
   | NadoTransferQuoteTx
+  | NadoTransferQuoteV2Tx
   | NadoWithdrawCollateralTx
   | NadoWithdrawCollateralV2Tx
   | {

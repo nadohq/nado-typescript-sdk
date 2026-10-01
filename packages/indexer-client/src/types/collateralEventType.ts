@@ -6,4 +6,5 @@ export type CollateralEventType = Extract<
   | 'withdraw_collateral'
   | 'withdraw_collateral_v2'
   | 'transfer_quote'
+  | 'transfer_quote_v2'
 >;
