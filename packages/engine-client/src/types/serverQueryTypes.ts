@@ -76,11 +76,35 @@ export interface EngineServerMarketLiquidityQueryParams {
   depth: number;
 }
 
+/**
+ * Params for the `dynamic_fee_quote` query, discriminated by `kind`: `product_id` is required
+ * for a withdrawal quote, `recipient` for a transfer quote.
+ */
+export type EngineServerDynamicFeeQuoteQueryParams =
+  | {
+      /** `withdrawal` for Withdraw Collateral V2 */
+      kind: 'withdrawal';
+      /** Hex encoded bytes32; address + subaccount identifier */
+      sender: string;
+      /** Spot product to withdraw */
+      product_id: number;
+    }
+  | {
+      /** `transfer_quote` for Transfer Quote V2 */
+      kind: 'transfer_quote';
+      /** Hex encoded bytes32; address + subaccount identifier */
+      sender: string;
+      /** Hex encoded bytes32 transfer recipient */
+      recipient: string;
+    };
+
 export interface EngineServerMaxWithdrawableQueryParams {
   sender: string;
   product_id: number;
   // If not given, engine defaults to true (leverage/borrow enabled)
   spot_leverage: string | null;
+  /** If 'true', reserves the current dynamic fee of Withdraw Collateral V2 instead of the flat fee and returns it as `fee_x18`. Defaults to false. */
+  dynamic_fee?: string | null;
 }
 
 export interface EngineServerMaxOrderSizeQueryParams {
@@ -124,6 +148,8 @@ export interface EngineServerNlpLockedBalancesQueryParams {
 export interface EngineServerQueryRequestByType {
   all_products: Record<string, never>;
   contracts: Record<string, never>;
+  /** Params for the `dynamic_fee_quote` query. */
+  dynamic_fee_quote: EngineServerDynamicFeeQuoteQueryParams;
   edge_all_products: Record<string, never>;
   fee_rates: EngineServerSubaccountFeeRatesParams;
   health_groups: Record<string, never>;
@@ -314,8 +340,20 @@ export interface EngineServerMaxOrderSizeResponse {
   max_order_size: string;
 }
 
+/** Response of the `dynamic_fee_quote` query: the fee a V2 withdrawal or transfer would be charged now. */
+export interface EngineServerDynamicFeeQuoteResponse {
+  /** Fee a request would be charged now. Never above `fee_cap_x18`. */
+  required_fee_x18: string;
+  /** The cap: the flat V1 fee for this withdrawal or transfer. */
+  fee_cap_x18: string;
+  /** Current V2 demand, from 0 (fee is free) to 1e18 (fee is the cap). The fee grows with it. */
+  pressure_x18: string;
+}
+
 export interface EngineServerMaxWithdrawableResponse {
   max_withdrawable: string;
+  /** Only present when `dynamic_fee` is 'true': the dynamic fee reserved. Omitted when the subaccount has no deposits. */
+  fee_x18?: string;
 }
 
 export type EngineServerTimeResponse = number;
@@ -368,6 +406,8 @@ export interface EngineServerNlpPoolInfoResponse {
 export interface EngineServerQueryResponseByType {
   all_products: EngineServerAllProductsResponse;
   contracts: EngineServerContractsResponse;
+  /** Response of the `dynamic_fee_quote` query. */
+  dynamic_fee_quote: EngineServerDynamicFeeQuoteResponse;
   edge_all_products: EngineServerEdgeAllProductsResponse;
   fee_rates: EngineServerFeeRatesResponse;
   health_groups: EngineServerHealthGroupsResponse;

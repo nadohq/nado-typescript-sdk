@@ -155,7 +155,9 @@ export class IndexerClient extends IndexerBaseClient {
       eventTypes: eventTypes ?? [
         'deposit_collateral',
         'withdraw_collateral',
+        'withdraw_collateral_v2',
         'transfer_quote',
+        'transfer_quote_v2',
       ],
       limit: {
         type: 'txs',

@@ -96,6 +96,11 @@ export class EngineExecuteBuilder {
       signature,
       tx,
       spot_leverage: clientParams.spotLeverage ?? null,
+      // Explicit 0 is meaningful ("only execute while the fee is free"), so check for null only
+      max_fee_x18:
+        clientParams.maxFeeX18 != null
+          ? toIntegerString(clientParams.maxFeeX18)
+          : undefined,
     };
   }
 
@@ -286,6 +291,25 @@ export class EngineExecuteBuilder {
     return {
       tx,
       signature,
+    };
+  }
+
+  /**
+   * Builds server payload for the `transfer_quote_v2` execute action. V2 signs the same
+   * `TransferQuote` struct as V1; `max_fee_x18` is not signed.
+   *
+   * @param clientParams Client TransferQuoteV2 params.
+   * @returns `transfer_quote_v2` payload
+   */
+  async buildTransferQuoteV2Payload(
+    clientParams: EngineExecuteRequestParamsByType['transfer_quote_v2'],
+  ): Promise<EngineServerExecuteRequestByType['transfer_quote_v2']> {
+    const { maxFeeX18, ...transferQuoteParams } = clientParams;
+    const payload = await this.buildTransferQuotePayload(transferQuoteParams);
+
+    return {
+      ...payload,
+      max_fee_x18: toIntegerString(maxFeeX18),
     };
   }
 

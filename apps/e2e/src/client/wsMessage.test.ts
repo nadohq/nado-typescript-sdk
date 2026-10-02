@@ -171,6 +171,24 @@ void describe(
         debugPrint('Query subaccount info WS request', result);
         assertDefined(result, 'querySubaccountInfoMessage');
       });
+
+      void test('buildQueryMessage for dynamic_fee_quote returns a valid message', () => {
+        const result = nadoClient.ws.query.buildQueryMessage(
+          'dynamic_fee_quote',
+          {
+            kind: 'withdrawal',
+            sender: subaccountToHex({
+              subaccountOwner: walletClientAddress,
+              subaccountName: TEST_SUBACCOUNT_NAME,
+            }),
+            product_id: QUOTE_PRODUCT_ID,
+          },
+        );
+
+        debugPrint('Dynamic fee quote WS request', result);
+        assertDefined(result, 'queryDynamicFeeQuoteMessage');
+        assert.equal(result.type, 'dynamic_fee_quote');
+      });
     });
 
     // ---------------------------------------------------------------

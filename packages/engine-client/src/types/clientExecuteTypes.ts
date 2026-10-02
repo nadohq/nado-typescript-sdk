@@ -1,4 +1,5 @@
 import {
+  BigNumberish,
   EIP712BurnNlpParams,
   EIP712CancelOrdersParams,
   EIP712CancelProductOrdersParams,
@@ -59,9 +60,18 @@ export type EngineWithdrawCollateralParams = WithBaseEngineExecuteParams<
   WithSpotLeverage<EIP712WithdrawCollateralParams>
 >;
 
+/** Params for the `withdraw_collateral_v2` execute: a withdrawal with custom recipient, charged a dynamic fee. */
 export type EngineWithdrawCollateralV2Params = WithBaseEngineExecuteParams<
   WithSpotLeverage<EIP712WithdrawCollateralV2Params>
->;
+> & {
+  /**
+   * Highest fee accepted, in the product's x18 units. If the fee at execution is higher, the
+   * request fails with `FEE_TOO_LOW` (2135); otherwise exactly the required fee is charged.
+   * If omitted, up to the cap is accepted (optional here, unlike {@link EngineTransferQuoteV2Params}
+   * where the API requires it). Set to 0 to only execute while the fee is free. Not signed.
+   */
+  maxFeeX18?: BigNumberish;
+};
 
 export type EngineCancelOrdersParams =
   WithBaseEngineExecuteParams<EIP712CancelOrdersParams> & {
@@ -97,6 +107,21 @@ export type EngineLinkSignerParams =
 export type EngineTransferQuoteParams =
   WithBaseEngineExecuteParams<EIP712TransferQuoteParams>;
 
+/**
+ * Params for the `transfer_quote_v2` execute: a quote transfer charged a dynamic fee. Same signed
+ * `TransferQuote` struct as `transfer_quote`, plus a `maxFeeX18` fee bound.
+ */
+export type EngineTransferQuoteV2Params =
+  WithBaseEngineExecuteParams<EIP712TransferQuoteParams> & {
+    /**
+     * Highest fee the sender accepts, in USDT0 x18. If the fee at execution is higher, the
+     * request fails with `FEE_TOO_LOW` (2135); otherwise exactly the required fee is charged,
+     * never `maxFeeX18`. Required by the API, unlike {@link EngineWithdrawCollateralV2Params}
+     * where it is optional. Set to 0 to only execute while the fee is free. Not signed.
+     */
+    maxFeeX18: BigNumberish;
+  };
+
 export type EngineMintNlpParams = WithBaseEngineExecuteParams<
   WithSpotLeverage<EIP712MintNlpParams>
 >;
@@ -124,6 +149,8 @@ export interface EngineExecuteRequestParamsByType {
   place_order: EnginePlaceOrderParams;
   place_orders: EnginePlaceOrdersParams;
   transfer_quote: EngineTransferQuoteParams;
+  /** Params for the `transfer_quote_v2` execute. */
+  transfer_quote_v2: EngineTransferQuoteV2Params;
   withdraw_collateral: EngineWithdrawCollateralParams;
   withdraw_collateral_v2: EngineWithdrawCollateralV2Params;
 }

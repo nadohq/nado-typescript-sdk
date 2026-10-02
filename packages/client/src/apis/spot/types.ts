@@ -2,6 +2,7 @@ import {
   EngineBurnNlpParams,
   EngineMintNlpParams,
   EngineTransferQuoteParams,
+  EngineTransferQuoteV2Params,
   EngineWithdrawCollateralParams,
   EngineWithdrawCollateralV2Params,
 } from '@nadohq/engine-client';
@@ -38,6 +39,11 @@ export type WithdrawCollateralV2Params = OptionalSignatureParams<
 
 export type TransferQuoteParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineTransferQuoteParams>
+>;
+
+/** Params for {@link SpotExecuteAPI.transferQuoteV2}: a quote transfer charged a dynamic fee. */
+export type TransferQuoteV2Params = OptionalSignatureParams<
+  OptionalSubaccountOwner<EngineTransferQuoteV2Params>
 >;
 
 export type MintNlpParams = OptionalSignatureParams<
