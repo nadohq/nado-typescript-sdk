@@ -543,17 +543,26 @@ export class EngineQueryClient extends EngineBaseClient {
       subaccountOwner: params.subaccountOwner,
       subaccountName: params.subaccountName,
     });
-    const queryParams: EngineServerDynamicFeeQuoteQueryParams =
-      params.kind === 'withdrawal'
-        ? { kind: params.kind, sender, product_id: params.productId }
-        : {
-            kind: params.kind,
-            sender,
-            recipient: subaccountToHex({
-              subaccountOwner: params.subaccountOwner,
-              subaccountName: params.recipientSubaccountName,
-            }),
-          };
+    let queryParams: EngineServerDynamicFeeQuoteQueryParams;
+    switch (params.kind) {
+      case 'withdrawal':
+        queryParams = {
+          kind: params.kind,
+          sender,
+          product_id: params.productId,
+        };
+        break;
+      case 'transfer_quote':
+        queryParams = {
+          kind: params.kind,
+          sender,
+          recipient: subaccountToHex({
+            subaccountOwner: params.subaccountOwner,
+            subaccountName: params.recipientSubaccountName,
+          }),
+        };
+        break;
+    }
 
     const baseResponse = await this.query('dynamic_fee_quote', queryParams);
 
