@@ -484,41 +484,26 @@ export class EngineQueryClient extends EngineBaseClient {
    */
   async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
-  ): Promise<GetEngineMaxWithdrawableResponse> {
-    const baseResponse = await this.getMaxWithdrawableBase(params);
-    return toBigNumber(baseResponse.max_withdrawable);
-  }
-
+  ): Promise<GetEngineMaxWithdrawableResponse>;
   /**
    * Retrieves the estimated max withdrawal size for a product, with the current dynamic fee of
    * Withdraw Collateral V2 reserved instead of the flat fee. The reserved fee is returned as
-   * `fee`. See {@link getMaxWithdrawable} for the flat-fee estimate.
+   * `fee`.
    * @param params
    * @returns The max withdrawable with the current dynamic fee reserved, and the reserved fee.
    */
-  async getMaxWithdrawableWithDynamicFee(
+  async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
-  ): Promise<GetEngineMaxWithdrawableWithDynamicFeeResponse> {
-    const baseResponse = await this.getMaxWithdrawableBase(params, true);
-
-    return {
-      maxWithdrawable: toBigNumber(baseResponse.max_withdrawable),
-      fee:
-        baseResponse.fee_x18 != null
-          ? toBigNumber(baseResponse.fee_x18)
-          : undefined,
-    };
-  }
-
-  /**
-   * Runs the `max_withdrawable` query for both {@link getMaxWithdrawable} and
-   * {@link getMaxWithdrawableWithDynamicFee}.
-   */
-  private async getMaxWithdrawableBase(
+    options: { withDynamicFee: true },
+  ): Promise<GetEngineMaxWithdrawableWithDynamicFeeResponse>;
+  async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
-    dynamicFee = false,
-  ) {
-    return this.query('max_withdrawable', {
+    options?: { withDynamicFee?: boolean },
+  ): Promise<
+    | GetEngineMaxWithdrawableResponse
+    | GetEngineMaxWithdrawableWithDynamicFeeResponse
+  > {
+    const baseResponse = await this.query('max_withdrawable', {
       product_id: params.productId,
       sender: subaccountToHex({
         subaccountOwner: params.subaccountOwner,
@@ -526,8 +511,20 @@ export class EngineQueryClient extends EngineBaseClient {
       }),
       spot_leverage:
         params.spotLeverage != null ? String(params.spotLeverage) : null,
-      dynamic_fee: dynamicFee ? 'true' : null,
+      dynamic_fee: options?.withDynamicFee ? 'true' : null,
     });
+
+    if (options?.withDynamicFee) {
+      return {
+        maxWithdrawable: toBigNumber(baseResponse.max_withdrawable),
+        fee:
+          baseResponse.fee_x18 != null
+            ? toBigNumber(baseResponse.fee_x18)
+            : undefined,
+      };
+    }
+
+    return toBigNumber(baseResponse.max_withdrawable);
   }
 
   /**

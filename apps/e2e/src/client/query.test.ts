@@ -554,12 +554,15 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     assertBigNumberNonNegative(result, 'maxWithdrawable');
   });
 
-  void test('getMaxWithdrawableWithDynamicFee returns the reserved fee', async () => {
-    const result = await nadoClient.spot.getMaxWithdrawableWithDynamicFee({
-      subaccountOwner: walletClientAddress,
-      subaccountName: TEST_SUBACCOUNT_NAME,
-      productId: QUOTE_PRODUCT_ID,
-    });
+  void test('getMaxWithdrawable with dynamic fee returns the reserved fee', async () => {
+    const result = await nadoClient.spot.getMaxWithdrawable(
+      {
+        subaccountOwner: walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: QUOTE_PRODUCT_ID,
+      },
+      { withDynamicFee: true },
+    );
 
     debugPrint('Max withdrawable (dynamic fee)', result);
     assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');

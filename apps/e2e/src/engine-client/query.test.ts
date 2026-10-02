@@ -376,12 +376,15 @@ void describe(
       assertDynamicFeeQuoteShape(result, 'dynamicFeeQuoteTransfer');
     });
 
-    void test('getMaxWithdrawableWithDynamicFee reserves the dynamic fee', async () => {
-      const result = await tc.engine.getMaxWithdrawableWithDynamicFee({
-        subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        productId: QUOTE_PRODUCT_ID,
-      });
+    void test('getMaxWithdrawable with dynamic fee reserves the dynamic fee', async () => {
+      const result = await tc.engine.getMaxWithdrawable(
+        {
+          subaccountOwner: tc.walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+          productId: QUOTE_PRODUCT_ID,
+        },
+        { withDynamicFee: true },
+      );
 
       debugPrint('Max withdrawable (dynamic fee)', result);
       assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');

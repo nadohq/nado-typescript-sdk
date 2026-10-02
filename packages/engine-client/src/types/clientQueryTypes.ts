@@ -242,8 +242,9 @@ export interface GetEngineMaxWithdrawableParams extends Subaccount {
 export type GetEngineMaxWithdrawableResponse = BigNumber;
 
 /**
- * Response of {@link EngineQueryClient.getMaxWithdrawableWithDynamicFee}: the max withdrawable
- * with the current dynamic fee of Withdraw Collateral V2 reserved instead of the flat fee.
+ * Response of {@link EngineQueryClient.getMaxWithdrawable} when called with
+ * `{ withDynamicFee: true }`: the max withdrawable with the current dynamic fee of
+ * Withdraw Collateral V2 reserved instead of the flat fee.
  */
 export interface GetEngineMaxWithdrawableWithDynamicFeeResponse {
   /** Max withdrawable amount, with the current dynamic fee reserved. */

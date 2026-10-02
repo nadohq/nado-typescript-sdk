@@ -18,10 +18,7 @@ export class SpotQueryAPI extends BaseSpotAPI {
    */
   async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
-  ): Promise<GetEngineMaxWithdrawableResponse> {
-    return this.context.engineClient.getMaxWithdrawable(params);
-  }
-
+  ): Promise<GetEngineMaxWithdrawableResponse>;
   /**
    * Gets the estimated max withdrawable amount for a product, with the current dynamic fee of
    * Withdraw Collateral V2 reserved instead of the flat fee. The reserved fee is returned as
@@ -29,10 +26,24 @@ export class SpotQueryAPI extends BaseSpotAPI {
    * @param params
    * @returns The max withdrawable with the current dynamic fee reserved, and the reserved fee.
    */
-  async getMaxWithdrawableWithDynamicFee(
+  async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
-  ): Promise<GetEngineMaxWithdrawableWithDynamicFeeResponse> {
-    return this.context.engineClient.getMaxWithdrawableWithDynamicFee(params);
+    options: { withDynamicFee: true },
+  ): Promise<GetEngineMaxWithdrawableWithDynamicFeeResponse>;
+  async getMaxWithdrawable(
+    params: GetEngineMaxWithdrawableParams,
+    options?: { withDynamicFee?: boolean },
+  ): Promise<
+    | GetEngineMaxWithdrawableResponse
+    | GetEngineMaxWithdrawableWithDynamicFeeResponse
+  > {
+    if (options?.withDynamicFee) {
+      return this.context.engineClient.getMaxWithdrawable(params, {
+        withDynamicFee: true,
+      });
+    }
+
+    return this.context.engineClient.getMaxWithdrawable(params);
   }
 
   /**
