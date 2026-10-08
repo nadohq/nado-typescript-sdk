@@ -85,10 +85,29 @@ export function calcBorrowRatePerSecond(product: SpotProduct) {
 }
 
 /**
+ * Compounds an annual min deposit rate over a period, giving the multiplier
+ * `SpotEngine._updateState` applies to both the borrow and the deposit
+ * multiplier: `(1 + minDepositRate / secondsPerYear) ** seconds`.
+ *
+ * @param minDepositRate Annual min deposit rate, as stored in the product config
+ * @param seconds Number of seconds for the time period
+ */
+function calcMinDepositRateMultiplier(
+  minDepositRate: BigNumberish,
+  seconds: BigNumberish,
+): number {
+  const perSecond = toBigNumber(minDepositRate)
+    .div(TimeInSeconds.YEAR)
+    .toNumber();
+  return (1 + perSecond) ** toBigNumber(seconds).toNumber();
+}
+
+/**
  * Calculates borrower interest rate compounded for a period of time.
  *
  * @param product Spot product
  * @param seconds Number of seconds for the time period
+ * @param minDepositRate Annual min deposit rate, as stored in the product config
  */
 export function calcBorrowRateForTimeRange(
   product: SpotProduct,
@@ -98,10 +117,16 @@ export function calcBorrowRateForTimeRange(
   const borrowRatePerSecond = calcBorrowRatePerSecond(product);
 
   // Convert to number for this, with some loss of precision, but using `.pow()` causes us to hit browser resource limits
-  const borrowRateForTime =
-    borrowRatePerSecond.plus(1).toNumber() ** toBigNumber(seconds).toNumber() -
-    1;
-  return toBigNumber(borrowRateForTime).plus(toBigNumber(minDepositRate));
+  const borrowRateMultiplier =
+    borrowRatePerSecond.plus(1).toNumber() ** toBigNumber(seconds).toNumber();
+  // The engine multiplies the borrow multiplier by the min deposit multiplier,
+  // so the min deposit rate has to be compounded over the same period rather
+  // than added as an annual figure.
+  return toBigNumber(
+    borrowRateMultiplier *
+      calcMinDepositRateMultiplier(minDepositRate, seconds) -
+      1,
+  );
 }
 
 /**
@@ -110,6 +135,7 @@ export function calcBorrowRateForTimeRange(
  * @param product Spot product
  * @param seconds Number of seconds for the time period
  * @param interestFeeFrac Fraction of paid borrower interest that is paid as a fee (0.2 = 20% fee)
+ * @param minDepositRate Annual min deposit rate, as stored in the product config
  */
 export function calcRealizedDepositRateForTimeRange(
   product: SpotProduct,
@@ -117,12 +143,21 @@ export function calcRealizedDepositRateForTimeRange(
   interestFeeFrac: BigNumberish,
   minDepositRate: BigNumberish,
 ) {
+  const minDepositRateMultiplier = calcMinDepositRateMultiplier(
+    minDepositRate,
+    seconds,
+  );
   const utilization = calcUtilizationRatio(product);
+  // Nothing is borrowed, so no interest is paid — but the engine still applies
+  // the min deposit multiplier, which is the whole point of a rate floor.
   if (utilization.eq(0)) {
-    return toBigNumber(0);
+    return toBigNumber(minDepositRateMultiplier - 1);
   }
-  return utilization
+  const realizedDepositRate = utilization
     .times(calcBorrowRateForTimeRange(product, seconds, toBigNumber(0)))
-    .times(BigNumbers.ONE.minus(toBigNumber(interestFeeFrac)))
-    .plus(toBigNumber(minDepositRate));
+    .times(BigNumbers.ONE.minus(toBigNumber(interestFeeFrac)));
+  return realizedDepositRate
+    .plus(BigNumbers.ONE)
+    .times(minDepositRateMultiplier)
+    .minus(BigNumbers.ONE);
 }
