@@ -95,7 +95,10 @@ void describe(
     void test('acks a subscribe and streams a quote batch', async () => {
       ws.send(
         JSON.stringify(
-          buildOtcRfqSubscriptionMessage('subscribe', { id: 1, stream }),
+          buildOtcRfqSubscriptionMessage('subscribe', {
+            id: 1,
+            streams: [stream],
+          }),
         ),
       );
 
@@ -137,7 +140,10 @@ void describe(
     void test('acks an unsubscribe with the same stream', async () => {
       ws.send(
         JSON.stringify(
-          buildOtcRfqSubscriptionMessage('unsubscribe', { id: 2, stream }),
+          buildOtcRfqSubscriptionMessage('unsubscribe', {
+            id: 2,
+            streams: [stream],
+          }),
         ),
       );
 

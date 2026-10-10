@@ -10,19 +10,21 @@ const stream = {
 };
 
 describe('buildOtcRfqSubscriptionMessage', () => {
-  it('builds one stream and omits an empty pricer', () => {
+  it('builds one stream as a batch and omits an empty pricer', () => {
     expect(
-      buildOtcRfqSubscriptionMessage('subscribe', { id: 1, stream }),
+      buildOtcRfqSubscriptionMessage('subscribe', { id: 1, streams: [stream] }),
     ).toEqual({
       method: 'subscribe',
       id: 1,
-      stream: {
-        type: 'quote',
-        product_id: 2,
-        wallet: stream.wallet,
-        size: stream.size,
-        size_unit: 'base',
-      },
+      streams: [
+        {
+          type: 'quote',
+          product_id: 2,
+          wallet: stream.wallet,
+          size: stream.size,
+          size_unit: 'base',
+        },
+      ],
     });
   });
 

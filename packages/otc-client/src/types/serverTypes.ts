@@ -51,22 +51,10 @@ export interface OtcServerQuoteStream {
   pricer_id?: string;
 }
 
-export interface OtcServerRfqSubscribeStreamRequest {
-  method: 'subscribe';
-  id: number;
-  stream: OtcServerQuoteStream;
-}
-
 export interface OtcServerRfqSubscribeStreamsRequest {
   method: 'subscribe';
   id: number;
   streams: OtcServerQuoteStream[];
-}
-
-export interface OtcServerRfqUnsubscribeStreamRequest {
-  method: 'unsubscribe';
-  id: number;
-  stream: OtcServerQuoteStream;
 }
 
 export interface OtcServerRfqUnsubscribeStreamsRequest {
@@ -76,9 +64,7 @@ export interface OtcServerRfqUnsubscribeStreamsRequest {
 }
 
 export type OtcServerRfqSubscriptionRequest =
-  | OtcServerRfqSubscribeStreamRequest
   | OtcServerRfqSubscribeStreamsRequest
-  | OtcServerRfqUnsubscribeStreamRequest
   | OtcServerRfqUnsubscribeStreamsRequest;
 
 /** One quote inside a `quote_batch`. `available` includes price fields; `unavailable` omits them. */
