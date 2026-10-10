@@ -16,8 +16,9 @@ function toServerStream(stream: OtcQuoteStream): OtcServerQuoteStream {
 }
 
 /**
- * Builds a subscribe or unsubscribe message for the RFQ socket.
- * `unsubscribe` uses the same stream fields as the original `subscribe`.
+ * Builds a subscribe or unsubscribe message for the RFQ socket. The service only accepts the
+ * `streams[]` envelope, so one stream is a one-entry batch. `unsubscribe` uses the same
+ * stream fields as the original `subscribe`.
  */
 export function buildOtcRfqSubscriptionMessage<
   TMethod extends OtcServerRfqSubscriptionRequest['method'],
@@ -25,12 +26,9 @@ export function buildOtcRfqSubscriptionMessage<
   method: TMethod,
   params: OtcRfqSubscriptionParams,
 ): Extract<OtcServerRfqSubscriptionRequest, { method: TMethod }> {
-  const body =
-    'stream' in params
-      ? { stream: toServerStream(params.stream) }
-      : { streams: params.streams.map(toServerStream) };
-  return { method, id: params.id, ...body } as Extract<
-    OtcServerRfqSubscriptionRequest,
-    { method: TMethod }
-  >;
+  return {
+    method,
+    id: params.id,
+    streams: params.streams.map(toServerStream),
+  } as Extract<OtcServerRfqSubscriptionRequest, { method: TMethod }>;
 }
