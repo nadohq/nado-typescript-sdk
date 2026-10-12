@@ -232,5 +232,7 @@ function assertBaseProfileShape(
   assertHexString(profile.subaccount, `${label}.subaccount`);
   assertNullableString(profile.username, `${label}.username`);
   assertNullableString(profile.displayName, `${label}.displayName`);
+  assertNullableString(profile.bio, `${label}.bio`);
+  assertNullableString(profile.avatarUrl, `${label}.avatarUrl`);
   assertBoolean(profile.privateMode, `${label}.privateMode`);
 }

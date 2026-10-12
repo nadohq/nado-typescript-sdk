@@ -31,6 +31,9 @@ import {
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
   GetMobileUsernameAvailabilityParams,
+  MobileAvatarPreset,
+  MobileAvatarUpload,
+  MobileCreateAvatarUploadParams,
   MobileFeedPage,
   MobileFollowListPage,
   MobileFollowMutationResult,
@@ -38,6 +41,8 @@ import {
   MobilePublicProfile,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
+  MobileSetAvatarParams,
+  MobileSetBioParams,
   MobileSetFollowParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
@@ -121,6 +126,15 @@ export class MobileClient {
   /*
   Public queries
    */
+
+  /** Returns the current server-owned avatar catalogue in display order. */
+  async getAvatarPresets(): Promise<MobileAvatarPreset[]> {
+    const data = await this.publicQuery({ type: 'avatar_presets' });
+    return data.presets.map(({ id, avatar_url }) => ({
+      id,
+      avatarUrl: avatar_url,
+    }));
+  }
 
   /**
    * Checks whether a username derived from the given display name is available to claim.
@@ -319,6 +333,52 @@ export class MobileClient {
   /*
   Signed executes
    */
+
+  /** Updates the biography through the same signer and nonce sequence as other identity writes. */
+  async setBio(
+    params: MobileSetBioParams,
+  ): Promise<MobileServerSuccessResponse> {
+    return this.execute(
+      await this.getSignedRequest('set_bio', params, { bio: params.bio }),
+    );
+  }
+
+  /**
+   * Creates a short-lived upload grant. The caller uploads the JPEG with the returned headers;
+   * file access and transport remain platform-specific. This does not change the saved avatar.
+   */
+  async createAvatarUpload(
+    params: MobileCreateAvatarUploadParams,
+  ): Promise<MobileAvatarUpload> {
+    const data = await this.execute(
+      await this.getSignedRequest('create_avatar_upload', params, {
+        content_length: params.contentLength,
+      }),
+    );
+    return {
+      uploadKey: data.upload_key,
+      uploadUrl: data.upload_url,
+      headers: data.headers,
+    };
+  }
+
+  /** Publishes a preset/staged upload, or clears the saved avatar when avatar is null. */
+  async setAvatar(
+    params: MobileSetAvatarParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const avatar = params.avatar;
+    const selection =
+      avatar === null
+        ? null
+        : (() => {
+            if (avatar.type === 'preset')
+              return { type: 'preset' as const, id: avatar.id };
+            return { type: 'upload' as const, upload_key: avatar.uploadKey };
+          })();
+    return this.execute(
+      await this.getSignedRequest('set_avatar', params, { avatar: selection }),
+    );
+  }
 
   /**
    * Sets a subaccount's username, derived from the given display name. Upserts: the same call claims a first

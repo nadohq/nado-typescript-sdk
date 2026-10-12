@@ -90,6 +90,8 @@ export interface MobileServerRegisteredWalletResponse {
  * by {@link MobileServerPublicQuerySuccessResponse}.
  */
 export interface MobileServerPublicQueryResponseByType {
+  /** Preset IDs and public image URLs in display order. */
+  avatar_presets: { presets: { id: string; avatar_url: string }[] };
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
   followers: MobileServerFollowListResponse;

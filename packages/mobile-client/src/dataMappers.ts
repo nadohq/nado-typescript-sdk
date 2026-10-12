@@ -44,6 +44,8 @@ export function mapMobilePublicProfile(
     subaccount: server.subaccount,
     username: server.username,
     displayName: server.display_name,
+    bio: server.bio ?? null,
+    avatarUrl: server.avatar_url ?? null,
     privateMode: server.private_mode,
     followerCount: server.follower_count,
     followingCount: server.following_count,

@@ -45,6 +45,19 @@ export type MobileServerEmptyExecuteResponse = Record<never, never>;
  * relationship state.
  */
 export interface MobileServerExecuteResponseByType {
+  /** Bio writes return only the success envelope. */
+  set_bio: MobileServerEmptyExecuteResponse;
+  /** Avatar writes return only the success envelope. */
+  set_avatar: MobileServerEmptyExecuteResponse;
+  /** Temporary upload grant; publishing requires a subsequent set_avatar call. */
+  create_avatar_upload: {
+    /** Server-owned staging object key. */
+    upload_key: string;
+    /** Short-lived signed PUT URL. */
+    upload_url: string;
+    /** Headers required by the signed PUT. */
+    headers: Record<string, string>;
+  };
   set_username: MobileServerEmptyExecuteResponse;
   set_private_mode: MobileServerEmptyExecuteResponse;
   register_expo_token: MobileServerEmptyExecuteResponse;

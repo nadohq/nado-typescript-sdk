@@ -39,6 +39,45 @@ const FIXTURE_TARGET_SUBACCOUNT =
   '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
 
 describe('[mobile-client]: signing (offline)', () => {
+  it.each<[MobileSignedInner, string]>([
+    [
+      { type: 'set_bio', bio: 'Trading 中文 🚀\nBuilding on @inkhq' },
+      '96206cad01c9b00d69412721842ca0866bb1a82ec90f3979b8bcc91dc96a1243',
+    ],
+    [
+      { type: 'create_avatar_upload', content_length: 12345 },
+      'b3811340e751e2799d3a24467fa50aeb221e1ecea5aa6599ab09bd2426162495',
+    ],
+    [
+      { type: 'set_avatar', avatar: { type: 'preset', id: 'penguin' } },
+      '9113b26919a71b910a4f61f4342121896a106014acaeef5da5a2d2e3f09e17ab',
+    ],
+    [
+      { type: 'set_avatar', avatar: null },
+      '8ed3e0bc36cda8de523a22414c495e12385366d1cb61622be807b939505174ae',
+    ],
+    [
+      {
+        type: 'set_avatar',
+        avatar: { type: 'upload', upload_key: 'staging/avatars/test' },
+      },
+      'e036ffdffa1fdde9104a1cee9bb254352de293550dade21e439a65fc6fbd3d2c',
+    ],
+  ])('matches backend profile payload fixture %#', (inner, hash) => {
+    expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+      `0x${hash}`,
+    );
+  });
+
+  it('canonicalizes nested avatar fields before hashing', () => {
+    const inner: MobileSignedInner = {
+      avatar: { id: 'penguin', type: 'preset' },
+      type: 'set_avatar',
+    };
+    expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+      '0x9113b26919a71b910a4f61f4342121896a106014acaeef5da5a2d2e3f09e17ab',
+    );
+  });
   describe('pinned payload hashes', () => {
     it('set_username', () => {
       const inner: MobileSignedInner = {

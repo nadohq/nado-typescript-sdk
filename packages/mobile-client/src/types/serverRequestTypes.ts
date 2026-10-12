@@ -40,6 +40,8 @@ export interface MobileServerFollowListRequest {
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
 export interface MobileServerPublicQueryRequestByType {
+  /** Ordered server-owned avatar catalogue. */
+  avatar_presets: Record<never, never>;
   username_availability: { display_name: string };
   profiles: {
     /**

@@ -7,6 +7,9 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   MobileSignedInner['type'],
   string
 > = {
+  set_bio: 'mobile:execute_set_bio',
+  create_avatar_upload: 'mobile:execute_create_avatar_upload',
+  set_avatar: 'mobile:execute_set_avatar',
   set_username: 'mobile:execute_set_username',
   set_private_mode: 'mobile:execute_set_private_mode',
   register_expo_token: 'mobile:execute_register_expo_token',

@@ -7,6 +7,53 @@ import {
   MobileNotificationPlatform,
 } from './serverModelTypes';
 
+/** Server-owned preset presented in catalogue order. */
+export interface MobileAvatarPreset {
+  /** Stable preset ID used by setAvatar. */
+  id: string;
+  /** Public image URL. */
+  avatarUrl: string;
+}
+
+/** A preset or staged upload to publish. Pass null to clear an avatar. */
+export type MobileAvatarSelection =
+  | {
+      /** Shared catalogue selection. */ type: 'preset';
+      /** Stable catalogue ID. */ id: string;
+    }
+  | {
+      /** An uploaded image awaiting publication. */ type: 'upload';
+      /** Key returned by createAvatarUpload. */ uploadKey: string;
+    };
+
+/** Params for updating a public biography. */
+export interface MobileSetBioParams extends MobileSignedRequestParams {
+  /** Up to 150 Unicode code points. Whitespace-only text clears the bio. */
+  bio: string;
+}
+
+/** Params for publishing or clearing an avatar. */
+export interface MobileSetAvatarParams extends MobileSignedRequestParams {
+  /** Null clears the saved image. */
+  avatar: MobileAvatarSelection | null;
+}
+
+/** Params for requesting a short-lived JPEG upload grant. */
+export interface MobileCreateAvatarUploadParams extends MobileSignedRequestParams {
+  /** Final JPEG size in bytes, at most 5 MiB. */
+  contentLength: number;
+}
+
+/** Upload the JPEG using PUT, then publish uploadKey through setAvatar. */
+export interface MobileAvatarUpload {
+  /** Staging key, bound to the requesting subaccount. */
+  uploadKey: string;
+  /** Short-lived signed PUT URL. */
+  uploadUrl: string;
+  /** Headers that must accompany the PUT. */
+  headers: Record<string, string>;
+}
+
 /**
  * A subaccount's public profile, as returned by an unsigned profile lookup. Private Mode hides the account's
  * activity, not its profile, so `privateMode` is exposed here too. A subaccount with no identity row still
@@ -21,6 +68,10 @@ export interface MobilePublicProfile {
   username: string | null;
   /** User-facing name as claimed, or `null` if no username has been claimed. */
   displayName: string | null;
+  /** Public biography, or null when unset or absent on an older server. */
+  bio: string | null;
+  /** Published avatar URL; null preserves the account's generated icon. */
+  avatarUrl: string | null;
   privateMode: boolean;
   /**
    * Exact count at query time rather than a cached counter, including unnamed and private accounts — Private
@@ -42,7 +93,7 @@ export interface MobileIdentitySummary {
   username: string | null;
   /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
   displayName: string | null;
-  /** Reserved for a future avatar source; `null` until one is implemented. */
+  /** Published avatar URL, or null when the account has no saved avatar. */
   avatarUrl: string | null;
 }
 

@@ -18,6 +18,15 @@ import { MobileNotificationPlatform } from '../types/serverModelTypes';
  * lowercases; unlike bytes32, string fields such as `display_name` are hashed as-is and keep their casing.
  */
 export type MobileSignedInner =
+  | { type: 'set_bio'; bio: string }
+  | { type: 'create_avatar_upload'; content_length: number }
+  | {
+      type: 'set_avatar';
+      avatar:
+        | { type: 'preset'; id: string }
+        | { type: 'upload'; upload_key: string }
+        | null;
+    }
   | { type: 'set_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }
   | {

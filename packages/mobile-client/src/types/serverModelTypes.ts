@@ -26,7 +26,7 @@ export interface MobileServerIdentitySummary {
   subaccount: Hex;
   username: string | null;
   display_name: string | null;
-  /** Reserved for a future avatar source; `null` until one is implemented. */
+  /** Published avatar URL, or null when the account has no saved avatar. */
   avatar_url: string | null;
 }
 
@@ -58,6 +58,10 @@ export interface MobileServerProfile {
   username: string | null;
   display_name: string | null;
   private_mode: boolean;
+  /** Plain-text biography. Older deployments may omit this field. */
+  bio?: string | null;
+  /** Published avatar URL. Older deployments may omit this field. */
+  avatar_url?: string | null;
   /**
    * Exact count at query time — the backend counts rather than reading a cached counter. Unnamed and private
    * accounts are included: Private Mode hides activity, not relationships. Requires `follow_counts`.
