@@ -3,17 +3,17 @@ import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
 import { MobileNotificationPlatform } from '../types/serverModelTypes';
 import {
+  MobileServerSignedSocialFeedQueryType,
   MobileServerSocialFeedQueryRequestByType,
-  MobileServerSocialFeedQueryType,
 } from '../types/serverSocialFeedTypes';
 
-/** Signed read payloads, discriminated by operation. No viewer_token is allowed. */
+/** Signed read payloads; main feeds, view_as, and viewer_token are excluded. */
 export type MobileQueryInner = {
-  [K in MobileServerSocialFeedQueryType]: {
+  [K in MobileServerSignedSocialFeedQueryType]: {
     /** Query operation. */
     type: K;
   } & MobileServerSocialFeedQueryRequestByType[K];
-}[MobileServerSocialFeedQueryType];
+}[MobileServerSignedSocialFeedQueryType];
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.

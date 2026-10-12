@@ -66,27 +66,41 @@ All eight reads live directly on `MobileClient`:
 
 | Method | Content | Access |
 | --- | --- | --- |
-| `getForYouFeed` | Chronological recommendations | Public or signed |
-| `getTopTradersFeed` | Qualified authors and account PnL badges | Public or signed |
-| `getFriendsFeed` | Authors followed by the sender | Signed |
+| `getForYouFeed` | Chronological recommendations | Public only; optional viewAs |
+| `getTopTradersFeed` | Qualified authors and account PnL badges | Public only; optional viewAs |
+| `getFriendsFeed` | Public content by authors followed by viewAs | Public only; required viewAs |
 | `getProfileFeed` | One author's published content | Public or signed |
 | `getMarketFeed` | One market's published content | Public or signed |
 | `getPositionFeed` | Published content in one lifecycle | Public or signed |
 | `getFeedItem` | Item details and reading session | Public or signed |
 | `getFeedUpdates` | Viewport patches and new-content hints | Public with viewer token, or signed |
 
-Reads default to public, even when the client has a wallet. Pass `auth` with the same
-`subaccountOwner`, `subaccountName`, `chainId`, and `verifyingAddr` used for signed writes
-to use `/query`. The configured linked signer takes priority. Signed calls cannot carry
-`viewerToken`; Friends always requires `auth`.
+Public browsing never requires a wallet signature, identity registration, or 1-Click Trading setup.
+For You, Top Traders, and Friends only use `/public_query` and do not accept `auth`.
+Friends requires `viewAs` on every request, including pagination; an account with no
+follows receives an empty list.
+
+`viewAs` uses the SDK's `{ subaccountOwner, subaccountName }` shape and is encoded as a
+complete bytes32 identity subaccount, not a 20-byte wallet address. It must be non-isolated.
+It selects public relationship state and never grants private access. The Profile target
+`subaccount` is separate from `viewAs`; the SDK does not infer a viewing account from it.
+
+Profile, Market, Position, and item details also default to public. Only pass `auth` when
+explicitly requesting a signed read for private content. It contains `subaccountOwner`,
+`subaccountName`, `chainId`, and `verifyingAddr`; the configured linked signer takes priority.
+Signed reads cannot carry `viewAs` or `viewerToken`. Updates follow the original session's
+public/signed mode and inherit its viewing account; they never accept `viewAs`.
 
 ```ts
-const page = await mobile.getForYouFeed({ minimumNotional: 500, limit: 20 });
+const viewAs = { subaccountOwner: walletAddress, subaccountName: 'default' };
+const friends = await mobile.getFriendsFeed({ viewAs, limit: 20 });
+const page = await mobile.getForYouFeed({ viewAs, minimumNotional: 500, limit: 20 });
 const { sessionId, viewerToken } = page.readSession;
 
-// Keep the same filters, target, limit, and identity throughout this session.
+// Keep the same filters, target, limit, viewAs, and browser credential throughout this session.
 if (page.nextCursor !== null) {
   const next = await mobile.getForYouFeed({
+    viewAs,
     minimumNotional: 500,
     limit: 20,
     sessionId,
@@ -112,6 +126,10 @@ their original units; divide by `10^18` for display. Versions remain decimal str
 and must be compared with `BigInt` or `BigNumber`. Explicit `null` in a patch clears the
 old value; omitted fields leave it unchanged.
 
+With a viewing account, `author.isFollowing` reflects its actual follow state; without one,
+it is `null`. `interaction.likedByMe` stays `null` until F04 enables likes, including on
+signed reads. Trade rows do not have an `interaction` field.
+
 Sessions expire 15 minutes after creation. Continue through short or empty pages while
 `nextCursor` is non-null. Keep pagination cursors, update cursors, and watermarks separate.
 For polling, increment `viewportRevision` when visible IDs change and `requestSeq` on
@@ -119,7 +137,13 @@ every call. Apply only the current viewport's latest response and discard respon
 older refreshes. Patches do not insert or reorder list members. Refresh on
 `MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_EXPIRED` (6312); a mismatch (6311) requires
 correcting the session/identity/source rather than retrying unchanged. Keep viewer tokens
-out of logs and public caches.
+out of logs and public caches. A public session still needs its original viewer token when a
+wallet is connected or `viewAs` is supplied. List pagination must repeat the initial `viewAs`
+(or continue omitting it); item details reusing a session may omit it to inherit the perspective.
+To switch accounts or public/signed modes, create a new session and reset cursors, visible IDs,
+and polling sequence state. Stop using the old state as soon as a refresh begins; resume
+pagination and polling only after the new first page succeeds. Invalid or expired public
+credentials require a refresh, not a wallet signature.
 
 F01 exposes automatic trade cards/rows; drawings and interactions are not enabled.
 `getPositionFeed` is published activity, not complete position history. The legacy

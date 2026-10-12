@@ -48,7 +48,7 @@ export type MobileFeedModel<T> = T extends readonly (infer Item)[]
 /** Account-level official 30-day qualification badge. */
 export type MobileTraderBadge = MobileFeedModel<MobileServerTraderBadge>;
 
-/** Feed author with optional badge and authenticated follow perspective. */
+/** Feed author with optional badge and the selected viewing account's follow state. */
 export type MobileFeedAuthor = MobileFeedModel<MobileServerFeedAuthor>;
 
 /** Feed market metadata. */
@@ -107,20 +107,27 @@ export type MobileFeedItemPatch = MobileFeedModel<MobileServerFeedItemPatch>;
 export type MobileFeedUpdates =
   MobileFeedModel<MobileServerFeedUpdatesResponse>;
 
-/** Public anonymous read or signed read; credentials cannot be mixed. */
+/** Public browsing requires no wallet, identity registration, or one-click trading setup. */
+export interface MobilePublicFeedReadAccess {
+  /** Public routes never sign, even when the client has a wallet or linked signer. */
+  auth?: never;
+  /** Non-isolated identity subaccount used for public relationships, not private access. */
+  viewAs?: Subaccount;
+  /** Reuse the original browser credential for pagination and existing sessions. */
+  viewerToken?: string;
+}
+
+/** Public browsing or an explicit signed read for private content; contexts cannot be mixed. */
 export type MobileFeedReadAccess =
   | {
       /** Sign as this identity, using the client's linked signer or owner wallet. */
       auth: MobileSignedRequestParams;
+      /** Signed reads use the verified sender as their viewing account. */
+      viewAs?: never;
       /** Anonymous credentials are forbidden on signed queries. */
       viewerToken?: never;
     }
-  | {
-      /** Omit to use the public endpoint, even when the client has a wallet. */
-      auth?: never;
-      /** Reuse an anonymous identity from a previous reading session. */
-      viewerToken?: string;
-    };
+  | MobilePublicFeedReadAccess;
 
 /** Filters and fixed-session pagination common to all six F01 lists. */
 export interface MobileSocialFeedListParams {
@@ -130,15 +137,15 @@ export interface MobileSocialFeedListParams {
   minimumNotional?: number;
   /** Page size, 1–50; server default is 20. */
   limit?: number;
-  /** Required with cursor; reuse the original filters, target, identity, and limit. */
+  /** Required with cursor; reuse the original filters, target, viewAs, credential, and limit. */
   sessionId?: string;
   /** Opaque cursor returned by nextCursor. Never substitute an update cursor. */
   cursor?: string;
 }
 
-/** Common request for For You and Top Traders. */
+/** Public-only request for For You and Top Traders. */
 export type GetMobileForYouFeedParams = MobileSocialFeedListParams &
-  MobileFeedReadAccess & {
+  MobilePublicFeedReadAccess & {
     /** Omit to include all market categories. */
     marketCategory?: MobileFeedMarketCategory;
   };
@@ -146,21 +153,20 @@ export type GetMobileForYouFeedParams = MobileSocialFeedListParams &
 /** Top Traders request; eligibility uses account PnL and results remain chronological. */
 export type GetMobileTopTradersFeedParams = GetMobileForYouFeedParams;
 
-/** Friends requires the authenticated sender's follow graph. */
-export type GetMobileFriendsFeedParams = MobileSocialFeedListParams & {
-  /** Signing identity; a wallet alone does not select an identity. */
-  auth: MobileSignedRequestParams;
-  /** Omit to include all market categories. */
-  marketCategory?: MobileFeedMarketCategory;
-  /** Friends has no public route. */
-  viewerToken?: never;
+/** Public content from the selected account's follow graph; no signature is required. */
+export type GetMobileFriendsFeedParams = GetMobileForYouFeedParams & {
+  /** Required on every request, including pagination; no existing identity row is needed. */
+  viewAs: Subaccount;
 };
 
 /** Author list request; the target is distinct from the signing identity. */
-export type GetMobileProfileFeedParams = GetMobileForYouFeedParams & {
-  /** Target identity subaccount. */
-  subaccount: Subaccount;
-};
+export type GetMobileProfileFeedParams = MobileSocialFeedListParams &
+  MobileFeedReadAccess & {
+    /** Target author, independent of the public viewAs account. */
+    subaccount: Subaccount;
+    /** Omit to include all market categories. */
+    marketCategory?: MobileFeedMarketCategory;
+  };
 
 /** Market list request; marketCategory is not accepted. */
 export type GetMobileMarketFeedParams = MobileSocialFeedListParams &
@@ -188,6 +194,8 @@ export type GetMobileFeedItemParams = MobileFeedReadAccess & {
 
 /** Viewport update request; anonymous calls require the original viewerToken. */
 export type GetMobileFeedUpdatesParams = {
+  /** Inherited from the original session; updates cannot select a different viewing account. */
+  viewAs?: never;
   /** Current reading session. */
   sessionId: string;
   /** Up to 50 distinct, already delivered item UUIDs. */

@@ -32,13 +32,13 @@ export interface MobileServerCategorizedFeedParams extends MobileServerSocialFee
   market_category?: MobileFeedMarketCategory;
 }
 
-/** Signed F01 query fields. Anonymous credentials never belong in these payloads. */
+/** F01 operation fields before adding public viewing context or signed credentials. */
 export interface MobileServerSocialFeedQueryRequestByType {
   /** Chronological recommendations with author/thread constraints. */
   for_you_feed: MobileServerCategorizedFeedParams;
   /** Chronological content by eligible Top Traders. */
   top_traders_feed: MobileServerCategorizedFeedParams;
-  /** Content by authors followed by the authenticated sender. */
+  /** Public content by authors followed by the required view_as account. */
   friends_feed: MobileServerCategorizedFeedParams;
   /** Published content by the target identity. */
   profile_feed: MobileServerCategorizedFeedParams & {
@@ -81,25 +81,44 @@ export interface MobileServerSocialFeedQueryRequestByType {
   };
 }
 
-/** Signed F01 operation names. */
+/** All F01 read operation names. */
 export type MobileServerSocialFeedQueryType =
   keyof MobileServerSocialFeedQueryRequestByType;
 
-/** Public F01 queries exclude Friends and require an anonymous credential for updates. */
+/** Main feeds only support public queries and never request a wallet signature. */
+export type MobileServerMainFeedQueryType =
+  | 'for_you_feed'
+  | 'top_traders_feed'
+  | 'friends_feed';
+
+/** Operations that retain signed reads for private content or an existing signed session. */
+export type MobileServerSignedSocialFeedQueryType = Exclude<
+  MobileServerSocialFeedQueryType,
+  MobileServerMainFeedQueryType
+>;
+
+/** Public reads require view_as for Friends and the original viewer_token for updates. */
 export type MobileServerPublicSocialFeedRequestByType = {
-  [K in Exclude<
-    MobileServerSocialFeedQueryType,
-    'friends_feed'
-  >]: MobileServerSocialFeedQueryRequestByType[K] &
+  [K in MobileServerSocialFeedQueryType]: MobileServerSocialFeedQueryRequestByType[K] &
     (K extends 'feed_updates'
       ? {
+          /** Updates inherit the viewing account from the original session. */
+          view_as?: never;
           /** Credential belonging to the anonymous session. */
           viewer_token: string;
         }
       : {
           /** Reuse the anonymous identity returned by an earlier read. */
           viewer_token?: string;
-        });
+        } & (K extends 'friends_feed'
+          ? {
+              /** Complete non-isolated identity subaccount; required on every request. */
+              view_as: Hex;
+            }
+          : {
+              /** Public viewing perspective, never proof of ownership or private access. */
+              view_as?: Hex;
+            }));
 };
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
@@ -120,7 +139,7 @@ export interface MobileServerTraderBadge {
   snapshot_id: string;
 }
 
-/** Public author identity and authenticated follow perspective. */
+/** Public author identity and the selected viewing account's follow state. */
 export interface MobileServerFeedAuthor {
   /** Full identity subaccount. */
   subaccount: Hex;
@@ -130,7 +149,7 @@ export interface MobileServerFeedAuthor {
   display_name: string | null;
   /** Avatar URL when available. */
   avatar_url: string | null;
-  /** Null on public reads; signed reads reflect the sender's follow graph. */
+  /** Public view_as or signed sender's follow state; null without a viewing account. */
   is_following: boolean | null;
   /** Null when no qualifying badge is available. */
   trader_badge: MobileServerTraderBadge | null;
@@ -224,7 +243,7 @@ export interface MobileServerFeedInteraction {
   comment_count: number;
   /** Number of recorded views. */
   view_count: number;
-  /** Null for anonymous viewers. */
+  /** Null until F04 enables likes, even with view_as or a signature; then reflects the viewing account. */
   liked_by_me: boolean | null;
 }
 

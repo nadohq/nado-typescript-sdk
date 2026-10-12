@@ -20,6 +20,10 @@ const mobile = new MobileClient({
   walletClient: createWalletClient({ account, chain: ink, transport: http() }),
 });
 mobile.axiosInstance.defaults.timeout = 15_000;
+const viewAs = {
+  subaccountOwner: '0x69fcc2832725d1d3b5544f9a89cf7404736c44d3' as const,
+  subaccountName: 'default',
+};
 const auth: MobileSignedRequestParams = {
   subaccountOwner: account.address,
   subaccountName: 'default',
@@ -33,6 +37,7 @@ void describe(
   () => {
     void test('reads a public filtered session and reuses its identity for pagination and updates', async () => {
       const page = await mobile.getForYouFeed({
+        viewAs,
         minimumNotional: 500,
         limit: 2,
       });
@@ -42,6 +47,7 @@ void describe(
       assert.ok(viewerToken);
       if (page.nextCursor !== null) {
         const next = await mobile.getForYouFeed({
+          viewAs,
           minimumNotional: 500,
           limit: 2,
           sessionId,
@@ -68,7 +74,7 @@ void describe(
     });
 
     void test('reads Top Traders and its shared qualification cohort', async () => {
-      const page = await mobile.getTopTradersFeed({ limit: 2 });
+      const page = await mobile.getTopTradersFeed({ viewAs, limit: 2 });
       assertPage(page);
       assert.equal(page.rankingVersion, 'chronological-v1');
       assert.equal(page.cohort.coverage.complete, true);
@@ -82,16 +88,38 @@ void describe(
       }
     });
 
-    void test('authenticates For You, Friends, and their session updates', async () => {
-      const forYou = await mobile.getForYouFeed({ auth, limit: 2 });
-      assertPage(forYou);
-      assert.equal(forYou.readSession.viewerToken, undefined);
-      const friends = await mobile.getFriendsFeed({ auth, limit: 2 });
+    void test('reads Friends and updates without a wallet, including an unregistered account', async () => {
+      const publicMobile = new MobileClient({
+        url: MOBILE_CLIENT_ENDPOINTS.inkMainnet,
+      });
+      publicMobile.axiosInstance.defaults.timeout = 15_000;
+      const empty = await publicMobile.getFriendsFeed({
+        viewAs: { subaccountOwner: account.address, subaccountName: 'default' },
+        limit: 2,
+      });
+      assertPage(empty);
+      assert.equal(empty.items.length, 0);
+      const friends = await publicMobile.getFriendsFeed({ viewAs, limit: 2 });
       assertPage(friends);
       assert.equal(friends.rankingVersion, 'chronological-v1');
-      const updates = await mobile.getFeedUpdates({
-        auth,
-        sessionId: friends.readSession.sessionId,
+      const { viewerToken, sessionId } = friends.readSession;
+      assert.ok(viewerToken);
+      for (const item of friends.items)
+        assert.equal(item.author.isFollowing, true);
+      if (friends.nextCursor !== null) {
+        const next = await publicMobile.getFriendsFeed({
+          viewAs,
+          limit: 2,
+          sessionId,
+          viewerToken,
+          cursor: friends.nextCursor,
+        });
+        assertPage(next);
+        assert.equal(next.readSession.sessionId, sessionId);
+      }
+      const updates = await publicMobile.getFeedUpdates({
+        viewerToken,
+        sessionId,
         visibleItemIds: [],
         visiblePositionIds: [],
         viewportRevision: 0,
@@ -100,8 +128,31 @@ void describe(
       assert.equal(updates.requestSeq, 1);
     });
 
+    void test('retains explicit signed object reads and their session updates', async () => {
+      const page = await mobile.getProfileFeed({
+        subaccount: auth,
+        auth,
+        limit: 2,
+      });
+      assertPage(page);
+      assert.equal(page.readSession.viewerToken, undefined);
+      const updates = await mobile.getFeedUpdates({
+        auth,
+        sessionId: page.readSession.sessionId,
+        visibleItemIds: page.items.map((item) => item.id),
+        visiblePositionIds: [],
+        viewportRevision: 0,
+        requestSeq: 1,
+      });
+      assert.equal(updates.requestSeq, 1);
+    });
+
     void test('reads market content', async () => {
-      const page = await mobile.getMarketFeed({ productId: 2, limit: 2 });
+      const page = await mobile.getMarketFeed({
+        productId: 2,
+        viewAs,
+        limit: 2,
+      });
       assertPage(page);
       for (const item of page.items) assert.equal(item.market.productId, 2);
     });
@@ -117,15 +168,19 @@ void describe(
       }
       const authorPage = await mobile.getProfileFeed({
         subaccount: subaccountFromHex(item.author.subaccount),
+        viewAs,
         limit: 2,
       });
       assertPage(authorPage);
       const positionId =
         item.kind === 'trade_card' ? item.position.positionId : item.positionId;
-      assertPage(await mobile.getPositionFeed({ positionId, limit: 2 }));
+      assertPage(
+        await mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
+      );
       const detail = await mobile.getFeedItem({
         itemId: item.id,
         commentPreviewLimit: 0,
+        viewAs,
       });
       assert.equal(detail.item.id, item.id);
       assert.equal(detail.readSession.mode, 'item');
@@ -173,6 +228,8 @@ function assertPage(page: MobileSocialFeedPage) {
     assert.ok(['trade_card', 'trade_row'].includes(item.kind));
     assert.ok(BigInt(item.version) > 0n);
     assert.equal(item.drawing, null);
+    if (item.kind === 'trade_card')
+      assert.equal(item.interaction.likedByMe, null);
     assert.equal(item.capabilities.canLike, false);
     assert.equal(item.capabilities.canComment, false);
     assert.equal(item.capabilities.canRecordView, false);

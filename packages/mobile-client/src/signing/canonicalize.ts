@@ -12,14 +12,6 @@ export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
-    case 'for_you_feed':
-    case 'top_traders_feed':
-    case 'friends_feed':
-      return omitUndefined({
-        type: inner.type,
-        market_category: inner.market_category,
-        ...listFields(inner),
-      });
     case 'profile_feed':
       return omitUndefined({
         type: inner.type,

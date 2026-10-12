@@ -3,7 +3,7 @@ import { MobileExecuteInner } from '../signing/types';
 import { MobileServerNotificationPreferences } from './serverModelTypes';
 import {
   MobileServerPublicSocialFeedRequestByType,
-  MobileServerSocialFeedQueryType,
+  MobileServerSignedSocialFeedQueryType,
 } from './serverSocialFeedTypes';
 
 /**
@@ -114,7 +114,7 @@ export type MobileServerExecuteRequestType = MobileExecuteInner['type'];
  * so it never carries the `mobile:` prefix that the EIP-712 method does.
  */
 export type MobileServerRequestType =
-  | `query_${MobileServerSocialFeedQueryType}`
+  | `query_${MobileServerSignedSocialFeedQueryType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

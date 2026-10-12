@@ -69,6 +69,8 @@ import {
   MobileServerPublicQueryRequestType,
 } from './types/serverRequestTypes';
 import {
+  MobileServerCategorizedFeedParams,
+  MobileServerMainFeedQueryType,
   MobileServerSocialFeedQueryResponseByType,
   MobileServerSocialFeedQueryType,
 } from './types/serverSocialFeedTypes';
@@ -93,6 +95,14 @@ import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
 } from './utils/serverResponseGuards';
+
+type SocialFeedQueryInner =
+  | {
+      [K in MobileServerMainFeedQueryType]: {
+        type: K;
+      } & MobileServerCategorizedFeedParams;
+    }[MobileServerMainFeedQueryType]
+  | MobileQueryInner;
 
 /**
  * Options for constructing a {@link MobileClient}.
@@ -259,9 +269,9 @@ export class MobileClient {
 
   /**
    * Fetches chronological For You recommendations with server-side author/thread constraints.
-   * Public by default; pass auth for a signed read. Preserve the session, filters, and limit
+   * Always public, with optional viewAs for relationship state. Preserve the session, viewAs, filters, and limit
    * when paging, including through empty pages with a nextCursor. A 6312 error requires a refresh.
-   * @param params - Filters, pagination, and optional signing identity or anonymous credential.
+   * @param params - Filters, pagination, optional viewing account, and browser credential; no signing identity.
    * @returns A fixed-session page with its ranking version and new-content watermark.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, or unavailable data.
    */
@@ -280,7 +290,8 @@ export class MobileClient {
 
   /**
    * Fetches chronological content by qualified Top Traders, with official account PnL badges.
-   * @param params - Filters, pagination, and read identity.
+   * Always public; neither a wallet nor one-click trading setup is required.
+   * @param params - Filters, pagination, optional viewing account, and browser credential.
    * @returns A page with its qualification cohort; an unavailable cohort fails instead of returning an empty ranking.
    * @throws {MobileServerFailureError} On request/session errors or unavailable cohort data.
    */
@@ -298,11 +309,10 @@ export class MobileClient {
   }
 
   /**
-   * Fetches public content by authors followed by the signed identity. One-way following is sufficient.
-   * @param params - Required signing identity, filters, and pagination.
+   * Fetches public content by authors followed by viewAs, without a signature. One-way following is sufficient.
+   * @param params - Required viewing account on every request, filters, pagination, and browser credential.
    * @returns A chronological Friends page and reading session.
-   * @throws {WalletNotProvidedError} When no owner wallet or linked signer is configured.
-   * @throws {MobileServerFailureError} On authentication or feed query failure.
+   * @throws {MobileServerFailureError} On invalid viewing account, session errors, or feed query failure.
    */
   async getFriendsFeed(
     params: GetMobileFriendsFeedParams,
@@ -600,26 +610,55 @@ export class MobileClient {
    */
 
   private async socialFeedQuery<T extends MobileServerSocialFeedQueryType>(
-    inner: MobileQueryInner & { type: T },
+    inner: SocialFeedQueryInner & { type: T },
     access: MobileFeedReadAccess,
   ): Promise<MobileFeedModel<MobileServerSocialFeedQueryResponseByType[T]>> {
     if (access.auth && access.viewerToken !== undefined) {
       throw new Error('Signed feed queries cannot include viewerToken.');
     }
-    if (!access.auth && inner.type === 'friends_feed') {
-      throw new Error('Friends feed requires a signing identity.');
+    if (access.auth && access.viewAs !== undefined) {
+      throw new Error('Signed feed queries cannot include viewAs.');
+    }
+    if (inner.type === 'feed_updates' && access.viewAs !== undefined) {
+      throw new Error(
+        'Feed updates inherit viewAs from the session and cannot include viewAs.',
+      );
+    }
+    if (inner.type === 'friends_feed' && access.viewAs === undefined) {
+      throw new Error('Friends feed requires viewAs on every request.');
     }
     if (!access.auth && inner.type === 'feed_updates' && !access.viewerToken) {
       throw new Error('Public feed updates require the session viewerToken.');
     }
-    const body = access.auth
-      ? await this.signRequest(access.auth, inner)
-      : {
-          ...canonicalizeMobileInner(inner),
-          ...(access.viewerToken === undefined
-            ? {}
-            : { viewer_token: access.viewerToken }),
-        };
+    const requestFields: SocialFeedQueryInner = inner;
+    let body: object;
+    if (
+      requestFields.type === 'for_you_feed' ||
+      requestFields.type === 'top_traders_feed' ||
+      requestFields.type === 'friends_feed'
+    ) {
+      if (access.auth) {
+        throw new Error(
+          'Main feeds only support public queries; auth is not accepted.',
+        );
+      }
+      body = requestFields;
+    } else {
+      body = access.auth
+        ? await this.signRequest(access.auth, requestFields)
+        : canonicalizeMobileInner(requestFields);
+    }
+    if (!access.auth) {
+      body = {
+        ...body,
+        ...(access.viewAs === undefined
+          ? {}
+          : { view_as: subaccountToHex(access.viewAs) }),
+        ...(access.viewerToken === undefined
+          ? {}
+          : { viewer_token: access.viewerToken }),
+      };
+    }
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/${access.auth ? 'query' : 'public_query'}`,
       body,

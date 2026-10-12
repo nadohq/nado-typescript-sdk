@@ -13,8 +13,8 @@ import {
   MobileServerPublicQueryRequestType,
 } from './serverRequestTypes';
 import {
+  MobileServerSignedSocialFeedQueryType,
   MobileServerSocialFeedQueryResponseByType,
-  MobileServerSocialFeedQueryType,
 } from './serverSocialFeedTypes';
 
 /**
@@ -94,10 +94,7 @@ export interface MobileServerRegisteredWalletResponse {
  * matching engine's `EngineServerQueryResponseByType`. Holds the unwrapped payload; the envelope is applied
  * by {@link MobileServerPublicQuerySuccessResponse}.
  */
-export interface MobileServerPublicQueryResponseByType extends Omit<
-  MobileServerSocialFeedQueryResponseByType,
-  'friends_feed'
-> {
+export interface MobileServerPublicQueryResponseByType extends MobileServerSocialFeedQueryResponseByType {
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
   followers: MobileServerFollowListResponse;
@@ -119,10 +116,12 @@ export type MobileServerPublicQuerySuccessResponse<
 
 /** Full authenticated query body; business fields are flattened with the signature envelope. */
 export type MobileServerQueryRequest<
-  T extends MobileServerSocialFeedQueryType = MobileServerSocialFeedQueryType,
+  T extends MobileServerSignedSocialFeedQueryType =
+    MobileServerSignedSocialFeedQueryType,
 > = MobileSignedRequest<Extract<MobileQueryInner, { type: T }>>;
 
 /** Authenticated F01 query success response. */
 export type MobileServerQuerySuccessResponse<
-  T extends MobileServerSocialFeedQueryType = MobileServerSocialFeedQueryType,
+  T extends MobileServerSignedSocialFeedQueryType =
+    MobileServerSignedSocialFeedQueryType,
 > = MobileServerSuccessResponse & MobileServerSocialFeedQueryResponseByType[T];
