@@ -2,6 +2,18 @@ import { WalletClientWithAccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
 import { MobileNotificationPlatform } from '../types/serverModelTypes';
+import {
+  MobileServerSocialFeedQueryRequestByType,
+  MobileServerSocialFeedQueryType,
+} from '../types/serverSocialFeedTypes';
+
+/** Signed read payloads, discriminated by operation. No viewer_token is allowed. */
+export type MobileQueryInner = {
+  [K in MobileServerSocialFeedQueryType]: {
+    /** Query operation. */
+    type: K;
+  } & MobileServerSocialFeedQueryRequestByType[K];
+}[MobileServerSocialFeedQueryType];
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.
@@ -18,6 +30,7 @@ import { MobileNotificationPlatform } from '../types/serverModelTypes';
  * lowercases; unlike bytes32, string fields such as `display_name` are hashed as-is and keep their casing.
  */
 export type MobileSignedInner =
+  | MobileQueryInner
   | { type: 'set_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }
   | {
@@ -35,6 +48,9 @@ export type MobileSignedInner =
       /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
       is_following: boolean;
     };
+
+/** Signed mutation payloads, excluding authenticated reads. */
+export type MobileExecuteInner = Exclude<MobileSignedInner, MobileQueryInner>;
 
 /**
  * The single {@link MobileSignedInner} member carrying the given `type` tag.

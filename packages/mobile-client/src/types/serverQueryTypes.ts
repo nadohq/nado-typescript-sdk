@@ -1,4 +1,5 @@
 import { Hex } from 'viem';
+import { MobileQueryInner, MobileSignedRequest } from '../signing/types';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileNotificationPlatform,
@@ -11,6 +12,10 @@ import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
 } from './serverRequestTypes';
+import {
+  MobileServerSocialFeedQueryResponseByType,
+  MobileServerSocialFeedQueryType,
+} from './serverSocialFeedTypes';
 
 /**
  * Unsigned `public_query` request body: a `type` discriminant flattened with its params.
@@ -89,7 +94,10 @@ export interface MobileServerRegisteredWalletResponse {
  * matching engine's `EngineServerQueryResponseByType`. Holds the unwrapped payload; the envelope is applied
  * by {@link MobileServerPublicQuerySuccessResponse}.
  */
-export interface MobileServerPublicQueryResponseByType {
+export interface MobileServerPublicQueryResponseByType extends Omit<
+  MobileServerSocialFeedQueryResponseByType,
+  'friends_feed'
+> {
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
   followers: MobileServerFollowListResponse;
@@ -108,3 +116,13 @@ export type MobileServerPublicQuerySuccessResponse<
   T extends MobileServerPublicQueryRequestType =
     MobileServerPublicQueryRequestType,
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
+
+/** Full authenticated query body; business fields are flattened with the signature envelope. */
+export type MobileServerQueryRequest<
+  T extends MobileServerSocialFeedQueryType = MobileServerSocialFeedQueryType,
+> = MobileSignedRequest<Extract<MobileQueryInner, { type: T }>>;
+
+/** Authenticated F01 query success response. */
+export type MobileServerQuerySuccessResponse<
+  T extends MobileServerSocialFeedQueryType = MobileServerSocialFeedQueryType,
+> = MobileServerSuccessResponse & MobileServerSocialFeedQueryResponseByType[T];

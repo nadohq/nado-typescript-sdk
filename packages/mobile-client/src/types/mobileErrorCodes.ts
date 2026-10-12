@@ -32,6 +32,16 @@ export const MOBILE_ERROR_CODES = {
   INVALID_FEED_FILTER: 6300,
   /** Feed cursor is malformed or bound to a different filter. Discard it and restart from the first page. */
   INVALID_FEED_CURSOR: 6301,
+  /** Invalid F01 parameters, filter combination, or page size. */
+  INVALID_SOCIAL_FEED_PARAMS: 6310,
+  /** Session, identity, cursor, source, or authorized viewport does not match. */
+  SOCIAL_FEED_SESSION_MISMATCH: 6311,
+  /** Reading session or anonymous credential expired or was lost; refresh the feed. */
+  SOCIAL_FEED_SESSION_EXPIRED: 6312,
+  /** Content does not exist or is not currently accessible. */
+  SOCIAL_FEED_CONTENT_UNAVAILABLE: 6313,
+  /** Required authoritative position, action, cohort, or market data is unavailable. */
+  SOCIAL_FEED_DATA_UNAVAILABLE: 6320,
 } as const;
 
 /**

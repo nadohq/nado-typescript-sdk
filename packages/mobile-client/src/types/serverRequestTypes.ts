@@ -1,6 +1,10 @@
 import { Hex } from 'viem';
-import { MobileSignedInner } from '../signing/types';
+import { MobileExecuteInner } from '../signing/types';
 import { MobileServerNotificationPreferences } from './serverModelTypes';
+import {
+  MobileServerPublicSocialFeedRequestByType,
+  MobileServerSocialFeedQueryType,
+} from './serverSocialFeedTypes';
 
 /**
  * Opt-in extras for a `profiles` query. Each one costs extra rate-limit weight per profile and adds fields
@@ -39,7 +43,7 @@ export interface MobileServerFollowListRequest {
 /**
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
-export interface MobileServerPublicQueryRequestByType {
+export interface MobileServerPublicQueryRequestByType extends MobileServerPublicSocialFeedRequestByType {
   username_availability: { display_name: string };
   profiles: {
     /**
@@ -96,20 +100,21 @@ export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
 /**
- * Discriminant `type` values for signed `execute` requests. Every signed route the SDK calls is a write, so
- * this is the full set of {@link MobileSignedInner} tags. Unlike the public queries these carry no separate
- * params map — a signed request body *is* its inner payload flattened with the envelope, so
- * {@link MobileSignedInner} is the single source of truth for both the fields and their significant order.
+ * Discriminant `type` values for signed `execute` requests, excluding authenticated queries.
+ * Unlike the public queries these carry no separate params map — a signed request body *is* its inner
+ * payload flattened with the envelope, so {@link MobileExecuteInner} is the single source of truth for
+ * the mutation fields. {@link canonicalizeMobileInner} enforces their significant order.
  */
-export type MobileServerExecuteRequestType = MobileSignedInner['type'];
+export type MobileServerExecuteRequestType = MobileExecuteInner['type'];
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
- * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
- * writes (e.g. `execute_set_username`). The prefix names the route, so it never carries the `mobile:` prefix
- * that the EIP-712 method does.
+ * `query_*` for signed queries, `public_query_*` for unsigned queries, `public_execute_*` for unsigned
+ * writes, and `execute_*` for signed writes (e.g. `execute_set_username`). The prefix names the route,
+ * so it never carries the `mobile:` prefix that the EIP-712 method does.
  */
 export type MobileServerRequestType =
+  | `query_${MobileServerSocialFeedQueryType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

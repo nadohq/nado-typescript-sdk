@@ -11,4 +11,12 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   set_private_mode: 'mobile:execute_set_private_mode',
   register_expo_token: 'mobile:execute_register_expo_token',
   set_follow: 'mobile:execute_set_follow',
+  for_you_feed: 'mobile:query_for_you_feed',
+  top_traders_feed: 'mobile:query_top_traders_feed',
+  friends_feed: 'mobile:query_friends_feed',
+  profile_feed: 'mobile:query_profile_feed',
+  market_feed: 'mobile:query_market_feed',
+  position_feed: 'mobile:query_position_feed',
+  feed_item: 'mobile:query_feed_item',
+  feed_updates: 'mobile:query_feed_updates',
 };

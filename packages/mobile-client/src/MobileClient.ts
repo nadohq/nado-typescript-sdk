@@ -18,11 +18,17 @@ import {
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
+  canonicalizeMobileInner,
+  MobileQueryInner,
   MobileSignedInner,
   MobileSignedInnerByType,
   MobileSignedInnerParams,
   MobileSignedRequest,
 } from './signing';
+import {
+  mapMobileSocialFeedListParams,
+  mapMobileSocialFeedModel,
+} from './socialFeedMappers';
 import {
   GetMobileFeedParams,
   GetMobileFollowersParams,
@@ -63,6 +69,27 @@ import {
   MobileServerPublicQueryRequestType,
 } from './types/serverRequestTypes';
 import {
+  MobileServerSocialFeedQueryResponseByType,
+  MobileServerSocialFeedQueryType,
+} from './types/serverSocialFeedTypes';
+import {
+  GetMobileFeedItemParams,
+  GetMobileFeedUpdatesParams,
+  GetMobileForYouFeedParams,
+  GetMobileFriendsFeedParams,
+  GetMobileMarketFeedParams,
+  GetMobilePositionFeedParams,
+  GetMobileProfileFeedParams,
+  GetMobileTopTradersFeedParams,
+  MobileFeedModel,
+  MobileFeedReadAccess,
+  MobileFeedUpdates,
+  MobileRankedFeedPage,
+  MobileSocialFeedItemResponse,
+  MobileSocialFeedPage,
+  MobileTopTradersFeedPage,
+} from './types/socialFeedTypes';
+import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
 } from './utils/serverResponseGuards';
@@ -90,8 +117,9 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed, the
- * follower/following graph, privacy settings, and push notification device/preference management.
+ * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed,
+ * session-based social feeds, the follower/following graph, privacy settings, and push notification
+ * device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -227,6 +255,170 @@ export class MobileClient {
     };
     const data = await this.publicQuery(body);
     return mapMobileFeedPage(data);
+  }
+
+  /**
+   * Fetches chronological For You recommendations with server-side author/thread constraints.
+   * Public by default; pass auth for a signed read. Preserve the session, filters, and limit
+   * when paging, including through empty pages with a nextCursor. A 6312 error requires a refresh.
+   * @param params - Filters, pagination, and optional signing identity or anonymous credential.
+   * @returns A fixed-session page with its ranking version and new-content watermark.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, or unavailable data.
+   */
+  async getForYouFeed(
+    params: GetMobileForYouFeedParams = {},
+  ): Promise<MobileRankedFeedPage> {
+    return this.socialFeedQuery(
+      {
+        type: 'for_you_feed',
+        market_category: params.marketCategory,
+        ...mapMobileSocialFeedListParams(params),
+      },
+      params,
+    );
+  }
+
+  /**
+   * Fetches chronological content by qualified Top Traders, with official account PnL badges.
+   * @param params - Filters, pagination, and read identity.
+   * @returns A page with its qualification cohort; an unavailable cohort fails instead of returning an empty ranking.
+   * @throws {MobileServerFailureError} On request/session errors or unavailable cohort data.
+   */
+  async getTopTradersFeed(
+    params: GetMobileTopTradersFeedParams = {},
+  ): Promise<MobileTopTradersFeedPage> {
+    return this.socialFeedQuery(
+      {
+        type: 'top_traders_feed',
+        market_category: params.marketCategory,
+        ...mapMobileSocialFeedListParams(params),
+      },
+      params,
+    );
+  }
+
+  /**
+   * Fetches public content by authors followed by the signed identity. One-way following is sufficient.
+   * @param params - Required signing identity, filters, and pagination.
+   * @returns A chronological Friends page and reading session.
+   * @throws {WalletNotProvidedError} When no owner wallet or linked signer is configured.
+   * @throws {MobileServerFailureError} On authentication or feed query failure.
+   */
+  async getFriendsFeed(
+    params: GetMobileFriendsFeedParams,
+  ): Promise<MobileRankedFeedPage> {
+    return this.socialFeedQuery(
+      {
+        type: 'friends_feed',
+        market_category: params.marketCategory,
+        ...mapMobileSocialFeedListParams(params),
+      },
+      params,
+    );
+  }
+
+  /**
+   * Fetches an author's published content. A signed author may read their own private content.
+   * @param params - Target identity, filters, pagination, and optional read identity.
+   * @returns An author page without main-feed ranking or cohort fields.
+   * @throws {MobileServerFailureError} On invalid parameters, session errors, or inaccessible content.
+   */
+  async getProfileFeed(
+    params: GetMobileProfileFeedParams,
+  ): Promise<MobileSocialFeedPage> {
+    return this.socialFeedQuery(
+      {
+        type: 'profile_feed',
+        subaccount: subaccountToHex(params.subaccount),
+        market_category: params.marketCategory,
+        ...mapMobileSocialFeedListParams(params),
+      },
+      params,
+    );
+  }
+
+  /**
+   * Fetches published content for one market.
+   * @param params - Product ID, content/size filters, pagination, and read identity.
+   * @returns A market page without main-feed ranking fields.
+   * @throws {MobileServerFailureError} On an unknown market, session errors, or unavailable data.
+   */
+  async getMarketFeed(
+    params: GetMobileMarketFeedParams,
+  ): Promise<MobileSocialFeedPage> {
+    return this.socialFeedQuery(
+      {
+        type: 'market_feed',
+        product_id: params.productId,
+        ...mapMobileSocialFeedListParams(params),
+      },
+      params,
+    );
+  }
+
+  /**
+   * Fetches already published content for a position lifecycle. This is not full position history
+   * and does not recreate automatic activity suppressed while the author was private.
+   * @param params - Position UUID, filters, pagination, and read identity.
+   * @returns A fixed-session position feed page.
+   * @throws {MobileServerFailureError} On inaccessible content, session errors, or unavailable data.
+   */
+  async getPositionFeed(
+    params: GetMobilePositionFeedParams,
+  ): Promise<MobileSocialFeedPage> {
+    return this.socialFeedQuery(
+      {
+        type: 'position_feed',
+        position_id: params.positionId,
+        ...mapMobileSocialFeedListParams(params),
+      },
+      params,
+    );
+  }
+
+  /**
+   * Reads one item, creating an item session directly when sessionId is omitted.
+   * @param params - Item UUID, preview limit, and optional existing session/read identity.
+   * @returns The complete item and authorized reading session.
+   * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
+   */
+  async getFeedItem(
+    params: GetMobileFeedItemParams,
+  ): Promise<MobileSocialFeedItemResponse> {
+    return this.socialFeedQuery(
+      {
+        type: 'feed_item',
+        item_id: params.itemId,
+        comment_preview_limit: params.commentPreviewLimit,
+        session_id: params.sessionId,
+      },
+      params,
+    );
+  }
+
+  /**
+   * Polls authorized visible items and positions without inserting or reordering list members.
+   * Accept only the current viewportRevision's latest requestSeq. Null patches clear values;
+   * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
+   * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
+   * @returns Item/position patches, revoked targets, and a new-content hint.
+   * @throws {MobileServerFailureError} On invalid or unauthorized targets, session expiry, or unavailable data.
+   */
+  async getFeedUpdates(
+    params: GetMobileFeedUpdatesParams,
+  ): Promise<MobileFeedUpdates> {
+    return this.socialFeedQuery(
+      {
+        type: 'feed_updates',
+        session_id: params.sessionId,
+        visible_item_ids: params.visibleItemIds,
+        visible_position_ids: params.visiblePositionIds,
+        update_cursor: params.updateCursor,
+        viewport_revision: params.viewportRevision,
+        request_seq: params.requestSeq,
+      },
+      params,
+    );
   }
 
   /**
@@ -407,6 +599,41 @@ export class MobileClient {
   Base Fns
    */
 
+  private async socialFeedQuery<T extends MobileServerSocialFeedQueryType>(
+    inner: MobileQueryInner & { type: T },
+    access: MobileFeedReadAccess,
+  ): Promise<MobileFeedModel<MobileServerSocialFeedQueryResponseByType[T]>> {
+    if (access.auth && access.viewerToken !== undefined) {
+      throw new Error('Signed feed queries cannot include viewerToken.');
+    }
+    if (!access.auth && inner.type === 'friends_feed') {
+      throw new Error('Friends feed requires a signing identity.');
+    }
+    if (!access.auth && inner.type === 'feed_updates' && !access.viewerToken) {
+      throw new Error('Public feed updates require the session viewerToken.');
+    }
+    const body = access.auth
+      ? await this.signRequest(access.auth, inner)
+      : {
+          ...canonicalizeMobileInner(inner),
+          ...(access.viewerToken === undefined
+            ? {}
+            : { viewer_token: access.viewerToken }),
+        };
+    const response = await this.axiosInstance.post<unknown>(
+      `${this.opts.url}/${access.auth ? 'query' : 'public_query'}`,
+      body,
+    );
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+    const payload = Object.fromEntries(
+      Object.entries(response.data as MobileServerSuccessResponse).filter(
+        ([key]) => key !== 'status',
+      ),
+    ) as unknown as MobileServerSocialFeedQueryResponseByType[T];
+    return mapMobileSocialFeedModel(payload);
+  }
+
   // Returns the request narrowed to `type` so `execute` can infer its response from the request it is given,
   // instead of being told the type a second time at the call site.
   protected async getSignedRequest<T extends MobileSignedInner['type']>(
@@ -414,6 +641,17 @@ export class MobileClient {
     params: MobileSignedRequestParams,
     innerParams: MobileSignedInnerParams<T>,
   ): Promise<MobileSignedRequest<MobileSignedInnerByType<T>>> {
+    const inner = {
+      type,
+      ...innerParams,
+    } as unknown as MobileSignedInnerByType<T>;
+    return this.signRequest(params, inner);
+  }
+
+  private async signRequest<T extends MobileSignedInner>(
+    params: MobileSignedRequestParams,
+    inner: T,
+  ): Promise<MobileSignedRequest<T>> {
     // Use the linked signer if provided, otherwise use the default signer provided to the client
     const walletClient =
       this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
@@ -422,10 +660,6 @@ export class MobileClient {
       throw new WalletNotProvidedError();
     }
 
-    const inner = {
-      type,
-      ...innerParams,
-    } as unknown as MobileSignedInnerByType<T>;
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 
