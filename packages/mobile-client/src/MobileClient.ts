@@ -18,16 +18,18 @@ import {
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
-  canonicalizeMobileInner,
-  MobileQueryInner,
   MobileSignedInner,
   MobileSignedInnerByType,
   MobileSignedInnerParams,
   MobileSignedRequest,
 } from './signing';
 import {
+  mapMobileFeedUpdates,
+  mapMobileRankedFeedPage,
+  mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedListParams,
-  mapMobileSocialFeedModel,
+  mapMobileSocialFeedPage,
+  mapMobileTopTradersFeedPage,
 } from './socialFeedMappers';
 import {
   GetMobileFeedParams,
@@ -52,6 +54,7 @@ import {
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
 } from './types/clientTypes';
+import { InvalidMobileFeedReadAccessError } from './types/InvalidMobileFeedReadAccessError';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
 import {
@@ -62,18 +65,14 @@ import {
 import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQuerySuccessResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
-import {
-  MobileServerCategorizedFeedParams,
-  MobileServerMainFeedQueryType,
-  MobileServerSocialFeedQueryResponseByType,
-  MobileServerSocialFeedQueryType,
-} from './types/serverSocialFeedTypes';
 import {
   GetMobileFeedItemParams,
   GetMobileFeedUpdatesParams,
@@ -83,7 +82,6 @@ import {
   GetMobilePositionFeedParams,
   GetMobileProfileFeedParams,
   GetMobileTopTradersFeedParams,
-  MobileFeedModel,
   MobileFeedReadAccess,
   MobileFeedUpdates,
   MobileRankedFeedPage,
@@ -95,14 +93,6 @@ import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
 } from './utils/serverResponseGuards';
-
-type SocialFeedQueryInner =
-  | {
-      [K in MobileServerMainFeedQueryType]: {
-        type: K;
-      } & MobileServerCategorizedFeedParams;
-    }[MobileServerMainFeedQueryType]
-  | MobileQueryInner;
 
 /**
  * Options for constructing a {@link MobileClient}.
@@ -273,19 +263,25 @@ export class MobileClient {
    * when paging, including through empty pages with a nextCursor. A 6312 error requires a refresh.
    * @param params - Filters, pagination, optional viewing account, and browser credential; no signing identity.
    * @returns A fixed-session page with its ranking version and new-content watermark.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, or unavailable data.
    */
   async getForYouFeed(
     params: GetMobileForYouFeedParams = {},
   ): Promise<MobileRankedFeedPage> {
-    return this.socialFeedQuery(
-      {
-        type: 'for_you_feed',
-        market_category: params.marketCategory,
-        ...mapMobileSocialFeedListParams(params),
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'for_you_feed');
+    const body: MobileServerPublicQueryRequest<'for_you_feed'> = {
+      type: 'for_you_feed',
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParams(params),
+      view_as:
+        params.viewAs === undefined
+          ? undefined
+          : subaccountToHex(params.viewAs),
+      viewer_token: params.viewerToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileRankedFeedPage(data);
   }
 
   /**
@@ -293,77 +289,106 @@ export class MobileClient {
    * Always public; neither a wallet nor one-click trading setup is required.
    * @param params - Filters, pagination, optional viewing account, and browser credential.
    * @returns A page with its qualification cohort; an unavailable cohort fails instead of returning an empty ranking.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On request/session errors or unavailable cohort data.
    */
   async getTopTradersFeed(
     params: GetMobileTopTradersFeedParams = {},
   ): Promise<MobileTopTradersFeedPage> {
-    return this.socialFeedQuery(
-      {
-        type: 'top_traders_feed',
-        market_category: params.marketCategory,
-        ...mapMobileSocialFeedListParams(params),
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'top_traders_feed');
+    const body: MobileServerPublicQueryRequest<'top_traders_feed'> = {
+      type: 'top_traders_feed',
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParams(params),
+      view_as:
+        params.viewAs === undefined
+          ? undefined
+          : subaccountToHex(params.viewAs),
+      viewer_token: params.viewerToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileTopTradersFeedPage(data);
   }
 
   /**
    * Fetches public content by authors followed by viewAs, without a signature. One-way following is sufficient.
    * @param params - Required viewing account on every request, filters, pagination, and browser credential.
    * @returns A chronological Friends page and reading session.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid viewing account, session errors, or feed query failure.
    */
   async getFriendsFeed(
     params: GetMobileFriendsFeedParams,
   ): Promise<MobileRankedFeedPage> {
-    return this.socialFeedQuery(
-      {
-        type: 'friends_feed',
-        market_category: params.marketCategory,
-        ...mapMobileSocialFeedListParams(params),
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'friends_feed');
+    const body: MobileServerPublicQueryRequest<'friends_feed'> = {
+      type: 'friends_feed',
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParams(params),
+      view_as: subaccountToHex(params.viewAs),
+      viewer_token: params.viewerToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileRankedFeedPage(data);
   }
 
   /**
    * Fetches an author's published content. A signed author may read their own private content.
    * @param params - Target identity, filters, pagination, and optional read identity.
    * @returns An author page without main-feed ranking or cohort fields.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid parameters, session errors, or inaccessible content.
    */
   async getProfileFeed(
     params: GetMobileProfileFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    return this.socialFeedQuery(
-      {
-        type: 'profile_feed',
-        subaccount: subaccountToHex(params.subaccount),
-        market_category: params.marketCategory,
-        ...mapMobileSocialFeedListParams(params),
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'profile_feed');
+    const inner: MobileSignedInnerByType<'profile_feed'> = {
+      type: 'profile_feed',
+      subaccount: subaccountToHex(params.subaccount),
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParams(params),
+    };
+    const data = params.auth
+      ? await this.query(await this.signRequest(params.auth, inner))
+      : await this.publicQuery({
+          ...inner,
+          view_as:
+            params.viewAs === undefined
+              ? undefined
+              : subaccountToHex(params.viewAs),
+          viewer_token: params.viewerToken,
+        });
+    return mapMobileSocialFeedPage(data);
   }
 
   /**
    * Fetches published content for one market.
    * @param params - Product ID, content/size filters, pagination, and read identity.
    * @returns A market page without main-feed ranking fields.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On an unknown market, session errors, or unavailable data.
    */
   async getMarketFeed(
     params: GetMobileMarketFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    return this.socialFeedQuery(
-      {
-        type: 'market_feed',
-        product_id: params.productId,
-        ...mapMobileSocialFeedListParams(params),
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'market_feed');
+    const inner: MobileSignedInnerByType<'market_feed'> = {
+      type: 'market_feed',
+      product_id: params.productId,
+      ...mapMobileSocialFeedListParams(params),
+    };
+    const data = params.auth
+      ? await this.query(await this.signRequest(params.auth, inner))
+      : await this.publicQuery({
+          ...inner,
+          view_as:
+            params.viewAs === undefined
+              ? undefined
+              : subaccountToHex(params.viewAs),
+          viewer_token: params.viewerToken,
+        });
+    return mapMobileSocialFeedPage(data);
   }
 
   /**
@@ -371,39 +396,59 @@ export class MobileClient {
    * and does not recreate automatic activity suppressed while the author was private.
    * @param params - Position UUID, filters, pagination, and read identity.
    * @returns A fixed-session position feed page.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On inaccessible content, session errors, or unavailable data.
    */
   async getPositionFeed(
     params: GetMobilePositionFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    return this.socialFeedQuery(
-      {
-        type: 'position_feed',
-        position_id: params.positionId,
-        ...mapMobileSocialFeedListParams(params),
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'position_feed');
+    const inner: MobileSignedInnerByType<'position_feed'> = {
+      type: 'position_feed',
+      position_id: params.positionId.toLowerCase(),
+      ...mapMobileSocialFeedListParams(params),
+    };
+    const data = params.auth
+      ? await this.query(await this.signRequest(params.auth, inner))
+      : await this.publicQuery({
+          ...inner,
+          view_as:
+            params.viewAs === undefined
+              ? undefined
+              : subaccountToHex(params.viewAs),
+          viewer_token: params.viewerToken,
+        });
+    return mapMobileSocialFeedPage(data);
   }
 
   /**
    * Reads one item, creating an item session directly when sessionId is omitted.
    * @param params - Item UUID, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
    */
   async getFeedItem(
     params: GetMobileFeedItemParams,
   ): Promise<MobileSocialFeedItemResponse> {
-    return this.socialFeedQuery(
-      {
-        type: 'feed_item',
-        item_id: params.itemId,
-        comment_preview_limit: params.commentPreviewLimit,
-        session_id: params.sessionId,
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'feed_item');
+    const inner: MobileSignedInnerByType<'feed_item'> = {
+      type: 'feed_item',
+      item_id: params.itemId.toLowerCase(),
+      comment_preview_limit: params.commentPreviewLimit,
+      session_id: params.sessionId,
+    };
+    const data = params.auth
+      ? await this.query(await this.signRequest(params.auth, inner))
+      : await this.publicQuery({
+          ...inner,
+          view_as:
+            params.viewAs === undefined
+              ? undefined
+              : subaccountToHex(params.viewAs),
+          viewer_token: params.viewerToken,
+        });
+    return mapMobileSocialFeedItemResponse(data);
   }
 
   /**
@@ -412,23 +457,31 @@ export class MobileClient {
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
    * @returns Item/position patches, revoked targets, and a new-content hint.
+   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid or unauthorized targets, session expiry, or unavailable data.
    */
   async getFeedUpdates(
     params: GetMobileFeedUpdatesParams,
   ): Promise<MobileFeedUpdates> {
-    return this.socialFeedQuery(
-      {
-        type: 'feed_updates',
-        session_id: params.sessionId,
-        visible_item_ids: params.visibleItemIds,
-        visible_position_ids: params.visiblePositionIds,
-        update_cursor: params.updateCursor,
-        viewport_revision: params.viewportRevision,
-        request_seq: params.requestSeq,
-      },
-      params,
-    );
+    this.validateFeedReadAccess(params, 'feed_updates');
+    const inner: MobileSignedInnerByType<'feed_updates'> = {
+      type: 'feed_updates',
+      session_id: params.sessionId,
+      visible_item_ids: params.visibleItemIds.map((id) => id.toLowerCase()),
+      visible_position_ids: params.visiblePositionIds.map((id) =>
+        id.toLowerCase(),
+      ),
+      update_cursor: params.updateCursor,
+      viewport_revision: params.viewportRevision,
+      request_seq: params.requestSeq,
+    };
+    const data = params.auth
+      ? await this.query(await this.signRequest(params.auth, inner))
+      : await this.publicQuery({
+          ...inner,
+          viewer_token: params.viewerToken,
+        });
+    return mapMobileFeedUpdates(data);
   }
 
   /**
@@ -609,68 +662,51 @@ export class MobileClient {
   Base Fns
    */
 
-  private async socialFeedQuery<T extends MobileServerSocialFeedQueryType>(
-    inner: SocialFeedQueryInner & { type: T },
+  private validateFeedReadAccess(
     access: MobileFeedReadAccess,
-  ): Promise<MobileFeedModel<MobileServerSocialFeedQueryResponseByType[T]>> {
+    operation: MobileServerPublicQueryRequestType,
+  ): void {
     if (access.auth && access.viewerToken !== undefined) {
-      throw new Error('Signed feed queries cannot include viewerToken.');
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
+        'Signed feed queries cannot include viewerToken.',
+      );
     }
     if (access.auth && access.viewAs !== undefined) {
-      throw new Error('Signed feed queries cannot include viewAs.');
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
+        'Signed feed queries cannot include viewAs.',
+      );
     }
-    if (inner.type === 'feed_updates' && access.viewAs !== undefined) {
-      throw new Error(
+    if (operation === 'feed_updates' && access.viewAs !== undefined) {
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
         'Feed updates inherit viewAs from the session and cannot include viewAs.',
       );
     }
-    if (inner.type === 'friends_feed' && access.viewAs === undefined) {
-      throw new Error('Friends feed requires viewAs on every request.');
+    if (operation === 'friends_feed' && access.viewAs === undefined) {
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
+        'Friends feed requires viewAs on every request.',
+      );
     }
-    if (!access.auth && inner.type === 'feed_updates' && !access.viewerToken) {
-      throw new Error('Public feed updates require the session viewerToken.');
+    if (!access.auth && operation === 'feed_updates' && !access.viewerToken) {
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
+        'Public feed updates require the session viewerToken.',
+      );
     }
-    const requestFields: SocialFeedQueryInner = inner;
-    let body: object;
     if (
-      requestFields.type === 'for_you_feed' ||
-      requestFields.type === 'top_traders_feed' ||
-      requestFields.type === 'friends_feed'
+      access.auth &&
+      (operation === 'for_you_feed' ||
+        operation === 'top_traders_feed' ||
+        operation === 'friends_feed')
     ) {
-      if (access.auth) {
-        throw new Error(
-          'Main feeds only support public queries; auth is not accepted.',
-        );
-      }
-      body = requestFields;
-    } else {
-      body = access.auth
-        ? await this.signRequest(access.auth, requestFields)
-        : canonicalizeMobileInner(requestFields);
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
+        'Main feeds only support public queries; auth is not accepted.',
+      );
     }
-    if (!access.auth) {
-      body = {
-        ...body,
-        ...(access.viewAs === undefined
-          ? {}
-          : { view_as: subaccountToHex(access.viewAs) }),
-        ...(access.viewerToken === undefined
-          ? {}
-          : { viewer_token: access.viewerToken }),
-      };
-    }
-    const response = await this.axiosInstance.post<unknown>(
-      `${this.opts.url}/${access.auth ? 'query' : 'public_query'}`,
-      body,
-    );
-    this.checkResponseStatus(response);
-    this.checkServerStatus(response);
-    const payload = Object.fromEntries(
-      Object.entries(response.data as MobileServerSuccessResponse).filter(
-        ([key]) => key !== 'status',
-      ),
-    ) as unknown as MobileServerSocialFeedQueryResponseByType[T];
-    return mapMobileSocialFeedModel(payload);
   }
 
   // Returns the request narrowed to `type` so `execute` can infer its response from the request it is given,
@@ -717,6 +753,20 @@ export class MobileClient {
 
     // checkServerStatus throws on failure responses so the cast to the success response is acceptable here
     return response.data as MobileServerPublicQuerySuccessResponse<T>;
+  }
+
+  protected async query<T extends MobileServerSignedQueryRequestType>(
+    body: MobileSignedRequest & { type: T },
+  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
+    const response = await this.axiosInstance.post<unknown>(
+      `${this.opts.url}/query`,
+      body,
+    );
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
+    // checkServerStatus throws on failure responses, so this cast is safe.
+    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   protected async publicExecute(

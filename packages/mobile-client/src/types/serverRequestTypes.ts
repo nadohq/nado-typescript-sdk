@@ -1,10 +1,7 @@
 import { Hex } from 'viem';
-import { MobileExecuteInner } from '../signing/types';
+import { MobileSignedInner, MobileSignedInnerParams } from '../signing/types';
 import { MobileServerNotificationPreferences } from './serverModelTypes';
-import {
-  MobileServerPublicSocialFeedRequestByType,
-  MobileServerSignedSocialFeedQueryType,
-} from './serverSocialFeedTypes';
+import { MobileServerCategorizedFeedParams } from './serverSocialFeedTypes';
 
 /**
  * Opt-in extras for a `profiles` query. Each one costs extra rate-limit weight per profile and adds fields
@@ -40,10 +37,49 @@ export interface MobileServerFollowListRequest {
   limit?: number;
 }
 
+/** Public browsing context; neither field proves wallet ownership or grants private access. */
+export interface MobileServerPublicFeedReadParams {
+  /** Complete non-isolated identity used to resolve public relationship state. */
+  view_as?: Hex;
+  /** Original browsing credential when reusing a session. */
+  viewer_token?: string;
+}
+
 /**
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
-export interface MobileServerPublicQueryRequestByType extends MobileServerPublicSocialFeedRequestByType {
+export interface MobileServerPublicQueryRequestByType {
+  /** Public recommendations with optional relationship perspective. */
+  for_you_feed: MobileServerCategorizedFeedParams &
+    MobileServerPublicFeedReadParams;
+  /** Public content from qualified authors. */
+  top_traders_feed: MobileServerCategorizedFeedParams &
+    MobileServerPublicFeedReadParams;
+  /** Public content from authors followed by view_as. */
+  friends_feed: MobileServerCategorizedFeedParams &
+    MobileServerPublicFeedReadParams & {
+      /** Complete non-isolated identity subaccount; required on every request. */
+      view_as: Hex;
+    };
+  /** Author's public content; the target is separate from view_as. */
+  profile_feed: MobileSignedInnerParams<'profile_feed'> &
+    MobileServerPublicFeedReadParams;
+  /** Public market content. */
+  market_feed: MobileSignedInnerParams<'market_feed'> &
+    MobileServerPublicFeedReadParams;
+  /** Public activity in one position lifecycle. */
+  position_feed: MobileSignedInnerParams<'position_feed'> &
+    MobileServerPublicFeedReadParams;
+  /** Public item details, optionally reusing a reading session. */
+  feed_item: MobileSignedInnerParams<'feed_item'> &
+    MobileServerPublicFeedReadParams;
+  /** Updates inherit the original public session's viewing account. */
+  feed_updates: MobileSignedInnerParams<'feed_updates'> & {
+    /** Original public browsing credential. */
+    viewer_token: string;
+    /** The viewing account cannot be changed by an update. */
+    view_as?: never;
+  };
   username_availability: { display_name: string };
   profiles: {
     /**
@@ -99,13 +135,19 @@ export interface MobileServerPublicExecuteRequestByType {
 export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
-/**
- * Discriminant `type` values for signed `execute` requests, excluding authenticated queries.
- * Unlike the public queries these carry no separate params map — a signed request body *is* its inner
- * payload flattened with the envelope, so {@link MobileExecuteInner} is the single source of truth for
- * the mutation fields. {@link canonicalizeMobileInner} enforces their significant order.
- */
-export type MobileServerExecuteRequestType = MobileExecuteInner['type'];
+/** Signed query operations; main feeds are public-only. */
+export type MobileServerSignedQueryRequestType =
+  | 'profile_feed'
+  | 'market_feed'
+  | 'position_feed'
+  | 'feed_item'
+  | 'feed_updates';
+
+/** Signed mutation operations, excluding the read-only subset of MobileSignedInner. */
+export type MobileServerExecuteRequestType = Exclude<
+  MobileSignedInner['type'],
+  MobileServerSignedQueryRequestType
+>;
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
@@ -114,7 +156,7 @@ export type MobileServerExecuteRequestType = MobileExecuteInner['type'];
  * so it never carries the `mobile:` prefix that the EIP-712 method does.
  */
 export type MobileServerRequestType =
-  | `query_${MobileServerSignedSocialFeedQueryType}`
+  | `query_${MobileServerSignedQueryRequestType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

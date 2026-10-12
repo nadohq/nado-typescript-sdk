@@ -21,14 +21,27 @@ import {
   canonicalizeMobileInner,
   getMobilePayloadHash,
   MOBILE_EIP712_METHOD_BY_TYPE,
-  MobileQueryInner,
+  MobileSignedInner,
 } from './signing';
-import { mapMobileSocialFeedModel } from './socialFeedMappers';
 import {
+  mapMobileFeedAuthor,
+  mapMobileFeedInteraction,
+  mapMobileFeedItemPatch,
+  mapMobileFeedUpdates,
+  mapMobileSocialTradeCard,
+  mapMobileSocialTradeRow,
+} from './socialFeedMappers';
+import {
+  InvalidMobileFeedReadAccessError,
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
   MobileServerFeedItemPatch,
+  MobileServerFeedReadSession,
   MobileServerFeedUpdatesResponse,
+  MobileServerSignedQueryRequestType,
+  MobileServerSocialTradeCard,
+  MobileServerSocialTradeRow,
+  MobileServerTopTradersFeedPage,
   MobileSignedRequestParams,
 } from './types';
 
@@ -52,8 +65,11 @@ const auth: MobileSignedRequestParams = {
   verifyingAddr: '0x0000000000000000000000000000000000000001',
 };
 
-// Expected insertion order comes from the parameter tables in 009, not from the SDK canonicalizer.
-const fixtures: MobileQueryInner[] = [
+// Fixtures spell out the wire protocol field order independently of the canonicalizer.
+const fixtures: Extract<
+  MobileSignedInner,
+  { type: MobileServerSignedQueryRequestType }
+>[] = [
   {
     type: 'profile_feed',
     subaccount: subaccountToHex(auth),
@@ -99,7 +115,7 @@ const fixtures: MobileQueryInner[] = [
   },
 ];
 
-describe('[mobile-client]: F01 signing', () => {
+describe('[mobile-client]: social feed signing', () => {
   it.each(['for_you_feed', 'top_traders_feed', 'friends_feed'] as const)(
     'does not define a signing domain or payload for %s',
     (type) => {
@@ -115,7 +131,10 @@ describe('[mobile-client]: F01 signing', () => {
     async (expected) => {
       const reversed = Object.fromEntries(
         Object.entries(expected).reverse(),
-      ) as MobileQueryInner;
+      ) as Extract<
+        MobileSignedInner,
+        { type: MobileServerSignedQueryRequestType }
+      >;
       const canonical = canonicalizeMobileInner(reversed);
       expect(encode(canonical)).toEqual(encode(expected));
       const payloadHash = keccak256(encode(expected));
@@ -141,6 +160,27 @@ describe('[mobile-client]: F01 signing', () => {
       expect(recovered.toLowerCase()).toBe(owner.address.toLowerCase());
     },
   );
+
+  it('hashes absent feed options as omitted keys rather than MessagePack nil', () => {
+    const inner = {
+      type: 'market_feed' as const,
+      product_id: 2,
+      limit: undefined,
+    };
+    const expected = { type: 'market_feed', product_id: 2 };
+    const canonical = canonicalizeMobileInner(inner);
+
+    expect(encode(canonical)).toEqual(encode(expected));
+    expect(getMobilePayloadHash(canonical)).toBe(keccak256(encode(expected)));
+    expect(JSON.parse(JSON.stringify(inner))).toEqual(expected);
+
+    // JSON omits undefined, but the default MessagePack encoder retains the key with a nil value.
+    const withNull = { ...inner, limit: null };
+    expect(encode(inner)).toEqual(encode(withNull));
+    expect(getMobilePayloadHash(canonical)).not.toBe(
+      keccak256(encode(withNull)),
+    );
+  });
 
   it('omits absent options, preserves explicit zero/empty arrays, and canonicalizes UUIDs only', () => {
     expect(
@@ -190,7 +230,80 @@ describe('[mobile-client]: F01 signing', () => {
   });
 });
 
-function mockClient(data: unknown = { status: 'success' }, status = 200) {
+const row: MobileServerSocialTradeRow = {
+  id: itemId,
+  kind: 'trade_row',
+  action: 'increased',
+  has_analysis: false,
+  drawing: null,
+  author: {
+    subaccount: subaccountToHex(auth),
+    username: null,
+    display_name: null,
+    avatar_url: null,
+    is_following: null,
+    trader_badge: null,
+    trader_data_status: 'unavailable',
+  },
+  created_at_ms: 40,
+  display_at_ms: 42,
+  version: '9007199254740993',
+  market: {
+    product_id: 2,
+    symbol: 'BTC-PERP',
+    logo_url: null,
+    category: 'crypto',
+    source_categories: ['crypto'],
+  },
+  capabilities: { can_like: false, can_comment: false, can_record_view: false },
+  position_id: positionId,
+  direction: 'long',
+  margin_mode: 'cross',
+  leverage: { value: null, basis: 'not_applicable' },
+  leverage_at_ms: null,
+  trade_count: 1,
+  quantity_x18: '123456789012345678901234567890',
+  notional_x18: '123456789012345678901234567890000',
+  average_price_x18: '2500123456789012345678',
+};
+const readSession: MobileServerFeedReadSession = {
+  session_id: 'OpaqueSession',
+  mode: 'feed',
+  expires_at_ms: 42,
+  view_tracking: { min_visible_ratio: 0.5, min_duration_ms: 1000 },
+  update_cursor: null,
+  viewer_token: 'OpaqueViewer',
+};
+const emptyPage: MobileServerTopTradersFeedPage = {
+  read_session: readSession,
+  items: [],
+  next_cursor: null,
+  watermark: 'Watermark',
+  ranking_version: 'chronological-v1',
+  cohort: {
+    snapshot_id: 'Cohort',
+    status: 'ready',
+    coverage: {
+      scope: 'eligible_content_candidates',
+      total_authors: 0,
+      queried_authors: 0,
+      complete: true,
+    },
+  },
+};
+const emptyUpdates: MobileServerFeedUpdatesResponse = {
+  item_patches: [],
+  position_patches: [],
+  unavailable_targets: [],
+  new_items_count: 0,
+  update_cursor: 'Update',
+  reset: true,
+  viewport_revision: 0,
+  request_seq: 1,
+  as_of_ms: 42,
+};
+
+function mockClient(data?: unknown, status = 200) {
   const client = new MobileClient({
     url: 'https://mobile.example/v1/mobile',
     walletClient,
@@ -205,7 +318,14 @@ function mockClient(data: unknown = { status: 'success' }, status = 200) {
       body: JSON.parse(String(config.data)) as Record<string, unknown>,
     });
     return Promise.resolve({
-      data,
+      data: data ?? {
+        status: 'success',
+        ...(requests[requests.length - 1].body.type === 'feed_updates'
+          ? emptyUpdates
+          : requests[requests.length - 1].body.type === 'feed_item'
+            ? { item: row, read_session: readSession }
+            : emptyPage),
+      },
       status,
       statusText: 'mock',
       headers: {},
@@ -215,7 +335,7 @@ function mockClient(data: unknown = { status: 'success' }, status = 200) {
   return { client, requests };
 }
 
-describe('[mobile-client]: F01 transport', () => {
+describe('[mobile-client]: social feed transport', () => {
   it('routes all eight public reads without signing, even with owner and linked wallets', async () => {
     const { client, requests } = mockClient();
     client.setLinkedSigner(
@@ -297,8 +417,7 @@ describe('[mobile-client]: F01 transport', () => {
   it('browses without a wallet and never infers viewAs from the profile target', async () => {
     const { client, requests } = mockClient({
       status: 'success',
-      items: [],
-      next_cursor: null,
+      ...emptyPage,
     });
     client.opts.walletClient = undefined;
     await client.getForYouFeed();
@@ -475,16 +594,22 @@ describe('[mobile-client]: F01 transport', () => {
   });
 });
 
-describe('[mobile-client]: F01 response mapping', () => {
+describe('[mobile-client]: social feed response mapping', () => {
   it.each([true, false, null])(
-    'preserves follow state %s and unavailable F01 likes',
+    'preserves follow state %s and unavailable likes',
     (isFollowing) => {
-      const mapped = mapMobileSocialFeedModel({
-        author: { is_following: isFollowing },
-        interaction: { liked_by_me: null },
+      const author = mapMobileFeedAuthor({
+        ...row.author,
+        is_following: isFollowing,
       });
-      expect(mapped.author.isFollowing).toBe(isFollowing);
-      expect(mapped.interaction.likedByMe).toBeNull();
+      const interaction = mapMobileFeedInteraction({
+        like_count: 0,
+        comment_count: 0,
+        view_count: 0,
+        liked_by_me: null,
+      });
+      expect(author.isFollowing).toBe(isFollowing);
+      expect(interaction.likedByMe).toBeNull();
     },
   );
   it('preserves precision, signed zero, nullable liquidation facts, and omitted patch fields', () => {
@@ -496,14 +621,91 @@ describe('[mobile-client]: F01 response mapping', () => {
       average_price_x18: '0',
       realized_pnl_delta_x18: '-1000000000000000001',
     };
-    const mapped = mapMobileSocialFeedModel(patch);
-    expect(mapped.quantityX18?.toFixed()).toBe(patch.quantity_x18);
-    expect(mapped.realizedPnlDeltaX18?.toFixed()).toBe('-1000000000000000001');
-    expect(mapped.averagePriceX18?.isZero()).toBe(true);
-    expect(mapped.notionalX18).toBeNull();
+    const mapped = mapMobileFeedItemPatch(patch);
+    expect(mapped.quantity?.toFixed()).toBe(patch.quantity_x18);
+    expect(mapped.realizedPnlDelta?.toFixed()).toBe('-1000000000000000001');
+    expect(mapped.averagePrice?.isZero()).toBe(true);
+    expect(mapped.notional).toBeNull();
     expect(mapped.version).toBe('9007199254740993');
-    expect(mapped).not.toHaveProperty('entryPriceX18');
+    expect(mapped).not.toHaveProperty('entryPrice');
     expect(patch).toHaveProperty('quantity_x18');
+  });
+
+  it('converts every row price to decimal units while retaining x18 amounts', () => {
+    const mapped = mapMobileSocialTradeRow(row);
+    expect(mapped.quantity.toFixed()).toBe(row.quantity_x18);
+    expect(mapped.notional?.toFixed()).toBe(row.notional_x18);
+    expect(mapped.averagePrice?.toFixed()).toBe('2500.123456789012345678');
+    expect(mapped).not.toHaveProperty('quantityX18');
+    const liquidated = mapMobileSocialTradeRow({
+      ...row,
+      action: 'liquidated',
+      notional_x18: null,
+      average_price_x18: null,
+      entry_price_x18: '2600000000000000000000',
+      liquidation_oracle_price_x18: '2500000000000000000000',
+      liquidation_execution_price_x18: null,
+      realized_pnl_delta_x18: '-1000000000000000001',
+    });
+    expect(liquidated.action).toBe('liquidated');
+    if (liquidated.action !== 'liquidated')
+      throw new Error('Expected liquidation');
+    expect(liquidated.entryPrice?.toFixed()).toBe('2600');
+    expect(liquidated.liquidationOraclePrice?.toFixed()).toBe('2500');
+    expect(liquidated.liquidationExecutionPrice).toBeNull();
+    expect(liquidated.averagePrice).toBeNull();
+    expect(liquidated.notional).toBeNull();
+    expect(liquidated.realizedPnlDelta?.toFixed()).toBe('-1000000000000000001');
+    const execution = mapMobileSocialTradeRow({
+      ...row,
+      action: 'liquidated',
+      notional_x18: row.notional_x18,
+      entry_price_x18: null,
+      liquidation_oracle_price_x18: null,
+      liquidation_execution_price_x18: '2499123456789012345678',
+      realized_pnl_delta_x18: null,
+    });
+    if (execution.action !== 'liquidated')
+      throw new Error('Expected liquidation');
+    expect(execution.liquidationExecutionPrice?.toFixed()).toBe(
+      '2499.123456789012345678',
+    );
+    expect(execution.liquidationOraclePrice).toBeNull();
+    expect(execution.entryPrice).toBeNull();
+    expect(execution.realizedPnlDelta).toBeNull();
+  });
+
+  it('maps price patches independently and distinguishes omission from explicit null', () => {
+    const patch = mapMobileFeedItemPatch({
+      item_id: itemId,
+      version: '2',
+      entry_price_x18: '2600000000000000000000',
+      average_price_x18: '2500123456789012345678',
+      liquidation_oracle_price_x18: null,
+      liquidation_execution_price_x18: '2499000000000000000000',
+      leverage_at_ms: null,
+    });
+    expect(patch.entryPrice?.toFixed()).toBe('2600');
+    expect(patch.averagePrice?.toFixed()).toBe('2500.123456789012345678');
+    expect(patch.liquidationOraclePrice).toBeNull();
+    expect(patch.liquidationExecutionPrice?.toFixed()).toBe('2499');
+    expect(patch.leverageAtMs).toBeNull();
+    expect(patch).not.toHaveProperty('notional');
+    expect(patch).not.toHaveProperty('realizedPnlDelta');
+    expect(patch).not.toHaveProperty('interaction');
+  });
+
+  it('reports invalid credentials with the operation in a dedicated error', async () => {
+    const { client, requests } = mockClient();
+    // @ts-expect-error Exercise the runtime boundary used by JavaScript callers.
+    await expect(client.getFriendsFeed({})).rejects.toBeInstanceOf(
+      InvalidMobileFeedReadAccessError,
+    );
+    // @ts-expect-error Exercise the runtime boundary used by JavaScript callers.
+    await expect(client.getFriendsFeed({})).rejects.toMatchObject({
+      requestType: 'friends_feed',
+    });
+    expect(requests).toHaveLength(0);
   });
 
   it('maps nested position PnL and revocations without losing sequence or baseline', () => {
@@ -543,11 +745,61 @@ describe('[mobile-client]: F01 response mapping', () => {
       request_seq: 3,
       as_of_ms: 42,
     };
-    const mapped = mapMobileSocialFeedModel(response);
-    expect(mapped.positionPatches[0].quantityX18.toFixed()).toBe(
+    const card: MobileServerSocialTradeCard = {
+      ...row,
+      kind: 'trade_card',
+      action: 'opened',
+      text: '',
+      mentions: [],
+      author: {
+        ...row.author,
+        trader_badge: {
+          code: 'shark',
+          pnl_x18: '12345678901234567890123',
+          metric_key: 'account_pnl_30d_equity',
+          window: '30d',
+          source_as_of_ms: 40,
+          fetched_at_ms: 42,
+          snapshot_id: 'Cohort',
+        },
+        trader_data_status: 'ready',
+      },
+      position: {
+        ...response.position_patches[0],
+        product_id: 2,
+        market: row.market,
+        direction: 'long',
+        entry_price_x18: '2500123456789012345678',
+        pnl: {
+          ...response.position_patches[0].pnl,
+          amount_x18: '-1000000000000000001',
+          quality: 'ready',
+        },
+      },
+      interaction: {
+        like_count: 0,
+        comment_count: 0,
+        view_count: 0,
+        liked_by_me: null,
+      },
+      comment_preview: { items: [], total_count: 0, next_cursor: null },
+    };
+    const mappedCard = mapMobileSocialTradeCard(card);
+    expect(mappedCard.position.entryPrice?.toFixed()).toBe(
+      '2500.123456789012345678',
+    );
+    expect(mappedCard.position.notional.toFixed()).toBe('2000000000000000000');
+    expect(mappedCard.position.pnl.amount?.toFixed()).toBe(
+      '-1000000000000000001',
+    );
+    expect(mappedCard.author.traderBadge?.pnl.toFixed()).toBe(
+      '12345678901234567890123',
+    );
+    const mapped = mapMobileFeedUpdates(response);
+    expect(mapped.positionPatches[0].quantity.toFixed()).toBe(
       '1000000000000000000',
     );
-    expect(mapped.positionPatches[0].pnl.amountX18).toBeNull();
+    expect(mapped.positionPatches[0].pnl.amount).toBeNull();
     expect(mapped.positionPatches[0].pnl.quality).toBe('pending');
     expect(mapped.unavailableTargets).toEqual(response.unavailable_targets);
     expect(mapped).toMatchObject({

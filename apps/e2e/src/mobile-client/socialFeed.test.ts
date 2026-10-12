@@ -1,42 +1,45 @@
 import {
-  MOBILE_CLIENT_ENDPOINTS,
   MOBILE_ERROR_CODES,
   MobileClient,
   MobileServerFailureError,
   MobileSignedRequestParams,
   MobileSocialFeedPage,
 } from '@nadohq/mobile-client';
-import { NADO_DEPLOYMENTS, subaccountFromHex } from '@nadohq/shared';
+import { Subaccount, subaccountFromHex } from '@nadohq/shared';
 import assert from 'node:assert/strict';
-import { describe, test } from 'node:test';
-import { createWalletClient, http } from 'viem';
+import { before, describe, test } from 'node:test';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { ink } from 'viem/chains';
 
-// A fresh, unfunded owner only authenticates read queries. No trading or state mutations are performed.
-const account = privateKeyToAccount(generatePrivateKey());
-const mobile = new MobileClient({
-  url: MOBILE_CLIENT_ENDPOINTS.inkMainnet,
-  walletClient: createWalletClient({ account, chain: ink, transport: http() }),
-});
-mobile.axiosInstance.defaults.timeout = 15_000;
-const viewAs = {
-  subaccountOwner: '0x69fcc2832725d1d3b5544f9a89cf7404736c44d3' as const,
-  subaccountName: 'default',
-};
-const auth: MobileSignedRequestParams = {
-  subaccountOwner: account.address,
-  subaccountName: 'default',
-  chainId: ink.id,
-  verifyingAddr: NADO_DEPLOYMENTS.inkMainnet.endpoint,
-};
+import { delay } from '../utils/delay';
+import { createTestContext } from '../utils/runWithContext';
+import {
+  TEST_DELAYS,
+  TEST_PRODUCT_IDS,
+  TEST_SUBACCOUNT_NAME,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
+import { RunContext } from '../utils/types';
 
 void describe(
-  '[mobile-client]: F01 social feed (production, read-only)',
-  { timeout: 120_000 },
+  '[mobile-client]: social feed',
+  { timeout: TEST_TIMEOUTS.LONG },
   () => {
+    let tc: RunContext;
+    let viewAs: Subaccount;
+    let auth: MobileSignedRequestParams;
+
+    before(async () => {
+      await delay(TEST_DELAYS.LONG);
+      tc = createTestContext();
+      viewAs = {
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+      };
+      auth = { ...viewAs, chainId: tc.chainId, verifyingAddr: tc.endpointAddr };
+    });
+
     void test('reads a public filtered session and reuses its identity for pagination and updates', async () => {
-      const page = await mobile.getForYouFeed({
+      const page = await tc.mobile.getForYouFeed({
         viewAs,
         minimumNotional: 500,
         limit: 2,
@@ -46,7 +49,7 @@ void describe(
       const { sessionId, viewerToken } = page.readSession;
       assert.ok(viewerToken);
       if (page.nextCursor !== null) {
-        const next = await mobile.getForYouFeed({
+        const next = await tc.mobile.getForYouFeed({
           viewAs,
           minimumNotional: 500,
           limit: 2,
@@ -57,7 +60,7 @@ void describe(
         assertPage(next);
         assert.equal(next.readSession.sessionId, sessionId);
       }
-      const updates = await mobile.getFeedUpdates({
+      const updates = await tc.mobile.getFeedUpdates({
         sessionId,
         viewerToken,
         visibleItemIds: page.items.map((item) => item.id),
@@ -74,13 +77,13 @@ void describe(
     });
 
     void test('reads Top Traders and its shared qualification cohort', async () => {
-      const page = await mobile.getTopTradersFeed({ viewAs, limit: 2 });
+      const page = await tc.mobile.getTopTradersFeed({ viewAs, limit: 2 });
       assertPage(page);
       assert.equal(page.rankingVersion, 'chronological-v1');
       assert.equal(page.cohort.coverage.complete, true);
       assert.ok(['ready', 'stale'].includes(page.cohort.status));
       for (const item of page.items) {
-        assert.ok(item.author.traderBadge.pnlX18.gt('10000000000000000000000'));
+        assert.ok(item.author.traderBadge.pnl.gt('10000000000000000000000'));
         assert.equal(
           item.author.traderBadge.snapshotId,
           page.cohort.snapshotId,
@@ -90,11 +93,14 @@ void describe(
 
     void test('reads Friends and updates without a wallet, including an unregistered account', async () => {
       const publicMobile = new MobileClient({
-        url: MOBILE_CLIENT_ENDPOINTS.inkMainnet,
+        url: tc.endpoints.mobile,
       });
-      publicMobile.axiosInstance.defaults.timeout = 15_000;
+      const account = privateKeyToAccount(generatePrivateKey());
       const empty = await publicMobile.getFriendsFeed({
-        viewAs: { subaccountOwner: account.address, subaccountName: 'default' },
+        viewAs: {
+          subaccountOwner: account.address,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+        },
         limit: 2,
       });
       assertPage(empty);
@@ -129,14 +135,14 @@ void describe(
     });
 
     void test('retains explicit signed object reads and their session updates', async () => {
-      const page = await mobile.getProfileFeed({
+      const page = await tc.mobile.getProfileFeed({
         subaccount: auth,
         auth,
         limit: 2,
       });
       assertPage(page);
       assert.equal(page.readSession.viewerToken, undefined);
-      const updates = await mobile.getFeedUpdates({
+      const updates = await tc.mobile.getFeedUpdates({
         auth,
         sessionId: page.readSession.sessionId,
         visibleItemIds: page.items.map((item) => item.id),
@@ -148,17 +154,25 @@ void describe(
     });
 
     void test('reads market content', async () => {
-      const page = await mobile.getMarketFeed({
-        productId: 2,
+      const page = await tc.mobile.getMarketFeed({
+        productId: TEST_PRODUCT_IDS.PERP_BTC,
         viewAs,
         limit: 2,
       });
       assertPage(page);
-      for (const item of page.items) assert.equal(item.market.productId, 2);
+      for (const item of page.items)
+        assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
+      const signed = await tc.mobile.getMarketFeed({
+        productId: TEST_PRODUCT_IDS.PERP_BTC,
+        auth,
+        limit: 2,
+      });
+      assertPage(signed);
+      assert.equal(signed.readSession.viewerToken, undefined);
     });
 
     void test('reads a real author, position, and direct item session', async (context) => {
-      const page = await mobile.getForYouFeed({ limit: 2 });
+      const page = await tc.mobile.getForYouFeed({ limit: 2 });
       const item = page.items[0];
       if (!item) {
         context.skip(
@@ -166,7 +180,7 @@ void describe(
         );
         return;
       }
-      const authorPage = await mobile.getProfileFeed({
+      const authorPage = await tc.mobile.getProfileFeed({
         subaccount: subaccountFromHex(item.author.subaccount),
         viewAs,
         limit: 2,
@@ -175,9 +189,9 @@ void describe(
       const positionId =
         item.kind === 'trade_card' ? item.position.positionId : item.positionId;
       assertPage(
-        await mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
+        await tc.mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
       );
-      const detail = await mobile.getFeedItem({
+      const detail = await tc.mobile.getFeedItem({
         itemId: item.id,
         commentPreviewLimit: 0,
         viewAs,
@@ -185,7 +199,7 @@ void describe(
       assert.equal(detail.item.id, item.id);
       assert.equal(detail.readSession.mode, 'item');
       assert.ok(detail.readSession.viewerToken);
-      const updates = await mobile.getFeedUpdates({
+      const updates = await tc.mobile.getFeedUpdates({
         sessionId: detail.readSession.sessionId,
         viewerToken: detail.readSession.viewerToken,
         visibleItemIds: [item.id],
@@ -194,14 +208,20 @@ void describe(
         requestSeq: 1,
       });
       assert.equal(updates.newItemsCount, 0);
-      const signedDetail = await mobile.getFeedItem({ auth, itemId: item.id });
+      assertPage(
+        await tc.mobile.getPositionFeed({ positionId, auth, limit: 2 }),
+      );
+      const signedDetail = await tc.mobile.getFeedItem({
+        auth,
+        itemId: item.id,
+      });
       assert.equal(signedDetail.item.id, item.id);
       assert.equal(signedDetail.readSession.viewerToken, undefined);
     });
 
-    void test('returns the F01 validation error for an invalid page size', async () => {
+    void test('returns the social feed validation error for an invalid page size', async () => {
       await assert.rejects(
-        mobile.getForYouFeed({ limit: 51 }),
+        tc.mobile.getForYouFeed({ limit: 51 }),
         (error: unknown) => {
           assert.ok(error instanceof MobileServerFailureError);
           assert.equal(
@@ -234,7 +254,10 @@ function assertPage(page: MobileSocialFeedPage) {
     assert.equal(item.capabilities.canComment, false);
     assert.equal(item.capabilities.canRecordView, false);
     const quantity =
-      item.kind === 'trade_card' ? item.position.quantityX18 : item.quantityX18;
+      item.kind === 'trade_card' ? item.position.quantity : item.quantity;
     assert.ok(quantity.isFinite() && quantity.isInteger());
+    const price =
+      item.kind === 'trade_card' ? item.position.entryPrice : item.averagePrice;
+    assert.ok(price === null || price.isFinite());
   }
 }

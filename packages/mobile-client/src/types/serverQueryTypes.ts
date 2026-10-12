@@ -1,5 +1,4 @@
 import { Hex } from 'viem';
-import { MobileQueryInner, MobileSignedRequest } from '../signing/types';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileNotificationPlatform,
@@ -11,10 +10,14 @@ import {
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
 import {
-  MobileServerSignedSocialFeedQueryType,
-  MobileServerSocialFeedQueryResponseByType,
+  MobileServerFeedUpdatesResponse,
+  MobileServerRankedFeedPage,
+  MobileServerSocialFeedItemResponse,
+  MobileServerSocialFeedPage,
+  MobileServerTopTradersFeedPage,
 } from './serverSocialFeedTypes';
 
 /**
@@ -94,7 +97,23 @@ export interface MobileServerRegisteredWalletResponse {
  * matching engine's `EngineServerQueryResponseByType`. Holds the unwrapped payload; the envelope is applied
  * by {@link MobileServerPublicQuerySuccessResponse}.
  */
-export interface MobileServerPublicQueryResponseByType extends MobileServerSocialFeedQueryResponseByType {
+export interface MobileServerPublicQueryResponseByType {
+  /** For You recommendations. */
+  for_you_feed: MobileServerRankedFeedPage;
+  /** Qualified authors and cohort metadata. */
+  top_traders_feed: MobileServerTopTradersFeedPage;
+  /** Public content from followed authors. */
+  friends_feed: MobileServerRankedFeedPage;
+  /** Published author content. */
+  profile_feed: MobileServerSocialFeedPage;
+  /** Published market content. */
+  market_feed: MobileServerSocialFeedPage;
+  /** Published position activity. */
+  position_feed: MobileServerSocialFeedPage;
+  /** Item details and reading session. */
+  feed_item: MobileServerSocialFeedItemResponse;
+  /** Authorized viewport changes. */
+  feed_updates: MobileServerFeedUpdatesResponse;
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
   followers: MobileServerFollowListResponse;
@@ -114,14 +133,22 @@ export type MobileServerPublicQuerySuccessResponse<
     MobileServerPublicQueryRequestType,
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
 
-/** Full authenticated query body; business fields are flattened with the signature envelope. */
-export type MobileServerQueryRequest<
-  T extends MobileServerSignedSocialFeedQueryType =
-    MobileServerSignedSocialFeedQueryType,
-> = MobileSignedRequest<Extract<MobileQueryInner, { type: T }>>;
+/** Success payloads for signed queries, keyed by operation. */
+export interface MobileServerSignedQueryResponseByType {
+  /** Author content including the sender's private content when applicable. */
+  profile_feed: MobileServerSocialFeedPage;
+  /** Market content accessible to the sender. */
+  market_feed: MobileServerSocialFeedPage;
+  /** Position content accessible to the sender. */
+  position_feed: MobileServerSocialFeedPage;
+  /** Item details accessible to the sender. */
+  feed_item: MobileServerSocialFeedItemResponse;
+  /** Changes authorized by the original signed session. */
+  feed_updates: MobileServerFeedUpdatesResponse;
+}
 
-/** Authenticated F01 query success response. */
-export type MobileServerQuerySuccessResponse<
-  T extends MobileServerSignedSocialFeedQueryType =
-    MobileServerSignedSocialFeedQueryType,
-> = MobileServerSuccessResponse & MobileServerSocialFeedQueryResponseByType[T];
+/** Signed query success envelope with its operation's payload inlined. */
+export type MobileServerSignedQuerySuccessResponse<
+  T extends MobileServerSignedQueryRequestType =
+    MobileServerSignedQueryRequestType,
+> = MobileServerSuccessResponse & MobileServerSignedQueryResponseByType[T];

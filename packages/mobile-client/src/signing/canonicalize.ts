@@ -17,19 +17,19 @@ export function canonicalizeMobileInner(
         type: inner.type,
         subaccount: inner.subaccount.toLowerCase() as typeof inner.subaccount,
         market_category: inner.market_category,
-        ...listFields(inner),
+        ...getListFields(inner),
       });
     case 'market_feed':
       return omitUndefined({
         type: inner.type,
         product_id: inner.product_id,
-        ...listFields(inner),
+        ...getListFields(inner),
       });
     case 'position_feed':
       return omitUndefined({
         type: inner.type,
         position_id: inner.position_id.toLowerCase(),
-        ...listFields(inner),
+        ...getListFields(inner),
       });
     case 'feed_item':
       return omitUndefined({
@@ -76,13 +76,18 @@ export function canonicalizeMobileInner(
   }
 }
 
+// Signed feed queries omit absent optional fields from the backend's MessagePack map. The default
+// MessagePack encoder encodes an undefined property as nil, while JSON drops it from the HTTP body;
+// leaving it here would therefore hash different bytes from the backend. Parsing null successfully
+// would not make its signed encoding equivalent to an omitted key. Remove only undefined, preserving
+// explicit null and other values. Legacy payloads such as register_expo_token keep their null fields.
 function omitUndefined<T extends object>(value: T): T {
   return Object.fromEntries(
     Object.entries(value).filter(([, field]) => field !== undefined),
   ) as T;
 }
 
-function listFields(inner: MobileServerSocialFeedListParams) {
+function getListFields(inner: MobileServerSocialFeedListParams) {
   return {
     feed_types: inner.feed_types,
     minimum_notional: inner.minimum_notional,

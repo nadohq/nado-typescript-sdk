@@ -1,6 +1,6 @@
 import { Hex } from 'viem';
 
-/** Content filters accepted by the six F01 lists. Empty or omitted means all. */
+/** Content filters accepted by the six social feed lists. Empty or omitted means all. */
 export type MobileSocialFeedType =
   | 'open'
   | 'close'
@@ -31,95 +31,6 @@ export interface MobileServerCategorizedFeedParams extends MobileServerSocialFee
   /** Omit to read all market categories. Encoded before the common list fields. */
   market_category?: MobileFeedMarketCategory;
 }
-
-/** F01 operation fields before adding public viewing context or signed credentials. */
-export interface MobileServerSocialFeedQueryRequestByType {
-  /** Chronological recommendations with author/thread constraints. */
-  for_you_feed: MobileServerCategorizedFeedParams;
-  /** Chronological content by eligible Top Traders. */
-  top_traders_feed: MobileServerCategorizedFeedParams;
-  /** Public content by authors followed by the required view_as account. */
-  friends_feed: MobileServerCategorizedFeedParams;
-  /** Published content by the target identity. */
-  profile_feed: MobileServerCategorizedFeedParams & {
-    /** Target identity, encoded before filters. */
-    subaccount: Hex;
-  };
-  /** Published content in one market; no category filter. */
-  market_feed: MobileServerSocialFeedListParams & {
-    /** Non-negative market ID, encoded before filters. */
-    product_id: number;
-  };
-  /** Published content in one position lifecycle; no category filter. */
-  position_feed: MobileServerSocialFeedListParams & {
-    /** Canonical lowercase UUID, encoded before filters. */
-    position_id: string;
-  };
-  /** A single item, optionally reusing an authorized reading session. */
-  feed_item: {
-    /** Canonical lowercase item UUID. */
-    item_id: string;
-    /** Preview size, 0–3; defaults to 3. */
-    comment_preview_limit?: number;
-    /** Omit to create an item session directly. */
-    session_id?: string;
-  };
-  /** Batch updates restricted to the session's authorized viewport. */
-  feed_updates: {
-    /** Reading session returned by a list or item query. */
-    session_id: string;
-    /** Up to 50 distinct, previously delivered item UUIDs. */
-    visible_item_ids: string[];
-    /** Up to 20 distinct, authorized position UUIDs. */
-    visible_position_ids: string[];
-    /** Opaque server update baseline; omit when changing the viewport. */
-    update_cursor?: string;
-    /** Non-negative safe integer; increment when the visible set changes. */
-    viewport_revision: number;
-    /** Non-negative safe integer; increment for every poll. */
-    request_seq: number;
-  };
-}
-
-/** All F01 read operation names. */
-export type MobileServerSocialFeedQueryType =
-  keyof MobileServerSocialFeedQueryRequestByType;
-
-/** Main feeds only support public queries and never request a wallet signature. */
-export type MobileServerMainFeedQueryType =
-  | 'for_you_feed'
-  | 'top_traders_feed'
-  | 'friends_feed';
-
-/** Operations that retain signed reads for private content or an existing signed session. */
-export type MobileServerSignedSocialFeedQueryType = Exclude<
-  MobileServerSocialFeedQueryType,
-  MobileServerMainFeedQueryType
->;
-
-/** Public reads require view_as for Friends and the original viewer_token for updates. */
-export type MobileServerPublicSocialFeedRequestByType = {
-  [K in MobileServerSocialFeedQueryType]: MobileServerSocialFeedQueryRequestByType[K] &
-    (K extends 'feed_updates'
-      ? {
-          /** Updates inherit the viewing account from the original session. */
-          view_as?: never;
-          /** Credential belonging to the anonymous session. */
-          viewer_token: string;
-        }
-      : {
-          /** Reuse the anonymous identity returned by an earlier read. */
-          viewer_token?: string;
-        } & (K extends 'friends_feed'
-          ? {
-              /** Complete non-isolated identity subaccount; required on every request. */
-              view_as: Hex;
-            }
-          : {
-              /** Public viewing perspective, never proof of ownership or private access. */
-              view_as?: Hex;
-            }));
-};
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileServerTraderBadge {
@@ -225,7 +136,7 @@ export interface MobileServerFeedPositionPatch {
   pnl: MobileServerFeedPnl;
 }
 
-/** Position displayed inside an F01 trade card. */
+/** Position displayed inside an automatic trade card. */
 export interface MobileServerFeedPositionCard extends MobileServerFeedPositionPatch {
   /** Market product ID. */
   product_id: number;
@@ -235,7 +146,7 @@ export interface MobileServerFeedPositionCard extends MobileServerFeedPositionPa
   direction: 'long' | 'short';
 }
 
-/** Interaction counters; F01 does not yet enable interaction writes. */
+/** Interaction counters; interaction writes are not currently available. */
 export interface MobileServerFeedInteraction {
   /** Number of likes. */
   like_count: number;
@@ -243,17 +154,17 @@ export interface MobileServerFeedInteraction {
   comment_count: number;
   /** Number of recorded views. */
   view_count: number;
-  /** Null until F04 enables likes, even with view_as or a signature; then reflects the viewing account. */
+  /** Null while likes are unavailable, including with a viewing account or signature. */
   liked_by_me: boolean | null;
 }
 
-/** Metadata shared by the automatic trade cards and rows available in F01. */
+/** Metadata shared by the automatic trade cards and rows available from the social feed. */
 export interface MobileServerSocialFeedItemBase {
   /** Item UUID. */
   id: string;
   /** Whether authored analysis exists. */
   has_analysis: boolean;
-  /** F01 does not return drawings. */
+  /** Drawings are not currently available. */
   drawing: null;
   /** Author identity, badge, and follow perspective. */
   author: MobileServerFeedAuthor;
@@ -265,7 +176,7 @@ export interface MobileServerSocialFeedItemBase {
   version: string;
   /** Market metadata. */
   market: MobileServerFeedMarket;
-  /** Server capability flags; all false in F01. */
+  /** Server capability flags; currently all false. */
   capabilities: {
     /** Whether liking is available. */
     can_like: boolean;
@@ -276,7 +187,7 @@ export interface MobileServerSocialFeedItemBase {
   };
 }
 
-/** Automatic trade card returned by F01. */
+/** Automatic trade card returned by the social feed. */
 export interface MobileServerSocialTradeCard extends MobileServerSocialFeedItemBase {
   /** Card discriminant. */
   kind: 'trade_card';
@@ -284,15 +195,15 @@ export interface MobileServerSocialTradeCard extends MobileServerSocialFeedItemB
   action: 'opened' | 'closed' | 'increased' | 'reduced';
   /** Card text, empty for automatic cards. */
   text: string;
-  /** F01 automatic cards have no mentions. */
+  /** Automatic cards have no mentions. */
   mentions: never[];
   /** Current or frozen position display. */
   position: MobileServerFeedPositionCard;
   /** Interaction counters. */
   interaction: MobileServerFeedInteraction;
-  /** F01 does not provide comment content. */
+  /** Comment content is not currently available. */
   comment_preview: {
-    /** Empty in F01. */
+    /** Currently empty. */
     items: never[];
     /** Comment count. */
     total_count: number;
@@ -348,20 +259,20 @@ export type MobileServerSocialTradeRow = MobileServerSocialTradeRowBase &
       }
   );
 
-/** F01 content union; posts, replies, drawings, and interaction writes are later phases. */
+/** Automatic feed content; excludes posts, replies, drawings, and interaction writes. */
 export type MobileServerSocialFeedItem =
   | MobileServerSocialTradeCard
   | MobileServerSocialTradeRow;
 
-/** Fixed-duration F01 reading session. Credentials and cursors must be returned unchanged. */
+/** Fixed-duration social feed reading session. Credentials and cursors must be returned unchanged. */
 export interface MobileServerFeedReadSession {
   /** Session identifier. */
   session_id: string;
-  /** F01 supports feed and item sessions. */
+  /** Feed or direct item session. */
   mode: 'feed' | 'item';
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expires_at_ms: number;
-  /** Exposure metadata only; recording is not available in F01. */
+  /** Exposure metadata only; recording is not available from the social feed. */
   view_tracking: {
     /** Required visible fraction. */
     min_visible_ratio: number;
@@ -493,24 +404,4 @@ export interface MobileServerFeedUpdatesResponse {
   request_seq: number;
   /** Response reference time in Unix milliseconds. */
   as_of_ms: number;
-}
-
-/** F01 response payloads, without the success envelope. */
-export interface MobileServerSocialFeedQueryResponseByType {
-  /** For You list. */
-  for_you_feed: MobileServerRankedFeedPage;
-  /** Top Traders list with qualification metadata. */
-  top_traders_feed: MobileServerTopTradersFeedPage;
-  /** Authenticated following list. */
-  friends_feed: MobileServerRankedFeedPage;
-  /** Author's published content. */
-  profile_feed: MobileServerSocialFeedPage;
-  /** Market's published content. */
-  market_feed: MobileServerSocialFeedPage;
-  /** Position's published content, not full position history. */
-  position_feed: MobileServerSocialFeedPage;
-  /** Single item and reading session. */
-  feed_item: MobileServerSocialFeedItemResponse;
-  /** Authorized viewport updates. */
-  feed_updates: MobileServerFeedUpdatesResponse;
 }

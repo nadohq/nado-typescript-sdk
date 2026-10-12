@@ -32,7 +32,7 @@ export const MOBILE_ERROR_CODES = {
   INVALID_FEED_FILTER: 6300,
   /** Feed cursor is malformed or bound to a different filter. Discard it and restart from the first page. */
   INVALID_FEED_CURSOR: 6301,
-  /** Invalid F01 parameters, filter combination, or page size. */
+  /** Invalid social feed parameters, filter combination, or page size. */
   INVALID_SOCIAL_FEED_PARAMS: 6310,
   /** Session, identity, cursor, source, or authorized viewport does not match. */
   SOCIAL_FEED_SESSION_MISMATCH: 6311,

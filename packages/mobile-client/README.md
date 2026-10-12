@@ -60,7 +60,7 @@ proving one: with it the page is ordered familiar-first and every row carries an
 page is ordered by the listed relationship alone and `isFollowing` is absent rather than `false`. As with
 `include.followSummary.viewAs`, an unsigned route means the claimed viewer is not verified.
 
-### F01 Social Feed Reads
+### Social Feed Reads
 
 All eight reads live directly on `MobileClient`:
 
@@ -121,13 +121,15 @@ if (viewerToken) {
 }
 ```
 
-Response keys use camelCase. Fields ending in `X18` are exact `BigNumber` integers in
-their original units; divide by `10^18` for display. Versions remain decimal strings
+Response keys use camelCase without `X18` suffixes. Quantities, notionals, and PnL amounts
+are exact `BigNumber` integers in x18 units; divide these by `10^18` for display. Prices
+(such as `entryPrice`, `averagePrice`, and liquidation prices) are already decimal
+`BigNumber` values. Versions remain decimal strings
 and must be compared with `BigInt` or `BigNumber`. Explicit `null` in a patch clears the
 old value; omitted fields leave it unchanged.
 
 With a viewing account, `author.isFollowing` reflects its actual follow state; without one,
-it is `null`. `interaction.likedByMe` stays `null` until F04 enables likes, including on
+it is `null`. `interaction.likedByMe` stays `null` while likes are unavailable, including on
 signed reads. Trade rows do not have an `interaction` field.
 
 Sessions expire 15 minutes after creation. Continue through short or empty pages while
@@ -145,7 +147,7 @@ and polling sequence state. Stop using the old state as soon as a refresh begins
 pagination and polling only after the new first page succeeds. Invalid or expired public
 credentials require a refresh, not a wallet signature.
 
-F01 exposes automatic trade cards/rows; drawings and interactions are not enabled.
+The social feed exposes automatic trade cards/rows; drawings and interactions are not enabled.
 `getPositionFeed` is published activity, not complete position history. The legacy
 `getFeed`, `setFollow`, and `setPrivateMode` contracts remain available unchanged.
 
