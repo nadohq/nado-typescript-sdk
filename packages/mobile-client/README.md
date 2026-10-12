@@ -1,8 +1,8 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado mobile service API. Manages usernames, public profile lookups, the global trade feed,
-the follower/following graph, privacy settings, and push notification devices/preferences, using EIP-712 +
-msgpack signed authentication.
+HTTP client for the Nado mobile service API. Manages usernames, public profile lookups, global and
+session-based trade feeds, the follower/following graph, privacy settings, and push notification
+devices/preferences. Public queries require no wallet; authenticated operations use EIP-712 + msgpack signing.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -47,7 +47,8 @@ await mobile.setUsername({
 ### Public Queries
 
 `getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
-`getNotificationPreferences`, `getRegisteredWallet`.
+`getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
+`getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`.
 
 `getProfiles` is the only profile route: it batches up to 25 subaccounts, returns them in the requested order,
 and carries follower totals (`include.followCounts`) and a follow summary (`include.followSummary.viewAs`) as
@@ -60,20 +61,11 @@ proving one: with it the page is ordered familiar-first and every row carries an
 page is ordered by the listed relationship alone and `isFollowing` is absent rather than `false`. As with
 `include.followSummary.viewAs`, an unsigned route means the claimed viewer is not verified.
 
-### Social Feed Reads
-
-All eight reads live directly on `MobileClient`:
-
-| Method | Content | Access |
-| --- | --- | --- |
-| `getForYouFeed` | Chronological recommendations | Public only; optional viewAs |
-| `getTopTradersFeed` | Qualified authors and account PnL badges | Public only; optional viewAs |
-| `getFriendsFeed` | Public content by authors followed by viewAs | Public only; required viewAs |
-| `getProfileFeed` | One author's published content | Public or signed |
-| `getMarketFeed` | One market's published content | Public or signed |
-| `getPositionFeed` | Published content in one lifecycle | Public or signed |
-| `getFeedItem` | Item details and reading session | Public or signed |
-| `getFeedUpdates` | Viewport patches and new-content hints | Public with viewer token, or signed |
+`getFeed` returns the global trade feed. `getForYouFeed` returns chronological recommendations,
+`getTopTradersFeed` returns content by qualified authors with account PnL badges, and `getFriendsFeed`
+returns public content from followed authors. `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`
+select published content by author, market, and position lifecycle respectively. `getFeedItem` returns
+one item's details; `getFeedUpdates` returns viewport patches and new-content hints for an existing session.
 
 Public browsing never requires a wallet signature, identity registration, or 1-Click Trading setup.
 For You, Top Traders, and Friends only use `/public_query` and do not accept `auth`.
@@ -85,11 +77,9 @@ complete bytes32 identity subaccount, not a 20-byte wallet address. It must be n
 It selects public relationship state and never grants private access. The Profile target
 `subaccount` is separate from `viewAs`; the SDK does not infer a viewing account from it.
 
-Profile, Market, Position, and item details also default to public. Only pass `auth` when
-explicitly requesting a signed read for private content. It contains `subaccountOwner`,
-`subaccountName`, `chainId`, and `verifyingAddr`; the configured linked signer takes priority.
-Signed reads cannot carry `viewAs` or `viewerToken`. Updates follow the original session's
-public/signed mode and inherit its viewing account; they never accept `viewAs`.
+Profile, market, position, and item details default to public reads; see [Signed Queries](#signed-queries) for explicit
+authenticated access. `getFeedUpdates` follows the original session's public/signed mode and inherits its
+viewing account, so it never accepts `viewAs`. Public updates require the original `viewerToken`.
 
 ```ts
 const viewAs = { subaccountOwner: walletAddress, subaccountName: 'default' };
@@ -121,12 +111,11 @@ if (viewerToken) {
 }
 ```
 
-Response keys use camelCase without `X18` suffixes. Quantities, notionals, and PnL amounts
-are exact `BigNumber` integers in x18 units; divide these by `10^18` for display. Prices
+The session-based feed methods return camelCase fields without `X18` suffixes. Quantities, notionals,
+and PnL amounts are exact `BigNumber` integers in x18 units; divide these by `10^18` for display. Prices
 (such as `entryPrice`, `averagePrice`, and liquidation prices) are already decimal
-`BigNumber` values. Versions remain decimal strings
-and must be compared with `BigInt` or `BigNumber`. Explicit `null` in a patch clears the
-old value; omitted fields leave it unchanged.
+`BigNumber` values. Versions remain decimal strings and must be compared with `BigInt` or `BigNumber`.
+Explicit `null` in a patch clears the old value; omitted fields leave it unchanged.
 
 With a viewing account, `author.isFollowing` reflects its actual follow state; without one,
 it is `null`. `interaction.likedByMe` stays `null` while likes are unavailable, including on
@@ -150,6 +139,17 @@ credentials require a refresh, not a wallet signature.
 The social feed exposes automatic trade cards/rows; drawings and interactions are not enabled.
 `getPositionFeed` is published activity, not complete position history. The legacy
 `getFeed`, `setFollow`, and `setPrivateMode` contracts remain available unchanged.
+
+### Signed Queries
+
+`getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, and `getFeedUpdates` use `/query`
+only when `auth` is explicitly provided. Use this for reads that need an authenticated identity, such as
+reading the signing author's private content; the same methods otherwise use public queries.
+
+`auth` contains `subaccountOwner`, `subaccountName`, `chainId`, and `verifyingAddr`. The configured linked
+signer takes priority over the wallet client. Signed reads cannot carry `viewAs` or `viewerToken`;
+updates must use the signing identity of the original session. `getForYouFeed`, `getTopTradersFeed`,
+and `getFriendsFeed` are public-only and do not accept `auth`.
 
 ### Public Executes
 
