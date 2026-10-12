@@ -39,8 +39,9 @@ const result = await nadoClient.context.otcClient.execute({ dealId, taker });
 
 ## Quotes
 
-`subscribe` and `unsubscribe` are the only RFQ methods. Pass one `stream`, or `streams` for
-several. `unsubscribe` repeats the same stream fields. `wallet` is a 20-byte address.
+`subscribe` and `unsubscribe` are the only RFQ methods. Pass `streams`, 1–100 entries applied
+atomically; the service rejects a singular `stream`. `unsubscribe` repeats the same stream
+fields. `wallet` is a 20-byte address.
 Socket messages use the server types directly.
 
 ```ts
@@ -57,13 +58,15 @@ ws.onopen = () => {
     JSON.stringify(
       buildOtcRfqSubscriptionMessage('subscribe', {
         id: 1,
-        stream: {
-          type: 'quote',
-          productId: 2,
-          wallet,
-          size: '-1000000000000000000',
-          sizeUnit: 'base',
-        },
+        streams: [
+          {
+            type: 'quote',
+            productId: 2,
+            wallet,
+            size: '-1000000000000000000',
+            sizeUnit: 'base',
+          },
+        ],
       }),
     ),
   );

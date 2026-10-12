@@ -50,17 +50,8 @@ export interface OtcQuoteStream {
   pricerId?: string;
 }
 
-export interface OtcRfqSubscriptionStreamParams {
-  id: number;
-  stream: OtcQuoteStream;
-}
-
-export interface OtcRfqSubscriptionStreamsParams {
+/** Subscribe or unsubscribe target: 1–100 streams, applied atomically. */
+export interface OtcRfqSubscriptionParams {
   id: number;
   streams: OtcQuoteStream[];
 }
-
-/** Subscribe or unsubscribe target. Pass one stream, or several. */
-export type OtcRfqSubscriptionParams =
-  | OtcRfqSubscriptionStreamParams
-  | OtcRfqSubscriptionStreamsParams;

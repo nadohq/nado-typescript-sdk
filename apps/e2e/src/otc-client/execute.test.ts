@@ -94,13 +94,15 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
           JSON.stringify(
             buildOtcRfqSubscriptionMessage('subscribe', {
               id: 1,
-              stream: {
-                type: 'quote',
-                productId: TEST_PRODUCT_IDS.PERP_BTC,
-                wallet: tc.walletClientAddress,
-                size: addDecimals(TAKER_SIZE).toFixed(),
-                sizeUnit: 'base',
-              },
+              streams: [
+                {
+                  type: 'quote',
+                  productId: TEST_PRODUCT_IDS.PERP_BTC,
+                  wallet: tc.walletClientAddress,
+                  size: addDecimals(TAKER_SIZE).toFixed(),
+                  sizeUnit: 'base',
+                },
+              ],
             }),
           ),
         );
