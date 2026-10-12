@@ -11,38 +11,24 @@ import {
 export interface MobileAvatarPreset {
   /** Stable preset ID used by setAvatar. */
   id: string;
-  /** Public image URL. */
+  /** Public image URL. Fall back to a generated icon if the image fails to load, e.g. after retirement. */
   avatarUrl: string;
 }
 
 /** A preset or staged upload to publish. Pass null to clear an avatar. */
 export type MobileAvatarSelection =
   | {
-      /** Shared catalogue selection. */ type: 'preset';
-      /** Stable catalogue ID. */ id: string;
+      /** Shared catalogue selection. */
+      type: 'preset';
+      /** Stable catalogue ID. */
+      id: string;
     }
   | {
-      /** An uploaded image awaiting publication. */ type: 'upload';
-      /** Key returned by createAvatarUpload. */ uploadKey: string;
+      /** An uploaded image awaiting publication. */
+      type: 'upload';
+      /** Key returned by createAvatarUpload. */
+      uploadKey: string;
     };
-
-/** Params for updating a public biography. */
-export interface MobileSetBioParams extends MobileSignedRequestParams {
-  /** Up to 150 Unicode code points. Whitespace-only text clears the bio. */
-  bio: string;
-}
-
-/** Params for publishing or clearing an avatar. */
-export interface MobileSetAvatarParams extends MobileSignedRequestParams {
-  /** Null clears the saved image. */
-  avatar: MobileAvatarSelection | null;
-}
-
-/** Params for requesting a short-lived JPEG upload grant. */
-export interface MobileCreateAvatarUploadParams extends MobileSignedRequestParams {
-  /** Final JPEG size in bytes, at most 5 MiB. */
-  contentLength: number;
-}
 
 /** Upload the JPEG using PUT, then publish uploadKey through setAvatar. */
 export interface MobileAvatarUpload {
@@ -52,6 +38,8 @@ export interface MobileAvatarUpload {
   uploadUrl: string;
   /** Headers that must accompany the PUT. */
   headers: Record<string, string>;
+  /** Upload URL lifetime in seconds from issuance, not from when the response is received. */
+  expiresInSeconds: number;
 }
 
 /**
@@ -68,9 +56,9 @@ export interface MobilePublicProfile {
   username: string | null;
   /** User-facing name as claimed, or `null` if no username has been claimed. */
   displayName: string | null;
-  /** Public biography, or null when unset or absent on an older server. */
+  /** Public biography, or null when unset. */
   bio: string | null;
-  /** Published avatar URL; null preserves the account's generated icon. */
+  /** Published avatar URL. Use a generated icon when null or when the image fails to load. */
   avatarUrl: string | null;
   privateMode: boolean;
   /**
@@ -320,6 +308,30 @@ export interface GetMobileFeedParams {
    * the exact same `minimumNotional` it was issued for.
    */
   cursor?: string;
+}
+
+/**
+ * Params for {@link MobileClient.setBio}.
+ */
+export interface MobileSetBioParams extends MobileSignedRequestParams {
+  /** Up to 150 Unicode code points without null characters. Whitespace-only text clears the bio. */
+  bio: string;
+}
+
+/**
+ * Params for {@link MobileClient.setAvatar}.
+ */
+export interface MobileSetAvatarParams extends MobileSignedRequestParams {
+  /** Null clears the saved image. */
+  avatar: MobileAvatarSelection | null;
+}
+
+/**
+ * Params for {@link MobileClient.createAvatarUpload}.
+ */
+export interface MobileCreateAvatarUploadParams extends MobileSignedRequestParams {
+  /** Final JPEG size as an integer number of bytes, from 1 byte to 5 MiB. */
+  contentLength: number;
 }
 
 /**

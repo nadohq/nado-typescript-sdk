@@ -2,6 +2,7 @@ import { Hex } from 'viem';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileNotificationPlatform,
+  MobileServerAvatarPreset,
   MobileServerFeedTrade,
   MobileServerFollowListAccount,
   MobileServerNotificationPreferences,
@@ -30,6 +31,14 @@ export type MobileServerPublicQueryRequest<
 export interface MobileServerUsernameAvailabilityResponse {
   username: string;
   available: boolean;
+}
+
+/**
+ * Payload of the `avatar_presets` public query success response.
+ */
+export interface MobileServerAvatarPresetsResponse {
+  /** Available presets in display order. */
+  presets: MobileServerAvatarPreset[];
 }
 
 /**
@@ -91,7 +100,7 @@ export interface MobileServerRegisteredWalletResponse {
  */
 export interface MobileServerPublicQueryResponseByType {
   /** Preset IDs and public image URLs in display order. */
-  avatar_presets: { presets: { id: string; avatar_url: string }[] };
+  avatar_presets: MobileServerAvatarPresetsResponse;
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
   followers: MobileServerFollowListResponse;

@@ -6,6 +6,9 @@ import {
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
+  mapMobileAvatarPreset,
+  mapMobileAvatarSelectionToServer,
+  mapMobileAvatarUpload,
   mapMobileFeedPage,
   mapMobileFollowListPage,
   mapMobileFollowListParamsToServer,
@@ -130,10 +133,7 @@ export class MobileClient {
   /** Returns the current server-owned avatar catalogue in display order. */
   async getAvatarPresets(): Promise<MobileAvatarPreset[]> {
     const data = await this.publicQuery({ type: 'avatar_presets' });
-    return data.presets.map(({ id, avatar_url }) => ({
-      id,
-      avatarUrl: avatar_url,
-    }));
+    return data.presets.map(mapMobileAvatarPreset);
   }
 
   /**
@@ -334,50 +334,55 @@ export class MobileClient {
   Signed executes
    */
 
-  /** Updates the biography through the same signer and nonce sequence as other identity writes. */
+  /**
+   * Updates the biography, or clears it when the text is whitespace-only.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_BIO` for more than 150 Unicode code points or null
+   * characters, `INVALID_IDENTITY_TARGET` for an isolated subaccount, or `STALE_IDENTITY_UPDATE` when a
+   * later write has committed (re-read the profile before retrying).
+   */
   async setBio(
     params: MobileSetBioParams,
   ): Promise<MobileServerSuccessResponse> {
-    return this.execute(
-      await this.getSignedRequest('set_bio', params, { bio: params.bio }),
-    );
+    const signedRequest = await this.getSignedRequest('set_bio', params, {
+      bio: params.bio,
+    });
+    return this.execute(signedRequest);
   }
 
   /**
    * Creates a short-lived upload grant. The caller uploads the JPEG with the returned headers;
    * file access and transport remain platform-specific. This does not change the saved avatar.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_AVATAR` for a zero or oversized upload,
+   * `INVALID_IDENTITY_TARGET` for an isolated subaccount, or `SERVICE_UNAVAILABLE` when storage is unavailable.
    */
   async createAvatarUpload(
     params: MobileCreateAvatarUploadParams,
   ): Promise<MobileAvatarUpload> {
-    const data = await this.execute(
-      await this.getSignedRequest('create_avatar_upload', params, {
-        content_length: params.contentLength,
-      }),
+    const signedRequest = await this.getSignedRequest(
+      'create_avatar_upload',
+      params,
+      { content_length: params.contentLength },
     );
-    return {
-      uploadKey: data.upload_key,
-      uploadUrl: data.upload_url,
-      headers: data.headers,
-    };
+    const data = await this.execute(signedRequest);
+    return mapMobileAvatarUpload(data);
   }
 
-  /** Publishes a preset/staged upload, or clears the saved avatar when avatar is null. */
+  /**
+   * Publishes a preset/staged upload, or clears the saved avatar when avatar is null.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_AVATAR` for an invalid preset, staging key, or image,
+   * `INVALID_IDENTITY_TARGET` for an isolated subaccount, `SERVICE_UNAVAILABLE` when storage is unavailable,
+   * or `STALE_IDENTITY_UPDATE` when a later write has committed (re-read the profile before retrying).
+   */
   async setAvatar(
     params: MobileSetAvatarParams,
   ): Promise<MobileServerSuccessResponse> {
-    const avatar = params.avatar;
-    const selection =
-      avatar === null
-        ? null
-        : (() => {
-            if (avatar.type === 'preset')
-              return { type: 'preset' as const, id: avatar.id };
-            return { type: 'upload' as const, upload_key: avatar.uploadKey };
-          })();
-    return this.execute(
-      await this.getSignedRequest('set_avatar', params, { avatar: selection }),
-    );
+    const signedRequest = await this.getSignedRequest('set_avatar', params, {
+      avatar: mapMobileAvatarSelectionToServer(params.avatar),
+    });
+    return this.execute(signedRequest);
   }
 
   /**

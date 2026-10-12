@@ -138,6 +138,8 @@ void describe(
       // A subaccount with no identity row still occupies its slot rather than being omitted.
       assert.equal(profile.username, null);
       assert.equal(profile.displayName, null);
+      assert.equal(profile.bio, null);
+      assert.equal(profile.avatarUrl, null);
       assert.equal(profile.privateMode, false);
       assert.equal(profile.followerCount, 0);
       assert.equal(profile.followingCount, 0);

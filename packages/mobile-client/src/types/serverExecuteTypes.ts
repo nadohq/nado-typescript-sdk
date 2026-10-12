@@ -40,6 +40,20 @@ export interface MobileServerFollowMutationResponse {
 export type MobileServerEmptyExecuteResponse = Record<never, never>;
 
 /**
+ * Temporary upload grant returned by `create_avatar_upload`; publishing requires a subsequent `set_avatar`.
+ */
+export interface MobileServerAvatarUploadResponse {
+  /** Server-owned staging object key. */
+  upload_key: string;
+  /** Short-lived signed PUT URL. */
+  upload_url: string;
+  /** Headers required by the signed PUT. */
+  headers: Record<string, string>;
+  /** Upload URL lifetime in seconds from issuance. */
+  expires_in_seconds: number;
+}
+
+/**
  * Success payloads for each signed `execute`, keyed by request `type`. Most execute routes carry no payload
  * beyond the success discriminant and so map to an empty object; `set_follow` returns its post-commit
  * relationship state.
@@ -50,14 +64,7 @@ export interface MobileServerExecuteResponseByType {
   /** Avatar writes return only the success envelope. */
   set_avatar: MobileServerEmptyExecuteResponse;
   /** Temporary upload grant; publishing requires a subsequent set_avatar call. */
-  create_avatar_upload: {
-    /** Server-owned staging object key. */
-    upload_key: string;
-    /** Short-lived signed PUT URL. */
-    upload_url: string;
-    /** Headers required by the signed PUT. */
-    headers: Record<string, string>;
-  };
+  create_avatar_upload: MobileServerAvatarUploadResponse;
   set_username: MobileServerEmptyExecuteResponse;
   set_private_mode: MobileServerEmptyExecuteResponse;
   register_expo_token: MobileServerEmptyExecuteResponse;

@@ -2,6 +2,16 @@ import { BalanceSide } from '@nadohq/shared';
 import { Hex } from 'viem';
 
 /**
+ * Server-owned avatar preset in catalogue order.
+ */
+export interface MobileServerAvatarPreset {
+  /** Stable catalogue ID used when selecting this preset. */
+  id: string;
+  /** Public image URL. */
+  avatar_url: string;
+}
+
+/**
  * Platform of a device registered for push notifications.
  */
 export type MobileNotificationPlatform = 'ios' | 'android';
@@ -58,10 +68,10 @@ export interface MobileServerProfile {
   username: string | null;
   display_name: string | null;
   private_mode: boolean;
-  /** Plain-text biography. Older deployments may omit this field. */
-  bio?: string | null;
-  /** Published avatar URL. Older deployments may omit this field. */
-  avatar_url?: string | null;
+  /** Plain-text biography, or null when unset. */
+  bio: string | null;
+  /** Published avatar URL, or null when unset. */
+  avatar_url: string | null;
   /**
    * Exact count at query time — the backend counts rather than reading a cached counter. Unnamed and private
    * accounts are included: Private Mode hides activity, not relationships. Requires `follow_counts`.

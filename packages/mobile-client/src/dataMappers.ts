@@ -1,6 +1,10 @@
 import { subaccountToHex } from '@nadohq/shared';
+import { MobileSignedInnerParams } from './signing/types';
 import {
   GetMobileFollowListParams,
+  MobileAvatarPreset,
+  MobileAvatarSelection,
+  MobileAvatarUpload,
   MobileFeedPage,
   MobileFeedTrade,
   MobileFollowListPage,
@@ -13,8 +17,12 @@ import {
   MobilePublicProfile,
   MobileRegisteredWallet,
 } from './types/clientTypes';
-import { MobileServerFollowMutationResponse } from './types/serverExecuteTypes';
 import {
+  MobileServerAvatarUploadResponse,
+  MobileServerFollowMutationResponse,
+} from './types/serverExecuteTypes';
+import {
+  MobileServerAvatarPreset,
   MobileServerFeedTrade,
   MobileServerFollowSummary,
   MobileServerIdentitySummary,
@@ -33,6 +41,44 @@ import {
 } from './types/serverRequestTypes';
 
 /**
+ * Maps a server-side avatar preset to its client-side representation.
+ */
+export function mapMobileAvatarPreset(
+  server: MobileServerAvatarPreset,
+): MobileAvatarPreset {
+  return { id: server.id, avatarUrl: server.avatar_url };
+}
+
+/**
+ * Maps an upload grant, preserving the signed PUT headers and server-provided lifetime.
+ */
+export function mapMobileAvatarUpload(
+  server: MobileServerAvatarUploadResponse,
+): MobileAvatarUpload {
+  return {
+    uploadKey: server.upload_key,
+    uploadUrl: server.upload_url,
+    headers: server.headers,
+    expiresInSeconds: server.expires_in_seconds,
+  };
+}
+
+/**
+ * Maps a client-side avatar selection to the signed wire payload; null clears the saved avatar.
+ */
+export function mapMobileAvatarSelectionToServer(
+  avatar: MobileAvatarSelection | null,
+): MobileSignedInnerParams<'set_avatar'>['avatar'] {
+  if (avatar === null) {
+    return null;
+  }
+  if (avatar.type === 'preset') {
+    return { type: 'preset', id: avatar.id };
+  }
+  return { type: 'upload', upload_key: avatar.uploadKey };
+}
+
+/**
  * Maps a server-side public profile (snake_case) to its client-side (camelCase) representation. The three
  * include-gated fields stay `undefined` when the backend omitted them, rather than being coerced to `null`
  * or zero, so callers can tell "not requested" from a real value.
@@ -44,8 +90,8 @@ export function mapMobilePublicProfile(
     subaccount: server.subaccount,
     username: server.username,
     displayName: server.display_name,
-    bio: server.bio ?? null,
-    avatarUrl: server.avatar_url ?? null,
+    bio: server.bio,
+    avatarUrl: server.avatar_url,
     privateMode: server.private_mode,
     followerCount: server.follower_count,
     followingCount: server.following_count,
