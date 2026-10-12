@@ -3,22 +3,20 @@ import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileNotificationPlatform,
   MobileServerFeedTrade,
+  MobileServerFeedUpdatesResponse,
   MobileServerFollowListAccount,
   MobileServerNotificationPreferences,
   MobileServerProfile,
+  MobileServerRankedFeedPage,
+  MobileServerSocialFeedItemResponse,
+  MobileServerSocialFeedPage,
+  MobileServerTopTradersFeedPage,
 } from './serverModelTypes';
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
   MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
-import {
-  MobileServerFeedUpdatesResponse,
-  MobileServerRankedFeedPage,
-  MobileServerSocialFeedItemResponse,
-  MobileServerSocialFeedPage,
-  MobileServerTopTradersFeedPage,
-} from './serverSocialFeedTypes';
 
 /**
  * Unsigned `public_query` request body: a `type` discriminant flattened with its params.

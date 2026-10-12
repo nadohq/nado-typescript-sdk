@@ -7,49 +7,63 @@ import {
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapMobileFeedPage,
+  mapMobileFeedUpdates,
   mapMobileFollowListPage,
   mapMobileFollowListParamsToServer,
   mapMobileFollowMutationResult,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobileProfilesIncludeToServer,
+  mapMobilePublicFeedReadParamsToServer,
   mapMobilePublicProfile,
+  mapMobileRankedFeedPage,
   mapMobileRegisteredWallet,
+  mapMobileSocialFeedItemResponse,
+  mapMobileSocialFeedListParams,
+  mapMobileSocialFeedPage,
+  mapMobileTopTradersFeedPage,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
+  canonicalizeMobileInner,
   MobileSignedInner,
   MobileSignedInnerByType,
   MobileSignedInnerParams,
   MobileSignedRequest,
 } from './signing';
 import {
-  mapMobileFeedUpdates,
-  mapMobileRankedFeedPage,
-  mapMobileSocialFeedItemResponse,
-  mapMobileSocialFeedListParams,
-  mapMobileSocialFeedPage,
-  mapMobileTopTradersFeedPage,
-} from './socialFeedMappers';
-import {
+  GetMobileFeedItemParams,
   GetMobileFeedParams,
+  GetMobileFeedUpdatesParams,
   GetMobileFollowersParams,
   GetMobileFollowingParams,
+  GetMobileForYouFeedParams,
+  GetMobileFriendsFeedParams,
+  GetMobileMarketFeedParams,
   GetMobileNotificationPreferencesParams,
+  GetMobilePositionFeedParams,
+  GetMobileProfileFeedParams,
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
+  GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
+  MobileFeedReadAccess,
+  MobileFeedUpdates,
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileNotificationPreferences,
   MobilePublicProfile,
+  MobileRankedFeedPage,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
   MobileSetFollowParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
   MobileSignedRequestParams,
+  MobileSocialFeedItemResponse,
+  MobileSocialFeedPage,
+  MobileTopTradersFeedPage,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
@@ -73,22 +87,6 @@ import {
   MobileServerPublicQueryRequestType,
   MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
-import {
-  GetMobileFeedItemParams,
-  GetMobileFeedUpdatesParams,
-  GetMobileForYouFeedParams,
-  GetMobileFriendsFeedParams,
-  GetMobileMarketFeedParams,
-  GetMobilePositionFeedParams,
-  GetMobileProfileFeedParams,
-  GetMobileTopTradersFeedParams,
-  MobileFeedReadAccess,
-  MobileFeedUpdates,
-  MobileRankedFeedPage,
-  MobileSocialFeedItemResponse,
-  MobileSocialFeedPage,
-  MobileTopTradersFeedPage,
-} from './types/socialFeedTypes';
 import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
@@ -274,11 +272,7 @@ export class MobileClient {
       type: 'for_you_feed',
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParams(params),
-      view_as:
-        params.viewAs === undefined
-          ? undefined
-          : subaccountToHex(params.viewAs),
-      viewer_token: params.viewerToken,
+      ...mapMobilePublicFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileRankedFeedPage(data);
@@ -300,11 +294,7 @@ export class MobileClient {
       type: 'top_traders_feed',
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParams(params),
-      view_as:
-        params.viewAs === undefined
-          ? undefined
-          : subaccountToHex(params.viewAs),
-      viewer_token: params.viewerToken,
+      ...mapMobilePublicFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileTopTradersFeedPage(data);
@@ -342,23 +332,11 @@ export class MobileClient {
   async getProfileFeed(
     params: GetMobileProfileFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    this.validateFeedReadAccess(params, 'profile_feed');
-    const inner: MobileSignedInnerByType<'profile_feed'> = {
-      type: 'profile_feed',
+    const data = await this.queryWithReadAccess('profile_feed', params, {
       subaccount: subaccountToHex(params.subaccount),
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParams(params),
-    };
-    const data = params.auth
-      ? await this.query(await this.signRequest(params.auth, inner))
-      : await this.publicQuery({
-          ...inner,
-          view_as:
-            params.viewAs === undefined
-              ? undefined
-              : subaccountToHex(params.viewAs),
-          viewer_token: params.viewerToken,
-        });
+    });
     return mapMobileSocialFeedPage(data);
   }
 
@@ -372,22 +350,10 @@ export class MobileClient {
   async getMarketFeed(
     params: GetMobileMarketFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    this.validateFeedReadAccess(params, 'market_feed');
-    const inner: MobileSignedInnerByType<'market_feed'> = {
-      type: 'market_feed',
+    const data = await this.queryWithReadAccess('market_feed', params, {
       product_id: params.productId,
       ...mapMobileSocialFeedListParams(params),
-    };
-    const data = params.auth
-      ? await this.query(await this.signRequest(params.auth, inner))
-      : await this.publicQuery({
-          ...inner,
-          view_as:
-            params.viewAs === undefined
-              ? undefined
-              : subaccountToHex(params.viewAs),
-          viewer_token: params.viewerToken,
-        });
+    });
     return mapMobileSocialFeedPage(data);
   }
 
@@ -402,22 +368,10 @@ export class MobileClient {
   async getPositionFeed(
     params: GetMobilePositionFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    this.validateFeedReadAccess(params, 'position_feed');
-    const inner: MobileSignedInnerByType<'position_feed'> = {
-      type: 'position_feed',
-      position_id: params.positionId.toLowerCase(),
+    const data = await this.queryWithReadAccess('position_feed', params, {
+      position_id: params.positionId,
       ...mapMobileSocialFeedListParams(params),
-    };
-    const data = params.auth
-      ? await this.query(await this.signRequest(params.auth, inner))
-      : await this.publicQuery({
-          ...inner,
-          view_as:
-            params.viewAs === undefined
-              ? undefined
-              : subaccountToHex(params.viewAs),
-          viewer_token: params.viewerToken,
-        });
+    });
     return mapMobileSocialFeedPage(data);
   }
 
@@ -431,23 +385,11 @@ export class MobileClient {
   async getFeedItem(
     params: GetMobileFeedItemParams,
   ): Promise<MobileSocialFeedItemResponse> {
-    this.validateFeedReadAccess(params, 'feed_item');
-    const inner: MobileSignedInnerByType<'feed_item'> = {
-      type: 'feed_item',
-      item_id: params.itemId.toLowerCase(),
+    const data = await this.queryWithReadAccess('feed_item', params, {
+      item_id: params.itemId,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
-    };
-    const data = params.auth
-      ? await this.query(await this.signRequest(params.auth, inner))
-      : await this.publicQuery({
-          ...inner,
-          view_as:
-            params.viewAs === undefined
-              ? undefined
-              : subaccountToHex(params.viewAs),
-          viewer_token: params.viewerToken,
-        });
+    });
     return mapMobileSocialFeedItemResponse(data);
   }
 
@@ -463,24 +405,14 @@ export class MobileClient {
   async getFeedUpdates(
     params: GetMobileFeedUpdatesParams,
   ): Promise<MobileFeedUpdates> {
-    this.validateFeedReadAccess(params, 'feed_updates');
-    const inner: MobileSignedInnerByType<'feed_updates'> = {
-      type: 'feed_updates',
+    const data = await this.queryWithReadAccess('feed_updates', params, {
       session_id: params.sessionId,
-      visible_item_ids: params.visibleItemIds.map((id) => id.toLowerCase()),
-      visible_position_ids: params.visiblePositionIds.map((id) =>
-        id.toLowerCase(),
-      ),
+      visible_item_ids: params.visibleItemIds,
+      visible_position_ids: params.visiblePositionIds,
       update_cursor: params.updateCursor,
       viewport_revision: params.viewportRevision,
       request_seq: params.requestSeq,
-    };
-    const data = params.auth
-      ? await this.query(await this.signRequest(params.auth, inner))
-      : await this.publicQuery({
-          ...inner,
-          viewer_token: params.viewerToken,
-        });
+    });
     return mapMobileFeedUpdates(data);
   }
 
@@ -662,10 +594,48 @@ export class MobileClient {
   Base Fns
    */
 
+  private async queryWithReadAccess<
+    T extends MobileServerSignedQueryRequestType,
+  >(
+    type: T,
+    access: MobileFeedReadAccess,
+    innerParams: MobileSignedInnerParams<T>,
+  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
+    this.validateFeedReadAccess(access, type);
+    if (access.auth) {
+      return this.signedQuery<T>(
+        await this.getSignedRequest(type, access.auth, innerParams),
+      );
+    }
+
+    // Signing canonicalizes inside getSignedRequest; public reads apply the same wire rules here.
+    const inner = canonicalizeMobileInner({
+      type,
+      ...innerParams,
+    } as MobileSignedInnerByType<T>);
+    // The operation fixes the payload shape. Validation above ensures public updates have a token.
+    const body = {
+      ...inner,
+      ...mapMobilePublicFeedReadParamsToServer(access),
+    } as unknown as { type: T } & MobileServerPublicQueryRequestByType[T];
+    return this.publicQuery(body);
+  }
+
   private validateFeedReadAccess(
     access: MobileFeedReadAccess,
     operation: MobileServerPublicQueryRequestType,
   ): void {
+    if (
+      access.auth &&
+      (operation === 'for_you_feed' ||
+        operation === 'top_traders_feed' ||
+        operation === 'friends_feed')
+    ) {
+      throw new InvalidMobileFeedReadAccessError(
+        operation,
+        'Main feeds only support public queries; auth is not accepted.',
+      );
+    }
     if (access.auth && access.viewerToken !== undefined) {
       throw new InvalidMobileFeedReadAccessError(
         operation,
@@ -696,17 +666,6 @@ export class MobileClient {
         'Public feed updates require the session viewerToken.',
       );
     }
-    if (
-      access.auth &&
-      (operation === 'for_you_feed' ||
-        operation === 'top_traders_feed' ||
-        operation === 'friends_feed')
-    ) {
-      throw new InvalidMobileFeedReadAccessError(
-        operation,
-        'Main feeds only support public queries; auth is not accepted.',
-      );
-    }
   }
 
   // Returns the request narrowed to `type` so `execute` can infer its response from the request it is given,
@@ -720,13 +679,6 @@ export class MobileClient {
       type,
       ...innerParams,
     } as unknown as MobileSignedInnerByType<T>;
-    return this.signRequest(params, inner);
-  }
-
-  private async signRequest<T extends MobileSignedInner>(
-    params: MobileSignedRequestParams,
-    inner: T,
-  ): Promise<MobileSignedRequest<T>> {
     // Use the linked signer if provided, otherwise use the default signer provided to the client
     const walletClient =
       this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
@@ -755,8 +707,8 @@ export class MobileClient {
     return response.data as MobileServerPublicQuerySuccessResponse<T>;
   }
 
-  protected async query<T extends MobileServerSignedQueryRequestType>(
-    body: MobileSignedRequest & { type: T },
+  protected async signedQuery<T extends MobileServerSignedQueryRequestType>(
+    body: MobileSignedRequest<MobileSignedInnerByType<T>>,
   ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
     const response = await this.axiosInstance.post<unknown>(
       `${this.opts.url}/query`,

@@ -1,11 +1,11 @@
 import { WalletClientWithAccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
-import { MobileNotificationPlatform } from '../types/serverModelTypes';
 import {
+  MobileNotificationPlatform,
   MobileServerCategorizedFeedParams,
   MobileServerSocialFeedListParams,
-} from '../types/serverSocialFeedTypes';
+} from '../types/serverModelTypes';
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.

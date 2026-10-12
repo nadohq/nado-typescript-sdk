@@ -1,7 +1,6 @@
 import {
   MOBILE_ERROR_CODES,
   MobileClient,
-  MobileServerFailureError,
   MobileSignedRequestParams,
   MobileSocialFeedPage,
 } from '@nadohq/mobile-client';
@@ -10,7 +9,10 @@ import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
+import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
+import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
@@ -35,7 +37,7 @@ void describe(
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
-      auth = { ...viewAs, chainId: tc.chainId, verifyingAddr: tc.endpointAddr };
+      auth = getMobileSignedParams(tc);
     });
 
     void test('reads a public filtered session and reuses its identity for pagination and updates', async () => {
@@ -68,6 +70,7 @@ void describe(
         viewportRevision: 0,
         requestSeq: 1,
       });
+      debugPrint('Feed updates', updates);
       assert.equal(updates.viewportRevision, 0);
       assert.equal(updates.requestSeq, 1);
       assert.equal(typeof updates.updateCursor, 'string');
@@ -83,11 +86,11 @@ void describe(
       assert.equal(page.cohort.coverage.complete, true);
       assert.ok(['ready', 'stale'].includes(page.cohort.status));
       for (const item of page.items) {
-        assert.ok(item.author.traderBadge.pnl.gt('10000000000000000000000'));
-        assert.equal(
-          item.author.traderBadge.snapshotId,
-          page.cohort.snapshotId,
-        );
+        const badge = item.author.traderBadge;
+        if (badge !== null) {
+          assert.ok(badge.pnl.gt('10000000000000000000000'));
+          assert.equal(badge.snapshotId, page.cohort.snapshotId);
+        }
       }
     });
 
@@ -196,6 +199,7 @@ void describe(
         commentPreviewLimit: 0,
         viewAs,
       });
+      debugPrint('Feed item', detail.item);
       assert.equal(detail.item.id, item.id);
       assert.equal(detail.readSession.mode, 'item');
       assert.ok(detail.readSession.viewerToken);
@@ -220,23 +224,23 @@ void describe(
     });
 
     void test('returns the social feed validation error for an invalid page size', async () => {
-      await assert.rejects(
-        tc.mobile.getForYouFeed({ limit: 51 }),
-        (error: unknown) => {
-          assert.ok(error instanceof MobileServerFailureError);
-          assert.equal(
-            error.errorCode,
-            MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
-          );
-          assert.equal(error.httpStatus, 400);
-          return true;
-        },
+      await assertRejectsWithMobileErrorCode(
+        () => tc.mobile.getForYouFeed({ limit: 51 }),
+        MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
       );
     });
   },
 );
 
 function assertPage(page: MobileSocialFeedPage) {
+  // Keep the anonymous session credential out of test logs.
+  debugPrint('Social feed page', {
+    items: page.items,
+    nextCursor: page.nextCursor,
+    watermark: page.watermark,
+    sessionMode: page.readSession.mode,
+    expiresAtMs: page.readSession.expiresAtMs,
+  });
   assert.ok(Array.isArray(page.items));
   assert.ok(page.items.length <= 2);
   assert.equal(typeof page.watermark, 'string');

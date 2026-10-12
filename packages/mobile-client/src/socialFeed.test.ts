@@ -15,6 +15,15 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
+import {
+  mapMobileFeedAuthor,
+  mapMobileFeedInteraction,
+  mapMobileFeedItemPatch,
+  mapMobileFeedUpdates,
+  mapMobileSocialTradeCard,
+  mapMobileSocialTradeRow,
+  mapMobileTopTradersFeedPage,
+} from './dataMappers';
 import { MobileClient } from './MobileClient';
 import {
   buildSignedMobileRequest,
@@ -23,14 +32,6 @@ import {
   MOBILE_EIP712_METHOD_BY_TYPE,
   MobileSignedInner,
 } from './signing';
-import {
-  mapMobileFeedAuthor,
-  mapMobileFeedInteraction,
-  mapMobileFeedItemPatch,
-  mapMobileFeedUpdates,
-  mapMobileSocialTradeCard,
-  mapMobileSocialTradeRow,
-} from './socialFeedMappers';
 import {
   InvalidMobileFeedReadAccessError,
   MOBILE_ERROR_CODES,
@@ -300,7 +301,6 @@ const emptyUpdates: MobileServerFeedUpdatesResponse = {
   reset: true,
   viewport_revision: 0,
   request_seq: 1,
-  as_of_ms: 42,
 };
 
 function mockClient(data?: unknown, status = 200) {
@@ -450,17 +450,24 @@ describe('[mobile-client]: social feed transport', () => {
       },
     });
     await client.getMarketFeed({ auth, productId: 2 });
-    await client.getPositionFeed({ auth, positionId });
-    await client.getFeedItem({ auth, itemId });
+    await client.getPositionFeed({
+      auth,
+      positionId: positionId.toUpperCase(),
+    });
+    await client.getFeedItem({ auth, itemId: itemId.toUpperCase() });
     await client.getFeedUpdates({
       auth,
       sessionId: 'session',
-      visibleItemIds: [itemId],
-      visiblePositionIds: [],
+      visibleItemIds: [itemId.toUpperCase()],
+      visiblePositionIds: [positionId.toUpperCase()],
       viewportRevision: 1,
       requestSeq: 2,
     });
     expect(requests).toHaveLength(5);
+    expect(requests[2].body.position_id).toBe(positionId);
+    expect(requests[3].body.item_id).toBe(itemId);
+    expect(requests[4].body.visible_item_ids).toEqual([itemId]);
+    expect(requests[4].body.visible_position_ids).toEqual([positionId]);
     for (const { url, body } of requests) {
       expect(url).toBe('https://mobile.example/v1/mobile/query');
       expect(body.sender).toBe(subaccountToHex(auth));
@@ -495,7 +502,11 @@ describe('[mobile-client]: social feed transport', () => {
     );
     // @ts-expect-error Friends selects a public perspective instead of authenticating it.
     await expect(client.getFriendsFeed({ auth, viewAs: auth })).rejects.toThrow(
-      'cannot include viewAs',
+      'only support public queries',
+    );
+    // @ts-expect-error Missing viewAs must not hide the public-only restriction.
+    await expect(client.getFriendsFeed({ auth })).rejects.toThrow(
+      'only support public queries',
     );
     // @ts-expect-error Friends always requires viewAs, including pagination.
     await expect(client.getFriendsFeed({})).rejects.toThrow('requires viewAs');
@@ -595,6 +606,59 @@ describe('[mobile-client]: social feed transport', () => {
 });
 
 describe('[mobile-client]: social feed response mapping', () => {
+  it('preserves nullable Top Traders badges and maps available badges without losing page metadata', () => {
+    const server: MobileServerTopTradersFeedPage = {
+      ...emptyPage,
+      next_cursor: 'NextCursor',
+      items: [
+        row,
+        {
+          ...row,
+          id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          author: {
+            ...row.author,
+            trader_data_status: 'ready',
+            trader_badge: {
+              code: 'shark',
+              pnl_x18: '12345678901234567890123',
+              metric_key: 'account_pnl_30d_equity',
+              window: '30d',
+              source_as_of_ms: 40,
+              fetched_at_ms: 42,
+              snapshot_id: 'Cohort',
+            },
+          },
+        },
+      ],
+    };
+    const page = mapMobileTopTradersFeedPage(server);
+
+    expect(page.items.map((item) => item.id)).toEqual(
+      server.items.map((item) => item.id),
+    );
+    expect(page.items[0].author.traderBadge).toBeNull();
+    expect(page.items[0].author.traderDataStatus).toBe('unavailable');
+    expect(page.items[1].author.traderDataStatus).toBe('ready');
+    expect(page.items[1].author.traderBadge?.pnl.toFixed()).toBe(
+      '12345678901234567890123',
+    );
+    expect(page.items[1].author.traderBadge?.snapshotId).toBe('Cohort');
+    expect(page.nextCursor).toBe('NextCursor');
+    expect(page.watermark).toBe('Watermark');
+    expect(page.rankingVersion).toBe('chronological-v1');
+    expect(page.readSession.sessionId).toBe(readSession.session_id);
+    expect(page.cohort).toEqual({
+      snapshotId: 'Cohort',
+      status: 'ready',
+      coverage: {
+        scope: 'eligible_content_candidates',
+        totalAuthors: 0,
+        queriedAuthors: 0,
+        complete: true,
+      },
+    });
+  });
+
   it.each([true, false, null])(
     'preserves follow state %s and unavailable likes',
     (isFollowing) => {
@@ -743,7 +807,6 @@ describe('[mobile-client]: social feed response mapping', () => {
       reset: true,
       viewport_revision: 2,
       request_seq: 3,
-      as_of_ms: 42,
     };
     const card: MobileServerSocialTradeCard = {
       ...row,

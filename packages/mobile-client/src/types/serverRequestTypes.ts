@@ -1,7 +1,9 @@
 import { Hex } from 'viem';
 import { MobileSignedInner, MobileSignedInnerParams } from '../signing/types';
-import { MobileServerNotificationPreferences } from './serverModelTypes';
-import { MobileServerCategorizedFeedParams } from './serverSocialFeedTypes';
+import {
+  MobileServerCategorizedFeedParams,
+  MobileServerNotificationPreferences,
+} from './serverModelTypes';
 
 /**
  * Opt-in extras for a `profiles` query. Each one costs extra rate-limit weight per profile and adds fields

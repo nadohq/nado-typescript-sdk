@@ -7,5 +7,3 @@ export * from './serverExecuteTypes';
 export * from './serverModelTypes';
 export * from './serverQueryTypes';
 export * from './serverRequestTypes';
-export * from './serverSocialFeedTypes';
-export * from './socialFeedTypes';

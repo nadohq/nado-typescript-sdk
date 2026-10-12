@@ -1,4 +1,4 @@
-import { MobileServerSocialFeedListParams } from '../types/serverSocialFeedTypes';
+import { MobileServerSocialFeedListParams } from '../types/serverModelTypes';
 import { MobileSignedInner } from './types';
 
 /**
