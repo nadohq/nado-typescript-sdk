@@ -7,7 +7,9 @@ import {
   MobileNotificationPlatform,
 } from './serverModelTypes';
 
-/** Server-owned preset presented in catalogue order. */
+/**
+ * Server-owned preset presented in catalogue order.
+ */
 export interface MobileAvatarPreset {
   /** Stable preset ID used by setAvatar. */
   id: string;
@@ -15,7 +17,9 @@ export interface MobileAvatarPreset {
   avatarUrl: string;
 }
 
-/** A preset or staged upload to publish. Pass null to clear an avatar. */
+/**
+ * A preset or staged upload to publish. Pass null to clear an avatar.
+ */
 export type MobileAvatarSelection =
   | {
       /** Shared catalogue selection. */
@@ -30,7 +34,9 @@ export type MobileAvatarSelection =
       uploadKey: string;
     };
 
-/** Upload the JPEG using PUT, then publish uploadKey through setAvatar. */
+/**
+ * Upload the JPEG using PUT, then publish uploadKey through setAvatar.
+ */
 export interface MobileAvatarUpload {
   /** Staging key, bound to the requesting subaccount. */
   uploadKey: string;
@@ -314,7 +320,7 @@ export interface GetMobileFeedParams {
  * Params for {@link MobileClient.setBio}.
  */
 export interface MobileSetBioParams extends MobileSignedRequestParams {
-  /** Up to 150 Unicode code points without null characters. Whitespace-only text clears the bio. */
+  /** Up to `MOBILE_BIO_MAX_LENGTH` (150) Unicode code points without null characters. Whitespace-only text clears the bio. */
   bio: string;
 }
 
@@ -330,7 +336,7 @@ export interface MobileSetAvatarParams extends MobileSignedRequestParams {
  * Params for {@link MobileClient.createAvatarUpload}.
  */
 export interface MobileCreateAvatarUploadParams extends MobileSignedRequestParams {
-  /** Final JPEG size as an integer number of bytes, from 1 byte to 5 MiB. */
+  /** Final JPEG size as an integer number of bytes, from 1 to `MOBILE_AVATAR_MAX_UPLOAD_BYTES` (5 MiB). */
   contentLength: number;
 }
 

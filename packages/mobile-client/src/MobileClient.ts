@@ -130,7 +130,9 @@ export class MobileClient {
   Public queries
    */
 
-  /** Returns the current server-owned avatar catalogue in display order. */
+  /**
+   * Returns the current server-owned avatar catalogue in display order.
+   */
   async getAvatarPresets(): Promise<MobileAvatarPreset[]> {
     const data = await this.publicQuery({ type: 'avatar_presets' });
     return data.presets.map(mapMobileAvatarPreset);
@@ -337,7 +339,10 @@ export class MobileClient {
   /**
    * Updates the biography, or clears it when the text is whitespace-only.
    *
-   * @throws {MobileServerFailureError} With `INVALID_BIO` for more than 150 Unicode code points or null
+   * Serialize this with {@link MobileClient.setAvatar}, {@link MobileClient.setUsername} and
+   * {@link MobileClient.setPrivateMode} for the same subaccount: all share the identity update nonce.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_BIO` for exceeding `MOBILE_BIO_MAX_LENGTH` or null
    * characters, `INVALID_IDENTITY_TARGET` for an isolated subaccount, or `STALE_IDENTITY_UPDATE` when a
    * later write has committed (re-read the profile before retrying).
    */
@@ -372,6 +377,8 @@ export class MobileClient {
   /**
    * Publishes a preset/staged upload, or clears the saved avatar when avatar is null.
    *
+   * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
+   *
    * @throws {MobileServerFailureError} With `INVALID_AVATAR` for an invalid preset, staging key, or image,
    * `INVALID_IDENTITY_TARGET` for an isolated subaccount, `SERVICE_UNAVAILABLE` when storage is unavailable,
    * or `STALE_IDENTITY_UPDATE` when a later write has committed (re-read the profile before retrying).
@@ -388,6 +395,8 @@ export class MobileClient {
   /**
    * Sets a subaccount's username, derived from the given display name. Upserts: the same call claims a first
    * username and renames an existing one, so callers never need to read the current identity first.
+   *
+   * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_DISPLAY_NAME` if the display name violates
    * `MOBILE_DISPLAY_NAME_PATTERN`, `USERNAME_UNAVAILABLE` if the derived username is reserved or already
@@ -406,6 +415,7 @@ export class MobileClient {
 
   /**
    * Sets whether a subaccount's profile is private.
+   * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
    */
   async setPrivateMode(
     params: MobileSetPrivateModeParams,

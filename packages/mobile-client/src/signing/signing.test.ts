@@ -48,15 +48,6 @@ const FIXTURE_TARGET_SUBACCOUNT =
   '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
 
 describe('[mobile-client]: signing (offline)', () => {
-  it('canonicalizes nested avatar fields before hashing', () => {
-    const inner: MobileSignedInner = {
-      avatar: { id: 'penguin', type: 'preset' },
-      type: 'set_avatar',
-    };
-    expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
-      PINNED_HASHES.set_avatar_preset,
-    );
-  });
   describe('pinned payload hashes', () => {
     it('set_bio', () => {
       const inner: MobileSignedInner = {
@@ -154,6 +145,16 @@ describe('[mobile-client]: signing (offline)', () => {
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.set_follow_false);
     });
+  });
+
+  it('canonicalizes nested avatar fields before hashing', () => {
+    const inner: MobileSignedInner = {
+      avatar: { id: 'penguin', type: 'preset' },
+      type: 'set_avatar',
+    };
+    expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+      PINNED_HASHES.set_avatar_preset,
+    );
   });
 
   it('canonicalizes msgpack key order regardless of input key order', () => {

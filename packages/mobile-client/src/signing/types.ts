@@ -1,7 +1,10 @@
 import { WalletClientWithAccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
-import { MobileNotificationPlatform } from '../types/serverModelTypes';
+import {
+  MobileNotificationPlatform,
+  MobileServerAvatarSelection,
+} from '../types/serverModelTypes';
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.
@@ -22,10 +25,7 @@ export type MobileSignedInner =
   | { type: 'create_avatar_upload'; content_length: number }
   | {
       type: 'set_avatar';
-      avatar:
-        | { type: 'preset'; id: string }
-        | { type: 'upload'; upload_key: string }
-        | null;
+      avatar: MobileServerAvatarSelection | null;
     }
   | { type: 'set_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }

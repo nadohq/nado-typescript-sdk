@@ -1,5 +1,4 @@
 import { subaccountToHex } from '@nadohq/shared';
-import { MobileSignedInnerParams } from './signing/types';
 import {
   GetMobileFollowListParams,
   MobileAvatarPreset,
@@ -23,6 +22,7 @@ import {
 } from './types/serverExecuteTypes';
 import {
   MobileServerAvatarPreset,
+  MobileServerAvatarSelection,
   MobileServerFeedTrade,
   MobileServerFollowSummary,
   MobileServerIdentitySummary,
@@ -68,7 +68,7 @@ export function mapMobileAvatarUpload(
  */
 export function mapMobileAvatarSelectionToServer(
   avatar: MobileAvatarSelection | null,
-): MobileSignedInnerParams<'set_avatar'>['avatar'] {
+): MobileServerAvatarSelection | null {
   if (avatar === null) {
     return null;
   }

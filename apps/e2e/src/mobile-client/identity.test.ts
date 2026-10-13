@@ -1,4 +1,5 @@
 import {
+  MOBILE_BIO_MAX_LENGTH,
   MOBILE_DISPLAY_NAME_PATTERN,
   MOBILE_ERROR_CODES,
   MobileAvatarSelection,
@@ -79,15 +80,21 @@ void describe(
       try {
         await tc.mobile.setBio({ ...params, bio });
         await delay(TEST_DELAYS.STANDARD);
-        assert.equal((await getTestSubaccountProfile(tc)).bio, bio);
+        const updated = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after bio set', updated);
+        assert.equal(updated.bio, bio);
 
         await tc.mobile.setBio({ ...params, bio: ' \n ' });
         await delay(TEST_DELAYS.STANDARD);
-        assert.equal((await getTestSubaccountProfile(tc)).bio, null);
+        const cleared = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after bio clear', cleared);
+        assert.equal(cleared.bio, null);
       } finally {
         await tc.mobile.setBio({ ...params, bio: originalBio ?? '' });
         await delay(TEST_DELAYS.STANDARD);
-        assert.equal((await getTestSubaccountProfile(tc)).bio, originalBio);
+        const restored = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after bio restore', restored);
+        assert.equal(restored.bio, originalBio);
       }
     });
 
@@ -96,7 +103,7 @@ void describe(
         () =>
           tc.mobile.setBio({
             ...getMobileSignedParams(tc),
-            bio: 'a'.repeat(151),
+            bio: 'a'.repeat(MOBILE_BIO_MAX_LENGTH + 1),
           }),
         MOBILE_ERROR_CODES.INVALID_BIO,
       );
@@ -156,10 +163,9 @@ void describe(
           avatar: { type: 'preset', id: preset.id },
         });
         await delay(TEST_DELAYS.STANDARD);
-        assert.equal(
-          (await getTestSubaccountProfile(tc)).avatarUrl,
-          preset.avatarUrl,
-        );
+        const presetProfile = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after preset avatar set', presetProfile);
+        assert.equal(presetProfile.avatarUrl, preset.avatarUrl);
 
         const grant = await tc.mobile.createAvatarUpload({
           ...params,
@@ -186,7 +192,9 @@ void describe(
           avatar: { type: 'upload', uploadKey: grant.uploadKey },
         });
         await delay(TEST_DELAYS.STANDARD);
-        const { avatarUrl } = await getTestSubaccountProfile(tc);
+        const uploadedProfile = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after uploaded avatar set', uploadedProfile);
+        const { avatarUrl } = uploadedProfile;
         assertDefined(avatarUrl, 'publishedAvatarUrl');
         assertString(avatarUrl, 'publishedAvatarUrl');
         assert.notEqual(avatarUrl, preset.avatarUrl);
@@ -202,14 +210,15 @@ void describe(
 
         await tc.mobile.setAvatar({ ...params, avatar: null });
         await delay(TEST_DELAYS.STANDARD);
-        assert.equal((await getTestSubaccountProfile(tc)).avatarUrl, null);
+        const cleared = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after avatar clear', cleared);
+        assert.equal(cleared.avatarUrl, null);
       } finally {
         await tc.mobile.setAvatar({ ...params, avatar: originalAvatar });
         await delay(TEST_DELAYS.STANDARD);
-        assert.equal(
-          (await getTestSubaccountProfile(tc)).avatarUrl,
-          originalUrl,
-        );
+        const restored = await getTestSubaccountProfile(tc);
+        debugPrint('Identity after avatar restore', restored);
+        assert.equal(restored.avatarUrl, originalUrl);
       }
     });
 

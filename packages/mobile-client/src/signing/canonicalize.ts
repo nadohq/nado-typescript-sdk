@@ -20,7 +20,9 @@ export function canonicalizeMobileInner(
       };
     case 'set_avatar': {
       const avatar = inner.avatar;
-      if (avatar === null) return { type: 'set_avatar', avatar: null };
+      if (avatar === null) {
+        return { type: 'set_avatar', avatar: null };
+      }
       return {
         type: 'set_avatar',
         avatar:

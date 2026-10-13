@@ -2,6 +2,23 @@ import { BalanceSide } from '@nadohq/shared';
 import { Hex } from 'viem';
 
 /**
+ * Server-side avatar selection, shared by request mapping and signing.
+ */
+export type MobileServerAvatarSelection =
+  | {
+      /** Shared catalogue selection. */
+      type: 'preset';
+      /** Stable catalogue ID. */
+      id: string;
+    }
+  | {
+      /** Uploaded image awaiting publication. */
+      type: 'upload';
+      /** Staging key returned by create_avatar_upload. */
+      upload_key: string;
+    };
+
+/**
  * Server-owned avatar preset in catalogue order.
  */
 export interface MobileServerAvatarPreset {

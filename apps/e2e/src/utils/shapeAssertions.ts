@@ -579,7 +579,7 @@ export function assertSubaccountListingShape(
 
 /**
  * Validates the shape of a {@link MobileIdentitySummary}. Name fields are `null` until a username is claimed,
- * and `avatarUrl` is `null` until an avatar source exists on the backend.
+ * and `avatarUrl` is `null` when the account has no saved avatar.
  */
 export function assertMobileIdentitySummaryShape(
   identity: MobileIdentitySummary,
