@@ -40,9 +40,12 @@ export interface MobileServerFollowListRequest {
   limit?: number;
 }
 
-/** Public browsing context; neither field proves wallet ownership or grants private access. */
+/** Unsigned browsing context; the viewing account is not proof of wallet ownership. */
 export interface MobileServerPublicFeedReadParams {
-  /** Complete non-isolated identity used to resolve public relationship state. */
+  /**
+   * Complete non-isolated viewing account. Profile, position, and item reads include this account's
+   * own hidden content under account_view, in addition to resolving relationship state.
+   */
   view_as?: Hex;
   /** Original browsing credential when reusing a session. */
   viewer_token?: string;
@@ -64,7 +67,7 @@ export interface MobileServerPublicQueryRequestByType {
       /** Complete non-isolated identity subaccount; required on every request. */
       view_as: Hex;
     };
-  /** Author's public content; the target is separate from view_as. */
+  /** Author content visible to view_as; the target is separate from the viewing account. */
   profile_feed: MobileServerCategorizedFeedParams &
     MobileServerPublicFeedReadParams & {
       /** Target author identity, independent of view_as. */
@@ -76,13 +79,13 @@ export interface MobileServerPublicQueryRequestByType {
       /** Target product. */
       product_id: number;
     };
-  /** Public activity in one position lifecycle. */
+  /** Published activity in one lifecycle, including hidden content owned by view_as. */
   position_feed: MobileServerSocialFeedListParams &
     MobileServerPublicFeedReadParams & {
       /** Target position UUID. */
       position_id: string;
     };
-  /** Public item details, optionally reusing a reading session. */
+  /** Item details visible to view_as, optionally reusing a reading session. */
   feed_item: MobileServerPublicFeedReadParams & {
     /** Target item UUID. */
     item_id: string;
@@ -100,10 +103,10 @@ export interface MobileServerPublicQueryRequestByType {
     /** Authorized position UUIDs. */
     visible_position_ids: string[];
     /** Baseline from the last accepted update. */
-    update_cursor?: string;
+    update_cursor?: string | null;
     /** Current viewport version. */
     viewport_revision: number;
-    /** Request sequence within the viewport. */
+    /** Request sequence increasing across the entire session, including viewport changes. */
     request_seq: number;
     /** Original public browsing credential. */
     viewer_token: string;
@@ -165,14 +168,19 @@ export interface MobileServerPublicExecuteRequestByType {
 export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
-/** Signed mutation operations. */
+/**
+ * Discriminant `type` values for signed `execute` requests. Every signed route the SDK calls is a write, so
+ * this is the full set of {@link MobileSignedInner} tags. Unlike the public queries these carry no separate
+ * params map — a signed request body *is* its inner payload flattened with the envelope, so
+ * {@link MobileSignedInner} is the single source of truth for both the fields and their significant order.
+ */
 export type MobileServerExecuteRequestType = MobileSignedInner['type'];
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
- * `public_query_*` for unsigned queries, `public_execute_*` for unsigned
- * writes, and `execute_*` for signed writes (e.g. `execute_set_username`). The prefix names the route,
- * so it never carries the `mobile:` prefix that the EIP-712 method does.
+ * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
+ * writes (e.g. `execute_set_username`). The prefix names the route, so it never carries the `mobile:` prefix
+ * that the EIP-712 method does.
  */
 export type MobileServerRequestType =
   | `public_query_${MobileServerPublicQueryRequestType}`

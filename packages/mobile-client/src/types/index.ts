@@ -1,5 +1,4 @@
 export * from './clientTypes';
-export * from './InvalidMobileFeedReadAccessError';
 export * from './mobileErrorCodes';
 export * from './MobileServerFailureError';
 export * from './serverBaseTypes';

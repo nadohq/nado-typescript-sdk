@@ -61,83 +61,12 @@ proving one: with it the page is ordered familiar-first and every row carries an
 page is ordered by the listed relationship alone and `isFollowing` is absent rather than `false`. As with
 `include.followSummary.viewAs`, an unsigned route means the claimed viewer is not verified.
 
-`getFeed` returns the global trade feed. `getForYouFeed` returns chronological recommendations,
-`getTopTradersFeed` returns content by qualified authors with account PnL badges, and `getFriendsFeed`
-returns public content from followed authors. `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`
-select published content by author, market, and position lifecycle respectively. `getFeedItem` returns
-one item's details; `getFeedUpdates` returns viewport patches and new-content hints for an existing session.
-
-Public browsing never requires a wallet signature, identity registration, or 1-Click Trading setup.
-All eight social feed reads use `/public_query` and do not accept `auth`, even when a wallet or linked signer is configured.
-Friends requires `viewAs` on every request, including pagination; an account with no
-follows receives an empty list.
-
-`viewAs` uses the SDK's `{ subaccountOwner, subaccountName }` shape and is encoded as a
-complete bytes32 identity subaccount, not a 20-byte wallet address. It must be non-isolated.
-It selects public relationship state and never grants private access. The Profile target
-`subaccount` is separate from `viewAs`; the SDK does not infer a viewing account from it.
-
-`getFeedUpdates` inherits the original reading session's viewing account, so it never accepts `viewAs`.
-Updates require the original `viewerToken`; this is a browsing-session credential, not proof of wallet ownership.
-
-```ts
-const viewAs = { subaccountOwner: walletAddress, subaccountName: 'default' };
-const friends = await mobile.getFriendsFeed({ viewAs, limit: 20 });
-const page = await mobile.getForYouFeed({ viewAs, minimumNotional: 500, limit: 20 });
-const { sessionId, viewerToken } = page.readSession;
-
-// Keep the same filters, target, limit, viewAs, and browser credential throughout this session.
-if (page.nextCursor !== null) {
-  const next = await mobile.getForYouFeed({
-    viewAs,
-    minimumNotional: 500,
-    limit: 20,
-    sessionId,
-    viewerToken,
-    cursor: page.nextCursor,
-  });
-}
-
-if (viewerToken) {
-  const updates = await mobile.getFeedUpdates({
-    sessionId,
-    viewerToken,
-    visibleItemIds: page.items.map((item) => item.id),
-    visiblePositionIds: [],
-    viewportRevision: 0,
-    requestSeq: 1,
-  });
-}
-```
-
-The session-based feed methods return camelCase fields without `X18` suffixes. Quantities, notionals,
-and PnL amounts are exact `BigNumber` integers in x18 units; divide these by `10^18` for display. Prices
-(such as `entryPrice`, `averagePrice`, and liquidation prices) are already decimal
-`BigNumber` values. Versions remain decimal strings and must be compared with `BigInt` or `BigNumber`.
-Explicit `null` in a patch clears the old value; omitted fields leave it unchanged.
-
-With a viewing account, `author.isFollowing` reflects its actual follow state; without one,
-it is `null`. `interaction.likedByMe` stays `null` while likes are unavailable.
-Trade rows do not have an `interaction` field.
-
-Sessions expire 15 minutes after creation. Continue through short or empty pages while
-`nextCursor` is non-null. Keep pagination cursors, update cursors, and watermarks separate.
-For polling, increment `viewportRevision` when visible IDs change and `requestSeq` on
-every call. Apply only the current viewport's latest response and discard responses from
-older refreshes. Patches do not insert or reorder list members. Refresh on
-`MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_EXPIRED` (6312); a mismatch (6311) requires
-correcting the session/identity/source rather than retrying unchanged. Keep viewer tokens
-out of logs and public caches. A public session still needs its original viewer token when a
-wallet is connected or `viewAs` is supplied. List pagination must repeat the initial `viewAs`
-(or continue omitting it); item details reusing a session may omit it to inherit the perspective.
-To switch viewing accounts, create a new session and reset cursors, visible IDs,
-and polling sequence state. Stop using the old state as soon as a refresh begins; resume
-pagination and polling only after the new first page succeeds. Invalid or expired public
-credentials require a refresh, not a wallet signature.
-
-The social feed exposes automatic trade cards/rows; drawings and interactions are not enabled.
-`getPositionFeed` is published activity, not complete position history. The legacy
-`getFeed`, `setFollow`, and `setPrivateMode` contracts remain available unchanged.
+`getFeed` returns the global trade feed. Session-based feeds include `getForYouFeed`, `getTopTradersFeed`,
+and `getFriendsFeed` (requires `viewAs`), plus `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`.
+`getFeedItem` reads one item; `getFeedUpdates` polls session patches using the returned `viewerToken`.
+All are unsigned. Profile, position, and item reads include the `viewAs` account's own hidden content under
+`account_view`; the viewing account is not proof of wallet ownership. Prices are decimal `BigNumber` values;
+quantities, notionals, and PnL retain x18 units. See method and parameter JSDoc for session and polling rules.
 
 ### Public Executes
 

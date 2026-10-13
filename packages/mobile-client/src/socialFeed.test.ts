@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { subaccountToHex } from '@nadohq/shared';
+import { Subaccount, subaccountToHex } from '@nadohq/shared';
 import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
@@ -14,11 +14,6 @@ import {
 } from './dataMappers';
 import { MobileClient } from './MobileClient';
 import {
-  canonicalizeMobileInner,
-  MOBILE_EIP712_METHOD_BY_TYPE,
-} from './signing';
-import {
-  InvalidMobileFeedReadAccessError,
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
   MobileServerFeedItemPatch,
@@ -27,7 +22,6 @@ import {
   MobileServerSocialTradeCard,
   MobileServerSocialTradeRow,
   MobileServerTopTradersFeedPage,
-  MobileSignedRequestParams,
 } from './types';
 
 const itemId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -43,31 +37,10 @@ const walletClient = createWalletClient({
   chain: ink,
   transport: http(),
 });
-const auth: MobileSignedRequestParams = {
+const subaccount: Subaccount = {
   subaccountOwner: owner.address,
   subaccountName: 'default',
-  chainId: ink.id,
-  verifyingAddr: '0x0000000000000000000000000000000000000001',
 };
-
-describe('[mobile-client]: social feed signing', () => {
-  it.each([
-    'for_you_feed',
-    'top_traders_feed',
-    'friends_feed',
-    'profile_feed',
-    'market_feed',
-    'position_feed',
-    'feed_item',
-    'feed_updates',
-  ] as const)('does not define a signing domain or payload for %s', (type) => {
-    expect(MOBILE_EIP712_METHOD_BY_TYPE).not.toHaveProperty(type);
-    expect(() => {
-      // @ts-expect-error Social feed reads are not signed payload variants.
-      canonicalizeMobileInner({ type });
-    }).toThrow('unhandled inner payload type');
-  });
-});
 
 const row: MobileServerSocialTradeRow = {
   id: itemId,
@@ -76,7 +49,7 @@ const row: MobileServerSocialTradeRow = {
   has_analysis: false,
   drawing: null,
   author: {
-    subaccount: subaccountToHex(auth),
+    subaccount: subaccountToHex(subaccount),
     username: null,
     display_name: null,
     avatar_url: null,
@@ -199,7 +172,7 @@ describe('[mobile-client]: social feed transport', () => {
       });
       await client.getTopTradersFeed({ viewAs });
       await client.getFriendsFeed({ viewAs });
-      await client.getProfileFeed({ subaccount: auth, viewAs });
+      await client.getProfileFeed({ subaccount, viewAs });
       await client.getMarketFeed({ productId: 2, viewAs });
       await client.getPositionFeed({
         positionId: positionId.toUpperCase(),
@@ -245,7 +218,7 @@ describe('[mobile-client]: social feed transport', () => {
         view_as: subaccountToHex(viewAs),
         viewer_token: 'OpaqueViewer',
       });
-      expect(requests[3].body.subaccount).toBe(subaccountToHex(auth));
+      expect(requests[3].body.subaccount).toBe(subaccountToHex(subaccount));
       expect(requests[3].body.subaccount).not.toBe(requests[3].body.view_as);
       expect(requests[5].body.position_id).toBe(positionId);
       expect(requests[6].body.item_id).toBe(itemId);
@@ -286,6 +259,22 @@ describe('[mobile-client]: social feed transport', () => {
     });
   });
 
+  it('passes a nullable read-session baseline directly to updates', async () => {
+    const { client, requests } = mockClient();
+    const page = await client.getForYouFeed();
+    await client.getFeedUpdates({
+      sessionId: page.readSession.sessionId,
+      viewerToken: page.readSession.viewerToken,
+      updateCursor: page.readSession.updateCursor,
+      visibleItemIds: [],
+      visiblePositionIds: [],
+      viewportRevision: 0,
+      requestSeq: 1,
+    });
+    expect(requests[1].body.update_cursor).toBeNull();
+    expect(requests[1].body.viewer_token).toBe('OpaqueViewer');
+  });
+
   it('browses without a wallet and never infers viewAs from the profile target', async () => {
     const { client, requests } = mockClient({
       status: 'success',
@@ -294,90 +283,19 @@ describe('[mobile-client]: social feed transport', () => {
     client.opts.walletClient = undefined;
     await client.getForYouFeed();
     await client.getTopTradersFeed();
-    const friends = await client.getFriendsFeed({ viewAs: auth });
-    await client.getProfileFeed({ subaccount: auth });
+    const friends = await client.getFriendsFeed({ viewAs: subaccount });
+    await client.getProfileFeed({ subaccount });
     expect(friends.items).toEqual([]);
     expect(requests[0].body).toEqual({ type: 'for_you_feed' });
     expect(requests[1].body).toEqual({ type: 'top_traders_feed' });
     expect(requests[2].body).toEqual({
       type: 'friends_feed',
-      view_as: subaccountToHex(auth),
+      view_as: subaccountToHex(subaccount),
     });
     expect(requests[3].body).toEqual({
       type: 'profile_feed',
-      subaccount: subaccountToHex(auth),
+      subaccount: subaccountToHex(subaccount),
     });
-  });
-
-  it('rejects signing all social feeds at the type and runtime boundaries before HTTP', async () => {
-    const { client, requests } = mockClient();
-    // @ts-expect-error Main feeds no longer accept a signing identity.
-    await expect(client.getForYouFeed({ auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    // @ts-expect-error Top Traders is also public-only.
-    await expect(client.getTopTradersFeed({ auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    // @ts-expect-error Friends selects a public perspective instead of authenticating it.
-    await expect(client.getFriendsFeed({ auth, viewAs: auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    // @ts-expect-error Missing viewAs must not hide the public-only restriction.
-    await expect(client.getFriendsFeed({ auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    await expect(
-      // @ts-expect-error Profile reads are public-only.
-      client.getProfileFeed({ subaccount: auth, auth }),
-    ).rejects.toThrow('only support public queries');
-    // @ts-expect-error Market reads are public-only.
-    await expect(client.getMarketFeed({ productId: 2, auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    // @ts-expect-error Position reads are public-only.
-    await expect(client.getPositionFeed({ positionId, auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    // @ts-expect-error Item reads are public-only.
-    await expect(client.getFeedItem({ itemId, auth })).rejects.toThrow(
-      'only support public queries',
-    );
-    await expect(
-      client.getFeedUpdates({
-        sessionId: 'session',
-        visibleItemIds: [],
-        visiblePositionIds: [],
-        viewportRevision: 0,
-        requestSeq: 1,
-        viewerToken: 'token',
-        // @ts-expect-error Updates require a public session, not a signing identity.
-        auth,
-      }),
-    ).rejects.toThrow('only support public queries');
-    // @ts-expect-error Friends always requires viewAs, including pagination.
-    await expect(client.getFriendsFeed({})).rejects.toThrow('requires viewAs');
-    expect(requests).toHaveLength(0);
-  });
-
-  it('rejects missing update credentials and changed session perspectives', async () => {
-    const { client, requests } = mockClient();
-    const update = {
-      sessionId: 's',
-      visibleItemIds: [],
-      visiblePositionIds: [],
-      viewportRevision: 0,
-      requestSeq: 0,
-    };
-    // @ts-expect-error Public updates require the original browser credential.
-    await expect(client.getFeedUpdates(update)).rejects.toThrow(
-      'require the session viewerToken',
-    );
-    await expect(
-      // @ts-expect-error Update perspectives are inherited from the session.
-      client.getFeedUpdates({ ...update, viewerToken: 'token', viewAs: auth }),
-    ).rejects.toThrow('inherit viewAs');
-    expect(requests).toHaveLength(0);
   });
 
   it('preserves fixed empty pages and never auto-refreshes or reorders a session', async () => {
@@ -397,7 +315,7 @@ describe('[mobile-client]: social feed transport', () => {
       },
     });
     const page = await client.getForYouFeed({
-      viewAs: auth,
+      viewAs: subaccount,
       sessionId: 'Session',
       cursor: 'Window',
       viewerToken: 'Viewer',
@@ -408,7 +326,7 @@ describe('[mobile-client]: social feed transport', () => {
     expect(page.readSession.viewerToken).toBe('Viewer');
     expect(page).not.toHaveProperty('status');
     expect(requests).toHaveLength(1);
-    expect(requests[0].body.view_as).toBe(subaccountToHex(auth));
+    expect(requests[0].body.view_as).toBe(subaccountToHex(subaccount));
   });
 
   it('preserves typed HTTP failures and rejects non-envelope framework errors', async () => {
@@ -421,15 +339,15 @@ describe('[mobile-client]: social feed transport', () => {
       },
       410,
     );
-    await expect(client.getFriendsFeed({ viewAs: auth })).rejects.toMatchObject(
-      {
-        errorCode: 6312,
-        requestType: 'public_query_friends_feed',
-        httpStatus: 410,
-      },
-    );
     await expect(
-      client.getFriendsFeed({ viewAs: auth }),
+      client.getFriendsFeed({ viewAs: subaccount }),
+    ).rejects.toMatchObject({
+      errorCode: 6312,
+      requestType: 'public_query_friends_feed',
+      httpStatus: 410,
+    });
+    await expect(
+      client.getFriendsFeed({ viewAs: subaccount }),
     ).rejects.toBeInstanceOf(MobileServerFailureError);
     await expect(
       mockClient('invalid JSON', 422).client.getForYouFeed(),
@@ -513,6 +431,8 @@ describe('[mobile-client]: social feed response mapping', () => {
   );
   it('preserves precision, signed zero, nullable liquidation facts, and omitted patch fields', () => {
     const patch: MobileServerFeedItemPatch = {
+      author: row.author,
+      display_at_ms: 42,
       item_id: itemId,
       version: '9007199254740993',
       quantity_x18: '123456789012345678901234567890',
@@ -576,6 +496,8 @@ describe('[mobile-client]: social feed response mapping', () => {
 
   it('maps price patches independently and distinguishes omission from explicit null', () => {
     const patch = mapMobileFeedItemPatch({
+      author: row.author,
+      display_at_ms: 42,
       item_id: itemId,
       version: '2',
       entry_price_x18: '2600000000000000000000',
@@ -594,17 +516,58 @@ describe('[mobile-client]: social feed response mapping', () => {
     expect(patch).not.toHaveProperty('interaction');
   });
 
-  it('reports invalid credentials with the operation in a dedicated error', async () => {
-    const { client, requests } = mockClient();
-    // @ts-expect-error Exercise the runtime boundary used by JavaScript callers.
-    await expect(client.getFriendsFeed({})).rejects.toBeInstanceOf(
-      InvalidMobileFeedReadAccessError,
-    );
-    // @ts-expect-error Exercise the runtime boundary used by JavaScript callers.
-    await expect(client.getFriendsFeed({})).rejects.toMatchObject({
-      requestType: 'friends_feed',
+  it('delivers current author identity, relationship, and badge in viewport patches', () => {
+    const patch: MobileServerFeedItemPatch = {
+      item_id: itemId,
+      version: '3',
+      display_at_ms: 100,
+      author: {
+        ...row.author,
+        username: 'renamed',
+        display_name: 'Renamed Trader',
+        avatar_url: 'https://example.com/avatar.png',
+        is_following: true,
+        trader_data_status: 'ready',
+        trader_badge: {
+          code: 'whale',
+          pnl_x18: '123456789012345678901234',
+          metric_key: 'account_pnl_30d_equity',
+          window: '30d',
+          source_as_of_ms: 90,
+          fetched_at_ms: 95,
+          snapshot_id: 'NewCohort',
+        },
+      },
+    };
+    const updates = mapMobileFeedUpdates({
+      ...emptyUpdates,
+      item_patches: [patch],
     });
-    expect(requests).toHaveLength(0);
+    const mapped = updates.itemPatches[0];
+    expect(mapped.displayAtMs).toBe(100);
+    expect(mapped.author).toMatchObject({
+      subaccount: row.author.subaccount,
+      username: 'renamed',
+      displayName: 'Renamed Trader',
+      avatarUrl: 'https://example.com/avatar.png',
+      isFollowing: true,
+      traderDataStatus: 'ready',
+      traderBadge: { code: 'whale', snapshotId: 'NewCohort' },
+    });
+    expect(mapped.author.traderBadge?.pnl.toFixed()).toBe(
+      '123456789012345678901234',
+    );
+    expect(mapped).not.toHaveProperty('quantity');
+
+    const cleared = mapMobileFeedItemPatch({ ...patch, author: row.author });
+    expect(cleared.author).toMatchObject({
+      username: null,
+      displayName: null,
+      avatarUrl: null,
+      isFollowing: null,
+      traderBadge: null,
+      traderDataStatus: 'unavailable',
+    });
   });
 
   it('maps nested position PnL and revocations without losing sequence or baseline', () => {

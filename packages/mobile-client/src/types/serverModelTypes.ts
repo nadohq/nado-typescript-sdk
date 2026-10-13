@@ -209,7 +209,60 @@ export type MobileSocialFeedType =
 /** Market category used by the social feed. */
 export type MobileFeedMarketCategory = 'crypto' | 'finance';
 
-/** Common list fields, in signed MessagePack order. */
+/** Qualification tier for an account-level PnL badge. */
+export type MobileTraderBadgeCode = 'shark' | 'whale';
+
+/** Availability of the current or last successful qualification snapshot. */
+export type MobileFeedCohortStatus = 'ready' | 'stale';
+
+/** Availability of an author's qualification data. */
+export type MobileFeedTraderDataStatus = MobileFeedCohortStatus | 'unavailable';
+
+/** Category from the authoritative market source. */
+export type MobileFeedSourceCategory =
+  | 'crypto'
+  | 'stocks'
+  | 'forex'
+  | 'commodities';
+
+/** Accounting basis used for position PnL. */
+export type MobileFeedPnlBasis =
+  | 'unrealized_excl_fees_funding'
+  | 'realized_incl_fees_funding';
+
+/** Whether position PnL is live or frozen at close. */
+export type MobileFeedPnlMode = 'live' | 'frozen';
+
+/** Completeness of position PnL accounting. */
+export type MobileFeedPnlQuality = 'ready' | 'pending' | 'unavailable';
+
+/** Source of the displayed position size and entry price. */
+export type MobileFeedPositionDisplayBasis =
+  | 'current_position'
+  | 'closing_snapshot';
+
+/** Current state of a position lifecycle. */
+export type MobileFeedPositionState = 'open' | 'closed';
+
+/** Completeness of the available position history. */
+export type MobileFeedHistoryQuality = 'complete' | 'partial';
+
+/** Trading action represented by an ordinary size-change row. */
+export type MobileSocialTradeSizeChangeAction = 'increased' | 'reduced';
+
+/** Trading action represented by an automatic trade card. */
+export type MobileSocialTradeCardAction =
+  | 'opened'
+  | 'closed'
+  | MobileSocialTradeSizeChangeAction;
+
+/** Whether a reading session was created for a list or a direct item. */
+export type MobileFeedReadSessionMode = 'feed' | 'item';
+
+/** Kind of feed update target. */
+export type MobileFeedTargetType = 'item' | 'position';
+
+/** Common filters and pagination for social feed lists. */
 export interface MobileServerSocialFeedListParams {
   /** OR-ed content filters; combined with other filters using AND. */
   feed_types?: MobileSocialFeedType[];
@@ -225,14 +278,14 @@ export interface MobileServerSocialFeedListParams {
 
 /** List fields for main feeds and author feeds. */
 export interface MobileServerCategorizedFeedParams extends MobileServerSocialFeedListParams {
-  /** Omit to read all market categories. Encoded before the common list fields. */
+  /** Omit to read all market categories. */
   market_category?: MobileFeedMarketCategory;
 }
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileServerTraderBadge {
   /** Qualification tier. */
-  code: 'shark' | 'whale';
+  code: MobileTraderBadgeCode;
   /** Signed integer in x18 units. */
   pnl_x18: string;
   /** Stable compatibility identifier for the official Portfolio month result. */
@@ -248,21 +301,13 @@ export interface MobileServerTraderBadge {
 }
 
 /** Public author identity and the selected viewing account's follow state. */
-export interface MobileServerFeedAuthor {
-  /** Full identity subaccount. */
-  subaccount: Hex;
-  /** Null for an unclaimed identity. */
-  username: string | null;
-  /** Null for an unclaimed identity. */
-  display_name: string | null;
-  /** Avatar URL when available. */
-  avatar_url: string | null;
-  /** Public view_as or signed sender's follow state; null without a viewing account. */
+export interface MobileServerFeedAuthor extends MobileServerIdentitySummary {
+  /** Selected view_as account's follow state; null without a viewing account. */
   is_following: boolean | null;
   /** Null when no qualifying badge is available. */
   trader_badge: MobileServerTraderBadge | null;
   /** Stale means the last successful cohort is used after a refresh failure. */
-  trader_data_status: 'ready' | 'stale' | 'unavailable';
+  trader_data_status: MobileFeedTraderDataStatus;
 }
 
 /** Market metadata from the service's authoritative market source. */
@@ -276,11 +321,11 @@ export interface MobileServerFeedMarket {
   /** Social feed category when known. */
   category: MobileFeedMarketCategory | null;
   /** Original market categories. */
-  source_categories: Array<'crypto' | 'stocks' | 'forex' | 'commodities'>;
+  source_categories: MobileFeedSourceCategory[];
 }
 
 /** Leverage display value; unknown isolated leverage differs from inapplicable cross leverage. */
-export interface MobileServerFeedLeverage {
+export interface MobileFeedLeverage {
   /** Rounded whole-number string, or null. Never an estimated replacement. */
   value: string | null;
   /** Cross margin uses not_applicable. */
@@ -292,13 +337,13 @@ export interface MobileServerFeedPnl {
   /** Signed x18 integer; null means unknown, not zero. */
   amount_x18: string | null;
   /** Open positions exclude fees/funding; closed results include them. */
-  basis: 'unrealized_excl_fees_funding' | 'realized_incl_fees_funding';
+  basis: MobileFeedPnlBasis;
   /** Closed positions use frozen results. */
-  mode: 'live' | 'frozen';
+  mode: MobileFeedPnlMode;
   /** Source timestamp in Unix milliseconds. */
   as_of_ms: number;
   /** Whether accounting is complete, pending, or unavailable. */
-  quality: 'ready' | 'pending' | 'unavailable';
+  quality: MobileFeedPnlQuality;
 }
 
 /** Complete mutable position fields delivered together at one version. */
@@ -312,7 +357,7 @@ export interface MobileServerFeedPositionPatch {
   /** Remaining average entry cost, frozen on close; x18 or null. */
   entry_price_x18: string | null;
   /** Basis of the displayed size and entry price. */
-  display_basis: 'current_position' | 'closing_snapshot';
+  display_basis: MobileFeedPositionDisplayBasis;
   /** Closing snapshot reference time, or null. */
   snapshot_at_ms: number | null;
   /** Absolute quantity in x18 units. */
@@ -320,13 +365,13 @@ export interface MobileServerFeedPositionPatch {
   /** Notional value in x18 units. */
   notional_x18: string;
   /** Current lifecycle state. */
-  state: 'open' | 'closed';
+  state: MobileFeedPositionState;
   /** Completeness of the available historical facts. */
-  history_quality: 'complete' | 'partial';
+  history_quality: MobileFeedHistoryQuality;
   /** Margin mode. */
-  margin_mode: 'cross' | 'isolated';
+  margin_mode: MobileFeedMarginMode;
   /** Current or closing leverage. */
-  leverage: MobileServerFeedLeverage;
+  leverage: MobileFeedLeverage;
   /** Leverage reference time; null when unknown or inapplicable. */
   leverage_at_ms: number | null;
   /** Current remaining PnL or the closed lifecycle's net result. */
@@ -340,7 +385,7 @@ export interface MobileServerFeedPositionCard extends MobileServerFeedPositionPa
   /** Market display metadata. */
   market: MobileServerFeedMarket;
   /** Position direction. */
-  direction: 'long' | 'short';
+  direction: MobileFeedTradePositionDirection;
 }
 
 /** Interaction counters; interaction writes are not currently available. */
@@ -351,7 +396,7 @@ export interface MobileServerFeedInteraction {
   comment_count: number;
   /** Number of recorded views. */
   view_count: number;
-  /** Null while likes are unavailable, including with a viewing account or signature. */
+  /** Null while likes are unavailable, including with a viewing account. */
   liked_by_me: boolean | null;
 }
 
@@ -389,7 +434,7 @@ export interface MobileServerSocialTradeCard extends MobileServerSocialFeedItemB
   /** Card discriminant. */
   kind: 'trade_card';
   /** Trading action. */
-  action: 'opened' | 'closed' | 'increased' | 'reduced';
+  action: MobileSocialTradeCardAction;
   /** Card text, empty for automatic cards. */
   text: string;
   /** Automatic cards have no mentions. */
@@ -416,11 +461,11 @@ export interface MobileServerSocialTradeRowBase extends MobileServerSocialFeedIt
   /** Associated lifecycle UUID. */
   position_id: string;
   /** Position direction. */
-  direction: 'long' | 'short';
+  direction: MobileFeedTradePositionDirection;
   /** Historical margin mode. */
-  margin_mode: 'cross' | 'isolated';
+  margin_mode: MobileFeedMarginMode;
   /** Historical action leverage, not the position's current leverage. */
-  leverage: MobileServerFeedLeverage;
+  leverage: MobileFeedLeverage;
   /** Historical leverage reference time. */
   leverage_at_ms: number | null;
   /** Number of aggregated trades. */
@@ -436,7 +481,7 @@ export type MobileServerSocialTradeRow = MobileServerSocialTradeRowBase &
   (
     | {
         /** Ordinary size-change action. */
-        action: 'increased' | 'reduced';
+        action: MobileSocialTradeSizeChangeAction;
         /** Executed notional in x18 units. */
         notional_x18: string;
       }
@@ -466,7 +511,7 @@ export interface MobileServerFeedReadSession {
   /** Session identifier. */
   session_id: string;
   /** Feed or direct item session. */
-  mode: 'feed' | 'item';
+  mode: MobileFeedReadSessionMode;
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expires_at_ms: number;
   /** Exposure metadata only; recording is not available from the social feed. */
@@ -478,13 +523,13 @@ export interface MobileServerFeedReadSession {
   };
   /** Initial update baseline, distinct from the page cursor. */
   update_cursor: string | null;
-  /** Returned only to the corresponding anonymous viewer. Do not log or cache publicly. */
-  viewer_token?: string;
+  /** Credential for this reading session. Do not log or cache publicly. */
+  viewer_token: string;
 }
 
 /** Fixed-window list response; an empty page can still have a next cursor. */
 export interface MobileServerSocialFeedPage {
-  /** Reading session and anonymous credential when applicable. */
+  /** Reading session and its browser credential. */
   read_session: MobileServerFeedReadSession;
   /** Visible items in server order; deduplicate by ID without local reordering. */
   items: MobileServerSocialFeedItem[];
@@ -507,7 +552,7 @@ export interface MobileServerTopTradersFeedPage extends MobileServerRankedFeedPa
     /** Cohort UUID. */
     snapshot_id: string;
     /** Ready or the previous successful snapshot after a refresh failure. */
-    status: 'ready' | 'stale';
+    status: MobileFeedCohortStatus;
     /** Coverage of all eligible candidate authors. */
     coverage: {
       /** Coverage domain. */
@@ -532,6 +577,8 @@ export interface MobileServerSocialFeedItemResponse {
 
 /** Item delta: omitted means unchanged; explicit null clears a prior value. */
 export interface MobileServerFeedItemPatch {
+  /** Current author identity, follow state, and qualification badge. */
+  author: MobileServerFeedAuthor;
   /** Target item UUID. */
   item_id: string;
   /** Positive integer version string. */
@@ -539,7 +586,7 @@ export interface MobileServerFeedItemPatch {
   /** Updated interaction counters. */
   interaction?: MobileServerFeedInteraction;
   /** Updated display timestamp; does not reorder the current list. */
-  display_at_ms?: number;
+  display_at_ms: number;
   /** Updated aggregate count. */
   trade_count?: number;
   /** Updated quantity in x18 units. */
@@ -557,7 +604,7 @@ export interface MobileServerFeedItemPatch {
   /** Updated signed action PnL. */
   realized_pnl_delta_x18?: string | null;
   /** Updated historical row leverage. */
-  leverage?: MobileServerFeedLeverage;
+  leverage?: MobileFeedLeverage;
   /** Updated historical leverage reference time. */
   leverage_at_ms?: number | null;
 }
@@ -571,7 +618,7 @@ export interface MobileServerFeedUpdatesResponse {
   /** Previously authorized targets that can no longer be read. */
   unavailable_targets: Array<{
     /** Target kind. */
-    type: 'item' | 'position';
+    type: MobileFeedTargetType;
     /** Target UUID. */
     id: string;
     /** Uniform reason prevents leaking inaccessible content. */

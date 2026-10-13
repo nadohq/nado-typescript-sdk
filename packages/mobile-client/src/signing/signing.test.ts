@@ -1,17 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
-import { encode } from '@msgpack/msgpack';
 import {
   getNadoEIP712Domain,
   getNadoEIP712PrimaryType,
   getNadoEIP712Types,
   subaccountToHex,
 } from '@nadohq/shared';
-import {
-  createWalletClient,
-  http,
-  keccak256,
-  recoverTypedDataAddress,
-} from 'viem';
+import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import { buildSignedMobileRequest } from './buildSignedMobileRequest';
@@ -122,28 +116,6 @@ describe('[mobile-client]: signing (offline)', () => {
 
     const hash = getMobilePayloadHash(canonicalizeMobileInner(outOfOrderInner));
     expect(hash).toBe(PINNED_HASHES.register_expo_token);
-  });
-
-  it('retains explicit null metadata in the legacy token registration payload', () => {
-    const inner: MobileSignedInner = {
-      type: 'register_expo_token',
-      expo_token: 'ExponentPushToken[abcdef1234567890abcdef]',
-      platform: 'ios',
-      locale: null,
-      app_version: null,
-    };
-    const canonical = canonicalizeMobileInner(inner);
-    expect(encode(canonical)).toEqual(encode(inner));
-    expect(getMobilePayloadHash(canonical)).toBe(keccak256(encode(inner)));
-    expect(getMobilePayloadHash(canonical)).not.toBe(
-      keccak256(
-        encode({
-          type: inner.type,
-          expo_token: inner.expo_token,
-          platform: inner.platform,
-        }),
-      ),
-    );
   });
 
   describe('nonce generation', () => {

@@ -51,7 +51,6 @@ import {
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileNotificationPreferences,
-  MobilePublicFeedReadAccess,
   MobilePublicProfile,
   MobileRankedFeedPage,
   MobileRegisteredWallet,
@@ -67,7 +66,6 @@ import {
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
 } from './types/clientTypes';
-import { InvalidMobileFeedReadAccessError } from './types/InvalidMobileFeedReadAccessError';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
 import {
@@ -258,13 +256,11 @@ export class MobileClient {
    * when paging, including through empty pages with a nextCursor. A 6312 error requires a refresh.
    * @param params - Filters, pagination, optional viewing account, and browser credential; no signing identity.
    * @returns A fixed-session page with its ranking version and new-content watermark.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, or unavailable data.
    */
   async getForYouFeed(
     params: GetMobileForYouFeedParams = {},
   ): Promise<MobileRankedFeedPage> {
-    this.validateFeedReadAccess(params, 'for_you_feed');
     const body: MobileServerPublicQueryRequest<'for_you_feed'> = {
       type: 'for_you_feed',
       market_category: params.marketCategory,
@@ -280,13 +276,11 @@ export class MobileClient {
    * Always public; neither a wallet nor one-click trading setup is required.
    * @param params - Filters, pagination, optional viewing account, and browser credential.
    * @returns A page with its qualification cohort; an unavailable cohort fails instead of returning an empty ranking.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On request/session errors or unavailable cohort data.
    */
   async getTopTradersFeed(
     params: GetMobileTopTradersFeedParams = {},
   ): Promise<MobileTopTradersFeedPage> {
-    this.validateFeedReadAccess(params, 'top_traders_feed');
     const body: MobileServerPublicQueryRequest<'top_traders_feed'> = {
       type: 'top_traders_feed',
       market_category: params.marketCategory,
@@ -301,13 +295,11 @@ export class MobileClient {
    * Fetches public content by authors followed by viewAs, without a signature. One-way following is sufficient.
    * @param params - Required viewing account on every request, filters, pagination, and browser credential.
    * @returns A chronological Friends page and reading session.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid viewing account, session errors, or feed query failure.
    */
   async getFriendsFeed(
     params: GetMobileFriendsFeedParams,
   ): Promise<MobileRankedFeedPage> {
-    this.validateFeedReadAccess(params, 'friends_feed');
     const body: MobileServerPublicQueryRequest<'friends_feed'> = {
       type: 'friends_feed',
       market_category: params.marketCategory,
@@ -320,16 +312,14 @@ export class MobileClient {
   }
 
   /**
-   * Fetches an author's public content without requiring a wallet signature.
+   * Fetches an author's content visible to viewAs, including that account's own hidden content.
    * @param params - Target identity, filters, pagination, and optional public viewing account.
    * @returns An author page without main-feed ranking or cohort fields.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid parameters, session errors, or inaccessible content.
    */
   async getProfileFeed(
     params: GetMobileProfileFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    this.validateFeedReadAccess(params, 'profile_feed');
     const body: MobileServerPublicQueryRequest<'profile_feed'> = {
       type: 'profile_feed',
       subaccount: subaccountToHex(params.subaccount),
@@ -345,13 +335,11 @@ export class MobileClient {
    * Fetches published content for one market.
    * @param params - Product ID, content/size filters, pagination, and public viewing account.
    * @returns A market page without main-feed ranking fields.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On an unknown market, session errors, or unavailable data.
    */
   async getMarketFeed(
     params: GetMobileMarketFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    this.validateFeedReadAccess(params, 'market_feed');
     const body: MobileServerPublicQueryRequest<'market_feed'> = {
       type: 'market_feed',
       product_id: params.productId,
@@ -364,16 +352,14 @@ export class MobileClient {
 
   /**
    * Fetches already published content for a position lifecycle. This is not full position history
-   * and does not recreate automatic activity suppressed while the author was private.
+   * and includes hidden content owned by viewAs under account_view. It does not recreate suppressed activity.
    * @param params - Position UUID, filters, pagination, and public viewing account.
    * @returns A fixed-session position feed page.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On inaccessible content, session errors, or unavailable data.
    */
   async getPositionFeed(
     params: GetMobilePositionFeedParams,
   ): Promise<MobileSocialFeedPage> {
-    this.validateFeedReadAccess(params, 'position_feed');
     const body: MobileServerPublicQueryRequest<'position_feed'> = {
       type: 'position_feed',
       position_id: params.positionId.toLowerCase(),
@@ -385,16 +371,15 @@ export class MobileClient {
   }
 
   /**
-   * Reads one item, creating an item session directly when sessionId is omitted.
+   * Reads one item visible to viewAs, including that account's own hidden content.
+   * Creates an item session directly when sessionId is omitted.
    * @param params - Item UUID, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
    */
   async getFeedItem(
     params: GetMobileFeedItemParams,
   ): Promise<MobileSocialFeedItemResponse> {
-    this.validateFeedReadAccess(params, 'feed_item');
     const body: MobileServerPublicQueryRequest<'feed_item'> = {
       type: 'feed_item',
       item_id: params.itemId.toLowerCase(),
@@ -408,17 +393,16 @@ export class MobileClient {
 
   /**
    * Polls authorized visible items and positions without inserting or reordering list members.
+   * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
    * Accept only the current viewportRevision's latest requestSeq. Null patches clear values;
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
    * @returns Item/position patches, revoked targets, and a new-content hint.
-   * @throws {InvalidMobileFeedReadAccessError} On missing or conflicting read credentials.
    * @throws {MobileServerFailureError} On invalid or unauthorized targets, session expiry, or unavailable data.
    */
   async getFeedUpdates(
     params: GetMobileFeedUpdatesParams,
   ): Promise<MobileFeedUpdates> {
-    this.validateFeedReadAccess(params, 'feed_updates');
     const body: MobileServerPublicQueryRequest<'feed_updates'> = {
       type: 'feed_updates',
       session_id: params.sessionId,
@@ -613,36 +597,6 @@ export class MobileClient {
   Base Fns
    */
 
-  private validateFeedReadAccess(
-    access: MobilePublicFeedReadAccess,
-    operation: MobileServerPublicQueryRequestType,
-  ): void {
-    if (access.auth) {
-      throw new InvalidMobileFeedReadAccessError(
-        operation,
-        'Social feed reads only support public queries; auth is not accepted.',
-      );
-    }
-    if (operation === 'feed_updates' && access.viewAs !== undefined) {
-      throw new InvalidMobileFeedReadAccessError(
-        operation,
-        'Feed updates inherit viewAs from the session and cannot include viewAs.',
-      );
-    }
-    if (operation === 'friends_feed' && access.viewAs === undefined) {
-      throw new InvalidMobileFeedReadAccessError(
-        operation,
-        'Friends feed requires viewAs on every request.',
-      );
-    }
-    if (operation === 'feed_updates' && !access.viewerToken) {
-      throw new InvalidMobileFeedReadAccessError(
-        operation,
-        'Public feed updates require the session viewerToken.',
-      );
-    }
-  }
-
   // Returns the request narrowed to `type` so `execute` can infer its response from the request it is given,
   // instead of being told the type a second time at the call site.
   protected async getSignedRequest<T extends MobileSignedInner['type']>(
@@ -650,10 +604,6 @@ export class MobileClient {
     params: MobileSignedRequestParams,
     innerParams: MobileSignedInnerParams<T>,
   ): Promise<MobileSignedRequest<MobileSignedInnerByType<T>>> {
-    const inner = {
-      type,
-      ...innerParams,
-    } as unknown as MobileSignedInnerByType<T>;
     // Use the linked signer if provided, otherwise use the default signer provided to the client
     const walletClient =
       this.opts.linkedSignerWalletClient ?? this.opts.walletClient;
@@ -662,6 +612,10 @@ export class MobileClient {
       throw new WalletNotProvidedError();
     }
 
+    const inner = {
+      type,
+      ...innerParams,
+    } as unknown as MobileSignedInnerByType<T>;
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 

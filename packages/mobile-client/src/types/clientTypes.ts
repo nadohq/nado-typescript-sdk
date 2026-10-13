@@ -2,12 +2,28 @@ import { SignatureParams, Subaccount } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { Hex } from 'viem';
 import {
+  MobileFeedCohortStatus,
+  MobileFeedHistoryQuality,
+  MobileFeedLeverage,
   MobileFeedMarginMode,
   MobileFeedMarketCategory,
+  MobileFeedPnlBasis,
+  MobileFeedPnlMode,
+  MobileFeedPnlQuality,
+  MobileFeedPositionDisplayBasis,
+  MobileFeedPositionState,
+  MobileFeedReadSessionMode,
+  MobileFeedSourceCategory,
+  MobileFeedTargetType,
   MobileFeedTradePosition,
+  MobileFeedTradePositionDirection,
+  MobileFeedTraderDataStatus,
   MobileNotificationCategory,
   MobileNotificationPlatform,
   MobileSocialFeedType,
+  MobileSocialTradeCardAction,
+  MobileSocialTradeSizeChangeAction,
+  MobileTraderBadgeCode,
 } from './serverModelTypes';
 
 /**
@@ -380,7 +396,7 @@ export type GetMobileRegisteredWalletParams = MobileWithExpoTokenParams;
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileTraderBadge {
   /** Qualification tier. */
-  code: 'shark' | 'whale';
+  code: MobileTraderBadgeCode;
   /** Signed integer in x18 units. */
   pnl: BigNumber;
   /** Stable compatibility identifier for the official Portfolio month result. */
@@ -396,21 +412,13 @@ export interface MobileTraderBadge {
 }
 
 /** Public author identity and the selected viewing account's follow state. */
-export interface MobileFeedAuthor {
-  /** Full identity subaccount. */
-  subaccount: Hex;
-  /** Null for an unclaimed identity. */
-  username: string | null;
-  /** Null for an unclaimed identity. */
-  displayName: string | null;
-  /** Avatar URL when available. */
-  avatarUrl: string | null;
-  /** Public view_as or signed sender's follow state; null without a viewing account. */
+export interface MobileFeedAuthor extends MobileIdentitySummary {
+  /** Selected viewAs account's follow state; null without a viewing account. */
   isFollowing: boolean | null;
   /** Null when no qualifying badge is available. */
   traderBadge: MobileTraderBadge | null;
   /** Stale means the last successful cohort is used after a refresh failure. */
-  traderDataStatus: 'ready' | 'stale' | 'unavailable';
+  traderDataStatus: MobileFeedTraderDataStatus;
 }
 
 /** Market metadata from the service's authoritative market source. */
@@ -424,15 +432,7 @@ export interface MobileFeedMarket {
   /** Social feed category when known. */
   category: MobileFeedMarketCategory | null;
   /** Original market categories. */
-  sourceCategories: Array<'crypto' | 'stocks' | 'forex' | 'commodities'>;
-}
-
-/** Leverage display value; unknown isolated leverage differs from inapplicable cross leverage. */
-export interface MobileFeedLeverage {
-  /** Rounded whole-number string, or null. Never an estimated replacement. */
-  value: string | null;
-  /** Cross margin uses not_applicable. */
-  basis: 'effective' | 'unknown' | 'not_applicable';
+  sourceCategories: MobileFeedSourceCategory[];
 }
 
 /** Position PnL with explicit accounting basis and data quality. */
@@ -440,13 +440,13 @@ export interface MobileFeedPnl {
   /** Signed x18 integer; null means unknown, not zero. */
   amount: BigNumber | null;
   /** Open positions exclude fees/funding; closed results include them. */
-  basis: 'unrealized_excl_fees_funding' | 'realized_incl_fees_funding';
+  basis: MobileFeedPnlBasis;
   /** Closed positions use frozen results. */
-  mode: 'live' | 'frozen';
+  mode: MobileFeedPnlMode;
   /** Source timestamp in Unix milliseconds. */
   asOfMs: number;
   /** Whether accounting is complete, pending, or unavailable. */
-  quality: 'ready' | 'pending' | 'unavailable';
+  quality: MobileFeedPnlQuality;
 }
 
 /** Complete mutable position fields delivered together at one version. */
@@ -460,7 +460,7 @@ export interface MobileFeedPositionPatch {
   /** Remaining average entry price in decimal units, frozen on close; null if unknown. */
   entryPrice: BigNumber | null;
   /** Basis of the displayed size and entry price. */
-  displayBasis: 'current_position' | 'closing_snapshot';
+  displayBasis: MobileFeedPositionDisplayBasis;
   /** Closing snapshot reference time, or null. */
   snapshotAtMs: number | null;
   /** Absolute quantity in x18 units. */
@@ -468,11 +468,11 @@ export interface MobileFeedPositionPatch {
   /** Notional value in x18 units. */
   notional: BigNumber;
   /** Current lifecycle state. */
-  state: 'open' | 'closed';
+  state: MobileFeedPositionState;
   /** Completeness of the available historical facts. */
-  historyQuality: 'complete' | 'partial';
+  historyQuality: MobileFeedHistoryQuality;
   /** Margin mode. */
-  marginMode: 'cross' | 'isolated';
+  marginMode: MobileFeedMarginMode;
   /** Current or closing leverage. */
   leverage: MobileFeedLeverage;
   /** Leverage reference time; null when unknown or inapplicable. */
@@ -488,7 +488,7 @@ export interface MobileFeedPositionCard extends MobileFeedPositionPatch {
   /** Market display metadata. */
   market: MobileFeedMarket;
   /** Position direction. */
-  direction: 'long' | 'short';
+  direction: MobileFeedTradePositionDirection;
 }
 
 /** Interaction counters; interaction writes are not currently available. */
@@ -537,7 +537,7 @@ export interface MobileSocialTradeCard extends MobileSocialFeedItemBase {
   /** Card discriminant. */
   kind: 'trade_card';
   /** Trading action. */
-  action: 'opened' | 'closed' | 'increased' | 'reduced';
+  action: MobileSocialTradeCardAction;
   /** Card text, empty for automatic cards. */
   text: string;
   /** Automatic cards have no mentions. */
@@ -564,9 +564,9 @@ export interface MobileSocialTradeRowBase extends MobileSocialFeedItemBase {
   /** Associated lifecycle UUID. */
   positionId: string;
   /** Position direction. */
-  direction: 'long' | 'short';
+  direction: MobileFeedTradePositionDirection;
   /** Historical margin mode. */
-  marginMode: 'cross' | 'isolated';
+  marginMode: MobileFeedMarginMode;
   /** Historical action leverage, not the position's current leverage. */
   leverage: MobileFeedLeverage;
   /** Historical leverage reference time. */
@@ -584,7 +584,7 @@ export type MobileSocialTradeRow = MobileSocialTradeRowBase &
   (
     | {
         /** Ordinary size-change action. */
-        action: 'increased' | 'reduced';
+        action: MobileSocialTradeSizeChangeAction;
         /** Executed notional in x18 units. */
         notional: BigNumber;
       }
@@ -612,7 +612,7 @@ export interface MobileFeedReadSession {
   /** Session identifier. */
   sessionId: string;
   /** Feed or direct item session. */
-  mode: 'feed' | 'item';
+  mode: MobileFeedReadSessionMode;
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expiresAtMs: number;
   /** Exposure metadata only; recording is not available from the social feed. */
@@ -624,13 +624,13 @@ export interface MobileFeedReadSession {
   };
   /** Initial update baseline, distinct from the page cursor. */
   updateCursor: string | null;
-  /** Returned only to the corresponding anonymous viewer. Do not log or cache publicly. */
-  viewerToken?: string;
+  /** Credential for this reading session. Do not log or cache publicly. */
+  viewerToken: string;
 }
 
 /** Fixed-window list response; an empty page can still have a next cursor. */
 export interface MobileSocialFeedPage {
-  /** Reading session and anonymous credential when applicable. */
+  /** Reading session and its browser credential. */
   readSession: MobileFeedReadSession;
   /** Visible items in server order; deduplicate by ID without local reordering. */
   items: MobileSocialFeedItem[];
@@ -653,7 +653,7 @@ export interface MobileTopTradersFeedPage extends MobileRankedFeedPage {
     /** Cohort UUID. */
     snapshotId: string;
     /** Ready or the previous successful snapshot after a refresh failure. */
-    status: 'ready' | 'stale';
+    status: MobileFeedCohortStatus;
     /** Coverage of all eligible candidate authors. */
     coverage: {
       /** Coverage domain. */
@@ -678,6 +678,8 @@ export interface MobileSocialFeedItemResponse {
 
 /** Item delta: omitted means unchanged; explicit null clears a prior value. */
 export interface MobileFeedItemPatch {
+  /** Current author identity, follow state, and qualification badge. */
+  author: MobileFeedAuthor;
   /** Target item UUID. */
   itemId: string;
   /** Positive integer version string. */
@@ -685,7 +687,7 @@ export interface MobileFeedItemPatch {
   /** Updated interaction counters. */
   interaction?: MobileFeedInteraction;
   /** Updated display timestamp; does not reorder the current list. */
-  displayAtMs?: number;
+  displayAtMs: number;
   /** Updated aggregate count. */
   tradeCount?: number;
   /** Updated quantity in x18 units. */
@@ -717,7 +719,7 @@ export interface MobileFeedUpdates {
   /** Previously authorized targets that can no longer be read. */
   unavailableTargets: Array<{
     /** Target kind. */
-    type: 'item' | 'position';
+    type: MobileFeedTargetType;
     /** Target UUID. */
     id: string;
     /** Uniform reason prevents leaking inaccessible content. */
@@ -737,9 +739,10 @@ export interface MobileFeedUpdates {
 
 /** Public browsing requires no wallet, identity registration, or one-click trading setup. */
 export interface MobilePublicFeedReadAccess {
-  /** Public routes never sign, even when the client has a wallet or linked signer. */
-  auth?: never;
-  /** Non-isolated identity subaccount used for public relationships, not private access. */
+  /**
+   * Non-isolated viewing account used for relationship state. Profile, position, and item reads also
+   * include that account's own hidden content under the account_view policy; this does not prove ownership.
+   */
   viewAs?: Subaccount;
   /** Reuse the original browser credential for pagination and existing sessions. */
   viewerToken?: string;
@@ -759,30 +762,30 @@ export interface MobileSocialFeedListParams {
   cursor?: string;
 }
 
-/** Public-only request for For You and Top Traders. */
-export type GetMobileForYouFeedParams = MobileSocialFeedListParams &
-  MobilePublicFeedReadAccess & {
-    /** Omit to include all market categories. */
-    marketCategory?: MobileFeedMarketCategory;
-  };
+/** Common filters and viewing context for main feeds and author feeds. */
+export interface MobileCategorizedFeedParams
+  extends MobileSocialFeedListParams, MobilePublicFeedReadAccess {
+  /** Omit to include all market categories. */
+  marketCategory?: MobileFeedMarketCategory;
+}
+
+/** For You request with optional market category and viewing account. */
+export type GetMobileForYouFeedParams = MobileCategorizedFeedParams;
 
 /** Top Traders request; eligibility uses account PnL and results remain chronological. */
-export type GetMobileTopTradersFeedParams = GetMobileForYouFeedParams;
+export type GetMobileTopTradersFeedParams = MobileCategorizedFeedParams;
 
 /** Public content from the selected account's follow graph; no signature is required. */
-export type GetMobileFriendsFeedParams = GetMobileForYouFeedParams & {
+export type GetMobileFriendsFeedParams = MobileCategorizedFeedParams & {
   /** Required on every request, including pagination; no existing identity row is needed. */
   viewAs: Subaccount;
 };
 
 /** Author list request; the target is distinct from the viewing account. */
-export type GetMobileProfileFeedParams = MobileSocialFeedListParams &
-  MobilePublicFeedReadAccess & {
-    /** Target author, independent of the public viewAs account. */
-    subaccount: Subaccount;
-    /** Omit to include all market categories. */
-    marketCategory?: MobileFeedMarketCategory;
-  };
+export type GetMobileProfileFeedParams = MobileCategorizedFeedParams & {
+  /** Target author, independent of the viewAs account. */
+  subaccount: Subaccount;
+};
 
 /** Market list request; marketCategory is not accepted. */
 export type GetMobileMarketFeedParams = MobileSocialFeedListParams &
@@ -802,7 +805,7 @@ export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
 export type GetMobileFeedItemParams = MobilePublicFeedReadAccess & {
   /** Target item UUID. */
   itemId: string;
-  /** Preview size, 0–3; default 3. Comment content is not currently available. */
+  /** Preview size, 0–3. Comment content is not currently available. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
   sessionId?: string;
@@ -819,13 +822,11 @@ export type GetMobileFeedUpdatesParams = {
   /** Up to 20 distinct, authorized position UUIDs. */
   visiblePositionIds: string[];
   /** Baseline from the last accepted update; omit for a changed viewport. */
-  updateCursor?: string;
+  updateCursor?: string | null;
   /** Increment whenever the visible set changes. */
   viewportRevision: number;
-  /** Increment on every request; accept only the latest response for the current viewport. */
+  /** Increment on every request within the session, including after viewport changes; never reset for a new viewport. */
   requestSeq: number;
-  /** Public routes do not accept a signing identity. */
-  auth?: never;
   /** Credential belonging to the original public session. */
   viewerToken: string;
 };

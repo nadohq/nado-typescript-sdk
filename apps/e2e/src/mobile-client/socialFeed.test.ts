@@ -1,6 +1,7 @@
 import {
   MOBILE_ERROR_CODES,
   MobileClient,
+  MobileFeedAuthor,
   MobileSocialFeedPage,
 } from '@nadohq/mobile-client';
 import { Subaccount, subaccountFromHex } from '@nadohq/shared';
@@ -9,9 +10,17 @@ import { before, describe, test } from 'node:test';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
+import {
+  assertBigNumberFinite,
+  assertBoolean,
+  assertEnumMember,
+  assertNonEmptyString,
+  assertNonNegativeInteger,
+} from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
+import { assertMobileIdentitySummaryShape } from '../utils/shapeAssertions';
 import {
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
@@ -63,6 +72,7 @@ void describe(
       const updates = await mobile.getFeedUpdates({
         sessionId,
         viewerToken,
+        updateCursor: page.readSession.updateCursor,
         visibleItemIds: page.items.map((item) => item.id),
         visiblePositionIds: [],
         viewportRevision: 0,
@@ -75,6 +85,21 @@ void describe(
       assert.ok(Array.isArray(updates.itemPatches));
       assert.ok(Array.isArray(updates.positionPatches));
       assert.ok(Array.isArray(updates.unavailableTargets));
+      for (const patch of updates.itemPatches) {
+        assertFeedAuthor(patch.author);
+        assertNonNegativeInteger(patch.displayAtMs, 'patch.displayAtMs');
+      }
+      const changedViewport = await mobile.getFeedUpdates({
+        sessionId,
+        viewerToken,
+        updateCursor: null,
+        visibleItemIds: [],
+        visiblePositionIds: [],
+        viewportRevision: 1,
+        requestSeq: 2,
+      });
+      assert.equal(changedViewport.viewportRevision, 1);
+      assert.equal(changedViewport.requestSeq, 2);
     });
 
     void test('reads Top Traders and its shared qualification cohort', async () => {
@@ -93,11 +118,8 @@ void describe(
     });
 
     void test('reads Friends and updates without a wallet, including an unregistered account', async () => {
-      const publicMobile = new MobileClient({
-        url: tc.endpoints.mobile,
-      });
       const account = privateKeyToAccount(generatePrivateKey());
-      const empty = await publicMobile.getFriendsFeed({
+      const empty = await mobile.getFriendsFeed({
         viewAs: {
           subaccountOwner: account.address,
           subaccountName: TEST_SUBACCOUNT_NAME,
@@ -106,7 +128,7 @@ void describe(
       });
       assertPage(empty);
       assert.equal(empty.items.length, 0);
-      const friends = await publicMobile.getFriendsFeed({ viewAs, limit: 2 });
+      const friends = await mobile.getFriendsFeed({ viewAs, limit: 2 });
       assertPage(friends);
       assert.equal(friends.rankingVersion, 'chronological-v1');
       const { viewerToken, sessionId } = friends.readSession;
@@ -114,7 +136,7 @@ void describe(
       for (const item of friends.items)
         assert.equal(item.author.isFollowing, true);
       if (friends.nextCursor !== null) {
-        const next = await publicMobile.getFriendsFeed({
+        const next = await mobile.getFriendsFeed({
           viewAs,
           limit: 2,
           sessionId,
@@ -124,7 +146,7 @@ void describe(
         assertPage(next);
         assert.equal(next.readSession.sessionId, sessionId);
       }
-      const updates = await publicMobile.getFeedUpdates({
+      const updates = await mobile.getFeedUpdates({
         viewerToken,
         sessionId,
         visibleItemIds: [],
@@ -229,23 +251,50 @@ function assertPage(page: MobileSocialFeedPage) {
   assert.equal(typeof page.watermark, 'string');
   assert.equal(typeof page.readSession.sessionId, 'string');
   assert.equal(page.readSession.mode, 'feed');
-  assert.ok(page.readSession.viewerToken);
+  assertNonEmptyString(
+    page.readSession.viewerToken,
+    'page.readSession.viewerToken',
+  );
   assert.ok(Number.isSafeInteger(page.readSession.expiresAtMs));
   assert.ok(page.nextCursor === null || typeof page.nextCursor === 'string');
   for (const item of page.items) {
-    assert.ok(['trade_card', 'trade_row'].includes(item.kind));
+    assertEnumMember(item.kind, ['trade_card', 'trade_row'], 'item.kind');
+    assertFeedAuthor(item.author);
     assert.ok(BigInt(item.version) > 0n);
-    assert.equal(item.drawing, null);
-    if (item.kind === 'trade_card')
-      assert.equal(item.interaction.likedByMe, null);
-    assert.equal(item.capabilities.canLike, false);
-    assert.equal(item.capabilities.canComment, false);
-    assert.equal(item.capabilities.canRecordView, false);
+    if (item.kind === 'trade_card' && item.interaction.likedByMe !== null) {
+      assertBoolean(item.interaction.likedByMe, 'item.interaction.likedByMe');
+    }
+    assertBoolean(item.capabilities.canLike, 'item.capabilities.canLike');
+    assertBoolean(item.capabilities.canComment, 'item.capabilities.canComment');
+    assertBoolean(
+      item.capabilities.canRecordView,
+      'item.capabilities.canRecordView',
+    );
     const quantity =
       item.kind === 'trade_card' ? item.position.quantity : item.quantity;
-    assert.ok(quantity.isFinite() && quantity.isInteger());
+    assertBigNumberFinite(quantity, 'item.quantity');
+    assert.ok(quantity.isInteger());
     const price =
       item.kind === 'trade_card' ? item.position.entryPrice : item.averagePrice;
-    assert.ok(price === null || price.isFinite());
+    if (price !== null) assertBigNumberFinite(price, 'item.price');
+  }
+}
+
+function assertFeedAuthor(author: MobileFeedAuthor) {
+  assertMobileIdentitySummaryShape(author, 'author');
+  if (author.isFollowing !== null)
+    assertBoolean(author.isFollowing, 'author.isFollowing');
+  assertEnumMember(
+    author.traderDataStatus,
+    ['ready', 'stale', 'unavailable'],
+    'author.traderDataStatus',
+  );
+  if (author.traderBadge !== null) {
+    assertEnumMember(
+      author.traderBadge.code,
+      ['shark', 'whale'],
+      'author.traderBadge.code',
+    );
+    assertBigNumberFinite(author.traderBadge.pnl, 'author.traderBadge.pnl');
   }
 }

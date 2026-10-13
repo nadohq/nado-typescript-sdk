@@ -4,7 +4,6 @@ import {
   MobileFeedAuthor,
   MobileFeedInteraction,
   MobileFeedItemPatch,
-  MobileFeedLeverage,
   MobileFeedMarket,
   MobileFeedPage,
   MobileFeedPnl,
@@ -40,7 +39,6 @@ import {
   MobileServerFeedAuthor,
   MobileServerFeedInteraction,
   MobileServerFeedItemPatch,
-  MobileServerFeedLeverage,
   MobileServerFeedMarket,
   MobileServerFeedPnl,
   MobileServerFeedPositionCard,
@@ -309,10 +307,7 @@ export function mapMobileFeedAuthor(
   server: MobileServerFeedAuthor,
 ): MobileFeedAuthor {
   return {
-    subaccount: server.subaccount,
-    username: server.username,
-    displayName: server.display_name,
-    avatarUrl: server.avatar_url,
+    ...mapMobileIdentitySummary(server),
     isFollowing: server.is_following,
     traderBadge:
       server.trader_badge === null
@@ -336,20 +331,6 @@ export function mapMobileFeedMarket(
     logoUrl: server.logo_url,
     category: server.category,
     sourceCategories: server.source_categories,
-  };
-}
-
-/**
- * Maps leverage without replacing unknown values.
- * @param server - The service response.
- * @returns The mapped feed leverage.
- */
-export function mapMobileFeedLeverage(
-  server: MobileServerFeedLeverage,
-): MobileFeedLeverage {
-  return {
-    value: server.value,
-    basis: server.basis,
   };
 }
 
@@ -388,7 +369,7 @@ export function mapMobileFeedPositionPatch(
     state: server.state,
     historyQuality: server.history_quality,
     marginMode: server.margin_mode,
-    leverage: mapMobileFeedLeverage(server.leverage),
+    leverage: server.leverage,
     leverageAtMs: server.leverage_at_ms,
     pnl: mapMobileFeedPnl(server.pnl),
   };
@@ -489,7 +470,7 @@ export function mapMobileSocialTradeRowBase(
     positionId: server.position_id,
     direction: server.direction,
     marginMode: server.margin_mode,
-    leverage: mapMobileFeedLeverage(server.leverage),
+    leverage: server.leverage,
     leverageAtMs: server.leverage_at_ms,
     tradeCount: server.trade_count,
     quantity: toBigNumber(server.quantity_x18),
@@ -562,9 +543,7 @@ export function mapMobileFeedReadSession(
       minDurationMs: server.view_tracking.min_duration_ms,
     },
     updateCursor: server.update_cursor,
-    ...(server.viewer_token === undefined
-      ? {}
-      : { viewerToken: server.viewer_token }),
+    viewerToken: server.viewer_token,
   };
 }
 
@@ -646,12 +625,11 @@ export function mapMobileFeedItemPatch(
   return {
     itemId: server.item_id,
     version: server.version,
+    author: mapMobileFeedAuthor(server.author),
+    displayAtMs: server.display_at_ms,
     ...(server.interaction === undefined
       ? {}
       : { interaction: mapMobileFeedInteraction(server.interaction) }),
-    ...(server.display_at_ms === undefined
-      ? {}
-      : { displayAtMs: server.display_at_ms }),
     ...(server.trade_count === undefined
       ? {}
       : { tradeCount: server.trade_count }),
@@ -698,9 +676,7 @@ export function mapMobileFeedItemPatch(
               ? null
               : toBigNumber(server.realized_pnl_delta_x18),
         }),
-    ...(server.leverage === undefined
-      ? {}
-      : { leverage: mapMobileFeedLeverage(server.leverage) }),
+    ...(server.leverage === undefined ? {} : { leverage: server.leverage }),
     ...(server.leverage_at_ms === undefined
       ? {}
       : { leverageAtMs: server.leverage_at_ms }),
