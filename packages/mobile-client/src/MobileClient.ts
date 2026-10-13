@@ -362,7 +362,7 @@ export class MobileClient {
   ): Promise<MobileSocialFeedPage> {
     const body: MobileServerPublicQueryRequest<'position_feed'> = {
       type: 'position_feed',
-      position_id: params.positionId.toLowerCase(),
+      position_id: params.positionId,
       ...mapMobileSocialFeedListParamsToServer(params),
       ...mapMobilePublicFeedReadParamsToServer(params),
     };
@@ -382,7 +382,7 @@ export class MobileClient {
   ): Promise<MobileSocialFeedItemResponse> {
     const body: MobileServerPublicQueryRequest<'feed_item'> = {
       type: 'feed_item',
-      item_id: params.itemId.toLowerCase(),
+      item_id: params.itemId,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
       ...mapMobilePublicFeedReadParamsToServer(params),
@@ -406,10 +406,8 @@ export class MobileClient {
     const body: MobileServerPublicQueryRequest<'feed_updates'> = {
       type: 'feed_updates',
       session_id: params.sessionId,
-      visible_item_ids: params.visibleItemIds.map((id) => id.toLowerCase()),
-      visible_position_ids: params.visiblePositionIds.map((id) =>
-        id.toLowerCase(),
-      ),
+      visible_item_ids: params.visibleItemIds,
+      visible_position_ids: params.visiblePositionIds,
       update_cursor: params.updateCursor,
       viewport_revision: params.viewportRevision,
       request_seq: params.requestSeq,

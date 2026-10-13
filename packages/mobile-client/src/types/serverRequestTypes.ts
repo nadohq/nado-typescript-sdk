@@ -1,9 +1,9 @@
 import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
-  MobileServerCategorizedFeedParams,
+  MobileFeedMarketCategory,
   MobileServerNotificationPreferences,
-  MobileServerSocialFeedListParams,
+  MobileSocialFeedType,
 } from './serverModelTypes';
 
 /**
@@ -38,6 +38,26 @@ export interface MobileServerFollowListRequest {
   cursor?: string;
   /** Page size, 1–50; the backend defaults to 25 when omitted. */
   limit?: number;
+}
+
+/** Common filters and pagination for social feed lists. */
+export interface MobileServerSocialFeedListParams {
+  /** OR-ed content filters; combined with other filters using AND. */
+  feed_types?: MobileSocialFeedType[];
+  /** Strict lower bound in whole dollars, 1 through Number.MAX_SAFE_INTEGER. */
+  minimum_notional?: number;
+  /** Page size, 1–50; defaults to 20. */
+  limit?: number;
+  /** Fixed 15-minute reading session; required with cursor. */
+  session_id?: string;
+  /** Opaque pagination cursor, distinct from update_cursor and watermark. */
+  cursor?: string;
+}
+
+/** List fields for main feeds and author feeds. */
+export interface MobileServerCategorizedFeedParams extends MobileServerSocialFeedListParams {
+  /** Omit to read all market categories. */
+  market_category?: MobileFeedMarketCategory;
 }
 
 /** Unsigned browsing context; the viewing account is not proof of wallet ownership. */

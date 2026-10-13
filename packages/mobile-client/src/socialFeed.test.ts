@@ -220,8 +220,8 @@ describe('[mobile-client]: social feed transport', () => {
       });
       expect(requests[3].body.subaccount).toBe(subaccountToHex(subaccount));
       expect(requests[3].body.subaccount).not.toBe(requests[3].body.view_as);
-      expect(requests[5].body.position_id).toBe(positionId);
-      expect(requests[6].body.item_id).toBe(itemId);
+      expect(requests[5].body.position_id).toBe(positionId.toUpperCase());
+      expect(requests[6].body.item_id).toBe(itemId.toUpperCase());
       expect(requests[6].body.comment_preview_limit).toBe(0);
       expect(requests[7].body).toEqual({
         type: 'feed_updates',
@@ -235,7 +235,7 @@ describe('[mobile-client]: social feed transport', () => {
     },
   );
 
-  it('normalizes update UUIDs while preserving opaque session credentials and cursors', async () => {
+  it('preserves update IDs, session credentials, and cursors unchanged', async () => {
     const { client, requests } = mockClient();
     client.opts.walletClient = undefined;
     await client.getFeedUpdates({
@@ -252,8 +252,8 @@ describe('[mobile-client]: social feed transport', () => {
       session_id: 'OpaqueSession',
       viewer_token: 'OpaqueViewer',
       update_cursor: 'OpaqueCursor',
-      visible_item_ids: [itemId],
-      visible_position_ids: [positionId],
+      visible_item_ids: [itemId.toUpperCase()],
+      visible_position_ids: [positionId.toUpperCase()],
       viewport_revision: 0,
       request_seq: 0,
     });

@@ -262,26 +262,6 @@ export type MobileFeedReadSessionMode = 'feed' | 'item';
 /** Kind of feed update target. */
 export type MobileFeedTargetType = 'item' | 'position';
 
-/** Common filters and pagination for social feed lists. */
-export interface MobileServerSocialFeedListParams {
-  /** OR-ed content filters; combined with other filters using AND. */
-  feed_types?: MobileSocialFeedType[];
-  /** Strict lower bound in whole dollars, 1 through Number.MAX_SAFE_INTEGER. */
-  minimum_notional?: number;
-  /** Page size, 1–50; defaults to 20. */
-  limit?: number;
-  /** Fixed 15-minute reading session; required with cursor. */
-  session_id?: string;
-  /** Opaque pagination cursor, distinct from update_cursor and watermark. */
-  cursor?: string;
-}
-
-/** List fields for main feeds and author feeds. */
-export interface MobileServerCategorizedFeedParams extends MobileServerSocialFeedListParams {
-  /** Omit to read all market categories. */
-  market_category?: MobileFeedMarketCategory;
-}
-
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileServerTraderBadge {
   /** Qualification tier. */
@@ -400,6 +380,56 @@ export interface MobileServerFeedInteraction {
   liked_by_me: boolean | null;
 }
 
+/** Capability flags for a social feed item. */
+export interface MobileServerFeedCapabilities {
+  /** Whether liking is available. */
+  can_like: boolean;
+  /** Whether commenting is available. */
+  can_comment: boolean;
+  /** Whether exposure recording is available. */
+  can_record_view: boolean;
+}
+
+/** Comment preview metadata for a social trade card. */
+export interface MobileServerFeedCommentPreview {
+  /** Currently empty. */
+  items: never[];
+  /** Comment count. */
+  total_count: number;
+  /** Comment cursor, if available. */
+  next_cursor: string | null;
+}
+
+/** Exposure requirements associated with a reading session. */
+export interface MobileServerFeedViewTracking {
+  /** Required visible fraction. */
+  min_visible_ratio: number;
+  /** Required visible duration in milliseconds. */
+  min_duration_ms: number;
+}
+
+/** Coverage of the candidate authors in a qualification snapshot. */
+export interface MobileServerFeedCohortCoverage {
+  /** Coverage domain. */
+  scope: 'eligible_content_candidates';
+  /** Candidate author count. */
+  total_authors: number;
+  /** Authors queried for this snapshot. */
+  queried_authors: number;
+  /** A successful response requires complete coverage. */
+  complete: true;
+}
+
+/** Shared qualification snapshot used for Top Traders eligibility and badges. */
+export interface MobileServerFeedCohort {
+  /** Cohort UUID. */
+  snapshot_id: string;
+  /** Ready or the previous successful snapshot after a refresh failure. */
+  status: MobileFeedCohortStatus;
+  /** Coverage of all eligible candidate authors. */
+  coverage: MobileServerFeedCohortCoverage;
+}
+
 /** Metadata shared by the automatic trade cards and rows available from the social feed. */
 export interface MobileServerSocialFeedItemBase {
   /** Item UUID. */
@@ -419,14 +449,7 @@ export interface MobileServerSocialFeedItemBase {
   /** Market metadata. */
   market: MobileServerFeedMarket;
   /** Server capability flags; currently all false. */
-  capabilities: {
-    /** Whether liking is available. */
-    can_like: boolean;
-    /** Whether commenting is available. */
-    can_comment: boolean;
-    /** Whether exposure recording is available. */
-    can_record_view: boolean;
-  };
+  capabilities: MobileServerFeedCapabilities;
 }
 
 /** Automatic trade card returned by the social feed. */
@@ -444,14 +467,7 @@ export interface MobileServerSocialTradeCard extends MobileServerSocialFeedItemB
   /** Interaction counters. */
   interaction: MobileServerFeedInteraction;
   /** Comment content is not currently available. */
-  comment_preview: {
-    /** Currently empty. */
-    items: never[];
-    /** Comment count. */
-    total_count: number;
-    /** Comment cursor, if available. */
-    next_cursor: string | null;
-  };
+  comment_preview: MobileServerFeedCommentPreview;
 }
 
 /** Fields shared by size-change and liquidation trade rows. */
@@ -515,12 +531,7 @@ export interface MobileServerFeedReadSession {
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expires_at_ms: number;
   /** Exposure metadata only; recording is not available from the social feed. */
-  view_tracking: {
-    /** Required visible fraction. */
-    min_visible_ratio: number;
-    /** Required visible duration in milliseconds. */
-    min_duration_ms: number;
-  };
+  view_tracking: MobileServerFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   update_cursor: string | null;
   /** Credential for this reading session. Do not log or cache publicly. */
@@ -548,23 +559,7 @@ export interface MobileServerRankedFeedPage extends MobileServerSocialFeedPage {
 /** Top Traders page, with one shared qualification snapshot for eligibility and badges. */
 export interface MobileServerTopTradersFeedPage extends MobileServerRankedFeedPage {
   /** Author eligibility snapshot. */
-  cohort: {
-    /** Cohort UUID. */
-    snapshot_id: string;
-    /** Ready or the previous successful snapshot after a refresh failure. */
-    status: MobileFeedCohortStatus;
-    /** Coverage of all eligible candidate authors. */
-    coverage: {
-      /** Coverage domain. */
-      scope: 'eligible_content_candidates';
-      /** Candidate author count. */
-      total_authors: number;
-      /** Authors queried for this snapshot. */
-      queried_authors: number;
-      /** A successful response requires complete coverage. */
-      complete: true;
-    };
-  };
+  cohort: MobileServerFeedCohort;
 }
 
 /** Item details with either a new item session or the reused authorized session. */
@@ -609,6 +604,16 @@ export interface MobileServerFeedItemPatch {
   leverage_at_ms?: number | null;
 }
 
+/** A previously authorized target that can no longer be read; shared by wire and client responses. */
+export interface MobileFeedUnavailableTarget {
+  /** Target kind. */
+  type: MobileFeedTargetType;
+  /** Target UUID. */
+  id: string;
+  /** Uniform reason prevents leaking inaccessible content. */
+  reason: 'unavailable';
+}
+
 /** Batched viewport updates; apply only the current viewport's latest request sequence. */
 export interface MobileServerFeedUpdatesResponse {
   /** Item deltas, independent of current-position patches. */
@@ -616,14 +621,7 @@ export interface MobileServerFeedUpdatesResponse {
   /** Complete mutable position facts at one version. */
   position_patches: MobileServerFeedPositionPatch[];
   /** Previously authorized targets that can no longer be read. */
-  unavailable_targets: Array<{
-    /** Target kind. */
-    type: MobileFeedTargetType;
-    /** Target UUID. */
-    id: string;
-    /** Uniform reason prevents leaking inaccessible content. */
-    reason: 'unavailable';
-  }>;
+  unavailable_targets: MobileFeedUnavailableTarget[];
   /** New-content hint; always zero for directly created item sessions. */
   new_items_count: number;
   /** Baseline to use for the next update call with the same viewport. */

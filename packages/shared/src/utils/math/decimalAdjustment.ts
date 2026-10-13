@@ -19,17 +19,17 @@ type AdjustDecimalsResult<T extends BigNumberish | null | undefined> =
 /**
  * Adds the specified # of decimals to the number. For example, value = 1, decimals = 2, returns 100.
  *
- * @param value can be undefined for better developer experience. If undefined, returns undefined.
+ * @param value can be null or undefined; either is returned unchanged.
  * @param decimals number of decimal places to add, defaults to 18, which is the standard within Nado
+ * @returns The adjusted number or BigNumber, preserving null and undefined inputs.
  */
-
-export function addDecimals<T extends BigNumberish | undefined>(
+export function addDecimals<T extends BigNumberish | null | undefined>(
   value: T,
   decimals: number = NADO_PRODUCT_DECIMALS,
 ): AdjustDecimalsResult<T> {
   const getResult = () => {
     if (value == null) {
-      return undefined;
+      return value;
     }
 
     const adjustedValue = toBigNumber(value).multipliedBy(

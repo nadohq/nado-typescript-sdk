@@ -14,10 +14,10 @@ import {
   MobileFeedPositionState,
   MobileFeedReadSessionMode,
   MobileFeedSourceCategory,
-  MobileFeedTargetType,
   MobileFeedTradePosition,
   MobileFeedTradePositionDirection,
   MobileFeedTraderDataStatus,
+  MobileFeedUnavailableTarget,
   MobileNotificationCategory,
   MobileNotificationPlatform,
   MobileSocialFeedType,
@@ -503,6 +503,56 @@ export interface MobileFeedInteraction {
   likedByMe: boolean | null;
 }
 
+/** Capability flags for a social feed item. */
+export interface MobileFeedCapabilities {
+  /** Whether liking is available. */
+  canLike: boolean;
+  /** Whether commenting is available. */
+  canComment: boolean;
+  /** Whether exposure recording is available. */
+  canRecordView: boolean;
+}
+
+/** Comment preview metadata for a social trade card. */
+export interface MobileFeedCommentPreview {
+  /** Currently empty. */
+  items: never[];
+  /** Comment count. */
+  totalCount: number;
+  /** Comment cursor, if available. */
+  nextCursor: string | null;
+}
+
+/** Exposure requirements associated with a reading session. */
+export interface MobileFeedViewTracking {
+  /** Required visible fraction. */
+  minVisibleRatio: number;
+  /** Required visible duration in milliseconds. */
+  minDurationMs: number;
+}
+
+/** Coverage of the candidate authors in a qualification snapshot. */
+export interface MobileFeedCohortCoverage {
+  /** Coverage domain. */
+  scope: 'eligible_content_candidates';
+  /** Candidate author count. */
+  totalAuthors: number;
+  /** Authors queried for this snapshot. */
+  queriedAuthors: number;
+  /** A successful response requires complete coverage. */
+  complete: true;
+}
+
+/** Shared qualification snapshot used for Top Traders eligibility and badges. */
+export interface MobileFeedCohort {
+  /** Cohort UUID. */
+  snapshotId: string;
+  /** Ready or the previous successful snapshot after a refresh failure. */
+  status: MobileFeedCohortStatus;
+  /** Coverage of all eligible candidate authors. */
+  coverage: MobileFeedCohortCoverage;
+}
+
 /** Metadata shared by the automatic trade cards and rows available from the social feed. */
 export interface MobileSocialFeedItemBase {
   /** Item UUID. */
@@ -522,14 +572,7 @@ export interface MobileSocialFeedItemBase {
   /** Market metadata. */
   market: MobileFeedMarket;
   /** Server capability flags; currently all false. */
-  capabilities: {
-    /** Whether liking is available. */
-    canLike: boolean;
-    /** Whether commenting is available. */
-    canComment: boolean;
-    /** Whether exposure recording is available. */
-    canRecordView: boolean;
-  };
+  capabilities: MobileFeedCapabilities;
 }
 
 /** Automatic trade card returned by the social feed. */
@@ -547,14 +590,7 @@ export interface MobileSocialTradeCard extends MobileSocialFeedItemBase {
   /** Interaction counters. */
   interaction: MobileFeedInteraction;
   /** Comment content is not currently available. */
-  commentPreview: {
-    /** Currently empty. */
-    items: never[];
-    /** Comment count. */
-    totalCount: number;
-    /** Comment cursor, if available. */
-    nextCursor: string | null;
-  };
+  commentPreview: MobileFeedCommentPreview;
 }
 
 /** Fields shared by size-change and liquidation trade rows. */
@@ -616,12 +652,7 @@ export interface MobileFeedReadSession {
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expiresAtMs: number;
   /** Exposure metadata only; recording is not available from the social feed. */
-  viewTracking: {
-    /** Required visible fraction. */
-    minVisibleRatio: number;
-    /** Required visible duration in milliseconds. */
-    minDurationMs: number;
-  };
+  viewTracking: MobileFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   updateCursor: string | null;
   /** Credential for this reading session. Do not log or cache publicly. */
@@ -649,23 +680,7 @@ export interface MobileRankedFeedPage extends MobileSocialFeedPage {
 /** Top Traders page, with one shared qualification snapshot for eligibility and badges. */
 export interface MobileTopTradersFeedPage extends MobileRankedFeedPage {
   /** Author eligibility snapshot. */
-  cohort: {
-    /** Cohort UUID. */
-    snapshotId: string;
-    /** Ready or the previous successful snapshot after a refresh failure. */
-    status: MobileFeedCohortStatus;
-    /** Coverage of all eligible candidate authors. */
-    coverage: {
-      /** Coverage domain. */
-      scope: 'eligible_content_candidates';
-      /** Candidate author count. */
-      totalAuthors: number;
-      /** Authors queried for this snapshot. */
-      queriedAuthors: number;
-      /** A successful response requires complete coverage. */
-      complete: true;
-    };
-  };
+  cohort: MobileFeedCohort;
 }
 
 /** Item details with either a new item session or the reused authorized session. */
@@ -717,14 +732,7 @@ export interface MobileFeedUpdates {
   /** Complete mutable position facts at one version. */
   positionPatches: MobileFeedPositionPatch[];
   /** Previously authorized targets that can no longer be read. */
-  unavailableTargets: Array<{
-    /** Target kind. */
-    type: MobileFeedTargetType;
-    /** Target UUID. */
-    id: string;
-    /** Uniform reason prevents leaking inaccessible content. */
-    reason: 'unavailable';
-  }>;
+  unavailableTargets: MobileFeedUnavailableTarget[];
   /** New-content hint; always zero for directly created item sessions. */
   newItemsCount: number;
   /** Baseline to use for the next update call with the same viewport. */

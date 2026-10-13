@@ -55,7 +55,6 @@ import {
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemBase,
   MobileServerSocialFeedItemResponse,
-  MobileServerSocialFeedListParams,
   MobileServerSocialFeedPage,
   MobileServerSocialTradeCard,
   MobileServerSocialTradeRow,
@@ -72,6 +71,7 @@ import {
   MobileServerFollowListRequest,
   MobileServerProfilesInclude,
   MobileServerPublicFeedReadParams,
+  MobileServerSocialFeedListParams,
 } from './types/serverRequestTypes';
 
 /**
@@ -694,11 +694,7 @@ export function mapMobileFeedUpdates(
   return {
     itemPatches: server.item_patches.map(mapMobileFeedItemPatch),
     positionPatches: server.position_patches.map(mapMobileFeedPositionPatch),
-    unavailableTargets: server.unavailable_targets.map((target) => ({
-      type: target.type,
-      id: target.id,
-      reason: target.reason,
-    })),
+    unavailableTargets: server.unavailable_targets,
     newItemsCount: server.new_items_count,
     updateCursor: server.update_cursor,
     reset: server.reset,
