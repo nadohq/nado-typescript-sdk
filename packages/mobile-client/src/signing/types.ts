@@ -1,11 +1,7 @@
 import { WalletClientWithAccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
-import {
-  MobileNotificationPlatform,
-  MobileServerCategorizedFeedParams,
-  MobileServerSocialFeedListParams,
-} from '../types/serverModelTypes';
+import { MobileNotificationPlatform } from '../types/serverModelTypes';
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.
@@ -38,50 +34,6 @@ export type MobileSignedInner =
       subaccount: Hex;
       /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
       is_following: boolean;
-    }
-  | ({
-      /** Author feed query. */
-      type: 'profile_feed';
-      /** Target identity subaccount. */
-      subaccount: Hex;
-    } & MobileServerCategorizedFeedParams)
-  | ({
-      /** Market feed query. */
-      type: 'market_feed';
-      /** Target product. */
-      product_id: number;
-    } & MobileServerSocialFeedListParams)
-  | ({
-      /** Position feed query. */
-      type: 'position_feed';
-      /** Target position UUID. */
-      position_id: string;
-    } & MobileServerSocialFeedListParams)
-  | {
-      /** Item detail query. */
-      type: 'feed_item';
-      /** Target item UUID. */
-      item_id: string;
-      /** Preview size, 0-3; omitted before signing when unspecified. */
-      comment_preview_limit?: number;
-      /** Omit to create a new reading session. */
-      session_id?: string;
-    }
-  | {
-      /** Viewport update query. */
-      type: 'feed_updates';
-      /** Original signed reading session. */
-      session_id: string;
-      /** Previously delivered item UUIDs. */
-      visible_item_ids: string[];
-      /** Authorized position UUIDs. */
-      visible_position_ids: string[];
-      /** Baseline from the last accepted update. */
-      update_cursor?: string;
-      /** Current viewport version. */
-      viewport_revision: number;
-      /** Request sequence within the viewport. */
-      request_seq: number;
     };
 
 /**

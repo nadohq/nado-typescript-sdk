@@ -380,10 +380,7 @@ export function mapMobileFeedPositionPatch(
     positionId: server.position_id,
     positionVersion: server.position_version,
     stateAsOfMs: server.state_as_of_ms,
-    entryPrice:
-      server.entry_price_x18 === null
-        ? null
-        : removeDecimals(server.entry_price_x18),
+    entryPrice: removeDecimals(server.entry_price_x18),
     displayBasis: server.display_basis,
     snapshotAtMs: server.snapshot_at_ms,
     quantity: toBigNumber(server.quantity_x18),
@@ -496,10 +493,7 @@ export function mapMobileSocialTradeRowBase(
     leverageAtMs: server.leverage_at_ms,
     tradeCount: server.trade_count,
     quantity: toBigNumber(server.quantity_x18),
-    averagePrice:
-      server.average_price_x18 === null
-        ? null
-        : removeDecimals(server.average_price_x18),
+    averagePrice: removeDecimals(server.average_price_x18),
   };
 }
 
@@ -518,18 +512,13 @@ export function mapMobileSocialTradeRow(
       action: server.action,
       notional:
         server.notional_x18 === null ? null : toBigNumber(server.notional_x18),
-      entryPrice:
-        server.entry_price_x18 === null
-          ? null
-          : removeDecimals(server.entry_price_x18),
-      liquidationOraclePrice:
-        server.liquidation_oracle_price_x18 === null
-          ? null
-          : removeDecimals(server.liquidation_oracle_price_x18),
-      liquidationExecutionPrice:
-        server.liquidation_execution_price_x18 === null
-          ? null
-          : removeDecimals(server.liquidation_execution_price_x18),
+      entryPrice: removeDecimals(server.entry_price_x18),
+      liquidationOraclePrice: removeDecimals(
+        server.liquidation_oracle_price_x18,
+      ),
+      liquidationExecutionPrice: removeDecimals(
+        server.liquidation_execution_price_x18,
+      ),
       realizedPnlDelta:
         server.realized_pnl_delta_x18 === null
           ? null
@@ -680,34 +669,26 @@ export function mapMobileFeedItemPatch(
     ...(server.average_price_x18 === undefined
       ? {}
       : {
-          averagePrice:
-            server.average_price_x18 === null
-              ? null
-              : removeDecimals(server.average_price_x18),
+          averagePrice: removeDecimals(server.average_price_x18),
         }),
     ...(server.entry_price_x18 === undefined
       ? {}
       : {
-          entryPrice:
-            server.entry_price_x18 === null
-              ? null
-              : removeDecimals(server.entry_price_x18),
+          entryPrice: removeDecimals(server.entry_price_x18),
         }),
     ...(server.liquidation_oracle_price_x18 === undefined
       ? {}
       : {
-          liquidationOraclePrice:
-            server.liquidation_oracle_price_x18 === null
-              ? null
-              : removeDecimals(server.liquidation_oracle_price_x18),
+          liquidationOraclePrice: removeDecimals(
+            server.liquidation_oracle_price_x18,
+          ),
         }),
     ...(server.liquidation_execution_price_x18 === undefined
       ? {}
       : {
-          liquidationExecutionPrice:
-            server.liquidation_execution_price_x18 === null
-              ? null
-              : removeDecimals(server.liquidation_execution_price_x18),
+          liquidationExecutionPrice: removeDecimals(
+            server.liquidation_execution_price_x18,
+          ),
         }),
     ...(server.realized_pnl_delta_x18 === undefined
       ? {}
@@ -751,11 +732,11 @@ export function mapMobileFeedUpdates(
 }
 
 /**
- * Maps common list parameters without inserting defaults before signing.
+ * Maps common list parameters to the public query wire format without inserting defaults.
  * @param params - Client filters and session pagination.
- * @returns Wire fields; signing removes undefined properties entirely.
+ * @returns Wire fields; undefined options are omitted when serialized to JSON.
  */
-export function mapMobileSocialFeedListParams(
+export function mapMobileSocialFeedListParamsToServer(
   params: MobileSocialFeedListParams,
 ): MobileServerSocialFeedListParams {
   return {

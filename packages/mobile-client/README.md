@@ -68,7 +68,7 @@ select published content by author, market, and position lifecycle respectively.
 one item's details; `getFeedUpdates` returns viewport patches and new-content hints for an existing session.
 
 Public browsing never requires a wallet signature, identity registration, or 1-Click Trading setup.
-For You, Top Traders, and Friends only use `/public_query` and do not accept `auth`.
+All eight social feed reads use `/public_query` and do not accept `auth`, even when a wallet or linked signer is configured.
 Friends requires `viewAs` on every request, including pagination; an account with no
 follows receives an empty list.
 
@@ -77,9 +77,8 @@ complete bytes32 identity subaccount, not a 20-byte wallet address. It must be n
 It selects public relationship state and never grants private access. The Profile target
 `subaccount` is separate from `viewAs`; the SDK does not infer a viewing account from it.
 
-Profile, market, position, and item details default to public reads; see [Signed Queries](#signed-queries) for explicit
-authenticated access. `getFeedUpdates` follows the original session's public/signed mode and inherits its
-viewing account, so it never accepts `viewAs`. Public updates require the original `viewerToken`.
+`getFeedUpdates` inherits the original reading session's viewing account, so it never accepts `viewAs`.
+Updates require the original `viewerToken`; this is a browsing-session credential, not proof of wallet ownership.
 
 ```ts
 const viewAs = { subaccountOwner: walletAddress, subaccountName: 'default' };
@@ -118,8 +117,8 @@ and PnL amounts are exact `BigNumber` integers in x18 units; divide these by `10
 Explicit `null` in a patch clears the old value; omitted fields leave it unchanged.
 
 With a viewing account, `author.isFollowing` reflects its actual follow state; without one,
-it is `null`. `interaction.likedByMe` stays `null` while likes are unavailable, including on
-signed reads. Trade rows do not have an `interaction` field.
+it is `null`. `interaction.likedByMe` stays `null` while likes are unavailable.
+Trade rows do not have an `interaction` field.
 
 Sessions expire 15 minutes after creation. Continue through short or empty pages while
 `nextCursor` is non-null. Keep pagination cursors, update cursors, and watermarks separate.
@@ -131,7 +130,7 @@ correcting the session/identity/source rather than retrying unchanged. Keep view
 out of logs and public caches. A public session still needs its original viewer token when a
 wallet is connected or `viewAs` is supplied. List pagination must repeat the initial `viewAs`
 (or continue omitting it); item details reusing a session may omit it to inherit the perspective.
-To switch accounts or public/signed modes, create a new session and reset cursors, visible IDs,
+To switch viewing accounts, create a new session and reset cursors, visible IDs,
 and polling sequence state. Stop using the old state as soon as a refresh begins; resume
 pagination and polling only after the new first page succeeds. Invalid or expired public
 credentials require a refresh, not a wallet signature.
@@ -139,17 +138,6 @@ credentials require a refresh, not a wallet signature.
 The social feed exposes automatic trade cards/rows; drawings and interactions are not enabled.
 `getPositionFeed` is published activity, not complete position history. The legacy
 `getFeed`, `setFollow`, and `setPrivateMode` contracts remain available unchanged.
-
-### Signed Queries
-
-`getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, and `getFeedUpdates` use `/query`
-only when `auth` is explicitly provided. Use this for reads that need an authenticated identity, such as
-reading the signing author's private content; the same methods otherwise use public queries.
-
-`auth` contains `subaccountOwner`, `subaccountName`, `chainId`, and `verifyingAddr`. The configured linked
-signer takes priority over the wallet client. Signed reads cannot carry `viewAs` or `viewerToken`;
-updates must use the signing identity of the original session. `getForYouFeed`, `getTopTradersFeed`,
-and `getFriendsFeed` are public-only and do not accept `auth`.
 
 ### Public Executes
 

@@ -499,7 +499,7 @@ export interface MobileFeedInteraction {
   commentCount: number;
   /** Number of recorded views. */
   viewCount: number;
-  /** Null while likes are unavailable, including with a viewing account or signature. */
+  /** Null while likes are unavailable, including with a viewing account. */
   likedByMe: boolean | null;
 }
 
@@ -745,18 +745,6 @@ export interface MobilePublicFeedReadAccess {
   viewerToken?: string;
 }
 
-/** Public browsing or an explicit signed read for private content; contexts cannot be mixed. */
-export type MobileFeedReadAccess =
-  | {
-      /** Sign as this identity, using the client's linked signer or owner wallet. */
-      auth: MobileSignedRequestParams;
-      /** Signed reads use the verified sender as their viewing account. */
-      viewAs?: never;
-      /** Anonymous credentials are forbidden on signed queries. */
-      viewerToken?: never;
-    }
-  | MobilePublicFeedReadAccess;
-
 /** Filters and fixed-session pagination common to all six social feed lists. */
 export interface MobileSocialFeedListParams {
   /** OR-ed content filters; empty or omitted means all. */
@@ -787,9 +775,9 @@ export type GetMobileFriendsFeedParams = GetMobileForYouFeedParams & {
   viewAs: Subaccount;
 };
 
-/** Author list request; the target is distinct from the signing identity. */
+/** Author list request; the target is distinct from the viewing account. */
 export type GetMobileProfileFeedParams = MobileSocialFeedListParams &
-  MobileFeedReadAccess & {
+  MobilePublicFeedReadAccess & {
     /** Target author, independent of the public viewAs account. */
     subaccount: Subaccount;
     /** Omit to include all market categories. */
@@ -798,20 +786,20 @@ export type GetMobileProfileFeedParams = MobileSocialFeedListParams &
 
 /** Market list request; marketCategory is not accepted. */
 export type GetMobileMarketFeedParams = MobileSocialFeedListParams &
-  MobileFeedReadAccess & {
+  MobilePublicFeedReadAccess & {
     /** Non-negative target product ID. */
     productId: number;
   };
 
 /** Published content in a lifecycle, not the complete position history. */
 export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
-  MobileFeedReadAccess & {
+  MobilePublicFeedReadAccess & {
     /** Target position UUID. */
     positionId: string;
   };
 
 /** Item request; omit sessionId to create an item reading session directly. */
-export type GetMobileFeedItemParams = MobileFeedReadAccess & {
+export type GetMobileFeedItemParams = MobilePublicFeedReadAccess & {
   /** Target item UUID. */
   itemId: string;
   /** Preview size, 0–3; default 3. Comment content is not currently available. */
@@ -820,7 +808,7 @@ export type GetMobileFeedItemParams = MobileFeedReadAccess & {
   sessionId?: string;
 };
 
-/** Viewport update request; anonymous calls require the original viewerToken. */
+/** Viewport update request; requires the original viewerToken. */
 export type GetMobileFeedUpdatesParams = {
   /** Inherited from the original session; updates cannot select a different viewing account. */
   viewAs?: never;
@@ -836,17 +824,8 @@ export type GetMobileFeedUpdatesParams = {
   viewportRevision: number;
   /** Increment on every request; accept only the latest response for the current viewport. */
   requestSeq: number;
-} & (
-  | {
-      /** Signing identity matching the session. */
-      auth: MobileSignedRequestParams;
-      /** Forbidden on signed reads. */
-      viewerToken?: never;
-    }
-  | {
-      /** Public read. */
-      auth?: never;
-      /** Credential belonging to the anonymous session. */
-      viewerToken: string;
-    }
-);
+  /** Public routes do not accept a signing identity. */
+  auth?: never;
+  /** Credential belonging to the original public session. */
+  viewerToken: string;
+};

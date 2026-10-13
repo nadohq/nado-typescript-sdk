@@ -15,7 +15,6 @@ import {
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
-  MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
 
 /**
@@ -130,23 +129,3 @@ export type MobileServerPublicQuerySuccessResponse<
   T extends MobileServerPublicQueryRequestType =
     MobileServerPublicQueryRequestType,
 > = MobileServerSuccessResponse & MobileServerPublicQueryResponseByType[T];
-
-/** Success payloads for signed queries, keyed by operation. */
-export interface MobileServerSignedQueryResponseByType {
-  /** Author content including the sender's private content when applicable. */
-  profile_feed: MobileServerSocialFeedPage;
-  /** Market content accessible to the sender. */
-  market_feed: MobileServerSocialFeedPage;
-  /** Position content accessible to the sender. */
-  position_feed: MobileServerSocialFeedPage;
-  /** Item details accessible to the sender. */
-  feed_item: MobileServerSocialFeedItemResponse;
-  /** Changes authorized by the original signed session. */
-  feed_updates: MobileServerFeedUpdatesResponse;
-}
-
-/** Signed query success envelope with its operation's payload inlined. */
-export type MobileServerSignedQuerySuccessResponse<
-  T extends MobileServerSignedQueryRequestType =
-    MobileServerSignedQueryRequestType,
-> = MobileServerSuccessResponse & MobileServerSignedQueryResponseByType[T];

@@ -1,8 +1,9 @@
 import { Hex } from 'viem';
-import { MobileSignedInner, MobileSignedInnerParams } from '../signing/types';
+import { MobileSignedInner } from '../signing/types';
 import {
   MobileServerCategorizedFeedParams,
   MobileServerNotificationPreferences,
+  MobileServerSocialFeedListParams,
 } from './serverModelTypes';
 
 /**
@@ -64,19 +65,46 @@ export interface MobileServerPublicQueryRequestByType {
       view_as: Hex;
     };
   /** Author's public content; the target is separate from view_as. */
-  profile_feed: MobileSignedInnerParams<'profile_feed'> &
-    MobileServerPublicFeedReadParams;
+  profile_feed: MobileServerCategorizedFeedParams &
+    MobileServerPublicFeedReadParams & {
+      /** Target author identity, independent of view_as. */
+      subaccount: Hex;
+    };
   /** Public market content. */
-  market_feed: MobileSignedInnerParams<'market_feed'> &
-    MobileServerPublicFeedReadParams;
+  market_feed: MobileServerSocialFeedListParams &
+    MobileServerPublicFeedReadParams & {
+      /** Target product. */
+      product_id: number;
+    };
   /** Public activity in one position lifecycle. */
-  position_feed: MobileSignedInnerParams<'position_feed'> &
-    MobileServerPublicFeedReadParams;
+  position_feed: MobileServerSocialFeedListParams &
+    MobileServerPublicFeedReadParams & {
+      /** Target position UUID. */
+      position_id: string;
+    };
   /** Public item details, optionally reusing a reading session. */
-  feed_item: MobileSignedInnerParams<'feed_item'> &
-    MobileServerPublicFeedReadParams;
+  feed_item: MobileServerPublicFeedReadParams & {
+    /** Target item UUID. */
+    item_id: string;
+    /** Preview size, 0-3. */
+    comment_preview_limit?: number;
+    /** Omit to create a new reading session. */
+    session_id?: string;
+  };
   /** Updates inherit the original public session's viewing account. */
-  feed_updates: MobileSignedInnerParams<'feed_updates'> & {
+  feed_updates: {
+    /** Original reading session. */
+    session_id: string;
+    /** Previously delivered item UUIDs. */
+    visible_item_ids: string[];
+    /** Authorized position UUIDs. */
+    visible_position_ids: string[];
+    /** Baseline from the last accepted update. */
+    update_cursor?: string;
+    /** Current viewport version. */
+    viewport_revision: number;
+    /** Request sequence within the viewport. */
+    request_seq: number;
     /** Original public browsing credential. */
     viewer_token: string;
     /** The viewing account cannot be changed by an update. */
@@ -137,28 +165,16 @@ export interface MobileServerPublicExecuteRequestByType {
 export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
-/** Signed query operations; main feeds are public-only. */
-export type MobileServerSignedQueryRequestType =
-  | 'profile_feed'
-  | 'market_feed'
-  | 'position_feed'
-  | 'feed_item'
-  | 'feed_updates';
-
-/** Signed mutation operations, excluding the read-only subset of MobileSignedInner. */
-export type MobileServerExecuteRequestType = Exclude<
-  MobileSignedInner['type'],
-  MobileServerSignedQueryRequestType
->;
+/** Signed mutation operations. */
+export type MobileServerExecuteRequestType = MobileSignedInner['type'];
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
- * `query_*` for signed queries, `public_query_*` for unsigned queries, `public_execute_*` for unsigned
+ * `public_query_*` for unsigned queries, `public_execute_*` for unsigned
  * writes, and `execute_*` for signed writes (e.g. `execute_set_username`). The prefix names the route,
  * so it never carries the `mobile:` prefix that the EIP-712 method does.
  */
 export type MobileServerRequestType =
-  | `query_${MobileServerSignedQueryRequestType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

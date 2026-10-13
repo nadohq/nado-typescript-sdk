@@ -9,12 +9,12 @@ export const NADO_PRODUCT_DECIMALS = 18;
 /**
  * Determines the result type after adjusting decimals based on the input type `T`.
  *
- * - If `T` is `undefined`, the result is `undefined`.
+ * - If `T` is `null` or `undefined`, the result preserves that value.
  * - If `T` is a `number`, the result is a `number`.
  * - Otherwise, the result is a `BigNumber`.
  */
-type AdjustDecimalsResult<T extends BigNumberish | undefined> =
-  T extends undefined ? undefined : T extends number ? number : BigNumber;
+type AdjustDecimalsResult<T extends BigNumberish | null | undefined> =
+  T extends null | undefined ? T : T extends number ? number : BigNumber;
 
 /**
  * Adds the specified # of decimals to the number. For example, value = 1, decimals = 2, returns 100.
@@ -44,16 +44,17 @@ export function addDecimals<T extends BigNumberish | undefined>(
 /**
  * Removes the specified # of decimals from the number. For example, value = 100, decimals = 2, returns 1.
  *
- * @param value can be undefined for better developer experience. If undefined, returns undefined.
+ * @param value can be null or undefined; either is returned unchanged.
  * @param decimals number of decimal places to remove, defaults to 18, which is the standard within Nado
+ * @returns The adjusted number or BigNumber, preserving null and undefined inputs.
  */
-export function removeDecimals<T extends BigNumberish | undefined>(
+export function removeDecimals<T extends BigNumberish | null | undefined>(
   value: T,
   decimals: number = NADO_PRODUCT_DECIMALS,
 ): AdjustDecimalsResult<T> {
   const getResult = () => {
     if (value == null) {
-      return undefined;
+      return value;
     }
 
     const adjustedValue = toBigNumber(value).dividedBy(

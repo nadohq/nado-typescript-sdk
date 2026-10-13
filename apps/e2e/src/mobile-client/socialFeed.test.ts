@@ -1,7 +1,6 @@
 import {
   MOBILE_ERROR_CODES,
   MobileClient,
-  MobileSignedRequestParams,
   MobileSocialFeedPage,
 } from '@nadohq/mobile-client';
 import { Subaccount, subaccountFromHex } from '@nadohq/shared';
@@ -12,7 +11,6 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
-import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
@@ -28,7 +26,7 @@ void describe(
   () => {
     let tc: RunContext;
     let viewAs: Subaccount;
-    let auth: MobileSignedRequestParams;
+    let mobile: MobileClient;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
@@ -37,11 +35,11 @@ void describe(
         subaccountOwner: tc.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
-      auth = getMobileSignedParams(tc);
+      mobile = new MobileClient({ url: tc.endpoints.mobile });
     });
 
     void test('reads a public filtered session and reuses its identity for pagination and updates', async () => {
-      const page = await tc.mobile.getForYouFeed({
+      const page = await mobile.getForYouFeed({
         viewAs,
         minimumNotional: 500,
         limit: 2,
@@ -51,7 +49,7 @@ void describe(
       const { sessionId, viewerToken } = page.readSession;
       assert.ok(viewerToken);
       if (page.nextCursor !== null) {
-        const next = await tc.mobile.getForYouFeed({
+        const next = await mobile.getForYouFeed({
           viewAs,
           minimumNotional: 500,
           limit: 2,
@@ -62,7 +60,7 @@ void describe(
         assertPage(next);
         assert.equal(next.readSession.sessionId, sessionId);
       }
-      const updates = await tc.mobile.getFeedUpdates({
+      const updates = await mobile.getFeedUpdates({
         sessionId,
         viewerToken,
         visibleItemIds: page.items.map((item) => item.id),
@@ -80,7 +78,7 @@ void describe(
     });
 
     void test('reads Top Traders and its shared qualification cohort', async () => {
-      const page = await tc.mobile.getTopTradersFeed({ viewAs, limit: 2 });
+      const page = await mobile.getTopTradersFeed({ viewAs, limit: 2 });
       assertPage(page);
       assert.equal(page.rankingVersion, 'chronological-v1');
       assert.equal(page.cohort.coverage.complete, true);
@@ -137,16 +135,17 @@ void describe(
       assert.equal(updates.requestSeq, 1);
     });
 
-    void test('retains explicit signed object reads and their session updates', async () => {
-      const page = await tc.mobile.getProfileFeed({
-        subaccount: auth,
-        auth,
+    void test('reads a public profile and its session updates without a wallet', async () => {
+      const page = await mobile.getProfileFeed({
+        subaccount: viewAs,
+        viewAs,
         limit: 2,
       });
       assertPage(page);
-      assert.equal(page.readSession.viewerToken, undefined);
-      const updates = await tc.mobile.getFeedUpdates({
-        auth,
+      const { viewerToken } = page.readSession;
+      assert.ok(viewerToken);
+      const updates = await mobile.getFeedUpdates({
+        viewerToken,
         sessionId: page.readSession.sessionId,
         visibleItemIds: page.items.map((item) => item.id),
         visiblePositionIds: [],
@@ -157,7 +156,7 @@ void describe(
     });
 
     void test('reads market content', async () => {
-      const page = await tc.mobile.getMarketFeed({
+      const page = await mobile.getMarketFeed({
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         viewAs,
         limit: 2,
@@ -165,17 +164,10 @@ void describe(
       assertPage(page);
       for (const item of page.items)
         assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
-      const signed = await tc.mobile.getMarketFeed({
-        productId: TEST_PRODUCT_IDS.PERP_BTC,
-        auth,
-        limit: 2,
-      });
-      assertPage(signed);
-      assert.equal(signed.readSession.viewerToken, undefined);
     });
 
     void test('reads a real author, position, and direct item session', async (context) => {
-      const page = await tc.mobile.getForYouFeed({ limit: 2 });
+      const page = await mobile.getForYouFeed({ limit: 2 });
       const item = page.items[0];
       if (!item) {
         context.skip(
@@ -183,7 +175,7 @@ void describe(
         );
         return;
       }
-      const authorPage = await tc.mobile.getProfileFeed({
+      const authorPage = await mobile.getProfileFeed({
         subaccount: subaccountFromHex(item.author.subaccount),
         viewAs,
         limit: 2,
@@ -192,9 +184,9 @@ void describe(
       const positionId =
         item.kind === 'trade_card' ? item.position.positionId : item.positionId;
       assertPage(
-        await tc.mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
+        await mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
       );
-      const detail = await tc.mobile.getFeedItem({
+      const detail = await mobile.getFeedItem({
         itemId: item.id,
         commentPreviewLimit: 0,
         viewAs,
@@ -203,7 +195,7 @@ void describe(
       assert.equal(detail.item.id, item.id);
       assert.equal(detail.readSession.mode, 'item');
       assert.ok(detail.readSession.viewerToken);
-      const updates = await tc.mobile.getFeedUpdates({
+      const updates = await mobile.getFeedUpdates({
         sessionId: detail.readSession.sessionId,
         viewerToken: detail.readSession.viewerToken,
         visibleItemIds: [item.id],
@@ -212,20 +204,11 @@ void describe(
         requestSeq: 1,
       });
       assert.equal(updates.newItemsCount, 0);
-      assertPage(
-        await tc.mobile.getPositionFeed({ positionId, auth, limit: 2 }),
-      );
-      const signedDetail = await tc.mobile.getFeedItem({
-        auth,
-        itemId: item.id,
-      });
-      assert.equal(signedDetail.item.id, item.id);
-      assert.equal(signedDetail.readSession.viewerToken, undefined);
     });
 
     void test('returns the social feed validation error for an invalid page size', async () => {
       await assertRejectsWithMobileErrorCode(
-        () => tc.mobile.getForYouFeed({ limit: 51 }),
+        () => mobile.getForYouFeed({ limit: 51 }),
         MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
       );
     });
@@ -246,6 +229,7 @@ function assertPage(page: MobileSocialFeedPage) {
   assert.equal(typeof page.watermark, 'string');
   assert.equal(typeof page.readSession.sessionId, 'string');
   assert.equal(page.readSession.mode, 'feed');
+  assert.ok(page.readSession.viewerToken);
   assert.ok(Number.isSafeInteger(page.readSession.expiresAtMs));
   assert.ok(page.nextCursor === null || typeof page.nextCursor === 'string');
   for (const item of page.items) {
