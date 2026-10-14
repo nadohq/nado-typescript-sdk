@@ -15,6 +15,8 @@ import {
   mapMobileFollowMutationResult,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
+  mapMobileProfileSearchPage,
+  mapMobileProfileSearchParamsToServer,
   mapMobileProfilesIncludeToServer,
   mapMobilePublicProfile,
   mapMobileRegisteredWallet,
@@ -56,6 +58,7 @@ import {
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileNotificationPreferences,
+  MobileProfileSearchPage,
   MobilePublicProfile,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
@@ -73,6 +76,7 @@ import {
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
+  SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
 import { MobileServerSuccessResponse } from './types/serverBaseTypes';
@@ -204,6 +208,33 @@ export class MobileClient {
     };
     const data = await this.publicQuery(body);
     return data.profiles.map(mapMobilePublicProfile);
+  }
+
+  /**
+   * Searches claimed profiles by the start of their username, in ascending username order with an exact
+   * match first. Only current claimed identities match: an unnamed profile never does, and Private Mode does
+   * not hide one. Takes the same `include` as {@link MobileClient.getProfiles}, so a page can carry follower
+   * totals and a follow summary without a second request; as there, `include.followSummary.viewAs` is an
+   * unauthenticated claim on an unsigned route.
+   *
+   * Pagination is live rather than snapshot, so deduplicate matches by subaccount across pages. A cursor is
+   * bound to the query alone, so `include` and `limit` may change between pages.
+   *
+   * @throws {MobileServerFailureError} With error code `INVALID_PROFILE_SEARCH_REQUEST` if `query` is outside
+   * the username alphabet or length or `limit` is out of range (1-50, or 1-25 with an include),
+   * `INVALID_PROFILE_SEARCH_CURSOR` if the cursor is malformed or was issued for a different query (discard
+   * it and restart from the first page), or `PROFILE_NOT_FOUND` if `include.followSummary.viewAs` is in the
+   * engine-created isolated namespace.
+   */
+  async searchProfiles(
+    params: SearchMobileProfilesParams,
+  ): Promise<MobileProfileSearchPage> {
+    const body: MobileServerPublicQueryRequest<'search_profiles'> = {
+      type: 'search_profiles',
+      ...mapMobileProfileSearchParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileProfileSearchPage(data);
   }
 
   /**

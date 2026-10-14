@@ -40,6 +40,23 @@ export interface MobileServerFollowListRequest {
   limit?: number;
 }
 
+/**
+ * Params of the `search_profiles` public query.
+ */
+export interface MobileServerSearchProfilesRequest {
+  /**
+   * Username prefix, 1-20 ASCII bytes: a letter or digit first, then letters, digits, `_` or `.`. The
+   * backend lowercases letters and trims nothing.
+   */
+  query: string;
+  /** Same opt-in extras as the `profiles` query, applied to every match on the page. */
+  include?: MobileServerProfilesInclude;
+  /** Opaque keyset cursor from a prior page's `next_cursor`. Omitted requests the first page. */
+  cursor?: string;
+  /** Page size, 1-50, or 1-25 when `include` asks for follow data; the backend defaults to 25 when omitted. */
+  limit?: number;
+}
+
 /** Common filters and pagination for social feed lists. */
 export interface MobileServerSocialFeedListParams {
   /** OR-ed content filters; combined with other filters using AND. */
@@ -144,6 +161,7 @@ export interface MobileServerPublicQueryRequestByType {
     subaccounts: Hex[];
     include?: MobileServerProfilesInclude;
   };
+  search_profiles: MobileServerSearchProfilesRequest;
   followers: MobileServerFollowListRequest;
   following: MobileServerFollowListRequest;
   feed: {
