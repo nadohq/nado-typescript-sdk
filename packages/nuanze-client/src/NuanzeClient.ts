@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
+  mapNuanzeCohortsResponse,
   mapNuanzeCollateralFlowSeriesResponse,
   mapNuanzeCollateralFlowSummaryResponse,
   mapNuanzeCollateralFlowsResponse,
@@ -18,6 +19,7 @@ import {
   mapNuanzePlatformSummaryResponse,
   mapNuanzeSubaccountLeaderboardPositionResponse,
   mapNuanzeSubaccountLeaderboardResponse,
+  mapNuanzeSubaccountStatsResponse,
   mapNuanzeWalletLeaderboardPositionResponse,
   mapNuanzeWalletPnlResponse,
   mapNuanzeWalletPnlSeriesResponse,
@@ -26,6 +28,7 @@ import {
   mapNuanzeWalletTradesResponse,
 } from './dataMappers';
 import {
+  GetNuanzeCohortsResponse,
   GetNuanzeCollateralFlowSeriesParams,
   GetNuanzeCollateralFlowSeriesResponse,
   GetNuanzeCollateralFlowSummaryParams,
@@ -62,6 +65,8 @@ import {
   GetNuanzeSubaccountLeaderboardPositionParams,
   GetNuanzeSubaccountLeaderboardPositionResponse,
   GetNuanzeSubaccountLeaderboardResponse,
+  GetNuanzeSubaccountStatsParams,
+  GetNuanzeSubaccountStatsResponse,
   GetNuanzeWalletLeaderboardPositionParams,
   GetNuanzeWalletLeaderboardPositionResponse,
   GetNuanzeWalletPnlParams,
@@ -79,6 +84,7 @@ import {
 import { NuanzeServerFailureError } from './types/NuanzeServerFailureError';
 import { NuanzeServerMarketPositioningResponse } from './types/serverModelTypes';
 import {
+  NuanzeServerCohortsResponse,
   NuanzeServerCollateralFlowSeriesResponse,
   NuanzeServerCollateralFlowSummaryResponse,
   NuanzeServerCollateralFlowsResponse,
@@ -96,6 +102,7 @@ import {
   NuanzeServerPlatformSummaryResponse,
   NuanzeServerSubaccountLeaderboardPositionResponse,
   NuanzeServerSubaccountLeaderboardResponse,
+  NuanzeServerSubaccountStatsResponse,
   NuanzeServerWalletLeaderboardPositionResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
@@ -302,6 +309,31 @@ export class NuanzeClient {
   }
 
   /**
+   * Gets every trader stat card for one subaccount by explicit bytes32 subaccount hex
+   * (the SDK `subaccountToHex` form): leaderboard rank and window PnL, snapshot volume,
+   * average leverage over current isolated perp legs, best/worst close-event trade in the
+   * window, point-in-time long/short bias from current open perp legs, and the most-traded
+   * market. Best/worst trade, leverage, bias percentages, and most-traded market are null
+   * when the subaccount has no closes, isolated margin, open positions, or activity rows
+   * respectively.
+   *
+   * @throws {NuanzeServerFailureError} With `BAD_REQUEST` when the timeframe is invalid,
+   * `INVALID_SUBACCOUNT` when the subaccount hex is malformed, or `WALLET_NOT_FOUND` when
+   * the hex is unknown.
+   */
+  async getSubaccountStats(
+    params: GetNuanzeSubaccountStatsParams,
+  ): Promise<GetNuanzeSubaccountStatsResponse> {
+    const { subaccountHex, ...query } = params;
+    return mapNuanzeSubaccountStatsResponse(
+      await this.getJson<NuanzeServerSubaccountStatsResponse>(
+        `/subaccounts/${encodeURIComponent(subaccountHex)}`,
+        query,
+      ),
+    );
+  }
+
+  /**
    * Gets platform activity summary from five-minute aggregates.
    *
    * @throws {NuanzeServerFailureError} With `BAD_REQUEST` if the window is not a documented value.
@@ -314,6 +346,24 @@ export class NuanzeClient {
         '/platform/summary',
         params,
       ),
+    );
+  }
+
+  /**
+   * Gets the six fixed wallet cohorts of the nuanze.co cohorts page. Every wallet that has traded
+   * belongs to exactly one, chosen by its lifetime equity-basis account PnL summed across its
+   * subaccounts: `extremely_profitable` [1,000,000, +inf), `very_profitable` [100,000, 1,000,000),
+   * `profitable` [0, 100,000), `unprofitable` [-100,000, 0), `very_unprofitable` [-1,000,000,
+   * -100,000), and `rekt` (-inf, -1,000,000), the same cohorts as `getMarketPositioning` with
+   * `groupBy: 'cohort'`. All six are always returned in that order, each with PnL totals,
+   * profit/loss wallet counts, lifetime trades, and the members' current open perp notional split
+   * long/short; `longPct` and `shortPct` are null when the cohort is flat. `series` samples the
+   * cohort's long percentage every four hours over the last 30 days, oldest first. Membership and
+   * aggregates refresh about every five minutes, series points every four hours.
+   */
+  async getCohorts(): Promise<GetNuanzeCohortsResponse> {
+    return mapNuanzeCohortsResponse(
+      await this.getJson<NuanzeServerCohortsResponse>('/cohorts'),
     );
   }
 

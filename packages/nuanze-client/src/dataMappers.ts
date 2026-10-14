@@ -2,6 +2,8 @@ import { toBigNumber } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import {
   NuanzeCandle,
+  NuanzeCohort,
+  NuanzeCohortSeriesPoint,
   NuanzeCollateralFlow,
   NuanzeCollateralFlowPoint,
   NuanzeFollowedLeaderboardItem,
@@ -23,11 +25,15 @@ import {
   NuanzePositioningTotals,
   NuanzeSeriesPoint,
   NuanzeStockFundamentals,
+  NuanzeSubaccountCloseTrade,
   NuanzeSubaccountLeaderboardItem,
+  NuanzeSubaccountLongShortBias,
+  NuanzeSubaccountMostTradedMarket,
   NuanzeWalletPosition,
   NuanzeWalletTrade,
 } from './types/clientModelTypes';
 import {
+  GetNuanzeCohortsResponse,
   GetNuanzeCollateralFlowSeriesResponse,
   GetNuanzeCollateralFlowSummaryResponse,
   GetNuanzeCollateralFlowsResponse,
@@ -46,6 +52,7 @@ import {
   GetNuanzePlatformSummaryResponse,
   GetNuanzeSubaccountLeaderboardPositionResponse,
   GetNuanzeSubaccountLeaderboardResponse,
+  GetNuanzeSubaccountStatsResponse,
   GetNuanzeWalletLeaderboardPositionResponse,
   GetNuanzeWalletPnlResponse,
   GetNuanzeWalletPnlSeriesResponse,
@@ -55,7 +62,9 @@ import {
 } from './types/clientTypes';
 import {
   NuanzeServerCandle,
+  NuanzeServerCohort,
   NuanzeServerCohortPositioningCell,
+  NuanzeServerCohortSeriesPoint,
   NuanzeServerCollateralFlow,
   NuanzeServerCollateralFlowPoint,
   NuanzeServerFollowedLeaderboardItem,
@@ -80,11 +89,15 @@ import {
   NuanzeServerSeriesPoint,
   NuanzeServerSidePositioningCell,
   NuanzeServerStockFundamentals,
+  NuanzeServerSubaccountCloseTrade,
   NuanzeServerSubaccountLeaderboardItem,
+  NuanzeServerSubaccountLongShortBias,
+  NuanzeServerSubaccountMostTradedMarket,
   NuanzeServerWalletPosition,
   NuanzeServerWalletTrade,
 } from './types/serverModelTypes';
 import {
+  NuanzeServerCohortsResponse,
   NuanzeServerCollateralFlowSeriesResponse,
   NuanzeServerCollateralFlowSummaryResponse,
   NuanzeServerCollateralFlowsResponse,
@@ -101,6 +114,7 @@ import {
   NuanzeServerPlatformSummaryResponse,
   NuanzeServerSubaccountLeaderboardPositionResponse,
   NuanzeServerSubaccountLeaderboardResponse,
+  NuanzeServerSubaccountStatsResponse,
   NuanzeServerWalletLeaderboardPositionResponse,
   NuanzeServerWalletPnlResponse,
   NuanzeServerWalletPnlSeriesResponse,
@@ -400,6 +414,8 @@ export function mapNuanzeFollowedLeaderboardItem(
     productIds: server.productIds,
     productCount: server.productCount,
     globalRank: server.globalRank,
+    volume: mapNuanzeDecimal(server.volume),
+    pointsTier: server.pointsTier,
   };
 }
 
@@ -421,6 +437,8 @@ export function mapNuanzeSubaccountLeaderboardItem(
     productIds: server.productIds,
     productCount: server.productCount,
     globalRank: server.globalRank,
+    volume: mapNuanzeDecimal(server.volume),
+    pointsTier: server.pointsTier,
   };
 }
 
@@ -466,6 +484,94 @@ export function mapNuanzeSubaccountLeaderboardPositionResponse(
       server.item === null
         ? null
         : mapNuanzeSubaccountLeaderboardItem(server.item),
+    asOf: server.asOf,
+  };
+}
+
+/**
+ * Maps a server-side close-event trade extreme, converting realized PnL to `BigNumber`.
+ */
+export function mapNuanzeSubaccountCloseTrade(
+  server: NuanzeServerSubaccountCloseTrade,
+): NuanzeSubaccountCloseTrade {
+  return {
+    tradeId: server.tradeId,
+    productId: server.productId,
+    ticker: server.ticker,
+    realizedPnl: toBigNumber(server.realizedPnl),
+    matchedAt: server.matchedAt,
+  };
+}
+
+/**
+ * Maps a server-side position-based long/short bias, converting notionals and percentages to
+ * `BigNumber`.
+ */
+export function mapNuanzeSubaccountLongShortBias(
+  server: NuanzeServerSubaccountLongShortBias,
+): NuanzeSubaccountLongShortBias {
+  return {
+    longPct: mapNuanzeDecimal(server.longPct),
+    shortPct: mapNuanzeDecimal(server.shortPct),
+    longNotional: toBigNumber(server.longNotional),
+    shortNotional: toBigNumber(server.shortNotional),
+  };
+}
+
+/**
+ * Maps a server-side most-traded market, converting volume to `BigNumber`.
+ */
+export function mapNuanzeSubaccountMostTradedMarket(
+  server: NuanzeServerSubaccountMostTradedMarket,
+): NuanzeSubaccountMostTradedMarket {
+  return {
+    productId: server.productId,
+    ticker: server.ticker,
+    trades: server.trades,
+    volume: toBigNumber(server.volume),
+  };
+}
+
+/**
+ * Maps a server-side `GET /subaccounts/{subaccountHex}` response, converting every decimal
+ * string to `BigNumber`.
+ */
+export function mapNuanzeSubaccountStatsResponse(
+  server: NuanzeServerSubaccountStatsResponse,
+): GetNuanzeSubaccountStatsResponse {
+  return {
+    subaccountHex: server.subaccountHex,
+    timeframe: server.timeframe,
+    owner: server.owner,
+    subaccountName: server.subaccountName,
+    username: server.username,
+    displayName: server.displayName,
+    pnl: mapNuanzeDecimal(server.pnl),
+    wins: server.wins,
+    losses: server.losses,
+    winRate: mapNuanzeDecimal(server.winRate),
+    trades: server.trades,
+    productIds: server.productIds,
+    productCount: server.productCount,
+    globalRank: server.globalRank,
+    filteredRank: server.filteredRank,
+    cumulativeVolume: toBigNumber(server.cumulativeVolume),
+    windowVolume: toBigNumber(server.windowVolume),
+    windowPnl: toBigNumber(server.windowPnl),
+    averageLeverage: mapNuanzeDecimal(server.averageLeverage),
+    bestTrade:
+      server.bestTrade === null
+        ? null
+        : mapNuanzeSubaccountCloseTrade(server.bestTrade),
+    worstTrade:
+      server.worstTrade === null
+        ? null
+        : mapNuanzeSubaccountCloseTrade(server.worstTrade),
+    longShortBias: mapNuanzeSubaccountLongShortBias(server.longShortBias),
+    mostTradedMarket:
+      server.mostTradedMarket === null
+        ? null
+        : mapNuanzeSubaccountMostTradedMarket(server.mostTradedMarket),
     asOf: server.asOf,
   };
 }
@@ -541,6 +647,54 @@ export function mapNuanzePlatformSummaryResponse(
     windowTrades: server.windowTrades,
     windowTraders: server.windowTraders,
     deltas: mapNuanzePlatformDeltas(server.deltas),
+    asOf: server.asOf,
+  };
+}
+
+/**
+ * Maps a server-side cohort long-percentage sample.
+ */
+export function mapNuanzeCohortSeriesPoint(
+  server: NuanzeServerCohortSeriesPoint,
+): NuanzeCohortSeriesPoint {
+  return {
+    timestamp: server.timestamp,
+    walletCount: server.walletCount,
+    longPct: mapNuanzeDecimal(server.longPct),
+  };
+}
+
+/**
+ * Maps a server-side lifetime-PnL wallet cohort.
+ */
+export function mapNuanzeCohort(server: NuanzeServerCohort): NuanzeCohort {
+  return {
+    key: server.key,
+    label: server.label,
+    pnlMin: mapNuanzeDecimal(server.pnlMin),
+    pnlMax: mapNuanzeDecimal(server.pnlMax),
+    walletCount: server.walletCount,
+    pnl: toBigNumber(server.pnl),
+    averagePnl: mapNuanzeDecimal(server.averagePnl),
+    walletsInProfit: server.walletsInProfit,
+    walletsInLoss: server.walletsInLoss,
+    trades: server.trades,
+    longNotional: toBigNumber(server.longNotional),
+    shortNotional: toBigNumber(server.shortNotional),
+    longPct: mapNuanzeDecimal(server.longPct),
+    shortPct: mapNuanzeDecimal(server.shortPct),
+    series: server.series.map(mapNuanzeCohortSeriesPoint),
+  };
+}
+
+/**
+ * Maps a server-side `GET /cohorts` response.
+ */
+export function mapNuanzeCohortsResponse(
+  server: NuanzeServerCohortsResponse,
+): GetNuanzeCohortsResponse {
+  return {
+    items: server.items.map(mapNuanzeCohort),
     asOf: server.asOf,
   };
 }

@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js';
 import {
   NuanzeCandle,
   NuanzeCandleInterval,
+  NuanzeCohort,
   NuanzeCollateralFlow,
   NuanzeCollateralFlowPoint,
   NuanzeCoverage,
@@ -36,7 +37,10 @@ import {
   NuanzeSeriesMetric,
   NuanzeSeriesPoint,
   NuanzeSourceInterval,
+  NuanzeSubaccountCloseTrade,
   NuanzeSubaccountLeaderboardItem,
+  NuanzeSubaccountLongShortBias,
+  NuanzeSubaccountMostTradedMarket,
   NuanzeWalletPosition,
   NuanzeWalletTrade,
 } from './clientModelTypes';
@@ -333,6 +337,73 @@ export interface GetNuanzeSubaccountLeaderboardPositionResponse {
 }
 
 /**
+ * Params for `NuanzeClient.getSubaccountStats`.
+ */
+export interface GetNuanzeSubaccountStatsParams {
+  /**
+   * Explicit public bytes32 subaccount hex (`0x` plus 64 hex characters, the SDK
+   * `subaccountToHex` form) to look up.
+   */
+  subaccountHex: string;
+  /** Stat window, default `30d`. */
+  timeframe?: NuanzeLeaderboardTimeframe;
+}
+
+/**
+ * Response of `NuanzeClient.getSubaccountStats`.
+ */
+export interface GetNuanzeSubaccountStatsResponse {
+  /** Lowercase bytes32 subaccount hex (owner + name). */
+  subaccountHex: string;
+  /** Echoed stat window. */
+  timeframe: NuanzeLeaderboardTimeframe;
+  /** Lowercase subaccount owner address. */
+  owner: string;
+  /** Subaccount name. */
+  subaccountName: string;
+  /** Canonical username, or null when the subaccount has not claimed one. */
+  username: string | null;
+  /** User-facing display name, or null when unavailable. */
+  displayName: string | null;
+  /** Equity-basis account PnL for the window, or null for an untraded window. */
+  pnl: BigNumber | null;
+  /** Close-derived win count. */
+  wins: number;
+  /** Close-derived loss count. */
+  losses: number;
+  /** Win rate, or null when there are no closed trades. */
+  winRate: BigNumber | null;
+  /** Perp fill count in the window. */
+  trades: number;
+  /** Traded product IDs, sorted by fill count descending. */
+  productIds: number[];
+  /** Number of distinct traded products. Equals `productIds.length`. */
+  productCount: number;
+  /** Rank across all subaccounts for the window. Null when the subaccount has no PnL. */
+  globalRank: number | null;
+  /** Rank with private, untraded, and unclaimed subaccounts included. */
+  filteredRank: number | null;
+  /** Lifetime fill volume in USD. */
+  cumulativeVolume: BigNumber;
+  /** Window fill volume in USD. */
+  windowVolume: BigNumber;
+  /** Window PnL delta in USD. */
+  windowPnl: BigNumber;
+  /** Notional-weighted effective leverage over current isolated perp legs. Null when none. */
+  averageLeverage: BigNumber | null;
+  /** Fill with the largest close-event realized PnL in the window. Null when no closes. */
+  bestTrade: NuanzeSubaccountCloseTrade | null;
+  /** Fill with the smallest close-event realized PnL in the window. Null when no closes. */
+  worstTrade: NuanzeSubaccountCloseTrade | null;
+  /** Point-in-time bias from current open perp legs. */
+  longShortBias: NuanzeSubaccountLongShortBias;
+  /** Top perp market by fill count in the window. Null when no activity row. */
+  mostTradedMarket: NuanzeSubaccountMostTradedMarket | null;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
  * Params for `NuanzeClient.getFollowedLeaderboard`. `timeframe` is required and applies to
  * every per-subaccount figure.
  */
@@ -465,6 +536,16 @@ export interface GetNuanzePlatformSummaryResponse {
   windowTraders: number;
   /** Prior-window percentage deltas. */
   deltas: NuanzePlatformDeltas;
+  /** When the response was generated, as a UTC ISO 8601 string. */
+  asOf: string;
+}
+
+/**
+ * Response of `NuanzeClient.getCohorts`.
+ */
+export interface GetNuanzeCohortsResponse {
+  /** All six cohorts, always in `NUANZE_COHORT_KEYS` order (most to least profitable). */
+  items: NuanzeCohort[];
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
 }
