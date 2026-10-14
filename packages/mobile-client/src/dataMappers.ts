@@ -9,6 +9,7 @@ import {
   MobileIdentitySummary,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
+  MobileProfileSearchPage,
   MobileProfilesInclude,
   MobilePublicProfile,
   MobileRegisteredWallet,
@@ -33,6 +34,7 @@ import {
   MobileSocialFeedTradeRowBase,
   MobileSocialFeedTraderBadge,
   MobileSocialFeedUpdates,
+  SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileServerFollowMutationResponse } from './types/serverExecuteTypes';
 import {
@@ -61,6 +63,7 @@ import {
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
   MobileServerRegisteredWalletResponse,
+  MobileServerSearchProfilesResponse,
   MobileServerSocialFeedItemResponse,
   MobileServerSocialFeedRankedResponse,
   MobileServerSocialFeedResponse,
@@ -70,6 +73,7 @@ import {
 import {
   MobileServerFollowListRequest,
   MobileServerProfilesInclude,
+  MobileServerSearchProfilesRequest,
   MobileServerSocialFeedListParams,
   MobileServerSocialFeedReadParams,
 } from './types/serverRequestTypes';
@@ -140,6 +144,19 @@ export function mapMobileFollowListPage(
 }
 
 /**
+ * Maps a server-side profile search page (snake_case) to its client-side (camelCase) representation. Each
+ * match goes through {@link mapMobilePublicProfile}, so include-gated fields stay `undefined` when omitted.
+ */
+export function mapMobileProfileSearchPage(
+  server: MobileServerSearchProfilesResponse,
+): MobileProfileSearchPage {
+  return {
+    profiles: server.profiles.map(mapMobilePublicProfile),
+    nextCursor: server.next_cursor,
+  };
+}
+
+/**
  * Maps a server-side follow or unfollow response to its client-side representation.
  */
 export function mapMobileFollowMutationResult(
@@ -200,6 +217,22 @@ export function mapMobileFollowListParamsToServer(
   return {
     subaccount: subaccountToHex(params.target),
     view_as: params.viewAs ? subaccountToHex(params.viewAs) : undefined,
+    cursor: params.cursor,
+    limit: params.limit,
+  };
+}
+
+/**
+ * Maps the client-side params of a profile search page to the server-side wire shape.
+ */
+export function mapMobileProfileSearchParamsToServer(
+  params: SearchMobileProfilesParams,
+): MobileServerSearchProfilesRequest {
+  return {
+    query: params.query,
+    include: params.include
+      ? mapMobileProfilesIncludeToServer(params.include)
+      : undefined,
     cursor: params.cursor,
     limit: params.limit,
   };

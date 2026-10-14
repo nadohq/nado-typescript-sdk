@@ -110,6 +110,18 @@ export interface MobileFollowListPage {
 }
 
 /**
+ * A page of profiles whose username starts with the searched prefix. Pagination is live rather than snapshot:
+ * a claim or rename between pages can surface a profile twice or skip it, so deduplicate by
+ * {@link MobilePublicProfile.subaccount} and restart from `cursor: undefined` on refresh.
+ */
+export interface MobileProfileSearchPage {
+  /** Matches in ascending bytewise username order, with an exact match ahead of longer ones. */
+  profiles: MobilePublicProfile[];
+  /** `null` means there are no further matches. */
+  nextCursor: string | null;
+}
+
+/**
  * Post-commit state of a follow or unfollow. The mutation and its count share one database transaction, so
  * these values are authoritative — apply them rather than re-reading.
  */
@@ -270,6 +282,33 @@ export interface GetMobileProfilesParams {
    */
   subaccounts: Subaccount[];
   include?: MobileProfilesInclude;
+}
+
+/**
+ * Params for {@link MobileClient.searchProfiles}.
+ */
+export interface SearchMobileProfilesParams {
+  /**
+   * Username prefix to match, 1-20 ASCII characters matching `MOBILE_PROFILE_SEARCH_QUERY_PATTERN`: a letter
+   * or digit first, then letters, digits, `_` or `.`. Letters match case-insensitively; whitespace is not
+   * trimmed, so normalize the input before sending it.
+   */
+  query: string;
+  /** Same opt-in extras as {@link GetMobileProfilesParams.include}, applied to every match on the page. */
+  include?: MobileProfilesInclude;
+  /**
+   * Opaque cursor from the previous page's {@link MobileProfileSearchPage.nextCursor}. Omit for the first
+   * page. A cursor is bound to its normalized query but not to `include` or `limit`, so an enriched page
+   * can continue an unenriched search; one issued for another query fails with
+   * `INVALID_PROFILE_SEARCH_CURSOR`.
+   */
+  cursor?: string;
+  /**
+   * Page size, 1-`MOBILE_PROFILE_SEARCH_MAX_PAGE_SIZE` (50), or
+   * 1-`MOBILE_PROFILE_SEARCH_MAX_ENRICHED_PAGE_SIZE` (25) when `include` asks for follow data; the backend
+   * defaults to `MOBILE_PROFILE_SEARCH_DEFAULT_PAGE_SIZE` (25) when omitted.
+   */
+  limit?: number;
 }
 
 /**

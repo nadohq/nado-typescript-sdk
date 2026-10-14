@@ -46,7 +46,7 @@ await mobile.setUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
+`getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
 `getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
 `getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`.
 
@@ -55,6 +55,11 @@ and carries follower totals (`include.followCounts`) and a follow summary (`incl
 opt-in includes, so use it for a single subaccount too. The backend still serves the older singular `profile`
 request for compatibility, but it returns base fields only and costs more weight than the batched equivalent,
 so the SDK does not expose it.
+
+`searchProfiles` finds claimed profiles by username prefix, paged in ascending username order with an exact match
+first. It takes the same `include` as `getProfiles`, which caps the page at 25 instead of 50 and weighs far more
+against the shared IP rate limit, so search without it while the user types and enrich once the prefix settles.
+A cursor is bound to the query alone, so an enriched page can continue an unenriched search.
 
 `getFollowers` and `getFollowing` take an optional `viewAs`, which selects a viewer perspective rather than
 proving one: with it the page is ordered familiar-first and every row carries an `isFollowing`, without it the
