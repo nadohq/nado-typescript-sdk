@@ -316,7 +316,7 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Max withdrawable', result);
-      assertBigNumberNonNegative(result, 'maxWithdrawable');
+      assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
     });
 
     void test('getMaxWithdrawable supports no-spot-leverage mode', async () => {
@@ -328,7 +328,10 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Max withdrawable (no spot leverage)', result);
-      assertBigNumberNonNegative(result, 'maxWithdrawableNoSpotLeverage');
+      assertBigNumberNonNegative(
+        result.maxWithdrawable,
+        'maxWithdrawableNoSpotLeverage',
+      );
     });
 
     void test('getOrder retrieves the placed spot order by digest', async () => {
@@ -447,9 +450,9 @@ void describe('[engine-client]: signer and orders', () => {
       });
 
       debugPrint('Max withdrawable after cancel', result);
-      assertDefined(result, 'maxWithdrawableAfterCancel');
+      assertDefined(result.maxWithdrawable, 'maxWithdrawableAfterCancel');
       assert.ok(
-        result.isFinite(),
+        result.maxWithdrawable.isFinite(),
         'maxWithdrawableAfterCancel should be finite',
       );
     });

@@ -237,23 +237,24 @@ export interface GetEngineMaxWithdrawableParams extends Subaccount {
   productId: number;
   // If not given, engine defaults to true (leverage/borrow enabled)
   spotLeverage?: boolean;
+  /**
+   * Name of the recipient subaccount, under the same wallet as the sender. When set, returns the
+   * max transferable quote amount to this recipient instead of the max withdrawal: the reserved fee
+   * is the transfer fee instead of the withdrawal fee. Requires `productId` 0.
+   */
+  recipientSubaccountName?: string;
 }
 
-export type GetEngineMaxWithdrawableResponse = BigNumber;
-
 /**
- * Response of {@link EngineQueryClient.getMaxWithdrawable} when called with
- * `{ withDynamicFee: true }`: the max withdrawable with the current dynamic fee of
- * Withdraw Collateral V2 reserved instead of the flat fee.
+ * Response of {@link EngineQueryClient.getMaxWithdrawable}: the max amount with the current
+ * dynamic fee reserved. The fee is the Withdraw Collateral V2 fee, or the Transfer Quote V2 fee
+ * when `recipientSubaccountName` is set.
  */
-export interface GetEngineMaxWithdrawableWithDynamicFeeResponse {
-  /** Max withdrawable amount, with the current dynamic fee reserved. */
+export interface GetEngineMaxWithdrawableResponse {
+  /** Max amount, with the current dynamic fee reserved. */
   maxWithdrawable: BigNumber;
-  /**
-   * The dynamic fee reserved, in the product's x18 units. Omitted when the subaccount has no
-   * deposits.
-   */
-  fee?: BigNumber;
+  /** The dynamic fee reserved, in the product's x18 units. 0 when the subaccount has no deposits. */
+  fee: BigNumber;
 }
 
 /**

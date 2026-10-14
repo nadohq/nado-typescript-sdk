@@ -4,7 +4,6 @@ import {
   GetEngineMaxMintNlpAmountParams,
   GetEngineMaxWithdrawableParams,
   GetEngineMaxWithdrawableResponse,
-  GetEngineMaxWithdrawableWithDynamicFeeResponse,
 } from '@nadohq/engine-client';
 import { getValidatedAddress, toBigNumber } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
@@ -13,36 +12,14 @@ import { GetTokenAllowanceParams, GetTokenWalletBalanceParams } from './types';
 
 export class SpotQueryAPI extends BaseSpotAPI {
   /**
-   * Gets the estimated max withdrawable amount for a product
+   * Gets the estimated max withdrawable amount for a product, or the max transferable quote amount
+   * to a recipient when `recipientSubaccountName` is set (requires `productId` 0), with the current
+   * dynamic fee reserved. The reserved fee is returned as `fee`.
    * @param params
    */
   async getMaxWithdrawable(
     params: GetEngineMaxWithdrawableParams,
-  ): Promise<GetEngineMaxWithdrawableResponse>;
-  /**
-   * Gets the estimated max withdrawable amount for a product, with the current dynamic fee of
-   * Withdraw Collateral V2 reserved instead of the flat fee. The reserved fee is returned as
-   * `fee`.
-   * @param params
-   * @returns The max withdrawable with the current dynamic fee reserved, and the reserved fee.
-   */
-  async getMaxWithdrawable(
-    params: GetEngineMaxWithdrawableParams,
-    options: { withDynamicFee: true },
-  ): Promise<GetEngineMaxWithdrawableWithDynamicFeeResponse>;
-  async getMaxWithdrawable(
-    params: GetEngineMaxWithdrawableParams,
-    options?: { withDynamicFee?: boolean },
-  ): Promise<
-    | GetEngineMaxWithdrawableResponse
-    | GetEngineMaxWithdrawableWithDynamicFeeResponse
-  > {
-    if (options?.withDynamicFee) {
-      return this.context.engineClient.getMaxWithdrawable(params, {
-        withDynamicFee: true,
-      });
-    }
-
+  ): Promise<GetEngineMaxWithdrawableResponse> {
     return this.context.engineClient.getMaxWithdrawable(params);
   }
 
