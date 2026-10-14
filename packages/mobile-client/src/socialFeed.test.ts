@@ -329,6 +329,40 @@ describe('[mobile-client]: social feed transport', () => {
     expect(requests[0].body.view_as).toBe(subaccountToHex(subaccount));
   });
 
+  it.each([
+    [
+      400,
+      MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+      'public_query_friends_feed',
+    ],
+    [
+      400,
+      MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_MISMATCH,
+      'public_query_feed_updates',
+    ],
+    [410, MOBILE_ERROR_CODES.SOCIAL_FEED_QUERY_REMOVED, 'query_for_you_feed'],
+  ])(
+    'preserves HTTP %s and feed error %s without automatic retries',
+    async (httpStatus, errorCode, requestType) => {
+      const { client, requests } = mockClient(
+        {
+          status: 'failure',
+          error: 'Rejected feed request',
+          error_code: errorCode,
+          request_type: requestType,
+        },
+        httpStatus,
+      );
+      await expect(client.getForYouFeed()).rejects.toMatchObject({
+        name: 'MobileServerFailureError',
+        httpStatus,
+        errorCode,
+        requestType,
+      });
+      expect(requests).toHaveLength(1);
+    },
+  );
+
   it('preserves typed HTTP failures and rejects non-envelope framework errors', async () => {
     const { client } = mockClient(
       {
@@ -516,10 +550,11 @@ describe('[mobile-client]: social feed response mapping', () => {
     expect(patch).not.toHaveProperty('interaction');
   });
 
-  it('delivers current author identity, relationship, and badge in viewport patches', () => {
+  it('delivers reset author updates even when the item version is unchanged', async () => {
+    const previous = mapMobileSocialTradeRow(row);
     const patch: MobileServerFeedItemPatch = {
       item_id: itemId,
-      version: '3',
+      version: row.version,
       display_at_ms: 100,
       author: {
         ...row.author,
@@ -539,11 +574,23 @@ describe('[mobile-client]: social feed response mapping', () => {
         },
       },
     };
-    const updates = mapMobileFeedUpdates({
+    const { client } = mockClient({
+      status: 'success',
       ...emptyUpdates,
       item_patches: [patch],
     });
+    const updates = await client.getFeedUpdates({
+      sessionId: readSession.session_id,
+      viewerToken: readSession.viewer_token,
+      visibleItemIds: [previous.id],
+      visiblePositionIds: [],
+      viewportRevision: 0,
+      requestSeq: 1,
+    });
     const mapped = updates.itemPatches[0];
+    expect(updates.reset).toBe(true);
+    expect(mapped.version).toBe(previous.version);
+    expect(previous.author.username).toBeNull();
     expect(mapped.displayAtMs).toBe(100);
     expect(mapped.author).toMatchObject({
       subaccount: row.author.subaccount,

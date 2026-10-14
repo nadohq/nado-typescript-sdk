@@ -394,7 +394,9 @@ export class MobileClient {
   /**
    * Polls authorized visible items and positions without inserting or reordering list members.
    * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
-   * Accept only the current viewportRevision's latest requestSeq. Null patches clear values;
+   * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
+   * F01 always returns reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
+   * Null patches clear values;
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
    * @returns Item/position patches, revoked targets, and a new-content hint.

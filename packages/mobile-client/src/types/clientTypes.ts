@@ -737,7 +737,7 @@ export interface MobileFeedUpdates {
   newItemsCount: number;
   /** Baseline to use for the next update call with the same viewport. */
   updateCursor: string;
-  /** True means a full snapshot of applicable mutable fields was returned. */
+  /** Full snapshot of applicable mutable fields; always true in F01. Apply author updates even when the item version is unchanged. */
   reset: boolean;
   /** Echoed viewport revision. */
   viewportRevision: number;
@@ -813,7 +813,7 @@ export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
 export type GetMobileFeedItemParams = MobilePublicFeedReadAccess & {
   /** Target item UUID. */
   itemId: string;
-  /** Preview size, 0–3. Comment content is not currently available. */
+  /** Range 0–3; F01 only validates this value and returns an empty card preview. The default of 3 applies when F03 previews are available. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
   sessionId?: string;

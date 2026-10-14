@@ -81,6 +81,7 @@ void describe(
       debugPrint('Feed updates', updates);
       assert.equal(updates.viewportRevision, 0);
       assert.equal(updates.requestSeq, 1);
+      assert.equal(updates.reset, true);
       assert.equal(typeof updates.updateCursor, 'string');
       assert.ok(Array.isArray(updates.itemPatches));
       assert.ok(Array.isArray(updates.positionPatches));
@@ -100,6 +101,44 @@ void describe(
       });
       assert.equal(changedViewport.viewportRevision, 1);
       assert.equal(changedViewport.requestSeq, 2);
+      assert.equal(changedViewport.reset, true);
+    });
+
+    void test('rejects sequence and viewport rollbacks within a session', async () => {
+      const page = await mobile.getForYouFeed({ limit: 1 });
+      const params = {
+        sessionId: page.readSession.sessionId,
+        viewerToken: page.readSession.viewerToken,
+        visibleItemIds: [],
+        visiblePositionIds: [],
+        updateCursor: null,
+        viewportRevision: 0,
+        requestSeq: 1,
+      };
+      const initial = await mobile.getFeedUpdates(params);
+      assert.equal(initial.reset, true);
+      const current = { ...params, viewportRevision: 1, requestSeq: 2 };
+      const changed = await mobile.getFeedUpdates(current);
+      assert.equal(changed.reset, true);
+      assert.equal(changed.viewportRevision, 1);
+      assert.equal(changed.requestSeq, 2);
+
+      // Equal values are not a rollback; the unchanged empty viewport is still valid.
+      const repeated = await mobile.getFeedUpdates(current);
+      assert.equal(repeated.requestSeq, 2);
+      for (const rollback of [
+        { ...current, requestSeq: 1 },
+        { ...current, viewportRevision: 0, requestSeq: 3 },
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () => mobile.getFeedUpdates(rollback),
+          MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_MISMATCH,
+        );
+      }
+      const next = await mobile.getFeedUpdates({ ...current, requestSeq: 3 });
+      assert.equal(next.viewportRevision, 1);
+      assert.equal(next.requestSeq, 3);
+      assert.equal(next.reset, true);
     });
 
     void test('reads Top Traders and its shared qualification cohort', async () => {

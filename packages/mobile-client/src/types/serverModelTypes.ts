@@ -626,7 +626,7 @@ export interface MobileServerFeedUpdatesResponse {
   new_items_count: number;
   /** Baseline to use for the next update call with the same viewport. */
   update_cursor: string;
-  /** True means a full snapshot of applicable mutable fields was returned. */
+  /** Full snapshot of applicable mutable fields; always true in F01. Apply author updates even when the item version is unchanged. */
   reset: boolean;
   /** Echoed viewport revision. */
   viewport_revision: number;
