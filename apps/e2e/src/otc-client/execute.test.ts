@@ -27,6 +27,7 @@ import { getExpiration } from '../utils/getExpiration';
 import { createTestContext } from '../utils/runWithContext';
 import {
   TEST_DELAYS,
+  TEST_OTC_PRICER_ID,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
@@ -98,6 +99,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
                 {
                   type: 'quote',
                   productId: TEST_PRODUCT_IDS.PERP_BTC,
+                  pricerId: TEST_OTC_PRICER_ID,
                   wallet: tc.walletClientAddress,
                   size: addDecimals(TAKER_SIZE).toFixed(),
                   sizeUnit: 'base',
@@ -143,7 +145,11 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     // Selling far above market cannot fill
     const taker = await signTakerOrder(10_000_000);
 
-    const result = await tc.otc.execute({ dealId, taker });
+    const result = await tc.otc.execute({
+      dealId,
+      taker,
+      pricerId: TEST_OTC_PRICER_ID,
+    });
     debugPrint('OTC unfillable execute', result);
 
     assert.equal(result.status, 'failure');
@@ -184,7 +190,11 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     const taker = await signTakerOrder(removeDecimals(priceX18));
     assert.equal(toBigNumber(taker.order.priceX18).toFixed(), priceX18);
 
-    const result = await tc.otc.execute({ dealId, taker });
+    const result = await tc.otc.execute({
+      dealId,
+      taker,
+      pricerId: TEST_OTC_PRICER_ID,
+    });
     debugPrint('OTC fill execute', result);
 
     assert.equal(

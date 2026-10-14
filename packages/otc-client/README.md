@@ -37,6 +37,33 @@ It is also available on a `NadoClient` context.
 const result = await nadoClient.context.otcClient.execute({ dealId, taker });
 ```
 
+## Private quote login
+
+Quotes keyed by an owner address need a session while `owner_auth_enabled` is on. Quotes keyed by
+the public wallet `0xfffffffffffffffffffffffffffffffffffffffe` never do. The session is an HttpOnly
+cookie the browser keeps; open a new quote socket after logging in, since a socket keeps whatever
+session it had at its handshake.
+
+```ts
+import { buildOtcSiweMessage, OtcClient } from '@nadohq/otc-client';
+
+const nonce = await otcClient.getAuthNonce({ sender });
+const message = buildOtcSiweMessage({
+  domain: 'testnet.nado.xyz',
+  uri: 'https://testnet.nado.xyz',
+  address: signerAddress, // owner or the sender's linked signer, checksummed
+  chainId: 763373,
+  nonce: nonce.nonce,
+  issuedAtMs: nonce.issued_at_ms,
+  sender,
+});
+const signature = await walletClient.signMessage({ message });
+await otcClient.verifyAuth({ message, signature }); // throws on a non-200
+```
+
+The login routes only admit approved web origins, so they can be called from a browser page
+on one of those origins.
+
 ## Quotes
 
 `subscribe` and `unsubscribe` are the only RFQ methods. Pass `streams`, 1–100 entries applied

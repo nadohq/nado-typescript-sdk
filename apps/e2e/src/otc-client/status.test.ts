@@ -8,7 +8,11 @@ import {
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_DELAYS,
+  TEST_OTC_PRICER_ID,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 void describe(
@@ -35,7 +39,7 @@ void describe(
     });
 
     void test('getReady accepts an explicit pricer', async () => {
-      const result = await tc.otc.getReady({ pricerId: 'awr' });
+      const result = await tc.otc.getReady({ pricerId: TEST_OTC_PRICER_ID });
       debugPrint('OTC ready (awr)', result);
 
       assertBoolean(result.ready, 'ready');

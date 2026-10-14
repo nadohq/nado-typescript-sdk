@@ -14,6 +14,9 @@ export const TEST_PRODUCT_IDS = {
 /** All testnet product IDs as a flat array, for bulk cancel operations. */
 export const TEST_PRODUCT_ID_LIST: number[] = Object.values(TEST_PRODUCT_IDS);
 
+/** The OTC route (`pricer_id`) with quote and deal coverage on testnet. */
+export const TEST_OTC_PRICER_ID = 'awr-test';
+
 /** Default subaccount name used across E2E tests. */
 export const TEST_SUBACCOUNT_NAME = 'default';
 
