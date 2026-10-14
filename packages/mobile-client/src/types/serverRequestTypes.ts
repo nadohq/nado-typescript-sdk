@@ -61,7 +61,7 @@ export interface MobileServerSocialFeedCategorizedParams extends MobileServerSoc
 }
 
 /** Unsigned browsing context; the viewing account is not proof of wallet ownership. */
-export interface MobileServerPublicFeedReadParams {
+export interface MobileServerSocialFeedReadParams {
   /**
    * Complete non-isolated viewing account. Profile, position, and item reads include this account's
    * own hidden content under account_view, in addition to resolving relationship state.
@@ -77,36 +77,36 @@ export interface MobileServerPublicFeedReadParams {
 export interface MobileServerPublicQueryRequestByType {
   /** Public recommendations with optional relationship perspective. */
   for_you_feed: MobileServerSocialFeedCategorizedParams &
-    MobileServerPublicFeedReadParams;
+    MobileServerSocialFeedReadParams;
   /** Public content from qualified authors. */
   top_traders_feed: MobileServerSocialFeedCategorizedParams &
-    MobileServerPublicFeedReadParams;
+    MobileServerSocialFeedReadParams;
   /** Public content from authors followed by view_as. */
   friends_feed: MobileServerSocialFeedCategorizedParams &
-    MobileServerPublicFeedReadParams & {
+    MobileServerSocialFeedReadParams & {
       /** Complete non-isolated identity subaccount; required on every request. */
       view_as: Hex;
     };
   /** Author content visible to view_as; the target is separate from the viewing account. */
   profile_feed: MobileServerSocialFeedCategorizedParams &
-    MobileServerPublicFeedReadParams & {
+    MobileServerSocialFeedReadParams & {
       /** Target author identity, independent of view_as. */
       subaccount: Hex;
     };
   /** Public market content. */
   market_feed: MobileServerSocialFeedListParams &
-    MobileServerPublicFeedReadParams & {
+    MobileServerSocialFeedReadParams & {
       /** Target product. */
       product_id: number;
     };
   /** Published activity in one lifecycle, including hidden content owned by view_as. */
   position_feed: MobileServerSocialFeedListParams &
-    MobileServerPublicFeedReadParams & {
+    MobileServerSocialFeedReadParams & {
       /** Target position UUID. */
       position_id: string;
     };
   /** Item details visible to view_as, optionally reusing a reading session. */
-  feed_item: MobileServerPublicFeedReadParams & {
+  feed_item: MobileServerSocialFeedReadParams & {
     /** Target item UUID. */
     item_id: string;
     /** Preview size, 0-3. */

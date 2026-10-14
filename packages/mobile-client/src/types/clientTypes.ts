@@ -748,7 +748,7 @@ export interface MobileSocialFeedUpdates {
 }
 
 /** Public browsing requires no wallet, identity registration, or one-click trading setup. */
-export interface MobilePublicFeedReadParams {
+export interface MobileSocialFeedReadParams {
   /**
    * Non-isolated viewing account used for relationship state. Profile, position, and item reads also
    * include that account's own hidden content under the account_view policy; this does not prove ownership.
@@ -774,7 +774,7 @@ export interface MobileSocialFeedListParams {
 
 /** Common filters and viewing context for main feeds and author feeds. */
 export interface MobileSocialFeedCategorizedParams
-  extends MobileSocialFeedListParams, MobilePublicFeedReadParams {
+  extends MobileSocialFeedListParams, MobileSocialFeedReadParams {
   /** Omit to include all market categories. */
   marketCategory?: MobileSocialFeedMarketCategory;
 }
@@ -799,20 +799,20 @@ export type GetMobileProfileFeedParams = MobileSocialFeedCategorizedParams & {
 
 /** Market list request; marketCategory is not accepted. */
 export type GetMobileMarketFeedParams = MobileSocialFeedListParams &
-  MobilePublicFeedReadParams & {
+  MobileSocialFeedReadParams & {
     /** Non-negative target product ID. */
     productId: number;
   };
 
 /** Published content in a lifecycle, not the complete position history. */
 export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
-  MobilePublicFeedReadParams & {
+  MobileSocialFeedReadParams & {
     /** Target position UUID. */
     positionId: string;
   };
 
 /** Item request; omit sessionId to create an item reading session directly. */
-export type GetMobileFeedItemParams = MobilePublicFeedReadParams & {
+export type GetMobileFeedItemParams = MobileSocialFeedReadParams & {
   /** Target item UUID. */
   itemId: string;
   /** Preview size, 0–3. */

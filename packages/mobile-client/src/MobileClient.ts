@@ -13,13 +13,13 @@ import {
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobileProfilesIncludeToServer,
-  mapMobilePublicFeedReadParamsToServer,
   mapMobilePublicProfile,
   mapMobileRegisteredWallet,
   mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedListParamsToServer,
   mapMobileSocialFeedPage,
   mapMobileSocialFeedRankedPage,
+  mapMobileSocialFeedReadParamsToServer,
   mapMobileSocialFeedTopTradersPage,
   mapMobileSocialFeedUpdates,
 } from './dataMappers';
@@ -265,7 +265,7 @@ export class MobileClient {
       type: 'for_you_feed',
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParamsToServer(params),
-      ...mapMobilePublicFeedReadParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileSocialFeedRankedPage(data);
@@ -285,7 +285,7 @@ export class MobileClient {
       type: 'top_traders_feed',
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParamsToServer(params),
-      ...mapMobilePublicFeedReadParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileSocialFeedTopTradersPage(data);
@@ -325,7 +325,7 @@ export class MobileClient {
       subaccount: subaccountToHex(params.subaccount),
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParamsToServer(params),
-      ...mapMobilePublicFeedReadParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileSocialFeedPage(data);
@@ -344,7 +344,7 @@ export class MobileClient {
       type: 'market_feed',
       product_id: params.productId,
       ...mapMobileSocialFeedListParamsToServer(params),
-      ...mapMobilePublicFeedReadParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileSocialFeedPage(data);
@@ -364,7 +364,7 @@ export class MobileClient {
       type: 'position_feed',
       position_id: params.positionId,
       ...mapMobileSocialFeedListParamsToServer(params),
-      ...mapMobilePublicFeedReadParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileSocialFeedPage(data);
@@ -385,7 +385,7 @@ export class MobileClient {
       item_id: params.itemId,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
-      ...mapMobilePublicFeedReadParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
     return mapMobileSocialFeedItemResponse(data);

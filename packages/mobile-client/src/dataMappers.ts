@@ -10,7 +10,6 @@ import {
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
   MobileProfilesInclude,
-  MobilePublicFeedReadParams,
   MobilePublicProfile,
   MobileRegisteredWallet,
   MobileSocialFeedAuthor,
@@ -26,6 +25,7 @@ import {
   MobileSocialFeedPositionCard,
   MobileSocialFeedPositionPatch,
   MobileSocialFeedRankedPage,
+  MobileSocialFeedReadParams,
   MobileSocialFeedReadSession,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedTradeCard,
@@ -70,8 +70,8 @@ import {
 import {
   MobileServerFollowListRequest,
   MobileServerProfilesInclude,
-  MobileServerPublicFeedReadParams,
   MobileServerSocialFeedListParams,
+  MobileServerSocialFeedReadParams,
 } from './types/serverRequestTypes';
 
 /**
@@ -729,9 +729,9 @@ export function mapMobileSocialFeedListParamsToServer(
  * @param params - Public relationship perspective and optional session credential.
  * @returns Wire fields for a public feed read.
  */
-export function mapMobilePublicFeedReadParamsToServer(
-  params: MobilePublicFeedReadParams,
-): MobileServerPublicFeedReadParams {
+export function mapMobileSocialFeedReadParamsToServer(
+  params: MobileSocialFeedReadParams,
+): MobileServerSocialFeedReadParams {
   return {
     view_as:
       params.viewAs === undefined ? undefined : subaccountToHex(params.viewAs),
