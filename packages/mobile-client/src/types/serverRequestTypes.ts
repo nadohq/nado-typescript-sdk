@@ -1,6 +1,10 @@
 import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
-import { MobileServerNotificationPreferences } from './serverModelTypes';
+import {
+  MobileServerNotificationPreferences,
+  MobileSocialFeedMarketCategory,
+  MobileSocialFeedType,
+} from './serverModelTypes';
 
 /**
  * Opt-in extras for a `profiles` query. Each one costs extra rate-limit weight per profile and adds fields
@@ -36,10 +40,99 @@ export interface MobileServerFollowListRequest {
   limit?: number;
 }
 
+/** Common filters and pagination for social feed lists. */
+export interface MobileServerSocialFeedListParams {
+  /** OR-ed content filters; combined with other filters using AND. */
+  feed_types?: MobileSocialFeedType[];
+  /** Strict lower bound in whole dollars, 1 through Number.MAX_SAFE_INTEGER. */
+  minimum_notional?: number;
+  /** Page size, 1–50; defaults to 20. */
+  limit?: number;
+  /** Fixed 15-minute reading session; required with cursor. */
+  session_id?: string;
+  /** Opaque pagination cursor, distinct from update_cursor and watermark. */
+  cursor?: string;
+}
+
+/** List fields for main feeds and author feeds. */
+export interface MobileServerSocialFeedCategorizedParams extends MobileServerSocialFeedListParams {
+  /** Omit to read all market categories. */
+  market_category?: MobileSocialFeedMarketCategory;
+}
+
+/** Unsigned browsing context; the viewing account is not proof of wallet ownership. */
+export interface MobileServerSocialFeedReadParams {
+  /**
+   * Complete non-isolated viewing account. Profile, position, and item reads include this account's
+   * own hidden content under account_view, in addition to resolving relationship state.
+   */
+  view_as?: Hex;
+  /** Original browsing credential when reusing a session. */
+  viewer_token?: string;
+}
+
 /**
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
 export interface MobileServerPublicQueryRequestByType {
+  /** Public recommendations with optional relationship perspective. */
+  for_you_feed: MobileServerSocialFeedCategorizedParams &
+    MobileServerSocialFeedReadParams;
+  /** Public content from qualified authors. */
+  top_traders_feed: MobileServerSocialFeedCategorizedParams &
+    MobileServerSocialFeedReadParams;
+  /** Public content from authors followed by view_as. */
+  friends_feed: MobileServerSocialFeedCategorizedParams &
+    MobileServerSocialFeedReadParams & {
+      /** Complete non-isolated identity subaccount; required on every request. */
+      view_as: Hex;
+    };
+  /** Author content visible to view_as; the target is separate from the viewing account. */
+  profile_feed: MobileServerSocialFeedCategorizedParams &
+    MobileServerSocialFeedReadParams & {
+      /** Target author identity, independent of view_as. */
+      subaccount: Hex;
+    };
+  /** Public market content. */
+  market_feed: MobileServerSocialFeedListParams &
+    MobileServerSocialFeedReadParams & {
+      /** Target product. */
+      product_id: number;
+    };
+  /** Published activity in one lifecycle, including hidden content owned by view_as. */
+  position_feed: MobileServerSocialFeedListParams &
+    MobileServerSocialFeedReadParams & {
+      /** Target position UUID. */
+      position_id: string;
+    };
+  /** Item details visible to view_as, optionally reusing a reading session. */
+  feed_item: MobileServerSocialFeedReadParams & {
+    /** Target item UUID. */
+    item_id: string;
+    /** Preview size, 0-3. */
+    comment_preview_limit?: number;
+    /** Omit to create a new reading session. */
+    session_id?: string;
+  };
+  /** Updates inherit the original public session's viewing account. */
+  feed_updates: {
+    /** Original reading session. */
+    session_id: string;
+    /** Previously delivered item UUIDs. */
+    visible_item_ids: string[];
+    /** Authorized position UUIDs. */
+    visible_position_ids: string[];
+    /** Baseline from the last accepted update. */
+    update_cursor?: string | null;
+    /** Current viewport version. */
+    viewport_revision: number;
+    /** Request sequence increasing across the entire session, including viewport changes. */
+    request_seq: number;
+    /** Original public browsing credential. */
+    viewer_token: string;
+    /** The viewing account cannot be changed by an update. */
+    view_as?: never;
+  };
   username_availability: { display_name: string };
   profiles: {
     /**
