@@ -35,14 +35,16 @@ export type MobileAvatarSelection =
     };
 
 /**
- * Upload the JPEG using PUT, then publish uploadKey through setAvatar.
+ * Upload a square JPEG or PNG (up to 4096 × 4096 pixels and `MOBILE_AVATAR_MAX_UPLOAD_BYTES` bytes)
+ * using PUT, then publish uploadKey through setAvatar. Publication validates the image; a successful PUT
+ * alone does not mean it is accepted.
  */
 export interface MobileAvatarUpload {
   /** Staging key, bound to the requesting subaccount. */
   uploadKey: string;
   /** Short-lived signed PUT URL. */
   uploadUrl: string;
-  /** Headers that must accompany the PUT. */
+  /** Send unchanged, even for PNG: the signed Content-Type is image/jpeg. */
   headers: Record<string, string>;
   /** Upload URL lifetime in seconds from issuance, not from when the response is received. */
   expiresInSeconds: number;
@@ -56,16 +58,9 @@ export interface MobileAvatarUpload {
  * The last three fields are `undefined` unless the matching {@link MobileProfilesInclude} asked for them —
  * absent means "not requested" rather than "none".
  */
-export interface MobilePublicProfile {
-  subaccount: Hex;
-  /** Canonical, lowercased handle, or `null` if no username has been claimed. */
-  username: string | null;
-  /** User-facing name as claimed, or `null` if no username has been claimed. */
-  displayName: string | null;
+export interface MobilePublicProfile extends MobileIdentitySummary {
   /** Public biography, or null when unset. */
   bio: string | null;
-  /** Published avatar URL. Use a generated icon when null or when the image fails to load. */
-  avatarUrl: string | null;
   privateMode: boolean;
   /**
    * Exact count at query time rather than a cached counter, including unnamed and private accounts — Private
@@ -83,11 +78,11 @@ export interface MobilePublicProfile {
  */
 export interface MobileIdentitySummary {
   subaccount: Hex;
-  /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
+  /** Canonical, lowercased handle; when null, render a local fallback label from `subaccount`. */
   username: string | null;
-  /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
+  /** User-facing name as claimed; when null, render a local fallback label from `subaccount`. */
   displayName: string | null;
-  /** Published avatar URL, or null when the account has no saved avatar. */
+  /** Published avatar URL. Use a generated icon when null or when the image fails to load. */
   avatarUrl: string | null;
 }
 
@@ -336,7 +331,7 @@ export interface MobileSetAvatarParams extends MobileSignedRequestParams {
  * Params for {@link MobileClient.createAvatarUpload}.
  */
 export interface MobileCreateAvatarUploadParams extends MobileSignedRequestParams {
-  /** Final JPEG size as an integer number of bytes, from 1 to `MOBILE_AVATAR_MAX_UPLOAD_BYTES` (5 MiB). */
+  /** Image size as an integer number of bytes, from 1 to `MOBILE_AVATAR_MAX_UPLOAD_BYTES` (5 MiB). */
   contentLength: number;
 }
 

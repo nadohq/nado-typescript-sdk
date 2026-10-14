@@ -80,15 +80,10 @@ export interface MobileServerFollowSummary {
  * for them, which is why they are optional rather than nullable — absent means "not requested", not "none".
  * The singular `profile` query never returns any of them.
  */
-export interface MobileServerProfile {
-  subaccount: Hex;
-  username: string | null;
-  display_name: string | null;
+export interface MobileServerProfile extends MobileServerIdentitySummary {
   private_mode: boolean;
   /** Plain-text biography, or null when unset. */
   bio: string | null;
-  /** Published avatar URL, or null when unset. */
-  avatar_url: string | null;
   /**
    * Exact count at query time — the backend counts rather than reading a cached counter. Unnamed and private
    * accounts are included: Private Mode hides activity, not relationships. Requires `follow_counts`.

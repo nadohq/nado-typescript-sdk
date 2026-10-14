@@ -87,11 +87,8 @@ export function mapMobilePublicProfile(
   server: MobileServerProfile,
 ): MobilePublicProfile {
   return {
-    subaccount: server.subaccount,
-    username: server.username,
-    displayName: server.display_name,
+    ...mapMobileIdentitySummary(server),
     bio: server.bio,
-    avatarUrl: server.avatar_url,
     privateMode: server.private_mode,
     followerCount: server.follower_count,
     followingCount: server.following_count,

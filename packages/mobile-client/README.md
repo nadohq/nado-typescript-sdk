@@ -1,6 +1,6 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado mobile service API. Manages usernames, public profile lookups, the global trade feed,
+HTTP client for the Nado mobile service API. Manages usernames, bios, avatars, public profile lookups, the global trade feed,
 the follower/following graph, privacy settings, and push notification devices/preferences, using EIP-712 +
 msgpack signed authentication.
 
@@ -46,7 +46,7 @@ await mobile.setUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
+`getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
 `getNotificationPreferences`, `getRegisteredWallet`.
 
 `getProfiles` is the only profile route: it batches up to 25 subaccounts, returns them in the requested order,
@@ -67,7 +67,7 @@ push token rather than a wallet signature, so they still work at logout when a s
 
 ### Signed Executes
 
-`setUsername`, `setPrivateMode`, `registerExpoToken`, `setFollow`.
+`setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`.
 
 ### Linked Signers
 

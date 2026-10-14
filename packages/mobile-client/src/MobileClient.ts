@@ -98,7 +98,7 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed, the
+ * Client for the Nado mobile service API: usernames, bios, avatars, public profile lookups, the global trade feed, the
  * follower/following graph, privacy settings, and push notification device/preference management.
  */
 export class MobileClient {
@@ -356,7 +356,7 @@ export class MobileClient {
   }
 
   /**
-   * Creates a short-lived upload grant. The caller uploads the JPEG with the returned headers;
+   * Creates a short-lived upload grant. The caller uploads an image meeting {@link MobileAvatarUpload}'s requirements;
    * file access and transport remain platform-specific. This does not change the saved avatar.
    *
    * @throws {MobileServerFailureError} With `INVALID_AVATAR` for a zero or oversized upload,
@@ -376,6 +376,8 @@ export class MobileClient {
 
   /**
    * Publishes a preset/staged upload, or clears the saved avatar when avatar is null.
+   * Uploaded JPEG/PNG images must be square, at most 4096 × 4096 pixels, and within
+   * `MOBILE_AVATAR_MAX_UPLOAD_BYTES`. A successful PUT can still fail this publication check.
    *
    * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
    *
