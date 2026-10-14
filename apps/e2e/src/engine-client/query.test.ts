@@ -376,22 +376,29 @@ void describe(
       assertDynamicFeeQuoteShape(result, 'dynamicFeeQuoteTransfer');
     });
 
-    void test('getMaxWithdrawable with dynamic fee reserves the dynamic fee', async () => {
-      const result = await tc.engine.getMaxWithdrawable(
-        {
-          subaccountOwner: tc.walletClientAddress,
-          subaccountName: TEST_SUBACCOUNT_NAME,
-          productId: QUOTE_PRODUCT_ID,
-        },
-        { withDynamicFee: true },
-      );
+    void test('getMaxWithdrawable reserves the dynamic fee', async () => {
+      const result = await tc.engine.getMaxWithdrawable({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: QUOTE_PRODUCT_ID,
+      });
 
-      debugPrint('Max withdrawable (dynamic fee)', result);
+      debugPrint('Max withdrawable', result);
       assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
-      // `fee` is omitted when the subaccount has no deposits
-      if (result.fee) {
-        assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
-      }
+      assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
+    });
+
+    void test('getMaxWithdrawable returns the max transfer to a subaccount', async () => {
+      const result = await tc.engine.getMaxWithdrawable({
+        subaccountOwner: tc.walletClientAddress,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        productId: QUOTE_PRODUCT_ID,
+        recipientSubaccountName: TEST_SUBACCOUNT_NAME,
+      });
+
+      debugPrint('Max withdrawable (transfer to subaccount)', result);
+      assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
+      assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
     });
   },
 );

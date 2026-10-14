@@ -543,7 +543,7 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   // SpotAPI queries
   // ---------------------------------------------------------------
 
-  void test('getMaxWithdrawable returns a finite amount', async () => {
+  void test('getMaxWithdrawable reserves the dynamic fee', async () => {
     const result = await nadoClient.spot.getMaxWithdrawable({
       subaccountOwner: walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
@@ -551,25 +551,21 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     });
 
     debugPrint('Max withdrawable', result);
-    assertBigNumberNonNegative(result, 'maxWithdrawable');
+    assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
+    assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
   });
 
-  void test('getMaxWithdrawable with dynamic fee returns the reserved fee', async () => {
-    const result = await nadoClient.spot.getMaxWithdrawable(
-      {
-        subaccountOwner: walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
-        productId: QUOTE_PRODUCT_ID,
-      },
-      { withDynamicFee: true },
-    );
+  void test('getMaxWithdrawable returns the max transfer to a subaccount', async () => {
+    const result = await nadoClient.spot.getMaxWithdrawable({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      productId: QUOTE_PRODUCT_ID,
+      recipientSubaccountName: TEST_SUBACCOUNT_NAME,
+    });
 
-    debugPrint('Max withdrawable (dynamic fee)', result);
+    debugPrint('Max withdrawable (transfer to subaccount)', result);
     assertBigNumberNonNegative(result.maxWithdrawable, 'maxWithdrawable');
-    // `fee` is omitted when the subaccount has no deposits
-    if (result.fee) {
-      assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
-    }
+    assertBigNumberNonNegative(result.fee, 'maxWithdrawable.fee');
   });
 
   void test('getDynamicFeeQuote returns the current withdrawal fee', async () => {
