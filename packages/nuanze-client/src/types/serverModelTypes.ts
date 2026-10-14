@@ -10,6 +10,7 @@ import {
   NuanzeMinPositionUsd,
   NuanzeNewsStory,
   NuanzeNotionalBucket,
+  NuanzePointsTier,
   NuanzePositionSide,
   NuanzeTradeSide,
 } from './clientModelTypes';
@@ -182,6 +183,8 @@ export interface NuanzeServerFollowedLeaderboardItem {
   productIds: number[];
   productCount: number;
   globalRank: number | null;
+  volume: string | null;
+  pointsTier: NuanzePointsTier | null;
 }
 
 /**
@@ -199,6 +202,39 @@ export interface NuanzeServerSubaccountLeaderboardItem {
   productIds: number[];
   productCount: number;
   globalRank: number | null;
+  volume: string | null;
+  pointsTier: NuanzePointsTier | null;
+}
+
+/**
+ * Close-event trade extreme as returned on the wire.
+ */
+export interface NuanzeServerSubaccountCloseTrade {
+  tradeId: number;
+  productId: number;
+  ticker: string;
+  realizedPnl: string;
+  matchedAt: string;
+}
+
+/**
+ * Position-based long/short bias as returned on the wire.
+ */
+export interface NuanzeServerSubaccountLongShortBias {
+  longPct: string | null;
+  shortPct: string | null;
+  longNotional: string;
+  shortNotional: string;
+}
+
+/**
+ * Most-traded perp market as returned on the wire.
+ */
+export interface NuanzeServerSubaccountMostTradedMarket {
+  productId: number;
+  ticker: string;
+  trades: number;
+  volume: string;
 }
 
 /**
@@ -208,6 +244,36 @@ export interface NuanzeServerPlatformDeltas {
   volumePct: string | null;
   tradesPct: string | null;
   tradersPct: string | null;
+}
+
+/**
+ * Cohort long-percentage sample as returned on the wire.
+ */
+export interface NuanzeServerCohortSeriesPoint {
+  timestamp: string;
+  walletCount: number;
+  longPct: string | null;
+}
+
+/**
+ * Lifetime-PnL wallet cohort as returned on the wire.
+ */
+export interface NuanzeServerCohort {
+  key: NuanzeCohortKey;
+  label: string;
+  pnlMin: string | null;
+  pnlMax: string | null;
+  walletCount: number;
+  pnl: string;
+  averagePnl: string | null;
+  walletsInProfit: number;
+  walletsInLoss: number;
+  trades: number;
+  longNotional: string;
+  shortNotional: string;
+  longPct: string | null;
+  shortPct: string | null;
+  series: NuanzeServerCohortSeriesPoint[];
 }
 
 /**

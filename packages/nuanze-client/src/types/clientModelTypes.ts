@@ -311,9 +311,20 @@ export const NUANZE_COHORT_KEYS = [
 ] as const;
 
 /**
- * Wallet cohort label used by positioning cells.
+ * Lifetime account PnL wallet cohort, used by positioning cells and `GET /cohorts`.
  */
 export type NuanzeCohortKey = (typeof NUANZE_COHORT_KEYS)[number];
+
+/**
+ * Every {@link NuanzePointsTier} the API can report: 1 Breeze, 2 Gust, 3 Wind, 4 Storm, and
+ * 5 Tornado.
+ */
+export const NUANZE_POINTS_TIERS = [1, 2, 3, 4, 5] as const;
+
+/**
+ * Nado Points tier, from 1 Breeze to 5 Tornado.
+ */
+export type NuanzePointsTier = (typeof NUANZE_POINTS_TIERS)[number];
 
 /**
  * Every {@link NuanzeNotionalBucket} the API can report. Frozen USD ranges are small [10, 1000),
@@ -694,6 +705,61 @@ export interface NuanzeFollowedLeaderboardItem {
    * the subaccount has no PnL in the window.
    */
   globalRank: number | null;
+  /**
+   * Perp plus spot volume in the timeframe, from the same account snapshots and window bounds as
+   * `pnl`, or null when the subaccount has no account snapshot at the window's grain.
+   */
+  volume: BigNumber | null;
+  /**
+   * Owner wallet's Nado Points tier in the latest completed weekly epoch (the tier Nado shows as
+   * current), shared by every subaccount of the owner and refreshed daily. Null when the owner
+   * has no points record for that epoch.
+   */
+  pointsTier: NuanzePointsTier | null;
+}
+
+/**
+ * Close-event trade extreme from `GET /subaccounts/{subaccountHex}`.
+ */
+export interface NuanzeSubaccountCloseTrade {
+  /** Fill ID of the closing fill. */
+  tradeId: number;
+  /** Perp product ID. */
+  productId: number;
+  /** Asset ticker, e.g. `ETH`. */
+  ticker: string;
+  /** Close-event realized PnL of the fill. */
+  realizedPnl: BigNumber;
+  /** When the fill matched, as a UTC ISO 8601 string. */
+  matchedAt: string;
+}
+
+/**
+ * Position-based long/short bias from `GET /subaccounts/{subaccountHex}`.
+ */
+export interface NuanzeSubaccountLongShortBias {
+  /** Share of qualifying current perp notional held long, 0-100. Null when flat. */
+  longPct: BigNumber | null;
+  /** Share of qualifying current perp notional held short, 0-100. Null when flat. */
+  shortPct: BigNumber | null;
+  /** Qualifying current long notional in USD. */
+  longNotional: BigNumber;
+  /** Qualifying current short notional in USD. */
+  shortNotional: BigNumber;
+}
+
+/**
+ * Most-traded perp market from `GET /subaccounts/{subaccountHex}`.
+ */
+export interface NuanzeSubaccountMostTradedMarket {
+  /** Perp product ID. */
+  productId: number;
+  /** Asset ticker, e.g. `ETH`. */
+  ticker: string;
+  /** Perp fill count in the window. */
+  trades: number;
+  /** Windowed fill volume in USD. */
+  volume: BigNumber;
 }
 
 /**
@@ -730,6 +796,18 @@ export interface NuanzeSubaccountLeaderboardItem {
    * subaccount has no PnL in the window.
    */
   globalRank: number | null;
+  /**
+   * Perp plus spot volume in the timeframe, from the same account snapshots and window bounds as
+   * `pnl` (and as `windowVolume` on `GET /subaccounts/{subaccountHex}`), or null when the
+   * subaccount has no account snapshot at the window's grain.
+   */
+  volume: BigNumber | null;
+  /**
+   * Owner wallet's Nado Points tier in the latest completed weekly epoch (the tier Nado shows as
+   * current), shared by every subaccount of the owner and refreshed daily. Null when the owner
+   * has no points record for that epoch.
+   */
+  pointsTier: NuanzePointsTier | null;
 }
 
 /**
@@ -774,6 +852,55 @@ export interface NuanzePlatformDeltas {
   tradesPct: BigNumber | null;
   /** Trader-count change versus the prior equal window, or null when unavailable. */
   tradersPct: BigNumber | null;
+}
+
+/**
+ * Four-hourly sample of a wallet cohort's long percentage.
+ */
+export interface NuanzeCohortSeriesPoint {
+  /** Sample time as a UTC ISO 8601 string. */
+  timestamp: string;
+  /** Wallets in the cohort at the sample. */
+  walletCount: number;
+  /** Share of the cohort's open perp notional held long, 0-100, or null when it was flat. */
+  longPct: BigNumber | null;
+}
+
+/**
+ * Wallet cohort bucketed by lifetime equity-basis account PnL summed across the wallet's
+ * subaccounts. Every wallet that has traded belongs to exactly one cohort.
+ */
+export interface NuanzeCohort {
+  /** Cohort key. */
+  key: NuanzeCohortKey;
+  /** Display label. */
+  label: string;
+  /** Inclusive lower lifetime PnL bound, or null when unbounded. */
+  pnlMin: BigNumber | null;
+  /** Exclusive upper lifetime PnL bound, or null when unbounded. */
+  pnlMax: BigNumber | null;
+  /** Wallets in the cohort. */
+  walletCount: number;
+  /** Sum of the members' lifetime account PnL. */
+  pnl: BigNumber;
+  /** Mean lifetime account PnL per wallet, or null when the cohort is empty. */
+  averagePnl: BigNumber | null;
+  /** Members with lifetime account PnL above zero. */
+  walletsInProfit: number;
+  /** Members with lifetime account PnL at or below zero. */
+  walletsInLoss: number;
+  /** Lifetime fill count across the members. */
+  trades: number;
+  /** Members' current open perp notional held long. */
+  longNotional: BigNumber;
+  /** Members' current open perp notional held short. */
+  shortNotional: BigNumber;
+  /** Share of open perp notional held long, 0-100, or null when the cohort is flat. */
+  longPct: BigNumber | null;
+  /** Share of open perp notional held short, 0-100, or null when the cohort is flat. */
+  shortPct: BigNumber | null;
+  /** Long percentage every four hours over the last 30 days, oldest first. */
+  series: NuanzeCohortSeriesPoint[];
 }
 
 /**

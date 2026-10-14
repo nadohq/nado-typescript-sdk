@@ -1,12 +1,12 @@
 # `@nadohq/nuanze-client`
 
 HTTP client for the Nuanze public analytics API. Serves markets, wallets, trades, candles, collateral flows,
-positioning, and globally ranked current open positions. Read-only and credential-free, so unlike the other
-service clients it takes no wallet client or linked signer. Leaderboard lookups take explicit public
-identifiers and require no authentication: collection viewer lookups take a wallet address (`getLeaderboard`
-`viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` and `getFollowedLeaderboard` `viewAs`), while
-dedicated point reads (`getWalletLeaderboardPosition`, `getSubaccountLeaderboardPosition`,
-`getFollowedLeaderboardPosition`) fetch one rank by path identifier.
+positioning, lifetime-PnL wallet cohorts, and globally ranked current open positions. Read-only and
+credential-free, so unlike the other service clients it takes no wallet client or linked signer. Leaderboard
+lookups take explicit public identifiers and require no authentication: collection viewer lookups take a
+wallet address (`getLeaderboard` `viewAs`) or bytes32 subaccount hex (`getSubaccountLeaderboard` and
+`getFollowedLeaderboard` `viewAs`), while dedicated point reads (`getWalletLeaderboardPosition`,
+`getSubaccountLeaderboardPosition`, `getFollowedLeaderboardPosition`) fetch one rank by path identifier.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -64,7 +64,9 @@ Each method maps one-to-one onto a public GET operation:
 - `getWalletLeaderboardPosition`
 - `getSubaccountLeaderboard`
 - `getSubaccountLeaderboardPosition`
+- `getSubaccountStats`
 - `getPlatformSummary`
+- `getCohorts`
 - `getFollowedLeaderboard`
 - `getFollowedLeaderboardPosition`
 - `getWalletSummary`
