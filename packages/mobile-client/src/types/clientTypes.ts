@@ -2,28 +2,28 @@ import { SignatureParams, Subaccount } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { Hex } from 'viem';
 import {
-  MobileFeedCohortStatus,
-  MobileFeedHistoryQuality,
-  MobileFeedLeverage,
   MobileFeedMarginMode,
-  MobileFeedMarketCategory,
-  MobileFeedPnlBasis,
-  MobileFeedPnlMode,
-  MobileFeedPnlQuality,
-  MobileFeedPositionDisplayBasis,
-  MobileFeedPositionState,
-  MobileFeedReadSessionMode,
-  MobileFeedSourceCategory,
   MobileFeedTradePosition,
   MobileFeedTradePositionDirection,
-  MobileFeedTraderDataStatus,
-  MobileFeedUnavailableTarget,
   MobileNotificationCategory,
   MobileNotificationPlatform,
+  MobileSocialFeedCohortStatus,
+  MobileSocialFeedHistoryQuality,
+  MobileSocialFeedLeverage,
+  MobileSocialFeedMarketCategory,
+  MobileSocialFeedPnlBasis,
+  MobileSocialFeedPnlMode,
+  MobileSocialFeedPnlQuality,
+  MobileSocialFeedPositionDisplayBasis,
+  MobileSocialFeedPositionState,
+  MobileSocialFeedReadSessionMode,
+  MobileSocialFeedSourceCategory,
+  MobileSocialFeedTradeCardAction,
+  MobileSocialFeedTradeSizeChangeAction,
+  MobileSocialFeedTraderBadgeCode,
+  MobileSocialFeedTraderDataStatus,
   MobileSocialFeedType,
-  MobileSocialTradeCardAction,
-  MobileSocialTradeSizeChangeAction,
-  MobileTraderBadgeCode,
+  MobileSocialFeedUnavailableTarget,
 } from './serverModelTypes';
 
 /**
@@ -394,9 +394,9 @@ export type GetMobileNotificationPreferencesParams = MobileWithExpoTokenParams;
 export type GetMobileRegisteredWalletParams = MobileWithExpoTokenParams;
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
-export interface MobileTraderBadge {
+export interface MobileSocialFeedTraderBadge {
   /** Qualification tier. */
-  code: MobileTraderBadgeCode;
+  code: MobileSocialFeedTraderBadgeCode;
   /** Signed integer in x18 units. */
   pnl: BigNumber;
   /** Stable compatibility identifier for the official Portfolio month result. */
@@ -412,17 +412,17 @@ export interface MobileTraderBadge {
 }
 
 /** Public author identity and the selected viewing account's follow state. */
-export interface MobileFeedAuthor extends MobileIdentitySummary {
+export interface MobileSocialFeedAuthor extends MobileIdentitySummary {
   /** Selected viewAs account's follow state; null without a viewing account. */
   isFollowing: boolean | null;
   /** Null when no qualifying badge is available. */
-  traderBadge: MobileTraderBadge | null;
+  traderBadge: MobileSocialFeedTraderBadge | null;
   /** Stale means the last successful cohort is used after a refresh failure. */
-  traderDataStatus: MobileFeedTraderDataStatus;
+  traderDataStatus: MobileSocialFeedTraderDataStatus;
 }
 
 /** Market metadata from the service's authoritative market source. */
-export interface MobileFeedMarket {
+export interface MobileSocialFeedMarket {
   /** Market product ID. */
   productId: number;
   /** Market symbol. */
@@ -430,27 +430,27 @@ export interface MobileFeedMarket {
   /** Logo URL when available. */
   logoUrl: string | null;
   /** Social feed category when known. */
-  category: MobileFeedMarketCategory | null;
+  category: MobileSocialFeedMarketCategory | null;
   /** Original market categories. */
-  sourceCategories: MobileFeedSourceCategory[];
+  sourceCategories: MobileSocialFeedSourceCategory[];
 }
 
 /** Position PnL with explicit accounting basis and data quality. */
-export interface MobileFeedPnl {
+export interface MobileSocialFeedPnl {
   /** Signed x18 integer; null means unknown, not zero. */
   amount: BigNumber | null;
   /** Open positions exclude fees/funding; closed results include them. */
-  basis: MobileFeedPnlBasis;
+  basis: MobileSocialFeedPnlBasis;
   /** Closed positions use frozen results. */
-  mode: MobileFeedPnlMode;
+  mode: MobileSocialFeedPnlMode;
   /** Source timestamp in Unix milliseconds. */
   asOfMs: number;
   /** Whether accounting is complete, pending, or unavailable. */
-  quality: MobileFeedPnlQuality;
+  quality: MobileSocialFeedPnlQuality;
 }
 
 /** Complete mutable position fields delivered together at one version. */
-export interface MobileFeedPositionPatch {
+export interface MobileSocialFeedPositionPatch {
   /** Position lifecycle UUID. */
   positionId: string;
   /** Positive integer string; compare as integers without Number conversion. */
@@ -460,7 +460,7 @@ export interface MobileFeedPositionPatch {
   /** Remaining average entry price in decimal units, frozen on close; null if unknown. */
   entryPrice: BigNumber | null;
   /** Basis of the displayed size and entry price. */
-  displayBasis: MobileFeedPositionDisplayBasis;
+  displayBasis: MobileSocialFeedPositionDisplayBasis;
   /** Closing snapshot reference time, or null. */
   snapshotAtMs: number | null;
   /** Absolute quantity in x18 units. */
@@ -468,31 +468,31 @@ export interface MobileFeedPositionPatch {
   /** Notional value in x18 units. */
   notional: BigNumber;
   /** Current lifecycle state. */
-  state: MobileFeedPositionState;
+  state: MobileSocialFeedPositionState;
   /** Completeness of the available historical facts. */
-  historyQuality: MobileFeedHistoryQuality;
+  historyQuality: MobileSocialFeedHistoryQuality;
   /** Margin mode. */
   marginMode: MobileFeedMarginMode;
   /** Current or closing leverage. */
-  leverage: MobileFeedLeverage;
+  leverage: MobileSocialFeedLeverage;
   /** Leverage reference time; null when unknown or inapplicable. */
   leverageAtMs: number | null;
   /** Current remaining PnL or the closed lifecycle's net result. */
-  pnl: MobileFeedPnl;
+  pnl: MobileSocialFeedPnl;
 }
 
 /** Position displayed inside an automatic trade card. */
-export interface MobileFeedPositionCard extends MobileFeedPositionPatch {
+export interface MobileSocialFeedPositionCard extends MobileSocialFeedPositionPatch {
   /** Market product ID. */
   productId: number;
   /** Market display metadata. */
-  market: MobileFeedMarket;
+  market: MobileSocialFeedMarket;
   /** Position direction. */
   direction: MobileFeedTradePositionDirection;
 }
 
 /** Interaction counters; interaction writes are not currently available. */
-export interface MobileFeedInteraction {
+export interface MobileSocialFeedInteraction {
   /** Number of likes. */
   likeCount: number;
   /** Number of comments. */
@@ -504,7 +504,7 @@ export interface MobileFeedInteraction {
 }
 
 /** Capability flags for a social feed item. */
-export interface MobileFeedCapabilities {
+export interface MobileSocialFeedCapabilities {
   /** Whether liking is available. */
   canLike: boolean;
   /** Whether commenting is available. */
@@ -514,7 +514,7 @@ export interface MobileFeedCapabilities {
 }
 
 /** Comment preview metadata for a social trade card. */
-export interface MobileFeedCommentPreview {
+export interface MobileSocialFeedCommentPreview {
   /** Currently empty. */
   items: never[];
   /** Comment count. */
@@ -524,7 +524,7 @@ export interface MobileFeedCommentPreview {
 }
 
 /** Exposure requirements associated with a reading session. */
-export interface MobileFeedViewTracking {
+export interface MobileSocialFeedViewTracking {
   /** Required visible fraction. */
   minVisibleRatio: number;
   /** Required visible duration in milliseconds. */
@@ -532,7 +532,7 @@ export interface MobileFeedViewTracking {
 }
 
 /** Coverage of the candidate authors in a qualification snapshot. */
-export interface MobileFeedCohortCoverage {
+export interface MobileSocialFeedCohortCoverage {
   /** Coverage domain. */
   scope: 'eligible_content_candidates';
   /** Candidate author count. */
@@ -544,13 +544,13 @@ export interface MobileFeedCohortCoverage {
 }
 
 /** Shared qualification snapshot used for Top Traders eligibility and badges. */
-export interface MobileFeedCohort {
+export interface MobileSocialFeedCohort {
   /** Cohort UUID. */
   snapshotId: string;
   /** Ready or the previous successful snapshot after a refresh failure. */
-  status: MobileFeedCohortStatus;
+  status: MobileSocialFeedCohortStatus;
   /** Coverage of all eligible candidate authors. */
-  coverage: MobileFeedCohortCoverage;
+  coverage: MobileSocialFeedCohortCoverage;
 }
 
 /** Metadata shared by the automatic trade cards and rows available from the social feed. */
@@ -562,7 +562,7 @@ export interface MobileSocialFeedItemBase {
   /** Drawings are not currently available. */
   drawing: null;
   /** Author identity, badge, and follow perspective. */
-  author: MobileFeedAuthor;
+  author: MobileSocialFeedAuthor;
   /** Creation time in Unix milliseconds. */
   createdAtMs: number;
   /** Sorting time in Unix milliseconds. */
@@ -570,31 +570,31 @@ export interface MobileSocialFeedItemBase {
   /** Positive integer version string. */
   version: string;
   /** Market metadata. */
-  market: MobileFeedMarket;
+  market: MobileSocialFeedMarket;
   /** Server capability flags; currently all false. */
-  capabilities: MobileFeedCapabilities;
+  capabilities: MobileSocialFeedCapabilities;
 }
 
 /** Automatic trade card returned by the social feed. */
-export interface MobileSocialTradeCard extends MobileSocialFeedItemBase {
+export interface MobileSocialFeedTradeCard extends MobileSocialFeedItemBase {
   /** Card discriminant. */
   kind: 'trade_card';
   /** Trading action. */
-  action: MobileSocialTradeCardAction;
+  action: MobileSocialFeedTradeCardAction;
   /** Card text, empty for automatic cards. */
   text: string;
   /** Automatic cards have no mentions. */
   mentions: never[];
   /** Current or frozen position display. */
-  position: MobileFeedPositionCard;
+  position: MobileSocialFeedPositionCard;
   /** Interaction counters. */
-  interaction: MobileFeedInteraction;
+  interaction: MobileSocialFeedInteraction;
   /** Comment content is not currently available. */
-  commentPreview: MobileFeedCommentPreview;
+  commentPreview: MobileSocialFeedCommentPreview;
 }
 
 /** Fields shared by size-change and liquidation trade rows. */
-export interface MobileSocialTradeRowBase extends MobileSocialFeedItemBase {
+export interface MobileSocialFeedTradeRowBase extends MobileSocialFeedItemBase {
   /** Row discriminant. */
   kind: 'trade_row';
   /** Associated lifecycle UUID. */
@@ -604,7 +604,7 @@ export interface MobileSocialTradeRowBase extends MobileSocialFeedItemBase {
   /** Historical margin mode. */
   marginMode: MobileFeedMarginMode;
   /** Historical action leverage, not the position's current leverage. */
-  leverage: MobileFeedLeverage;
+  leverage: MobileSocialFeedLeverage;
   /** Historical leverage reference time. */
   leverageAtMs: number | null;
   /** Number of aggregated trades. */
@@ -616,11 +616,11 @@ export interface MobileSocialTradeRowBase extends MobileSocialFeedItemBase {
 }
 
 /** A size-change row or liquidation row with independently nullable financial facts. */
-export type MobileSocialTradeRow = MobileSocialTradeRowBase &
+export type MobileSocialFeedTradeRow = MobileSocialFeedTradeRowBase &
   (
     | {
         /** Ordinary size-change action. */
-        action: MobileSocialTradeSizeChangeAction;
+        action: MobileSocialFeedTradeSizeChangeAction;
         /** Executed notional in x18 units. */
         notional: BigNumber;
       }
@@ -641,18 +641,20 @@ export type MobileSocialTradeRow = MobileSocialTradeRowBase &
   );
 
 /** Automatic feed content; excludes posts, replies, drawings, and interaction writes. */
-export type MobileSocialFeedItem = MobileSocialTradeCard | MobileSocialTradeRow;
+export type MobileSocialFeedItem =
+  | MobileSocialFeedTradeCard
+  | MobileSocialFeedTradeRow;
 
 /** Fixed-duration social feed reading session. Credentials and cursors must be returned unchanged. */
-export interface MobileFeedReadSession {
+export interface MobileSocialFeedReadSession {
   /** Session identifier. */
   sessionId: string;
   /** Feed or direct item session. */
-  mode: MobileFeedReadSessionMode;
+  mode: MobileSocialFeedReadSessionMode;
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expiresAtMs: number;
   /** Exposure metadata only; recording is not available from the social feed. */
-  viewTracking: MobileFeedViewTracking;
+  viewTracking: MobileSocialFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   updateCursor: string | null;
   /** Credential for this reading session. Do not log or cache publicly. */
@@ -662,7 +664,7 @@ export interface MobileFeedReadSession {
 /** Fixed-window list response; an empty page can still have a next cursor. */
 export interface MobileSocialFeedPage {
   /** Reading session and its browser credential. */
-  readSession: MobileFeedReadSession;
+  readSession: MobileSocialFeedReadSession;
   /** Visible items in server order; deduplicate by ID without local reordering. */
   items: MobileSocialFeedItem[];
   /** Opaque cursor; null only when pagination is complete. */
@@ -672,15 +674,15 @@ export interface MobileSocialFeedPage {
 }
 
 /** Main-feed page with its ordering version. */
-export interface MobileRankedFeedPage extends MobileSocialFeedPage {
+export interface MobileSocialFeedRankedPage extends MobileSocialFeedPage {
   /** Current ordering contract: chronological-v1. */
   rankingVersion: string;
 }
 
 /** Top Traders page, with one shared qualification snapshot for eligibility and badges. */
-export interface MobileTopTradersFeedPage extends MobileRankedFeedPage {
+export interface MobileSocialFeedTopTradersPage extends MobileSocialFeedRankedPage {
   /** Author eligibility snapshot. */
-  cohort: MobileFeedCohort;
+  cohort: MobileSocialFeedCohort;
 }
 
 /** Item details with either a new item session or the reused authorized session. */
@@ -688,19 +690,19 @@ export interface MobileSocialFeedItemResponse {
   /** Full visible item. */
   item: MobileSocialFeedItem;
   /** Session authorized for subsequent updates. */
-  readSession: MobileFeedReadSession;
+  readSession: MobileSocialFeedReadSession;
 }
 
 /** Item delta: omitted means unchanged; explicit null clears a prior value. */
-export interface MobileFeedItemPatch {
+export interface MobileSocialFeedItemPatch {
   /** Current author identity, follow state, and qualification badge. */
-  author: MobileFeedAuthor;
+  author: MobileSocialFeedAuthor;
   /** Target item UUID. */
   itemId: string;
   /** Positive integer version string. */
   version: string;
   /** Updated interaction counters. */
-  interaction?: MobileFeedInteraction;
+  interaction?: MobileSocialFeedInteraction;
   /** Updated display timestamp; does not reorder the current list. */
   displayAtMs: number;
   /** Updated aggregate count. */
@@ -720,24 +722,24 @@ export interface MobileFeedItemPatch {
   /** Updated signed action PnL. */
   realizedPnlDelta?: BigNumber | null;
   /** Updated historical row leverage. */
-  leverage?: MobileFeedLeverage;
+  leverage?: MobileSocialFeedLeverage;
   /** Updated historical leverage reference time. */
   leverageAtMs?: number | null;
 }
 
 /** Batched viewport updates; apply only the current viewport's latest request sequence. */
-export interface MobileFeedUpdates {
+export interface MobileSocialFeedUpdates {
   /** Item deltas, independent of current-position patches. */
-  itemPatches: MobileFeedItemPatch[];
+  itemPatches: MobileSocialFeedItemPatch[];
   /** Complete mutable position facts at one version. */
-  positionPatches: MobileFeedPositionPatch[];
+  positionPatches: MobileSocialFeedPositionPatch[];
   /** Previously authorized targets that can no longer be read. */
-  unavailableTargets: MobileFeedUnavailableTarget[];
+  unavailableTargets: MobileSocialFeedUnavailableTarget[];
   /** New-content hint; always zero for directly created item sessions. */
   newItemsCount: number;
   /** Baseline to use for the next update call with the same viewport. */
   updateCursor: string;
-  /** Full snapshot of applicable mutable fields; always true in F01. Apply author updates even when the item version is unchanged. */
+  /** Full snapshot of applicable mutable fields; currently always true. Apply author updates even when the item version is unchanged. */
   reset: boolean;
   /** Echoed viewport revision. */
   viewportRevision: number;
@@ -746,7 +748,7 @@ export interface MobileFeedUpdates {
 }
 
 /** Public browsing requires no wallet, identity registration, or one-click trading setup. */
-export interface MobilePublicFeedReadAccess {
+export interface MobilePublicFeedReadParams {
   /**
    * Non-isolated viewing account used for relationship state. Profile, position, and item reads also
    * include that account's own hidden content under the account_view policy; this does not prove ownership.
@@ -771,49 +773,49 @@ export interface MobileSocialFeedListParams {
 }
 
 /** Common filters and viewing context for main feeds and author feeds. */
-export interface MobileCategorizedFeedParams
-  extends MobileSocialFeedListParams, MobilePublicFeedReadAccess {
+export interface MobileSocialFeedCategorizedParams
+  extends MobileSocialFeedListParams, MobilePublicFeedReadParams {
   /** Omit to include all market categories. */
-  marketCategory?: MobileFeedMarketCategory;
+  marketCategory?: MobileSocialFeedMarketCategory;
 }
 
 /** For You request with optional market category and viewing account. */
-export type GetMobileForYouFeedParams = MobileCategorizedFeedParams;
+export type GetMobileForYouFeedParams = MobileSocialFeedCategorizedParams;
 
 /** Top Traders request; eligibility uses account PnL and results remain chronological. */
-export type GetMobileTopTradersFeedParams = MobileCategorizedFeedParams;
+export type GetMobileTopTradersFeedParams = MobileSocialFeedCategorizedParams;
 
 /** Public content from the selected account's follow graph; no signature is required. */
-export type GetMobileFriendsFeedParams = MobileCategorizedFeedParams & {
+export type GetMobileFriendsFeedParams = MobileSocialFeedCategorizedParams & {
   /** Required on every request, including pagination; no existing identity row is needed. */
   viewAs: Subaccount;
 };
 
 /** Author list request; the target is distinct from the viewing account. */
-export type GetMobileProfileFeedParams = MobileCategorizedFeedParams & {
+export type GetMobileProfileFeedParams = MobileSocialFeedCategorizedParams & {
   /** Target author, independent of the viewAs account. */
   subaccount: Subaccount;
 };
 
 /** Market list request; marketCategory is not accepted. */
 export type GetMobileMarketFeedParams = MobileSocialFeedListParams &
-  MobilePublicFeedReadAccess & {
+  MobilePublicFeedReadParams & {
     /** Non-negative target product ID. */
     productId: number;
   };
 
 /** Published content in a lifecycle, not the complete position history. */
 export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
-  MobilePublicFeedReadAccess & {
+  MobilePublicFeedReadParams & {
     /** Target position UUID. */
     positionId: string;
   };
 
 /** Item request; omit sessionId to create an item reading session directly. */
-export type GetMobileFeedItemParams = MobilePublicFeedReadAccess & {
+export type GetMobileFeedItemParams = MobilePublicFeedReadParams & {
   /** Target item UUID. */
   itemId: string;
-  /** Range 0–3; F01 only validates this value and returns an empty card preview. The default of 3 applies when F03 previews are available. */
+  /** Preview size, 0–3. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
   sessionId?: string;

@@ -4,24 +4,24 @@ import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import {
-  mapMobileFeedAuthor,
-  mapMobileFeedInteraction,
-  mapMobileFeedItemPatch,
-  mapMobileFeedUpdates,
-  mapMobileSocialTradeCard,
-  mapMobileSocialTradeRow,
-  mapMobileTopTradersFeedPage,
+  mapMobileSocialFeedAuthor,
+  mapMobileSocialFeedInteraction,
+  mapMobileSocialFeedItemPatch,
+  mapMobileSocialFeedTopTradersPage,
+  mapMobileSocialFeedTradeCard,
+  mapMobileSocialFeedTradeRow,
+  mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import { MobileClient } from './MobileClient';
 import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
-  MobileServerFeedItemPatch,
-  MobileServerFeedReadSession,
-  MobileServerFeedUpdatesResponse,
-  MobileServerSocialTradeCard,
-  MobileServerSocialTradeRow,
-  MobileServerTopTradersFeedPage,
+  MobileServerSocialFeedItemPatch,
+  MobileServerSocialFeedReadSession,
+  MobileServerSocialFeedTopTradersResponse,
+  MobileServerSocialFeedTradeCard,
+  MobileServerSocialFeedTradeRow,
+  MobileServerSocialFeedUpdatesResponse,
 } from './types';
 
 const itemId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -42,7 +42,7 @@ const subaccount: Subaccount = {
   subaccountName: 'default',
 };
 
-const row: MobileServerSocialTradeRow = {
+const row: MobileServerSocialFeedTradeRow = {
   id: itemId,
   kind: 'trade_row',
   action: 'increased',
@@ -78,7 +78,7 @@ const row: MobileServerSocialTradeRow = {
   notional_x18: '123456789012345678901234567890000',
   average_price_x18: '2500123456789012345678',
 };
-const readSession: MobileServerFeedReadSession = {
+const readSession: MobileServerSocialFeedReadSession = {
   session_id: 'OpaqueSession',
   mode: 'feed',
   expires_at_ms: 42,
@@ -86,7 +86,7 @@ const readSession: MobileServerFeedReadSession = {
   update_cursor: null,
   viewer_token: 'OpaqueViewer',
 };
-const emptyPage: MobileServerTopTradersFeedPage = {
+const emptyPage: MobileServerSocialFeedTopTradersResponse = {
   read_session: readSession,
   items: [],
   next_cursor: null,
@@ -103,7 +103,7 @@ const emptyPage: MobileServerTopTradersFeedPage = {
     },
   },
 };
-const emptyUpdates: MobileServerFeedUpdatesResponse = {
+const emptyUpdates: MobileServerSocialFeedUpdatesResponse = {
   item_patches: [],
   position_patches: [],
   unavailable_targets: [],
@@ -394,7 +394,7 @@ describe('[mobile-client]: social feed transport', () => {
 
 describe('[mobile-client]: social feed response mapping', () => {
   it('preserves nullable Top Traders badges and maps available badges without losing page metadata', () => {
-    const server: MobileServerTopTradersFeedPage = {
+    const server: MobileServerSocialFeedTopTradersResponse = {
       ...emptyPage,
       next_cursor: 'NextCursor',
       items: [
@@ -418,7 +418,7 @@ describe('[mobile-client]: social feed response mapping', () => {
         },
       ],
     };
-    const page = mapMobileTopTradersFeedPage(server);
+    const page = mapMobileSocialFeedTopTradersPage(server);
 
     expect(page.items.map((item) => item.id)).toEqual(
       server.items.map((item) => item.id),
@@ -449,11 +449,11 @@ describe('[mobile-client]: social feed response mapping', () => {
   it.each([true, false, null])(
     'preserves follow state %s and unavailable likes',
     (isFollowing) => {
-      const author = mapMobileFeedAuthor({
+      const author = mapMobileSocialFeedAuthor({
         ...row.author,
         is_following: isFollowing,
       });
-      const interaction = mapMobileFeedInteraction({
+      const interaction = mapMobileSocialFeedInteraction({
         like_count: 0,
         comment_count: 0,
         view_count: 0,
@@ -464,7 +464,7 @@ describe('[mobile-client]: social feed response mapping', () => {
     },
   );
   it('preserves precision, signed zero, nullable liquidation facts, and omitted patch fields', () => {
-    const patch: MobileServerFeedItemPatch = {
+    const patch: MobileServerSocialFeedItemPatch = {
       author: row.author,
       display_at_ms: 42,
       item_id: itemId,
@@ -474,7 +474,7 @@ describe('[mobile-client]: social feed response mapping', () => {
       average_price_x18: '0',
       realized_pnl_delta_x18: '-1000000000000000001',
     };
-    const mapped = mapMobileFeedItemPatch(patch);
+    const mapped = mapMobileSocialFeedItemPatch(patch);
     expect(mapped.quantity?.toFixed()).toBe(patch.quantity_x18);
     expect(mapped.realizedPnlDelta?.toFixed()).toBe('-1000000000000000001');
     expect(mapped.averagePrice?.isZero()).toBe(true);
@@ -485,12 +485,12 @@ describe('[mobile-client]: social feed response mapping', () => {
   });
 
   it('converts every row price to decimal units while retaining x18 amounts', () => {
-    const mapped = mapMobileSocialTradeRow(row);
+    const mapped = mapMobileSocialFeedTradeRow(row);
     expect(mapped.quantity.toFixed()).toBe(row.quantity_x18);
     expect(mapped.notional?.toFixed()).toBe(row.notional_x18);
     expect(mapped.averagePrice?.toFixed()).toBe('2500.123456789012345678');
     expect(mapped).not.toHaveProperty('quantityX18');
-    const liquidated = mapMobileSocialTradeRow({
+    const liquidated = mapMobileSocialFeedTradeRow({
       ...row,
       action: 'liquidated',
       notional_x18: null,
@@ -509,7 +509,7 @@ describe('[mobile-client]: social feed response mapping', () => {
     expect(liquidated.averagePrice).toBeNull();
     expect(liquidated.notional).toBeNull();
     expect(liquidated.realizedPnlDelta?.toFixed()).toBe('-1000000000000000001');
-    const execution = mapMobileSocialTradeRow({
+    const execution = mapMobileSocialFeedTradeRow({
       ...row,
       action: 'liquidated',
       notional_x18: row.notional_x18,
@@ -529,7 +529,7 @@ describe('[mobile-client]: social feed response mapping', () => {
   });
 
   it('maps price patches independently and distinguishes omission from explicit null', () => {
-    const patch = mapMobileFeedItemPatch({
+    const patch = mapMobileSocialFeedItemPatch({
       author: row.author,
       display_at_ms: 42,
       item_id: itemId,
@@ -551,8 +551,8 @@ describe('[mobile-client]: social feed response mapping', () => {
   });
 
   it('delivers reset author updates even when the item version is unchanged', async () => {
-    const previous = mapMobileSocialTradeRow(row);
-    const patch: MobileServerFeedItemPatch = {
+    const previous = mapMobileSocialFeedTradeRow(row);
+    const patch: MobileServerSocialFeedItemPatch = {
       item_id: itemId,
       version: row.version,
       display_at_ms: 100,
@@ -606,7 +606,10 @@ describe('[mobile-client]: social feed response mapping', () => {
     );
     expect(mapped).not.toHaveProperty('quantity');
 
-    const cleared = mapMobileFeedItemPatch({ ...patch, author: row.author });
+    const cleared = mapMobileSocialFeedItemPatch({
+      ...patch,
+      author: row.author,
+    });
     expect(cleared.author).toMatchObject({
       username: null,
       displayName: null,
@@ -618,7 +621,7 @@ describe('[mobile-client]: social feed response mapping', () => {
   });
 
   it('maps nested position PnL and revocations without losing sequence or baseline', () => {
-    const response: MobileServerFeedUpdatesResponse = {
+    const response: MobileServerSocialFeedUpdatesResponse = {
       item_patches: [],
       position_patches: [
         {
@@ -653,7 +656,7 @@ describe('[mobile-client]: social feed response mapping', () => {
       viewport_revision: 2,
       request_seq: 3,
     };
-    const card: MobileServerSocialTradeCard = {
+    const card: MobileServerSocialFeedTradeCard = {
       ...row,
       kind: 'trade_card',
       action: 'opened',
@@ -692,7 +695,7 @@ describe('[mobile-client]: social feed response mapping', () => {
       },
       comment_preview: { items: [], total_count: 0, next_cursor: null },
     };
-    const mappedCard = mapMobileSocialTradeCard(card);
+    const mappedCard = mapMobileSocialFeedTradeCard(card);
     expect(mappedCard.position.entryPrice?.toFixed()).toBe(
       '2500.123456789012345678',
     );
@@ -703,7 +706,7 @@ describe('[mobile-client]: social feed response mapping', () => {
     expect(mappedCard.author.traderBadge?.pnl.toFixed()).toBe(
       '12345678901234567890123',
     );
-    const mapped = mapMobileFeedUpdates(response);
+    const mapped = mapMobileSocialFeedUpdates(response);
     expect(mapped.positionPatches[0].quantity.toFixed()).toBe(
       '1000000000000000000',
     );

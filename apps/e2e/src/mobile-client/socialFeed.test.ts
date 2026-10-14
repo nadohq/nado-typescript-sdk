@@ -1,7 +1,7 @@
 import {
   MOBILE_ERROR_CODES,
   MobileClient,
-  MobileFeedAuthor,
+  MobileSocialFeedAuthor,
   MobileSocialFeedPage,
 } from '@nadohq/mobile-client';
 import { Subaccount, subaccountFromHex } from '@nadohq/shared';
@@ -319,7 +319,7 @@ function assertPage(page: MobileSocialFeedPage) {
   }
 }
 
-function assertFeedAuthor(author: MobileFeedAuthor) {
+function assertFeedAuthor(author: MobileSocialFeedAuthor) {
   assertMobileIdentitySummaryShape(author, 'author');
   if (author.isFollowing !== null)
     assertBoolean(author.isFollowing, 'author.isFollowing');

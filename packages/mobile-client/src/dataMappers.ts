@@ -1,17 +1,8 @@
 import { removeDecimals, subaccountToHex, toBigNumber } from '@nadohq/shared';
 import {
   GetMobileFollowListParams,
-  MobileFeedAuthor,
-  MobileFeedInteraction,
-  MobileFeedItemPatch,
-  MobileFeedMarket,
   MobileFeedPage,
-  MobileFeedPnl,
-  MobileFeedPositionCard,
-  MobileFeedPositionPatch,
-  MobileFeedReadSession,
   MobileFeedTrade,
-  MobileFeedUpdates,
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileFollowSummary,
@@ -19,53 +10,62 @@ import {
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
   MobileProfilesInclude,
-  MobilePublicFeedReadAccess,
+  MobilePublicFeedReadParams,
   MobilePublicProfile,
-  MobileRankedFeedPage,
   MobileRegisteredWallet,
+  MobileSocialFeedAuthor,
+  MobileSocialFeedInteraction,
   MobileSocialFeedItem,
   MobileSocialFeedItemBase,
+  MobileSocialFeedItemPatch,
   MobileSocialFeedItemResponse,
   MobileSocialFeedListParams,
+  MobileSocialFeedMarket,
   MobileSocialFeedPage,
-  MobileSocialTradeCard,
-  MobileSocialTradeRow,
-  MobileSocialTradeRowBase,
-  MobileTopTradersFeedPage,
-  MobileTraderBadge,
+  MobileSocialFeedPnl,
+  MobileSocialFeedPositionCard,
+  MobileSocialFeedPositionPatch,
+  MobileSocialFeedRankedPage,
+  MobileSocialFeedReadSession,
+  MobileSocialFeedTopTradersPage,
+  MobileSocialFeedTradeCard,
+  MobileSocialFeedTradeRow,
+  MobileSocialFeedTradeRowBase,
+  MobileSocialFeedTraderBadge,
+  MobileSocialFeedUpdates,
 } from './types/clientTypes';
 import { MobileServerFollowMutationResponse } from './types/serverExecuteTypes';
 import {
-  MobileServerFeedAuthor,
-  MobileServerFeedInteraction,
-  MobileServerFeedItemPatch,
-  MobileServerFeedMarket,
-  MobileServerFeedPnl,
-  MobileServerFeedPositionCard,
-  MobileServerFeedPositionPatch,
-  MobileServerFeedReadSession,
   MobileServerFeedTrade,
-  MobileServerFeedUpdatesResponse,
   MobileServerFollowSummary,
   MobileServerIdentitySummary,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
   MobileServerProfile,
-  MobileServerRankedFeedPage,
+  MobileServerSocialFeedAuthor,
+  MobileServerSocialFeedInteraction,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemBase,
-  MobileServerSocialFeedItemResponse,
-  MobileServerSocialFeedPage,
-  MobileServerSocialTradeCard,
-  MobileServerSocialTradeRow,
-  MobileServerSocialTradeRowBase,
-  MobileServerTopTradersFeedPage,
-  MobileServerTraderBadge,
+  MobileServerSocialFeedItemPatch,
+  MobileServerSocialFeedMarket,
+  MobileServerSocialFeedPnl,
+  MobileServerSocialFeedPositionCard,
+  MobileServerSocialFeedPositionPatch,
+  MobileServerSocialFeedReadSession,
+  MobileServerSocialFeedTradeCard,
+  MobileServerSocialFeedTradeRow,
+  MobileServerSocialFeedTradeRowBase,
+  MobileServerSocialFeedTraderBadge,
 } from './types/serverModelTypes';
 import {
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
   MobileServerRegisteredWalletResponse,
+  MobileServerSocialFeedItemResponse,
+  MobileServerSocialFeedRankedResponse,
+  MobileServerSocialFeedResponse,
+  MobileServerSocialFeedTopTradersResponse,
+  MobileServerSocialFeedUpdatesResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerFollowListRequest,
@@ -284,9 +284,9 @@ export function mapMobileRegisteredWallet(
  * @param server - The service response.
  * @returns The mapped trader badge.
  */
-export function mapMobileTraderBadge(
-  server: MobileServerTraderBadge,
-): MobileTraderBadge {
+export function mapMobileSocialFeedTraderBadge(
+  server: MobileServerSocialFeedTraderBadge,
+): MobileSocialFeedTraderBadge {
   return {
     code: server.code,
     pnl: toBigNumber(server.pnl_x18),
@@ -303,16 +303,16 @@ export function mapMobileTraderBadge(
  * @param server - The service response.
  * @returns The mapped feed author.
  */
-export function mapMobileFeedAuthor(
-  server: MobileServerFeedAuthor,
-): MobileFeedAuthor {
+export function mapMobileSocialFeedAuthor(
+  server: MobileServerSocialFeedAuthor,
+): MobileSocialFeedAuthor {
   return {
     ...mapMobileIdentitySummary(server),
     isFollowing: server.is_following,
     traderBadge:
       server.trader_badge === null
         ? null
-        : mapMobileTraderBadge(server.trader_badge),
+        : mapMobileSocialFeedTraderBadge(server.trader_badge),
     traderDataStatus: server.trader_data_status,
   };
 }
@@ -322,9 +322,9 @@ export function mapMobileFeedAuthor(
  * @param server - The service response.
  * @returns The mapped feed market.
  */
-export function mapMobileFeedMarket(
-  server: MobileServerFeedMarket,
-): MobileFeedMarket {
+export function mapMobileSocialFeedMarket(
+  server: MobileServerSocialFeedMarket,
+): MobileSocialFeedMarket {
   return {
     productId: server.product_id,
     symbol: server.symbol,
@@ -339,7 +339,9 @@ export function mapMobileFeedMarket(
  * @param server - The service response.
  * @returns The mapped feed pnl.
  */
-export function mapMobileFeedPnl(server: MobileServerFeedPnl): MobileFeedPnl {
+export function mapMobileSocialFeedPnl(
+  server: MobileServerSocialFeedPnl,
+): MobileSocialFeedPnl {
   return {
     amount: server.amount_x18 === null ? null : toBigNumber(server.amount_x18),
     basis: server.basis,
@@ -354,9 +356,9 @@ export function mapMobileFeedPnl(server: MobileServerFeedPnl): MobileFeedPnl {
  * @param server - The service response.
  * @returns The mapped feed position patch.
  */
-export function mapMobileFeedPositionPatch(
-  server: MobileServerFeedPositionPatch,
-): MobileFeedPositionPatch {
+export function mapMobileSocialFeedPositionPatch(
+  server: MobileServerSocialFeedPositionPatch,
+): MobileSocialFeedPositionPatch {
   return {
     positionId: server.position_id,
     positionVersion: server.position_version,
@@ -371,7 +373,7 @@ export function mapMobileFeedPositionPatch(
     marginMode: server.margin_mode,
     leverage: server.leverage,
     leverageAtMs: server.leverage_at_ms,
-    pnl: mapMobileFeedPnl(server.pnl),
+    pnl: mapMobileSocialFeedPnl(server.pnl),
   };
 }
 
@@ -380,13 +382,13 @@ export function mapMobileFeedPositionPatch(
  * @param server - The service response.
  * @returns The mapped feed position card.
  */
-export function mapMobileFeedPositionCard(
-  server: MobileServerFeedPositionCard,
-): MobileFeedPositionCard {
+export function mapMobileSocialFeedPositionCard(
+  server: MobileServerSocialFeedPositionCard,
+): MobileSocialFeedPositionCard {
   return {
-    ...mapMobileFeedPositionPatch(server),
+    ...mapMobileSocialFeedPositionPatch(server),
     productId: server.product_id,
-    market: mapMobileFeedMarket(server.market),
+    market: mapMobileSocialFeedMarket(server.market),
     direction: server.direction,
   };
 }
@@ -396,9 +398,9 @@ export function mapMobileFeedPositionCard(
  * @param server - The service response.
  * @returns The mapped feed interaction.
  */
-export function mapMobileFeedInteraction(
-  server: MobileServerFeedInteraction,
-): MobileFeedInteraction {
+export function mapMobileSocialFeedInteraction(
+  server: MobileServerSocialFeedInteraction,
+): MobileSocialFeedInteraction {
   return {
     likeCount: server.like_count,
     commentCount: server.comment_count,
@@ -419,11 +421,11 @@ export function mapMobileSocialFeedItemBase(
     id: server.id,
     hasAnalysis: server.has_analysis,
     drawing: server.drawing,
-    author: mapMobileFeedAuthor(server.author),
+    author: mapMobileSocialFeedAuthor(server.author),
     createdAtMs: server.created_at_ms,
     displayAtMs: server.display_at_ms,
     version: server.version,
-    market: mapMobileFeedMarket(server.market),
+    market: mapMobileSocialFeedMarket(server.market),
     capabilities: {
       canLike: server.capabilities.can_like,
       canComment: server.capabilities.can_comment,
@@ -437,17 +439,17 @@ export function mapMobileSocialFeedItemBase(
  * @param server - The service response.
  * @returns The mapped social trade card.
  */
-export function mapMobileSocialTradeCard(
-  server: MobileServerSocialTradeCard,
-): MobileSocialTradeCard {
+export function mapMobileSocialFeedTradeCard(
+  server: MobileServerSocialFeedTradeCard,
+): MobileSocialFeedTradeCard {
   return {
     ...mapMobileSocialFeedItemBase(server),
     kind: server.kind,
     action: server.action,
     text: server.text,
     mentions: server.mentions,
-    position: mapMobileFeedPositionCard(server.position),
-    interaction: mapMobileFeedInteraction(server.interaction),
+    position: mapMobileSocialFeedPositionCard(server.position),
+    interaction: mapMobileSocialFeedInteraction(server.interaction),
     commentPreview: {
       items: server.comment_preview.items,
       totalCount: server.comment_preview.total_count,
@@ -461,9 +463,9 @@ export function mapMobileSocialTradeCard(
  * @param server - The service response.
  * @returns The mapped social trade row base.
  */
-export function mapMobileSocialTradeRowBase(
-  server: MobileServerSocialTradeRowBase,
-): MobileSocialTradeRowBase {
+export function mapMobileSocialFeedTradeRowBase(
+  server: MobileServerSocialFeedTradeRowBase,
+): MobileSocialFeedTradeRowBase {
   return {
     ...mapMobileSocialFeedItemBase(server),
     kind: server.kind,
@@ -483,10 +485,10 @@ export function mapMobileSocialTradeRowBase(
  * @param server - The service response.
  * @returns The mapped social trade row.
  */
-export function mapMobileSocialTradeRow(
-  server: MobileServerSocialTradeRow,
-): MobileSocialTradeRow {
-  const base = mapMobileSocialTradeRowBase(server);
+export function mapMobileSocialFeedTradeRow(
+  server: MobileServerSocialFeedTradeRow,
+): MobileSocialFeedTradeRow {
+  const base = mapMobileSocialFeedTradeRowBase(server);
   if (server.action === 'liquidated') {
     return {
       ...base,
@@ -522,8 +524,8 @@ export function mapMobileSocialFeedItem(
   server: MobileServerSocialFeedItem,
 ): MobileSocialFeedItem {
   return server.kind === 'trade_card'
-    ? mapMobileSocialTradeCard(server)
-    : mapMobileSocialTradeRow(server);
+    ? mapMobileSocialFeedTradeCard(server)
+    : mapMobileSocialFeedTradeRow(server);
 }
 
 /**
@@ -531,9 +533,9 @@ export function mapMobileSocialFeedItem(
  * @param server - The service response.
  * @returns The mapped feed read session.
  */
-export function mapMobileFeedReadSession(
-  server: MobileServerFeedReadSession,
-): MobileFeedReadSession {
+export function mapMobileSocialFeedReadSession(
+  server: MobileServerSocialFeedReadSession,
+): MobileSocialFeedReadSession {
   return {
     sessionId: server.session_id,
     mode: server.mode,
@@ -553,10 +555,10 @@ export function mapMobileFeedReadSession(
  * @returns The mapped social feed page.
  */
 export function mapMobileSocialFeedPage(
-  server: MobileServerSocialFeedPage,
+  server: MobileServerSocialFeedResponse,
 ): MobileSocialFeedPage {
   return {
-    readSession: mapMobileFeedReadSession(server.read_session),
+    readSession: mapMobileSocialFeedReadSession(server.read_session),
     items: server.items.map(mapMobileSocialFeedItem),
     nextCursor: server.next_cursor,
     watermark: server.watermark,
@@ -568,9 +570,9 @@ export function mapMobileSocialFeedPage(
  * @param server - The service response.
  * @returns The mapped ranked feed page.
  */
-export function mapMobileRankedFeedPage(
-  server: MobileServerRankedFeedPage,
-): MobileRankedFeedPage {
+export function mapMobileSocialFeedRankedPage(
+  server: MobileServerSocialFeedRankedResponse,
+): MobileSocialFeedRankedPage {
   return {
     ...mapMobileSocialFeedPage(server),
     rankingVersion: server.ranking_version,
@@ -582,11 +584,11 @@ export function mapMobileRankedFeedPage(
  * @param server - The service response.
  * @returns The mapped top traders feed page.
  */
-export function mapMobileTopTradersFeedPage(
-  server: MobileServerTopTradersFeedPage,
-): MobileTopTradersFeedPage {
+export function mapMobileSocialFeedTopTradersPage(
+  server: MobileServerSocialFeedTopTradersResponse,
+): MobileSocialFeedTopTradersPage {
   return {
-    ...mapMobileRankedFeedPage(server),
+    ...mapMobileSocialFeedRankedPage(server),
     cohort: {
       snapshotId: server.cohort.snapshot_id,
       status: server.cohort.status,
@@ -610,7 +612,7 @@ export function mapMobileSocialFeedItemResponse(
 ): MobileSocialFeedItemResponse {
   return {
     item: mapMobileSocialFeedItem(server.item),
-    readSession: mapMobileFeedReadSession(server.read_session),
+    readSession: mapMobileSocialFeedReadSession(server.read_session),
   };
 }
 
@@ -619,17 +621,17 @@ export function mapMobileSocialFeedItemResponse(
  * @param server - The service response.
  * @returns The mapped feed item patch.
  */
-export function mapMobileFeedItemPatch(
-  server: MobileServerFeedItemPatch,
-): MobileFeedItemPatch {
+export function mapMobileSocialFeedItemPatch(
+  server: MobileServerSocialFeedItemPatch,
+): MobileSocialFeedItemPatch {
   return {
     itemId: server.item_id,
     version: server.version,
-    author: mapMobileFeedAuthor(server.author),
+    author: mapMobileSocialFeedAuthor(server.author),
     displayAtMs: server.display_at_ms,
     ...(server.interaction === undefined
       ? {}
-      : { interaction: mapMobileFeedInteraction(server.interaction) }),
+      : { interaction: mapMobileSocialFeedInteraction(server.interaction) }),
     ...(server.trade_count === undefined
       ? {}
       : { tradeCount: server.trade_count }),
@@ -688,12 +690,14 @@ export function mapMobileFeedItemPatch(
  * @param server - The service response.
  * @returns The mapped feed updates.
  */
-export function mapMobileFeedUpdates(
-  server: MobileServerFeedUpdatesResponse,
-): MobileFeedUpdates {
+export function mapMobileSocialFeedUpdates(
+  server: MobileServerSocialFeedUpdatesResponse,
+): MobileSocialFeedUpdates {
   return {
-    itemPatches: server.item_patches.map(mapMobileFeedItemPatch),
-    positionPatches: server.position_patches.map(mapMobileFeedPositionPatch),
+    itemPatches: server.item_patches.map(mapMobileSocialFeedItemPatch),
+    positionPatches: server.position_patches.map(
+      mapMobileSocialFeedPositionPatch,
+    ),
     unavailableTargets: server.unavailable_targets,
     newItemsCount: server.new_items_count,
     updateCursor: server.update_cursor,
@@ -726,7 +730,7 @@ export function mapMobileSocialFeedListParamsToServer(
  * @returns Wire fields for a public feed read.
  */
 export function mapMobilePublicFeedReadParamsToServer(
-  params: MobilePublicFeedReadAccess,
+  params: MobilePublicFeedReadParams,
 ): MobileServerPublicFeedReadParams {
   return {
     view_as:

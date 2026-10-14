@@ -36,13 +36,13 @@ export const MOBILE_ERROR_CODES = {
   INVALID_SOCIAL_FEED_PARAMS: 6310,
   /** Session, credential, viewing account, cursor, source, or viewport mismatch; also a request sequence or viewport revision rollback. */
   SOCIAL_FEED_SESSION_MISMATCH: 6311,
-  /** Session/credential expired, was lost, or uses an incompatible format (including old signed sessions); create a new feed session. */
+  /** Reading session or browsing credential is expired, missing, or incompatible; create a new session. */
   SOCIAL_FEED_SESSION_EXPIRED: 6312,
   /** Content does not exist or is not currently accessible. */
   SOCIAL_FEED_CONTENT_UNAVAILABLE: 6313,
   /** Required authoritative position, action, cohort, or market data is unavailable. */
   SOCIAL_FEED_DATA_UNAVAILABLE: 6320,
-  /** Signed feed query route was removed. Use public_query and create a new session; do not retry the old query route. */
+  /** Feed reads are only available through public_query. */
   SOCIAL_FEED_QUERY_REMOVED: 6325,
 } as const;
 

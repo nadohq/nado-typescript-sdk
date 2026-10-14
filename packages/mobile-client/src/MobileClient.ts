@@ -7,7 +7,6 @@ import {
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   mapMobileFeedPage,
-  mapMobileFeedUpdates,
   mapMobileFollowListPage,
   mapMobileFollowListParamsToServer,
   mapMobileFollowMutationResult,
@@ -16,12 +15,13 @@ import {
   mapMobileProfilesIncludeToServer,
   mapMobilePublicFeedReadParamsToServer,
   mapMobilePublicProfile,
-  mapMobileRankedFeedPage,
   mapMobileRegisteredWallet,
   mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedListParamsToServer,
   mapMobileSocialFeedPage,
-  mapMobileTopTradersFeedPage,
+  mapMobileSocialFeedRankedPage,
+  mapMobileSocialFeedTopTradersPage,
+  mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
@@ -47,12 +47,10 @@ import {
   GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
   MobileFeedPage,
-  MobileFeedUpdates,
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileNotificationPreferences,
   MobilePublicProfile,
-  MobileRankedFeedPage,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
   MobileSetFollowParams,
@@ -61,7 +59,9 @@ import {
   MobileSignedRequestParams,
   MobileSocialFeedItemResponse,
   MobileSocialFeedPage,
-  MobileTopTradersFeedPage,
+  MobileSocialFeedRankedPage,
+  MobileSocialFeedTopTradersPage,
+  MobileSocialFeedUpdates,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
@@ -260,7 +260,7 @@ export class MobileClient {
    */
   async getForYouFeed(
     params: GetMobileForYouFeedParams = {},
-  ): Promise<MobileRankedFeedPage> {
+  ): Promise<MobileSocialFeedRankedPage> {
     const body: MobileServerPublicQueryRequest<'for_you_feed'> = {
       type: 'for_you_feed',
       market_category: params.marketCategory,
@@ -268,7 +268,7 @@ export class MobileClient {
       ...mapMobilePublicFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
-    return mapMobileRankedFeedPage(data);
+    return mapMobileSocialFeedRankedPage(data);
   }
 
   /**
@@ -280,7 +280,7 @@ export class MobileClient {
    */
   async getTopTradersFeed(
     params: GetMobileTopTradersFeedParams = {},
-  ): Promise<MobileTopTradersFeedPage> {
+  ): Promise<MobileSocialFeedTopTradersPage> {
     const body: MobileServerPublicQueryRequest<'top_traders_feed'> = {
       type: 'top_traders_feed',
       market_category: params.marketCategory,
@@ -288,7 +288,7 @@ export class MobileClient {
       ...mapMobilePublicFeedReadParamsToServer(params),
     };
     const data = await this.publicQuery(body);
-    return mapMobileTopTradersFeedPage(data);
+    return mapMobileSocialFeedTopTradersPage(data);
   }
 
   /**
@@ -299,7 +299,7 @@ export class MobileClient {
    */
   async getFriendsFeed(
     params: GetMobileFriendsFeedParams,
-  ): Promise<MobileRankedFeedPage> {
+  ): Promise<MobileSocialFeedRankedPage> {
     const body: MobileServerPublicQueryRequest<'friends_feed'> = {
       type: 'friends_feed',
       market_category: params.marketCategory,
@@ -308,7 +308,7 @@ export class MobileClient {
       viewer_token: params.viewerToken,
     };
     const data = await this.publicQuery(body);
-    return mapMobileRankedFeedPage(data);
+    return mapMobileSocialFeedRankedPage(data);
   }
 
   /**
@@ -395,7 +395,7 @@ export class MobileClient {
    * Polls authorized visible items and positions without inserting or reordering list members.
    * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
    * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
-   * F01 always returns reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
+   * Updates currently always return reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
    * Null patches clear values;
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
@@ -404,7 +404,7 @@ export class MobileClient {
    */
   async getFeedUpdates(
     params: GetMobileFeedUpdatesParams,
-  ): Promise<MobileFeedUpdates> {
+  ): Promise<MobileSocialFeedUpdates> {
     const body: MobileServerPublicQueryRequest<'feed_updates'> = {
       type: 'feed_updates',
       session_id: params.sessionId,
@@ -416,7 +416,7 @@ export class MobileClient {
       viewer_token: params.viewerToken,
     };
     const data = await this.publicQuery(body);
-    return mapMobileFeedUpdates(data);
+    return mapMobileSocialFeedUpdates(data);
   }
 
   /**

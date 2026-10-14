@@ -1,8 +1,8 @@
 import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
-  MobileFeedMarketCategory,
   MobileServerNotificationPreferences,
+  MobileSocialFeedMarketCategory,
   MobileSocialFeedType,
 } from './serverModelTypes';
 
@@ -55,9 +55,9 @@ export interface MobileServerSocialFeedListParams {
 }
 
 /** List fields for main feeds and author feeds. */
-export interface MobileServerCategorizedFeedParams extends MobileServerSocialFeedListParams {
+export interface MobileServerSocialFeedCategorizedParams extends MobileServerSocialFeedListParams {
   /** Omit to read all market categories. */
-  market_category?: MobileFeedMarketCategory;
+  market_category?: MobileSocialFeedMarketCategory;
 }
 
 /** Unsigned browsing context; the viewing account is not proof of wallet ownership. */
@@ -76,19 +76,19 @@ export interface MobileServerPublicFeedReadParams {
  */
 export interface MobileServerPublicQueryRequestByType {
   /** Public recommendations with optional relationship perspective. */
-  for_you_feed: MobileServerCategorizedFeedParams &
+  for_you_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerPublicFeedReadParams;
   /** Public content from qualified authors. */
-  top_traders_feed: MobileServerCategorizedFeedParams &
+  top_traders_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerPublicFeedReadParams;
   /** Public content from authors followed by view_as. */
-  friends_feed: MobileServerCategorizedFeedParams &
+  friends_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerPublicFeedReadParams & {
       /** Complete non-isolated identity subaccount; required on every request. */
       view_as: Hex;
     };
   /** Author content visible to view_as; the target is separate from the viewing account. */
-  profile_feed: MobileServerCategorizedFeedParams &
+  profile_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerPublicFeedReadParams & {
       /** Target author identity, independent of view_as. */
       subaccount: Hex;
