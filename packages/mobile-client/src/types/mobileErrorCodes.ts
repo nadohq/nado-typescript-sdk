@@ -25,6 +25,10 @@ export const MOBILE_ERROR_CODES = {
   INVALID_FOLLOW_CURSOR: 6113,
   /** A follow list or followed-by limit is outside its accepted range. Fix it; do not retry unchanged. */
   INVALID_FOLLOW_LIMIT: 6114,
+  /** Biography exceeds the maximum length or contains a null character. */
+  INVALID_BIO: 6115,
+  /** Invalid preset, upload size, staging key, or image. Correct the selection before retrying. */
+  INVALID_AVATAR: 6116,
   INVALID_EXPO_TOKEN: 6200,
   INVALID_DEVICE_METADATA: 6201,
   INVALID_PREFERENCES: 6202,

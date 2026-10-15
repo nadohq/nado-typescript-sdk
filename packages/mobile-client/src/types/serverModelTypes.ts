@@ -2,6 +2,33 @@ import { BalanceSide } from '@nadohq/shared';
 import { Hex } from 'viem';
 
 /**
+ * Server-side avatar selection, shared by request mapping and signing.
+ */
+export type MobileServerAvatarSelection =
+  | {
+      /** Shared catalogue selection. */
+      type: 'preset';
+      /** Stable catalogue ID. */
+      id: string;
+    }
+  | {
+      /** Uploaded image awaiting publication. */
+      type: 'upload';
+      /** Staging key returned by create_avatar_upload. */
+      upload_key: string;
+    };
+
+/**
+ * Server-owned avatar preset in catalogue order.
+ */
+export interface MobileServerAvatarPreset {
+  /** Stable catalogue ID used when selecting this preset. */
+  id: string;
+  /** Public image URL. */
+  avatar_url: string;
+}
+
+/**
  * Platform of a device registered for push notifications.
  */
 export type MobileNotificationPlatform = 'ios' | 'android';
@@ -26,7 +53,7 @@ export interface MobileServerIdentitySummary {
   subaccount: Hex;
   username: string | null;
   display_name: string | null;
-  /** Reserved for a future avatar source; `null` until one is implemented. */
+  /** Published avatar URL, or null when the account has no saved avatar. */
   avatar_url: string | null;
 }
 
@@ -53,11 +80,10 @@ export interface MobileServerFollowSummary {
  * for them, which is why they are optional rather than nullable — absent means "not requested", not "none".
  * The singular `profile` query never returns any of them.
  */
-export interface MobileServerProfile {
-  subaccount: Hex;
-  username: string | null;
-  display_name: string | null;
+export interface MobileServerProfile extends MobileServerIdentitySummary {
   private_mode: boolean;
+  /** Plain-text biography, or null when unset. */
+  bio: string | null;
   /**
    * Exact count at query time — the backend counts rather than reading a cached counter. Unnamed and private
    * accounts are included: Private Mode hides activity, not relationships. Requires `follow_counts`.

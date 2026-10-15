@@ -11,6 +11,26 @@ export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
+    case 'set_bio':
+      return { type: 'set_bio', bio: inner.bio };
+    case 'create_avatar_upload':
+      return {
+        type: 'create_avatar_upload',
+        content_length: inner.content_length,
+      };
+    case 'set_avatar': {
+      const avatar = inner.avatar;
+      if (avatar === null) {
+        return { type: 'set_avatar', avatar: null };
+      }
+      return {
+        type: 'set_avatar',
+        avatar:
+          avatar.type === 'preset'
+            ? { type: 'preset', id: avatar.id }
+            : { type: 'upload', upload_key: avatar.upload_key },
+      };
+    }
     case 'set_username':
       return { type: 'set_username', display_name: inner.display_name };
     case 'set_private_mode':

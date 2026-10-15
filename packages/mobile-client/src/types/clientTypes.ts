@@ -27,6 +27,49 @@ import {
 } from './serverModelTypes';
 
 /**
+ * Server-owned preset presented in catalogue order.
+ */
+export interface MobileAvatarPreset {
+  /** Stable preset ID used by setAvatar. */
+  id: string;
+  /** Public image URL. Fall back to a generated icon if the image fails to load, e.g. after retirement. */
+  avatarUrl: string;
+}
+
+/**
+ * A preset or staged upload to publish. Pass null to clear an avatar.
+ */
+export type MobileAvatarSelection =
+  | {
+      /** Shared catalogue selection. */
+      type: 'preset';
+      /** Stable catalogue ID. */
+      id: string;
+    }
+  | {
+      /** An uploaded image awaiting publication. */
+      type: 'upload';
+      /** Key returned by createAvatarUpload. */
+      uploadKey: string;
+    };
+
+/**
+ * Upload a square JPEG or PNG (up to 4096 × 4096 pixels and `MOBILE_AVATAR_MAX_UPLOAD_BYTES` bytes)
+ * using PUT, then publish uploadKey through setAvatar. Publication validates the image; a successful PUT
+ * alone does not mean it is accepted.
+ */
+export interface MobileAvatarUpload {
+  /** Staging key, bound to the requesting subaccount. */
+  uploadKey: string;
+  /** Short-lived signed PUT URL. */
+  uploadUrl: string;
+  /** Send unchanged, even for PNG: the signed Content-Type is image/jpeg. */
+  headers: Record<string, string>;
+  /** Upload URL lifetime in seconds from issuance, not from when the response is received. */
+  expiresInSeconds: number;
+}
+
+/**
  * A subaccount's public profile, as returned by an unsigned profile lookup. Private Mode hides the account's
  * activity, not its profile, so `privateMode` is exposed here too. A subaccount with no identity row still
  * yields a profile, with `null` names and `privateMode: false`.
@@ -34,12 +77,9 @@ import {
  * The last three fields are `undefined` unless the matching {@link MobileProfilesInclude} asked for them —
  * absent means "not requested" rather than "none".
  */
-export interface MobilePublicProfile {
-  subaccount: Hex;
-  /** Canonical, lowercased handle, or `null` if no username has been claimed. */
-  username: string | null;
-  /** User-facing name as claimed, or `null` if no username has been claimed. */
-  displayName: string | null;
+export interface MobilePublicProfile extends MobileIdentitySummary {
+  /** Public biography, or null when unset. */
+  bio: string | null;
   privateMode: boolean;
   /**
    * Exact count at query time rather than a cached counter, including unnamed and private accounts — Private
@@ -57,11 +97,11 @@ export interface MobilePublicProfile {
  */
 export interface MobileIdentitySummary {
   subaccount: Hex;
-  /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
+  /** Canonical, lowercased handle; when null, render a local fallback label from `subaccount`. */
   username: string | null;
-  /** `null` when the account has not claimed a username; render a local fallback label from `subaccount`. */
+  /** User-facing name as claimed; when null, render a local fallback label from `subaccount`. */
   displayName: string | null;
-  /** Reserved for a future avatar source; `null` until one is implemented. */
+  /** Published avatar URL. Use a generated icon when null or when the image fails to load. */
   avatarUrl: string | null;
 }
 
@@ -288,6 +328,30 @@ export interface GetMobileFeedParams {
    * the exact same `minimumNotional` it was issued for.
    */
   cursor?: string;
+}
+
+/**
+ * Params for {@link MobileClient.setBio}.
+ */
+export interface MobileSetBioParams extends MobileSignedRequestParams {
+  /** Up to `MOBILE_BIO_MAX_LENGTH` (150) Unicode code points without null characters. Whitespace-only text clears the bio. */
+  bio: string;
+}
+
+/**
+ * Params for {@link MobileClient.setAvatar}.
+ */
+export interface MobileSetAvatarParams extends MobileSignedRequestParams {
+  /** Null clears the saved image. */
+  avatar: MobileAvatarSelection | null;
+}
+
+/**
+ * Params for {@link MobileClient.createAvatarUpload}.
+ */
+export interface MobileCreateAvatarUploadParams extends MobileSignedRequestParams {
+  /** Image size as an integer number of bytes, from 1 to `MOBILE_AVATAR_MAX_UPLOAD_BYTES` (5 MiB). */
+  contentLength: number;
 }
 
 /**

@@ -1,7 +1,7 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado mobile service API. Manages usernames, public profile lookups, global and
-session-based trade feeds, the follower/following graph, privacy settings, and push notification
+HTTP client for the Nado mobile service API. Manages usernames, bios, avatars, public profile lookups,
+global and session-based trade feeds, the follower/following graph, privacy settings, and push notification
 devices/preferences. Public queries require no wallet; authenticated operations use EIP-712 + msgpack signing.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
@@ -46,7 +46,7 @@ await mobile.setUsername({
 
 ### Public Queries
 
-`getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
+`getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
 `getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
 `getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`.
 
@@ -75,7 +75,7 @@ push token rather than a wallet signature, so they still work at logout when a s
 
 ### Signed Executes
 
-`setUsername`, `setPrivateMode`, `registerExpoToken`, `setFollow`.
+`setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`.
 
 ### Linked Signers
 

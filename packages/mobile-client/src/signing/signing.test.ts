@@ -19,9 +19,18 @@ const FIXED_PRIVATE_KEY =
   '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b786907' as const;
 const FIXED_VERIFYING_ADDR = '0x0000000000000000000000000000000000000001';
 
-// Every hash here mirrors the backend's pinned fixtures in mobile/src/api/types.rs, so a divergence is a
+// Every hash here mirrors the backend's pinned fixtures in mobile/src/api, so a divergence is a
 // real wire-format break rather than a stale expectation.
 const PINNED_HASHES = {
+  set_bio: '0x96206cad01c9b00d69412721842ca0866bb1a82ec90f3979b8bcc91dc96a1243',
+  create_avatar_upload:
+    '0xb3811340e751e2799d3a24467fa50aeb221e1ecea5aa6599ab09bd2426162495',
+  set_avatar_preset:
+    '0x9113b26919a71b910a4f61f4342121896a106014acaeef5da5a2d2e3f09e17ab',
+  set_avatar_clear:
+    '0x8ed3e0bc36cda8de523a22414c495e12385366d1cb61622be807b939505174ae',
+  set_avatar_upload:
+    '0xe036ffdffa1fdde9104a1cee9bb254352de293550dade21e439a65fc6fbd3d2c',
   set_username:
     '0xb4a55d9eb0be4e5c9457761c0c34c75cf39f7c07bd170700d8dd5e9c7de4a659',
   set_private_mode:
@@ -40,6 +49,53 @@ const FIXTURE_TARGET_SUBACCOUNT =
 
 describe('[mobile-client]: signing (offline)', () => {
   describe('pinned payload hashes', () => {
+    it('set_bio', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_bio',
+        bio: 'Trading 中文 🚀\nBuilding on @inkhq',
+      };
+      expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+        PINNED_HASHES.set_bio,
+      );
+    });
+
+    it('create_avatar_upload', () => {
+      const inner: MobileSignedInner = {
+        type: 'create_avatar_upload',
+        content_length: 12345,
+      };
+      expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+        PINNED_HASHES.create_avatar_upload,
+      );
+    });
+
+    it('set_avatar (preset)', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_avatar',
+        avatar: { type: 'preset', id: 'penguin' },
+      };
+      expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+        PINNED_HASHES.set_avatar_preset,
+      );
+    });
+
+    it('set_avatar (clear)', () => {
+      const inner: MobileSignedInner = { type: 'set_avatar', avatar: null };
+      expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+        PINNED_HASHES.set_avatar_clear,
+      );
+    });
+
+    it('set_avatar (upload)', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_avatar',
+        avatar: { type: 'upload', upload_key: 'staging/avatars/test' },
+      };
+      expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+        PINNED_HASHES.set_avatar_upload,
+      );
+    });
+
     it('set_username', () => {
       const inner: MobileSignedInner = {
         type: 'set_username',
@@ -89,6 +145,16 @@ describe('[mobile-client]: signing (offline)', () => {
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.set_follow_false);
     });
+  });
+
+  it('canonicalizes nested avatar fields before hashing', () => {
+    const inner: MobileSignedInner = {
+      avatar: { id: 'penguin', type: 'preset' },
+      type: 'set_avatar',
+    };
+    expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+      PINNED_HASHES.set_avatar_preset,
+    );
   });
 
   it('canonicalizes msgpack key order regardless of input key order', () => {

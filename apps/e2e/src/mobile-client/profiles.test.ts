@@ -11,14 +11,16 @@ import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobi
 import {
   assertBoolean,
   assertDefined,
-  assertHexString,
   assertNonNegativeInteger,
   assertNullableString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { assertMobileFollowSummaryShape } from '../utils/shapeAssertions';
+import {
+  assertMobileFollowSummaryShape,
+  assertMobileIdentitySummaryShape,
+} from '../utils/shapeAssertions';
 import {
   TEST_DELAYS,
   TEST_ISOLATED_SUBACCOUNT_NAME,
@@ -138,6 +140,8 @@ void describe(
       // A subaccount with no identity row still occupies its slot rather than being omitted.
       assert.equal(profile.username, null);
       assert.equal(profile.displayName, null);
+      assert.equal(profile.bio, null);
+      assert.equal(profile.avatarUrl, null);
       assert.equal(profile.privateMode, false);
       assert.equal(profile.followerCount, 0);
       assert.equal(profile.followingCount, 0);
@@ -229,8 +233,7 @@ function assertBaseProfileShape(
   profile: MobilePublicProfile,
   label: string,
 ): void {
-  assertHexString(profile.subaccount, `${label}.subaccount`);
-  assertNullableString(profile.username, `${label}.username`);
-  assertNullableString(profile.displayName, `${label}.displayName`);
+  assertMobileIdentitySummaryShape(profile, label);
+  assertNullableString(profile.bio, `${label}.bio`);
   assertBoolean(profile.privateMode, `${label}.privateMode`);
 }

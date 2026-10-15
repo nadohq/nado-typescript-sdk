@@ -75,6 +75,8 @@ export interface MobileServerSocialFeedReadParams {
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
 export interface MobileServerPublicQueryRequestByType {
+  /** Ordered server-owned avatar catalogue. */
+  avatar_presets: Record<never, never>;
   /** Public recommendations with optional relationship perspective. */
   for_you_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerSocialFeedReadParams;

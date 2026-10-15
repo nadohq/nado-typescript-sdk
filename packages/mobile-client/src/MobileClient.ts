@@ -6,6 +6,9 @@ import {
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
+  mapMobileAvatarPreset,
+  mapMobileAvatarSelectionToServer,
+  mapMobileAvatarUpload,
   mapMobileFeedPage,
   mapMobileFollowListPage,
   mapMobileFollowListParamsToServer,
@@ -46,6 +49,9 @@ import {
   GetMobileRegisteredWalletParams,
   GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
+  MobileAvatarPreset,
+  MobileAvatarUpload,
+  MobileCreateAvatarUploadParams,
   MobileFeedPage,
   MobileFollowListPage,
   MobileFollowMutationResult,
@@ -53,6 +59,8 @@ import {
   MobilePublicProfile,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
+  MobileSetAvatarParams,
+  MobileSetBioParams,
   MobileSetFollowParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
@@ -110,9 +118,9 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: usernames, public profile lookups, the global trade feed,
- * session-based social feeds, the follower/following graph, privacy settings, and push notification
- * device/preference management.
+ * Client for the Nado mobile service API: usernames, bios, avatars, public profile lookups, the global
+ * trade feed, session-based social feeds, the follower/following graph, privacy settings, and push
+ * notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -142,6 +150,19 @@ export class MobileClient {
   /*
   Public queries
    */
+
+  /**
+   * Returns the current server-owned avatar catalogue in display order.
+   *
+   * @throws {MobileServerFailureError} With `SERVICE_UNAVAILABLE` when avatar storage is not configured.
+   */
+  async getAvatarPresets(): Promise<MobileAvatarPreset[]> {
+    const body: MobileServerPublicQueryRequest<'avatar_presets'> = {
+      type: 'avatar_presets',
+    };
+    const data = await this.publicQuery(body);
+    return data.presets.map(mapMobileAvatarPreset);
+  }
 
   /**
    * Checks whether a username derived from the given display name is available to claim.
@@ -511,8 +532,68 @@ export class MobileClient {
    */
 
   /**
+   * Updates the biography, or clears it when the text is whitespace-only.
+   *
+   * Serialize this with {@link MobileClient.setAvatar}, {@link MobileClient.setUsername} and
+   * {@link MobileClient.setPrivateMode} for the same subaccount: all share the identity update nonce.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_BIO` for exceeding `MOBILE_BIO_MAX_LENGTH` or null
+   * characters, `INVALID_IDENTITY_TARGET` for an isolated subaccount, or `STALE_IDENTITY_UPDATE` when a
+   * later write has committed (re-read the profile before retrying).
+   */
+  async setBio(
+    params: MobileSetBioParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const signedRequest = await this.getSignedRequest('set_bio', params, {
+      bio: params.bio,
+    });
+    return this.execute(signedRequest);
+  }
+
+  /**
+   * Creates a short-lived upload grant. The caller uploads an image meeting {@link MobileAvatarUpload}'s requirements;
+   * file access and transport remain platform-specific. This does not change the saved avatar.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_AVATAR` for a zero or oversized upload,
+   * `INVALID_IDENTITY_TARGET` for an isolated subaccount, or `SERVICE_UNAVAILABLE` when storage is unavailable.
+   */
+  async createAvatarUpload(
+    params: MobileCreateAvatarUploadParams,
+  ): Promise<MobileAvatarUpload> {
+    const signedRequest = await this.getSignedRequest(
+      'create_avatar_upload',
+      params,
+      { content_length: params.contentLength },
+    );
+    const data = await this.execute(signedRequest);
+    return mapMobileAvatarUpload(data);
+  }
+
+  /**
+   * Publishes a preset/staged upload, or clears the saved avatar when avatar is null.
+   * Uploaded JPEG/PNG images must be square, at most 4096 × 4096 pixels, and within
+   * `MOBILE_AVATAR_MAX_UPLOAD_BYTES`. A successful PUT can still fail this publication check.
+   *
+   * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
+   *
+   * @throws {MobileServerFailureError} With `INVALID_AVATAR` for an invalid preset, staging key, or image,
+   * `INVALID_IDENTITY_TARGET` for an isolated subaccount, `SERVICE_UNAVAILABLE` when storage is unavailable,
+   * or `STALE_IDENTITY_UPDATE` when a later write has committed (re-read the profile before retrying).
+   */
+  async setAvatar(
+    params: MobileSetAvatarParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const signedRequest = await this.getSignedRequest('set_avatar', params, {
+      avatar: mapMobileAvatarSelectionToServer(params.avatar),
+    });
+    return this.execute(signedRequest);
+  }
+
+  /**
    * Sets a subaccount's username, derived from the given display name. Upserts: the same call claims a first
    * username and renames an existing one, so callers never need to read the current identity first.
+   *
+   * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_DISPLAY_NAME` if the display name violates
    * `MOBILE_DISPLAY_NAME_PATTERN`, `USERNAME_UNAVAILABLE` if the derived username is reserved or already
@@ -531,6 +612,7 @@ export class MobileClient {
 
   /**
    * Sets whether a subaccount's profile is private.
+   * Serialize identity writes for the same subaccount; see {@link MobileClient.setBio}.
    */
   async setPrivateMode(
     params: MobileSetPrivateModeParams,
