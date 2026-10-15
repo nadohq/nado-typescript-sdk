@@ -15,6 +15,16 @@ export const MOBILE_ERROR_CODES = {
   PROFILE_NOT_FOUND: 6106,
   /** Profiles lookup is empty, holds duplicates, or exceeds the batch maximum. Do not retry unchanged. */
   INVALID_PROFILES_REQUEST: 6107,
+  /**
+   * Profile search query is outside the username alphabet or length, or its limit is out of range. Do not
+   * retry unchanged.
+   */
+  INVALID_PROFILE_SEARCH_REQUEST: 6108,
+  /**
+   * Profile search cursor is malformed, oversized, or was issued for a different query. Restart from
+   * `cursor: undefined`.
+   */
+  INVALID_PROFILE_SEARCH_CURSOR: 6109,
   /** Follow mutation names the same source and target, or an isolated participant. Do not retry unchanged. */
   INVALID_FOLLOW_TARGET: 6110,
   /** Signed follower is not yet in the canonical Query DB subaccount index. Retry after index catch-up. */

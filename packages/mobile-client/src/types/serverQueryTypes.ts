@@ -56,6 +56,16 @@ export interface MobileServerProfilesResponse {
 }
 
 /**
+ * Payload of the `search_profiles` public query success response. Matches come in ascending bytewise
+ * username order, an exact match first, and carry the same include-gated fields as a `profiles` entry.
+ */
+export interface MobileServerSearchProfilesResponse {
+  profiles: MobileServerProfile[];
+  /** `null` means there are no further matches. */
+  next_cursor: string | null;
+}
+
+/**
  * Payload of the `followers` and `following` public query success responses. Both list directions share one
  * shape; only the relationship that selected the rows differs.
  */
@@ -177,6 +187,7 @@ export interface MobileServerPublicQueryResponseByType {
   feed_updates: MobileServerSocialFeedUpdatesResponse;
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
+  search_profiles: MobileServerSearchProfilesResponse;
   followers: MobileServerFollowListResponse;
   following: MobileServerFollowListResponse;
   feed: MobileServerFeedResponse;
