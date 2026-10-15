@@ -11,14 +11,16 @@ import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobi
 import {
   assertBoolean,
   assertDefined,
-  assertHexString,
   assertNonNegativeInteger,
   assertNullableString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { createTestContext } from '../utils/runWithContext';
-import { assertMobileFollowSummaryShape } from '../utils/shapeAssertions';
+import {
+  assertMobileFollowSummaryShape,
+  assertMobileIdentitySummaryShape,
+} from '../utils/shapeAssertions';
 import {
   TEST_DELAYS,
   TEST_ISOLATED_SUBACCOUNT_NAME,
@@ -231,10 +233,7 @@ function assertBaseProfileShape(
   profile: MobilePublicProfile,
   label: string,
 ): void {
-  assertHexString(profile.subaccount, `${label}.subaccount`);
-  assertNullableString(profile.username, `${label}.username`);
-  assertNullableString(profile.displayName, `${label}.displayName`);
+  assertMobileIdentitySummaryShape(profile, label);
   assertNullableString(profile.bio, `${label}.bio`);
-  assertNullableString(profile.avatarUrl, `${label}.avatarUrl`);
   assertBoolean(profile.privateMode, `${label}.privateMode`);
 }

@@ -56,7 +56,7 @@ export interface MobileServerAvatarUploadResponse {
 /**
  * Success payloads for each signed `execute`, keyed by request `type`. Most execute routes carry no payload
  * beyond the success discriminant and so map to an empty object; `set_follow` returns its post-commit
- * relationship state.
+ * relationship state, and `create_avatar_upload` returns a temporary upload grant.
  */
 export interface MobileServerExecuteResponseByType {
   /** Bio writes return only the success envelope. */

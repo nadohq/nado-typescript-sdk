@@ -4,7 +4,7 @@
 export const MOBILE_BIO_MAX_LENGTH = 150;
 
 /**
- * Maximum JPEG upload size in bytes. Exceeding it fails with `INVALID_AVATAR`.
+ * Maximum JPEG or PNG upload size in bytes. Exceeding it fails with `INVALID_AVATAR`.
  */
 export const MOBILE_AVATAR_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 

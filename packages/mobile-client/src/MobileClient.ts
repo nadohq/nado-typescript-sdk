@@ -153,9 +153,14 @@ export class MobileClient {
 
   /**
    * Returns the current server-owned avatar catalogue in display order.
+   *
+   * @throws {MobileServerFailureError} With `SERVICE_UNAVAILABLE` when avatar storage is not configured.
    */
   async getAvatarPresets(): Promise<MobileAvatarPreset[]> {
-    const data = await this.publicQuery({ type: 'avatar_presets' });
+    const body: MobileServerPublicQueryRequest<'avatar_presets'> = {
+      type: 'avatar_presets',
+    };
+    const data = await this.publicQuery(body);
     return data.presets.map(mapMobileAvatarPreset);
   }
 
