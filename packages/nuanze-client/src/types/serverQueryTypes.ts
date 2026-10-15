@@ -14,6 +14,7 @@ import { NuanzeNewsStory } from './clientModelTypes';
 import { NuanzeErrorCode } from './nuanzeErrorCodes';
 import {
   NuanzeServerCandle,
+  NuanzeServerCohort,
   NuanzeServerCollateralFlow,
   NuanzeServerCollateralFlowPoint,
   NuanzeServerFollowedLeaderboardItem,
@@ -26,7 +27,10 @@ import {
   NuanzeServerOpenPosition,
   NuanzeServerPlatformDeltas,
   NuanzeServerSeriesPoint,
+  NuanzeServerSubaccountCloseTrade,
   NuanzeServerSubaccountLeaderboardItem,
+  NuanzeServerSubaccountLongShortBias,
+  NuanzeServerSubaccountMostTradedMarket,
   NuanzeServerWalletPosition,
   NuanzeServerWalletTrade,
 } from './serverModelTypes';
@@ -125,6 +129,36 @@ export interface NuanzeServerSubaccountLeaderboardPositionResponse {
 }
 
 /**
+ * `GET /subaccounts/{subaccountHex}` response as returned on the wire.
+ */
+export interface NuanzeServerSubaccountStatsResponse {
+  subaccountHex: string;
+  timeframe: NuanzeLeaderboardTimeframe;
+  owner: string;
+  subaccountName: string;
+  username: string | null;
+  displayName: string | null;
+  pnl: string | null;
+  wins: number;
+  losses: number;
+  winRate: string | null;
+  trades: number;
+  productIds: number[];
+  productCount: number;
+  globalRank: number | null;
+  filteredRank: number | null;
+  cumulativeVolume: string;
+  windowVolume: string;
+  windowPnl: string;
+  averageLeverage: string | null;
+  bestTrade: NuanzeServerSubaccountCloseTrade | null;
+  worstTrade: NuanzeServerSubaccountCloseTrade | null;
+  longShortBias: NuanzeServerSubaccountLongShortBias;
+  mostTradedMarket: NuanzeServerSubaccountMostTradedMarket | null;
+  asOf: string;
+}
+
+/**
  * `GET /wallets/leaderboard` response as returned on the wire.
  */
 export interface NuanzeServerFollowedLeaderboardResponse {
@@ -160,6 +194,14 @@ export interface NuanzeServerPlatformSummaryResponse {
   windowTrades: number;
   windowTraders: number;
   deltas: NuanzeServerPlatformDeltas;
+  asOf: string;
+}
+
+/**
+ * `GET /cohorts` response as returned on the wire.
+ */
+export interface NuanzeServerCohortsResponse {
+  items: NuanzeServerCohort[];
   asOf: string;
 }
 

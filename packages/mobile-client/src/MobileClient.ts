@@ -18,6 +18,13 @@ import {
   mapMobileProfilesIncludeToServer,
   mapMobilePublicProfile,
   mapMobileRegisteredWallet,
+  mapMobileSocialFeedItemResponse,
+  mapMobileSocialFeedListParamsToServer,
+  mapMobileSocialFeedPage,
+  mapMobileSocialFeedRankedPage,
+  mapMobileSocialFeedReadParamsToServer,
+  mapMobileSocialFeedTopTradersPage,
+  mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
@@ -27,12 +34,20 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
+  GetMobileFeedItemParams,
   GetMobileFeedParams,
+  GetMobileFeedUpdatesParams,
   GetMobileFollowersParams,
   GetMobileFollowingParams,
+  GetMobileForYouFeedParams,
+  GetMobileFriendsFeedParams,
+  GetMobileMarketFeedParams,
   GetMobileNotificationPreferencesParams,
+  GetMobilePositionFeedParams,
+  GetMobileProfileFeedParams,
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
+  GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
   MobileAvatarPreset,
   MobileAvatarUpload,
@@ -50,6 +65,11 @@ import {
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
   MobileSignedRequestParams,
+  MobileSocialFeedItemResponse,
+  MobileSocialFeedPage,
+  MobileSocialFeedRankedPage,
+  MobileSocialFeedTopTradersPage,
+  MobileSocialFeedUpdates,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
@@ -98,8 +118,9 @@ export interface MobileClientOpts {
 }
 
 /**
- * Client for the Nado mobile service API: usernames, bios, avatars, public profile lookups, the global trade feed, the
- * follower/following graph, privacy settings, and push notification device/preference management.
+ * Client for the Nado mobile service API: usernames, bios, avatars, public profile lookups, the global
+ * trade feed, session-based social feeds, the follower/following graph, privacy settings, and push
+ * notification device/preference management.
  */
 export class MobileClient {
   readonly opts: MobileClientOpts;
@@ -243,6 +264,175 @@ export class MobileClient {
     };
     const data = await this.publicQuery(body);
     return mapMobileFeedPage(data);
+  }
+
+  /**
+   * Fetches chronological For You recommendations with server-side author/thread constraints.
+   * Always public, with optional viewAs for relationship state. Preserve the session, viewAs, filters, and limit
+   * when paging, including through empty pages with a nextCursor. A 6312 error requires a refresh.
+   * @param params - Filters, pagination, optional viewing account, and browser credential; no signing identity.
+   * @returns A fixed-session page with its ranking version and new-content watermark.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, or unavailable data.
+   */
+  async getForYouFeed(
+    params: GetMobileForYouFeedParams = {},
+  ): Promise<MobileSocialFeedRankedPage> {
+    const body: MobileServerPublicQueryRequest<'for_you_feed'> = {
+      type: 'for_you_feed',
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedRankedPage(data);
+  }
+
+  /**
+   * Fetches chronological content by qualified Top Traders, with official account PnL badges.
+   * Always public; neither a wallet nor one-click trading setup is required.
+   * @param params - Filters, pagination, optional viewing account, and browser credential.
+   * @returns A page with its qualification cohort; an unavailable cohort fails instead of returning an empty ranking.
+   * @throws {MobileServerFailureError} On request/session errors or unavailable cohort data.
+   */
+  async getTopTradersFeed(
+    params: GetMobileTopTradersFeedParams = {},
+  ): Promise<MobileSocialFeedTopTradersPage> {
+    const body: MobileServerPublicQueryRequest<'top_traders_feed'> = {
+      type: 'top_traders_feed',
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedTopTradersPage(data);
+  }
+
+  /**
+   * Fetches public content by authors followed by viewAs, without a signature. One-way following is sufficient.
+   * @param params - Required viewing account on every request, filters, pagination, and browser credential.
+   * @returns A chronological Friends page and reading session.
+   * @throws {MobileServerFailureError} On invalid viewing account, session errors, or feed query failure.
+   */
+  async getFriendsFeed(
+    params: GetMobileFriendsFeedParams,
+  ): Promise<MobileSocialFeedRankedPage> {
+    const body: MobileServerPublicQueryRequest<'friends_feed'> = {
+      type: 'friends_feed',
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParamsToServer(params),
+      view_as: subaccountToHex(params.viewAs),
+      viewer_token: params.viewerToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedRankedPage(data);
+  }
+
+  /**
+   * Fetches an author's content visible to viewAs, including that account's own hidden content.
+   * @param params - Target identity, filters, pagination, and optional public viewing account.
+   * @returns An author page without main-feed ranking or cohort fields.
+   * @throws {MobileServerFailureError} On invalid parameters, session errors, or inaccessible content.
+   */
+  async getProfileFeed(
+    params: GetMobileProfileFeedParams,
+  ): Promise<MobileSocialFeedPage> {
+    const body: MobileServerPublicQueryRequest<'profile_feed'> = {
+      type: 'profile_feed',
+      subaccount: subaccountToHex(params.subaccount),
+      market_category: params.marketCategory,
+      ...mapMobileSocialFeedListParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedPage(data);
+  }
+
+  /**
+   * Fetches published content for one market.
+   * @param params - Product ID, content/size filters, pagination, and public viewing account.
+   * @returns A market page without main-feed ranking fields.
+   * @throws {MobileServerFailureError} On an unknown market, session errors, or unavailable data.
+   */
+  async getMarketFeed(
+    params: GetMobileMarketFeedParams,
+  ): Promise<MobileSocialFeedPage> {
+    const body: MobileServerPublicQueryRequest<'market_feed'> = {
+      type: 'market_feed',
+      product_id: params.productId,
+      ...mapMobileSocialFeedListParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedPage(data);
+  }
+
+  /**
+   * Fetches already published content for a position lifecycle. This is not full position history
+   * and includes hidden content owned by viewAs under account_view. It does not recreate suppressed activity.
+   * @param params - Position UUID, filters, pagination, and public viewing account.
+   * @returns A fixed-session position feed page.
+   * @throws {MobileServerFailureError} On inaccessible content, session errors, or unavailable data.
+   */
+  async getPositionFeed(
+    params: GetMobilePositionFeedParams,
+  ): Promise<MobileSocialFeedPage> {
+    const body: MobileServerPublicQueryRequest<'position_feed'> = {
+      type: 'position_feed',
+      position_id: params.positionId,
+      ...mapMobileSocialFeedListParamsToServer(params),
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedPage(data);
+  }
+
+  /**
+   * Reads one item visible to viewAs, including that account's own hidden content.
+   * Creates an item session directly when sessionId is omitted.
+   * @param params - Item UUID, preview limit, and optional existing session/read identity.
+   * @returns The complete item and authorized reading session.
+   * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
+   */
+  async getFeedItem(
+    params: GetMobileFeedItemParams,
+  ): Promise<MobileSocialFeedItemResponse> {
+    const body: MobileServerPublicQueryRequest<'feed_item'> = {
+      type: 'feed_item',
+      item_id: params.itemId,
+      comment_preview_limit: params.commentPreviewLimit,
+      session_id: params.sessionId,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedItemResponse(data);
+  }
+
+  /**
+   * Polls authorized visible items and positions without inserting or reordering list members.
+   * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
+   * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
+   * Updates currently always return reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
+   * Null patches clear values;
+   * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
+   * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
+   * @returns Item/position patches, revoked targets, and a new-content hint.
+   * @throws {MobileServerFailureError} On invalid or unauthorized targets, session expiry, or unavailable data.
+   */
+  async getFeedUpdates(
+    params: GetMobileFeedUpdatesParams,
+  ): Promise<MobileSocialFeedUpdates> {
+    const body: MobileServerPublicQueryRequest<'feed_updates'> = {
+      type: 'feed_updates',
+      session_id: params.sessionId,
+      visible_item_ids: params.visibleItemIds,
+      visible_position_ids: params.visiblePositionIds,
+      update_cursor: params.updateCursor,
+      viewport_revision: params.viewportRevision,
+      request_seq: params.requestSeq,
+      viewer_token: params.viewerToken,
+    };
+    const data = await this.publicQuery(body);
+    return mapMobileSocialFeedUpdates(data);
   }
 
   /**

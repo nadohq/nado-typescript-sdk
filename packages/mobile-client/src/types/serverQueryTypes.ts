@@ -7,6 +7,12 @@ import {
   MobileServerFollowListAccount,
   MobileServerNotificationPreferences,
   MobileServerProfile,
+  MobileServerSocialFeedCohort,
+  MobileServerSocialFeedItem,
+  MobileServerSocialFeedItemPatch,
+  MobileServerSocialFeedPositionPatch,
+  MobileServerSocialFeedReadSession,
+  MobileSocialFeedUnavailableTarget,
 } from './serverModelTypes';
 import {
   MobileServerPublicQueryRequestByType,
@@ -72,6 +78,58 @@ export interface MobileServerFeedResponse {
   next_cursor: string | null;
 }
 
+/** Fixed-window list response; an empty page can still have a next cursor. */
+export interface MobileServerSocialFeedResponse {
+  /** Reading session and its browser credential. */
+  read_session: MobileServerSocialFeedReadSession;
+  /** Visible items in server order; deduplicate by ID without local reordering. */
+  items: MobileServerSocialFeedItem[];
+  /** Opaque cursor; null only when pagination is complete. */
+  next_cursor: string | null;
+  /** New-content baseline, not a pagination or update cursor. */
+  watermark: string;
+}
+
+/** Main-feed page with its ordering version. */
+export interface MobileServerSocialFeedRankedResponse extends MobileServerSocialFeedResponse {
+  /** Current ordering contract: chronological-v1. */
+  ranking_version: string;
+}
+
+/** Top Traders page, with one shared qualification snapshot for eligibility and badges. */
+export interface MobileServerSocialFeedTopTradersResponse extends MobileServerSocialFeedRankedResponse {
+  /** Author eligibility snapshot. */
+  cohort: MobileServerSocialFeedCohort;
+}
+
+/** Item details with either a new item session or the reused authorized session. */
+export interface MobileServerSocialFeedItemResponse {
+  /** Full visible item. */
+  item: MobileServerSocialFeedItem;
+  /** Session authorized for subsequent updates. */
+  read_session: MobileServerSocialFeedReadSession;
+}
+
+/** Batched viewport updates; apply only the current viewport's latest request sequence. */
+export interface MobileServerSocialFeedUpdatesResponse {
+  /** Item deltas, independent of current-position patches. */
+  item_patches: MobileServerSocialFeedItemPatch[];
+  /** Complete mutable position facts at one version. */
+  position_patches: MobileServerSocialFeedPositionPatch[];
+  /** Previously authorized targets that can no longer be read. */
+  unavailable_targets: MobileSocialFeedUnavailableTarget[];
+  /** New-content hint; always zero for directly created item sessions. */
+  new_items_count: number;
+  /** Baseline to use for the next update call with the same viewport. */
+  update_cursor: string;
+  /** Full snapshot of applicable mutable fields; currently always true. Apply author updates even when the item version is unchanged. */
+  reset: boolean;
+  /** Echoed viewport revision. */
+  viewport_revision: number;
+  /** Echoed request sequence. */
+  request_seq: number;
+}
+
 /**
  * Payload of the `notification_preferences` public query success response.
  */
@@ -101,6 +159,22 @@ export interface MobileServerRegisteredWalletResponse {
 export interface MobileServerPublicQueryResponseByType {
   /** Preset IDs and public image URLs in display order. */
   avatar_presets: MobileServerAvatarPresetsResponse;
+  /** For You recommendations. */
+  for_you_feed: MobileServerSocialFeedRankedResponse;
+  /** Qualified authors and cohort metadata. */
+  top_traders_feed: MobileServerSocialFeedTopTradersResponse;
+  /** Public content from followed authors. */
+  friends_feed: MobileServerSocialFeedRankedResponse;
+  /** Published author content. */
+  profile_feed: MobileServerSocialFeedResponse;
+  /** Published market content. */
+  market_feed: MobileServerSocialFeedResponse;
+  /** Published position activity. */
+  position_feed: MobileServerSocialFeedResponse;
+  /** Item details and reading session. */
+  feed_item: MobileServerSocialFeedItemResponse;
+  /** Authorized viewport changes. */
+  feed_updates: MobileServerSocialFeedUpdatesResponse;
   username_availability: MobileServerUsernameAvailabilityResponse;
   profiles: MobileServerProfilesResponse;
   followers: MobileServerFollowListResponse;

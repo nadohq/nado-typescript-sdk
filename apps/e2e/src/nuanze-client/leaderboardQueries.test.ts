@@ -1,6 +1,7 @@
 import {
   GetNuanzeSubaccountLeaderboardResponse,
   NUANZE_LEADERBOARD_TIMEFRAMES,
+  NUANZE_POINTS_TIERS,
   NuanzeFollowedLeaderboardItem,
   NuanzeLeaderboardItem,
   NuanzeLeaderboardTimeframe,
@@ -12,6 +13,7 @@ import { before, describe, test } from 'node:test';
 import {
   assertArrayElements,
   assertBigNumberFinite,
+  assertBigNumberNonNegative,
   assertEnumMember,
   assertHexString,
   assertNonEmptyString,
@@ -962,6 +964,16 @@ function assertSubaccountStatsShape(
   if (item.globalRank !== null) {
     assertNumber(item.globalRank, `${label}.globalRank`);
     assert.ok(item.globalRank >= 1, `${label}.globalRank should be >= 1`);
+  }
+  if (item.volume !== null) {
+    assertBigNumberNonNegative(item.volume, `${label}.volume`);
+  }
+  if (item.pointsTier !== null) {
+    assertEnumMember(
+      item.pointsTier,
+      NUANZE_POINTS_TIERS,
+      `${label}.pointsTier`,
+    );
   }
 }
 

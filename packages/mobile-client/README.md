@@ -1,8 +1,8 @@
 # `@nadohq/mobile-client`
 
-HTTP client for the Nado mobile service API. Manages usernames, bios, avatars, public profile lookups, the global trade feed,
-the follower/following graph, privacy settings, and push notification devices/preferences, using EIP-712 +
-msgpack signed authentication.
+HTTP client for the Nado mobile service API. Manages usernames, bios, avatars, public profile lookups,
+global and session-based trade feeds, the follower/following graph, privacy settings, and push notification
+devices/preferences. Public queries require no wallet; authenticated operations use EIP-712 + msgpack signing.
 
 [Full SDK Documentation](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
@@ -47,7 +47,8 @@ await mobile.setUsername({
 ### Public Queries
 
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
-`getNotificationPreferences`, `getRegisteredWallet`.
+`getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
+`getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`.
 
 `getProfiles` is the only profile route: it batches up to 25 subaccounts, returns them in the requested order,
 and carries follower totals (`include.followCounts`) and a follow summary (`include.followSummary.viewAs`) as
@@ -59,6 +60,13 @@ so the SDK does not expose it.
 proving one: with it the page is ordered familiar-first and every row carries an `isFollowing`, without it the
 page is ordered by the listed relationship alone and `isFollowing` is absent rather than `false`. As with
 `include.followSummary.viewAs`, an unsigned route means the claimed viewer is not verified.
+
+`getFeed` returns the global trade feed. Session-based feeds include `getForYouFeed`, `getTopTradersFeed`,
+and `getFriendsFeed` (requires `viewAs`), plus `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`.
+`getFeedItem` reads one item; `getFeedUpdates` polls session patches using the returned `viewerToken`.
+All are unsigned. Profile, position, and item reads include the `viewAs` account's own hidden content under
+`account_view`; the viewing account is not proof of wallet ownership. Prices are decimal `BigNumber` values;
+quantities, notionals, and PnL retain x18 units. See method and parameter JSDoc for session and polling rules.
 
 ### Public Executes
 

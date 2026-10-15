@@ -105,6 +105,12 @@ export interface EngineServerMaxWithdrawableQueryParams {
   spot_leverage: string | null;
   /** If 'true', reserves the current dynamic fee of Withdraw Collateral V2 instead of the flat fee and returns it as `fee_x18`. Defaults to false. */
   dynamic_fee?: string | null;
+  /**
+   * Hex encoded bytes32 transfer recipient. If given, returns the max Transfer Quote V2 amount to
+   * this recipient instead of the max withdrawal: the reserved fee is the transfer fee instead of
+   * the withdrawal fee. Requires `product_id` 0.
+   */
+  recipient?: string | null;
 }
 
 export interface EngineServerMaxOrderSizeQueryParams {
