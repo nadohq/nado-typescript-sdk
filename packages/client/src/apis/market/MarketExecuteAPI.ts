@@ -31,6 +31,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
       verifyingAddr: getOrderVerifyingAddress(params.productId),
       productId,
       spotLeverage: params.spotLeverage,
+      borrowMargin: params.borrowMargin,
       nonce,
     });
   }
@@ -44,7 +45,8 @@ export class MarketExecuteAPI extends BaseNadoAPI {
   ): Promise<EngineServerExecuteSuccessResult<'place_orders'>> {
     return this.context.engineClient.placeOrders({
       orders: params.orders.map((orderParams) => {
-        const { id, productId, order, nonce, spotLeverage } = orderParams;
+        const { id, productId, order, nonce, spotLeverage, borrowMargin } =
+          orderParams;
         return {
           id,
           order: {
@@ -55,6 +57,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
           verifyingAddr: getOrderVerifyingAddress(productId),
           productId,
           spotLeverage,
+          borrowMargin,
           nonce,
         };
       }),
@@ -80,29 +83,41 @@ export class MarketExecuteAPI extends BaseNadoAPI {
    * @param params
    */
   async cancelAndPlace(params: CancelAndPlaceOrderParams) {
-    const { productId, order, nonce, spotLeverage } = params.placeOrder;
-    const subaccountOwner = this.getSubaccountOwnerIfNeeded(
+    const {
+      id: orderId,
+      productId,
+      order,
+      nonce,
+      spotLeverage,
+      borrowMargin,
+    } = params.placeOrder;
+    const cancelSubaccountOwner = this.getSubaccountOwnerIfNeeded(
       params.cancelOrders,
+    );
+    const placeSubaccountOwner = this.getSubaccountOwnerIfNeeded(
+      order.subaccountOwner ? order : params.cancelOrders,
     );
     const chainId = this.getWalletClientChainIdIfNeeded(params.cancelOrders);
 
     return this.context.engineClient.cancelAndPlace({
       cancelOrders: {
         ...params.cancelOrders,
-        subaccountOwner,
+        subaccountOwner: cancelSubaccountOwner,
         verifyingAddr:
           params.cancelOrders.verifyingAddr ?? this.getEndpointAddress(),
         chainId,
       },
       placeOrder: {
+        id: orderId,
         order: {
           ...order,
-          subaccountOwner,
+          subaccountOwner: placeSubaccountOwner,
         },
         verifyingAddr: getOrderVerifyingAddress(productId),
         chainId,
         productId,
         spotLeverage,
+        borrowMargin,
         nonce,
       },
       requiredUnfilledAmount: params.requiredUnfilledAmount,
