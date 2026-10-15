@@ -346,7 +346,7 @@ export interface SearchMobileProfilesParams {
   /**
    * Page size, 1-`MOBILE_PROFILE_SEARCH_MAX_PAGE_SIZE` (50), or
    * 1-`MOBILE_PROFILE_SEARCH_MAX_ENRICHED_PAGE_SIZE` (25) when `include` asks for follow data; the backend
-   * defaults to `MOBILE_PROFILE_SEARCH_DEFAULT_PAGE_SIZE` (25) when omitted.
+   * defaults to 25 when omitted.
    */
   limit?: number;
 }
