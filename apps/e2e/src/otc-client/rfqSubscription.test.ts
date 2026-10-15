@@ -15,7 +15,11 @@ import {
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { createTestContext } from '../utils/runWithContext';
-import { TEST_PRODUCT_IDS, TEST_TIMEOUTS } from '../utils/testConstants';
+import {
+  TEST_OTC_PRICER_ID,
+  TEST_PRODUCT_IDS,
+  TEST_TIMEOUTS,
+} from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 const MESSAGE_TIMEOUT_MS = 10_000;
@@ -67,6 +71,7 @@ void describe(
       stream = {
         type: 'quote',
         productId: TEST_PRODUCT_IDS.PERP_BTC,
+        pricerId: TEST_OTC_PRICER_ID,
         wallet: tc.walletClientAddress,
         size: addDecimals(-1).toFixed(),
         sizeUnit: 'base',

@@ -14,7 +14,7 @@ export interface OtcExecuteParams {
   /** Client-generated idempotency key, 1–128 bytes. Kept across retries of this intent. */
   dealId: string;
   taker: OtcServerTakerOrderParams;
-  /** Execution route. Omitted selects the service default (`awr`). */
+  /** The route. The service requires it and has no default. */
   pricerId?: string;
 }
 
@@ -25,6 +25,33 @@ export interface OtcGetExecutionStatusParams {
 
 export interface OtcGetReadyParams {
   pricerId?: string;
+}
+
+export interface OtcGetAuthNonceParams {
+  /** The 32-byte subaccount the login is bound to. */
+  sender: string;
+}
+
+export interface OtcSiweMessageParams {
+  /** Host of the page origin, e.g. `testnet.nado.xyz`. */
+  domain: string;
+  /** The page origin, with no path or trailing slash. */
+  uri: string;
+  /** The signing address, EIP-55 checksummed: the owner or the sender's linked signer. */
+  address: string;
+  chainId: number;
+  nonce: string;
+  /** `issued_at_ms` from the nonce response; a local clock can be rejected as future. */
+  issuedAtMs: number;
+  /** The same sender as the nonce request. */
+  sender: string;
+}
+
+export interface OtcVerifyAuthParams {
+  /** The SIWE text exactly as signed. */
+  message: string;
+  /** 65-byte hex `personal_sign` signature of `message`. */
+  signature: string;
 }
 
 /**
@@ -46,7 +73,7 @@ export interface OtcQuoteStream {
   wallet: string;
   size: string;
   sizeUnit: OtcQuoteSizeUnit;
-  /** Execution route. Omitted selects the service default (`awr`). */
+  /** The route. The service requires it and has no default. */
   pricerId?: string;
 }
 

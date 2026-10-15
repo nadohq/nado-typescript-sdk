@@ -1,5 +1,21 @@
 export type OtcQuoteSizeUnit = 'base' | 'quote';
 
+export interface OtcServerAuthNonce {
+  nonce: string;
+  issued_at_ms: number;
+  /** The nonce lasts 60s from issuance. */
+  expires_at_ms: number;
+  session_expires_at_ms: number | null;
+}
+
+/** The verified login identity. The session itself lives in an HttpOnly cookie. */
+export interface OtcServerAuthSession {
+  owner: string;
+  sender: string;
+  signer: string;
+  expires_at_ms: number;
+}
+
 interface OtcServerExecutionDiagnostics {
   failure_source?: string;
   failure_stage?: string;
