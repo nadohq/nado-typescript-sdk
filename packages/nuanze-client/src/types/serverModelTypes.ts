@@ -175,6 +175,7 @@ export interface NuanzeServerFollowedLeaderboardItem {
   subaccountHex: string;
   username: string | null;
   displayName: string | null;
+  avatarUrl: string | null;
   pnl: string | null;
   wins: number;
   losses: number;
@@ -194,6 +195,7 @@ export interface NuanzeServerSubaccountLeaderboardItem {
   subaccountHex: string;
   username: string | null;
   displayName: string | null;
+  avatarUrl: string | null;
   pnl: string | null;
   wins: number;
   losses: number;
@@ -318,6 +320,7 @@ export interface NuanzeServerMarketPosition {
   subaccountName: string;
   username: string | null;
   displayName: string | null;
+  avatarUrl: string | null;
   symbol: string;
   marginKind: NuanzeMarginKind;
   side: NuanzePositionSide;
