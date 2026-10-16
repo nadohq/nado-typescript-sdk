@@ -41,11 +41,19 @@ const PINNED_HASHES = {
     '0x1ff8529b7c1a0111313eed98536e591555a3bcab51133776ce30c6ef32b559b3',
   set_follow_false:
     '0xec9e9e8f32ac4fcf3015f8b7f20c338623ff85db0488703c7fb688519a46e2e5',
+  set_follow_batch_true:
+    '0x0d86ef133ad5db8968911d102c48599691dcc40094ace985484c3f7e2cb3a87d',
+  set_follow_batch_false:
+    '0x02272ef5f6c7f9b315a892240af614f9cbbcb1edc69538db37ae1409549ff2fa',
 } as const;
 
 // Every follow fixture on the backend targets this subaccount.
 const FIXTURE_TARGET_SUBACCOUNT =
   '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
+
+// Batch follow fixtures target the subaccount above, then this one.
+const FIXTURE_SECOND_TARGET_SUBACCOUNT =
+  '0x2222222222222222222222222222222222222222222222222222222222222222' as const;
 
 describe('[mobile-client]: signing (offline)', () => {
   describe('pinned payload hashes', () => {
@@ -144,6 +152,32 @@ describe('[mobile-client]: signing (offline)', () => {
       };
       const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
       expect(hash).toBe(PINNED_HASHES.set_follow_false);
+    });
+
+    it('set_follow_batch (follow)', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_follow_batch',
+        subaccounts: [
+          FIXTURE_TARGET_SUBACCOUNT,
+          FIXTURE_SECOND_TARGET_SUBACCOUNT,
+        ],
+        is_following: true,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.set_follow_batch_true);
+    });
+
+    it('set_follow_batch (unfollow)', () => {
+      const inner: MobileSignedInner = {
+        type: 'set_follow_batch',
+        subaccounts: [
+          FIXTURE_TARGET_SUBACCOUNT,
+          FIXTURE_SECOND_TARGET_SUBACCOUNT,
+        ],
+        is_following: false,
+      };
+      const hash = getMobilePayloadHash(canonicalizeMobileInner(inner));
+      expect(hash).toBe(PINNED_HASHES.set_follow_batch_false);
     });
   });
 

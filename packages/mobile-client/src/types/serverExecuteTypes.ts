@@ -1,3 +1,4 @@
+import { Hex } from 'viem';
 import {
   MobileServerFailureResponse,
   MobileServerSuccessResponse,
@@ -33,6 +34,26 @@ export interface MobileServerFollowMutationResponse {
 }
 
 /**
+ * One target's post-commit state in a `set_follow_batch` response.
+ */
+export interface MobileServerFollowBatchResultItem {
+  /** The requested target, as lowercase hex. */
+  subaccount: Hex;
+  is_following: boolean;
+  /** The *target's* follower count after the batch, not the sender's. */
+  follower_count: number;
+}
+
+/**
+ * Payload the `set_follow_batch` execute returns alongside the success envelope: one result per target, in
+ * request order. Every write and count runs in one database transaction, so the batch either fully applies or
+ * changes nothing, and these values are authoritative post-commit state.
+ */
+export interface MobileServerFollowBatchResponse {
+  results: MobileServerFollowBatchResultItem[];
+}
+
+/**
  * Payload of an execute route that returns nothing beyond the success discriminant. Spelled `Record<never,
  * never>` rather than `Record<string, never>` because the latter's index signature would collapse `status` to
  * `never` when intersected with the success envelope.
@@ -55,8 +76,8 @@ export interface MobileServerAvatarUploadResponse {
 
 /**
  * Success payloads for each signed `execute`, keyed by request `type`. Most execute routes carry no payload
- * beyond the success discriminant and so map to an empty object; `set_follow` returns its post-commit
- * relationship state, and `create_avatar_upload` returns a temporary upload grant.
+ * beyond the success discriminant and so map to an empty object; `set_follow` and `set_follow_batch` return
+ * their post-commit relationship state, and `create_avatar_upload` returns a temporary upload grant.
  */
 export interface MobileServerExecuteResponseByType {
   /** Bio writes return only the success envelope. */
@@ -69,6 +90,7 @@ export interface MobileServerExecuteResponseByType {
   set_private_mode: MobileServerEmptyExecuteResponse;
   register_expo_token: MobileServerEmptyExecuteResponse;
   set_follow: MobileServerFollowMutationResponse;
+  set_follow_batch: MobileServerFollowBatchResponse;
 }
 
 /**

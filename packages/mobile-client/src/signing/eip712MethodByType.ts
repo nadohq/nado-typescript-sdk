@@ -14,4 +14,6 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   set_private_mode: 'mobile:execute_set_private_mode',
   register_expo_token: 'mobile:execute_register_expo_token',
   set_follow: 'mobile:execute_set_follow',
+  // Shared by both directions: `is_following` is covered by the payload hash instead.
+  set_follow_batch: 'mobile:execute_set_follow_batch',
 };

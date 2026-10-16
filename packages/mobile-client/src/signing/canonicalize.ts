@@ -49,6 +49,12 @@ export function canonicalizeMobileInner(
         subaccount: inner.subaccount,
         is_following: inner.is_following,
       };
+    case 'set_follow_batch':
+      return {
+        type: 'set_follow_batch',
+        subaccounts: [...inner.subaccounts],
+        is_following: inner.is_following,
+      };
     default: {
       throw new Error(
         `canonicalizeMobileInner: unhandled inner payload type: ${JSON.stringify(inner)}`,
