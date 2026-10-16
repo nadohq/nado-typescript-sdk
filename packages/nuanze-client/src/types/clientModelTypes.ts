@@ -683,6 +683,8 @@ export interface NuanzeFollowedLeaderboardItem {
   username: string | null;
   /** User-facing display name, or null when the followed subaccount has not claimed one. */
   displayName: string | null;
+  /** Avatar image URL, or null when the followed subaccount has no synced identity or none set. */
+  avatarUrl: string | null;
   /**
    * Equity-basis account PnL for the requested timeframe, or null when the subaccount
    * has no data in the window.
@@ -774,6 +776,8 @@ export interface NuanzeSubaccountLeaderboardItem {
   username: string | null;
   /** User-facing display name, or null when unavailable. */
   displayName: string | null;
+  /** Avatar image URL, or null when the subaccount has no synced identity or none set. */
+  avatarUrl: string | null;
   /**
    * Equity-basis account PnL for the requested timeframe, or null for an untraded subaccount
    * returned when `includeUntraded` is enabled.
@@ -971,6 +975,8 @@ export interface NuanzeMarketPosition {
   username: string | null;
   /** Display name, or null when the subaccount has no synced identity or none set. */
   displayName: string | null;
+  /** Avatar image URL, or null when the subaccount has no synced identity or none set. */
+  avatarUrl: string | null;
   /** Venue-native symbol. */
   symbol: string;
   /** Margin mode. Isolated margin is isolated equity and is null when non-positive. */

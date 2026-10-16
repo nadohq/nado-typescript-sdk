@@ -925,6 +925,9 @@ function assertSubaccountLeaderboardItemShape(
   if (item.displayName !== null) {
     assertString(item.displayName, `${label}.displayName`);
   }
+  if (item.avatarUrl !== null) {
+    assertString(item.avatarUrl, `${label}.avatarUrl`);
+  }
 }
 
 function assertFollowedLeaderboardItemShape(
@@ -937,6 +940,9 @@ function assertFollowedLeaderboardItemShape(
   }
   if (item.displayName !== null) {
     assertString(item.displayName, `${label}.displayName`);
+  }
+  if (item.avatarUrl !== null) {
+    assertString(item.avatarUrl, `${label}.avatarUrl`);
   }
 }
 
