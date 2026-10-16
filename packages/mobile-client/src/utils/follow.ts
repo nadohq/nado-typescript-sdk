@@ -20,3 +20,9 @@ export const MOBILE_FOLLOWED_BY_PREVIEW_LIMIT = 2;
  * this many fail with `INVALID_PROFILES_REQUEST`.
  */
 export const MOBILE_PROFILES_MAX_BATCH_SIZE = 25;
+
+/**
+ * Maximum number of targets a single follow batch accepts. An empty list, a duplicate, or more than this many
+ * fail with `INVALID_FOLLOW_BATCH`.
+ */
+export const MOBILE_FOLLOW_BATCH_MAX_SIZE = 25;

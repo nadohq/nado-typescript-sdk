@@ -6,6 +6,7 @@ import {
   MobileAvatarUpload,
   MobileFeedPage,
   MobileFeedTrade,
+  MobileFollowBatchResultItem,
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileFollowSummary,
@@ -41,6 +42,7 @@ import {
 } from './types/clientTypes';
 import {
   MobileServerAvatarUploadResponse,
+  MobileServerFollowBatchResponse,
   MobileServerFollowMutationResponse,
 } from './types/serverExecuteTypes';
 import {
@@ -211,6 +213,19 @@ export function mapMobileFollowMutationResult(
     isFollowing: server.is_following,
     followerCount: server.follower_count,
   };
+}
+
+/**
+ * Maps a server-side batch follow or unfollow response to its client-side representation.
+ */
+export function mapMobileFollowBatchResult(
+  server: MobileServerFollowBatchResponse,
+): MobileFollowBatchResultItem[] {
+  return server.results.map((result) => ({
+    subaccount: result.subaccount,
+    isFollowing: result.is_following,
+    followerCount: result.follower_count,
+  }));
 }
 
 /**

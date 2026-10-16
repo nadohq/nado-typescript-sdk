@@ -14,4 +14,5 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   set_private_mode: 'mobile:execute_set_private_mode',
   register_expo_token: 'mobile:execute_register_expo_token',
   set_follow: 'mobile:execute_set_follow',
+  set_follow_batch: 'mobile:execute_set_follow_batch',
 };

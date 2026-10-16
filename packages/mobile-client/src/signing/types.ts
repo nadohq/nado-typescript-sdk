@@ -43,6 +43,13 @@ export type MobileSignedInner =
       subaccount: Hex;
       /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
       is_following: boolean;
+    }
+  | {
+      type: 'set_follow_batch';
+      /** Distinct targets in request order; the response keeps this order. */
+      subaccounts: Hex[];
+      /** `true` follows every target, `false` unfollows every target. Both directions are idempotent. */
+      is_following: boolean;
     };
 
 /**

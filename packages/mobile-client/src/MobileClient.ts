@@ -10,6 +10,7 @@ import {
   mapMobileAvatarSelectionToServer,
   mapMobileAvatarUpload,
   mapMobileFeedPage,
+  mapMobileFollowBatchResult,
   mapMobileFollowListPage,
   mapMobileFollowListParamsToServer,
   mapMobileFollowMutationResult,
@@ -55,6 +56,7 @@ import {
   MobileAvatarUpload,
   MobileCreateAvatarUploadParams,
   MobileFeedPage,
+  MobileFollowBatchResultItem,
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileNotificationPreferences,
@@ -64,6 +66,7 @@ import {
   MobileRegisterExpoTokenParams,
   MobileSetAvatarParams,
   MobileSetBioParams,
+  MobileSetFollowBatchParams,
   MobileSetFollowParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
@@ -704,6 +707,37 @@ export class MobileClient {
     });
     const data = await this.execute(signedRequest);
     return mapMobileFollowMutationResult(data);
+  }
+
+  /**
+   * Sets whether the signing subaccount follows each of up to `MOBILE_FOLLOW_BATCH_MAX_SIZE` (25) Profiles in
+   * one signed request, which costs far less of the shared IP rate limit than one {@link MobileClient.setFollow}
+   * per target. The server validates the whole list before writing and commits every target in one database
+   * transaction, so the batch either fully applies or changes nothing. Each target has the same idempotent
+   * semantics as `setFollow`, so resending a batch is safe.
+   *
+   * Targets are lowercased before signing but not deduplicated, and two spellings of one subaccount are a
+   * duplicate. Longer lists must be split by the caller; each request commits on its own, so earlier chunks
+   * stay applied when a later one fails.
+   *
+   * @returns One result per target, in request order, carrying each target's post-commit follower count.
+   * @throws {MobileServerFailureError} With error code `INVALID_FOLLOW_BATCH` if `targets` is empty, holds
+   * duplicates, or exceeds the maximum, or `INVALID_FOLLOW_TARGET` if any target is the sender or either party
+   * is isolated. Either rejects the whole batch before any write, so do not retry it unchanged.
+   */
+  async setFollowBatch(
+    params: MobileSetFollowBatchParams,
+  ): Promise<MobileFollowBatchResultItem[]> {
+    const signedRequest = await this.getSignedRequest(
+      'set_follow_batch',
+      params,
+      {
+        subaccounts: params.targets.map(subaccountToHex),
+        is_following: params.isFollowing,
+      },
+    );
+    const data = await this.execute(signedRequest);
+    return mapMobileFollowBatchResult(data);
   }
 
   /*

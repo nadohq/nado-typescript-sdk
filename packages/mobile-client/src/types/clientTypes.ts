@@ -172,6 +172,18 @@ export interface MobileFollowMutationResult {
 }
 
 /**
+ * Post-commit state of one target in a batch follow or unfollow. The whole batch commits in one database
+ * transaction, so these values are authoritative — apply them rather than re-reading.
+ */
+export interface MobileFollowBatchResultItem {
+  /** The requested target, as lowercase hex. */
+  subaccount: Hex;
+  isFollowing: boolean;
+  /** The *target's* follower count after the batch, not the sender's. */
+  followerCount: number;
+}
+
+/**
  * Result of a username availability check.
  */
 export interface MobileUsernameAvailability {
@@ -416,6 +428,20 @@ export interface MobileSetFollowParams extends MobileSignedRequestParams {
   /** The Profile being followed or unfollowed. Must not be the signing subaccount. */
   target: Subaccount;
   /** `true` follows the target, `false` unfollows it. Both directions are idempotent. */
+  isFollowing: boolean;
+}
+
+/**
+ * Params for {@link MobileClient.setFollowBatch}. The subaccount carried by {@link MobileSignedRequestParams}
+ * is the signing Follower; `targets` are the Profiles on the other end of each relationship.
+ */
+export interface MobileSetFollowBatchParams extends MobileSignedRequestParams {
+  /**
+   * 1 to `MOBILE_FOLLOW_BATCH_MAX_SIZE` (25) distinct Profiles, none of them the signing subaccount or an
+   * isolated subaccount. The results keep this order.
+   */
+  targets: Subaccount[];
+  /** `true` follows every target, `false` unfollows every target. Both directions are idempotent. */
   isFollowing: boolean;
 }
 
