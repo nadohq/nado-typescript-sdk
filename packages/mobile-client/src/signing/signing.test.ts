@@ -291,3 +291,220 @@ describe('[mobile-client]: signing (offline)', () => {
     expect(recoveredAddress.toLowerCase()).toBe(account.address.toLowerCase());
   });
 });
+
+describe('[mobile-client]: social content signing', () => {
+  const requestId = 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA';
+  const positionId = 'BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB';
+  const itemId = 'CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC';
+  const mention = {
+    label: '@Alice',
+    end: 8,
+    start: 2,
+    subaccount: FIXTURE_TARGET_SUBACCOUNT,
+  };
+  const text = '🚀 @Alice  ';
+  const drawing = ' { "lines" : [], "enabled": false } ';
+
+  it('canonicalizes every post field and nested mention without changing content', () => {
+    const input: MobileSignedInner = {
+      drawing_data_json: drawing,
+      mentions: [mention],
+      text,
+      action_id: itemId,
+      position_id: positionId,
+      client_request_id: requestId,
+      type: 'create_feed_post',
+    };
+    const result = canonicalizeMobileInner(input);
+    expect(Object.keys(result)).toEqual([
+      'type',
+      'client_request_id',
+      'position_id',
+      'action_id',
+      'text',
+      'mentions',
+      'drawing_data_json',
+    ]);
+    if (result.type !== 'create_feed_post') throw new Error('Expected post');
+    expect(Object.keys(result.mentions[0])).toEqual([
+      'subaccount',
+      'start',
+      'end',
+      'label',
+    ]);
+    expect(result.client_request_id).toBe(requestId.toLowerCase());
+    expect(result.action_id).toBe(itemId.toLowerCase());
+    expect(result.text).toBe(text);
+    expect(result.drawing_data_json).toBe(drawing);
+    expect(result.mentions[0]).toEqual({
+      subaccount: FIXTURE_TARGET_SUBACCOUNT,
+      start: 2,
+      end: 8,
+      label: '@Alice',
+    });
+    expect(input.position_id).toBe(positionId);
+    expect(Object.keys(mention)).toEqual([
+      'label',
+      'end',
+      'start',
+      'subaccount',
+    ]);
+  });
+
+  it('omits absent optional fields but retains empty text and mention arrays', () => {
+    const post = canonicalizeMobileInner({
+      type: 'create_feed_post',
+      client_request_id: requestId,
+      position_id: positionId,
+      action_id: undefined,
+      text: '',
+      mentions: [],
+      drawing_data_json: 'false',
+    });
+    expect(Object.keys(post)).toEqual([
+      'type',
+      'client_request_id',
+      'position_id',
+      'text',
+      'mentions',
+      'drawing_data_json',
+    ]);
+    const comment = canonicalizeMobileInner({
+      type: 'create_feed_comment',
+      client_request_id: requestId,
+      root_item_id: itemId,
+      reply_to_item_id: undefined,
+      text,
+      mentions: [],
+      attached_position_id: undefined,
+    });
+    expect(Object.keys(comment)).toEqual([
+      'type',
+      'client_request_id',
+      'root_item_id',
+      'text',
+      'mentions',
+    ]);
+    expect(getMobilePayloadHash(comment)).not.toBe(
+      getMobilePayloadHash({
+        ...comment,
+        reply_to_item_id: null,
+      } as unknown as MobileSignedInner),
+    );
+  });
+
+  it('canonicalizes comment optionals in backend order and preserves whitespace', () => {
+    const comment = canonicalizeMobileInner({
+      attached_position_id: positionId,
+      mentions: [mention],
+      text,
+      reply_to_item_id: itemId,
+      root_item_id: requestId,
+      client_request_id: requestId,
+      type: 'create_feed_comment',
+    });
+    expect(Object.keys(comment)).toEqual([
+      'type',
+      'client_request_id',
+      'root_item_id',
+      'reply_to_item_id',
+      'text',
+      'mentions',
+      'attached_position_id',
+    ]);
+    if (comment.type !== 'create_feed_comment')
+      throw new Error('Expected comment');
+    expect(comment.attached_position_id).toBe(positionId.toLowerCase());
+    expect(comment.text).toBe(text);
+    expect(Object.keys(comment.mentions[0])).toEqual([
+      'subaccount',
+      'start',
+      'end',
+      'label',
+    ]);
+  });
+
+  it('does not reformat JSON before hashing or normalize falsy drawing values', () => {
+    const inner: MobileSignedInner = {
+      type: 'update_feed_chart_drawing',
+      item_id: itemId,
+      data_json: drawing,
+    };
+    const canonical = canonicalizeMobileInner(inner);
+    expect(Object.keys(canonical)).toEqual(['type', 'item_id', 'data_json']);
+    expect(getMobilePayloadHash(canonical)).not.toBe(
+      getMobilePayloadHash(
+        canonicalizeMobileInner({
+          ...inner,
+          data_json: JSON.stringify(JSON.parse(drawing)),
+        }),
+      ),
+    );
+    for (const dataJson of ['false', '0']) {
+      expect(
+        canonicalizeMobileInner({ ...inner, data_json: dataJson }),
+      ).toEqual({
+        type: inner.type,
+        item_id: itemId.toLowerCase(),
+        data_json: dataJson,
+      });
+    }
+  });
+
+  const payloads: MobileSignedInner[] = [
+    {
+      type: 'create_feed_post',
+      client_request_id: requestId,
+      position_id: positionId,
+      text,
+      mentions: [mention],
+    },
+    {
+      type: 'create_feed_comment',
+      client_request_id: requestId,
+      root_item_id: itemId,
+      text,
+      mentions: [],
+    },
+    { type: 'create_feed_chart_drawing', item_id: itemId, data_json: 'false' },
+    { type: 'update_feed_chart_drawing', item_id: itemId, data_json: '0' },
+    { type: 'set_feed_like', item_id: itemId, is_liked: false },
+  ];
+  it.each(payloads)(
+    'recovers the signer for $type using its execute method domain',
+    async (inner) => {
+      const account = privateKeyToAccount(FIXED_PRIVATE_KEY);
+      const walletClient = createWalletClient({
+        account,
+        chain: ink,
+        transport: http(),
+      });
+      const nonce = 30_000_000_000_000n;
+      const signed = await buildSignedMobileRequest({
+        walletClient,
+        subaccountOwner: account.address,
+        subaccountName: 'default',
+        chainId: ink.id,
+        verifyingAddr: FIXED_VERIFYING_ADDR,
+        nonce,
+        inner,
+      });
+      const canonical = canonicalizeMobileInner(inner);
+      const recovered = await recoverTypedDataAddress({
+        domain: getNadoEIP712Domain(FIXED_VERIFYING_ADDR, ink.id),
+        types: getNadoEIP712Types('nado_authentication'),
+        primaryType: getNadoEIP712PrimaryType('nado_authentication'),
+        message: {
+          method: 'mobile:execute_' + inner.type,
+          sender: signed.sender,
+          payloadHash: getMobilePayloadHash(canonical),
+          nonce,
+        },
+        signature: signed.signature,
+      });
+      expect(recovered.toLowerCase()).toBe(account.address.toLowerCase());
+      expect(signed).toMatchObject(canonical);
+      expect(signed).not.toHaveProperty('payload');
+    },
+  );
+});

@@ -2,7 +2,9 @@ import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
   MobileServerNotificationPreferences,
+  MobileSocialFeedChartInterval,
   MobileSocialFeedMarketCategory,
+  MobileSocialFeedPresenceState,
   MobileSocialFeedType,
 } from './serverModelTypes';
 
@@ -92,6 +94,93 @@ export interface MobileServerSocialFeedReadParams {
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
 export interface MobileServerPublicQueryRequestByType {
+  /** Selected account's open position candidates. */
+  self_feed_positions: {
+    /** Full identity. */
+    view_as: Hex;
+    /** Market filter. */
+    product_id?: number;
+    /** Bound pagination cursor. */
+    cursor?: string;
+    /** Page size, 1-50. */
+    limit?: number;
+  };
+  /** Resolve a position command without signing. */
+  resolve_feed_position: {
+    /** Full identity. */
+    view_as: Hex;
+    /** Unmodified command text. */
+    input: string;
+    /** Optional market disambiguation. */
+    product_id?: number;
+  };
+  /** Resolve an order's complete trusted lifecycle segments. */
+  resolve_feed_action: {
+    /** Order-owning identity. */
+    view_as: Hex;
+    /** Trading order digest. */
+    order_digest: Hex;
+  };
+  /** Read a drawing within the parent item's visibility. */
+  feed_chart_drawing: MobileServerSocialFeedReadParams & {
+    /** Parent UUID. */
+    item_id: string;
+    /** Original session, paired with viewer_token. */
+    session_id?: string;
+  };
+  /** Read or navigate a comment thread. */
+  feed_comments: MobileServerSocialFeedReadParams & {
+    /** Root UUID. */
+    root_item_id: string;
+    /** Thread cursor. */
+    cursor?: string;
+    /** Page size, 1-50. */
+    limit?: number;
+    /** First-page anchor, mutually exclusive with cursor. */
+    anchor_reply_id?: string;
+    /** Original reading session. */
+    session_id?: string;
+  };
+  /** Full lifecycle history rather than published feed items alone. */
+  position_history: MobileServerSocialFeedReadParams & {
+    /** Lifecycle UUID. */
+    position_id: string;
+    /** Filter to published takes. */
+    takes_only?: boolean;
+    /** History cursor. */
+    cursor?: string;
+    /** Page size, 1-50. */
+    limit?: number;
+    /** Original position-mode session. */
+    session_id?: string;
+  };
+  /** Market candles and independently priced action markers. */
+  position_chart: MobileServerSocialFeedReadParams & {
+    /** Lifecycle UUID. */
+    position_id: string;
+    /** Original session, paired with viewer_token. */
+    session_id?: string;
+    /** Candle interval. */
+    interval: MobileSocialFeedChartInterval;
+    /** Half-open time interval. */
+    range: {
+      /** Inclusive start in milliseconds. */
+      from_ms: number;
+      /** Exclusive end in milliseconds. */
+      to_ms: number;
+    };
+    /** Exclusive next-page bound. */
+    before_ms?: number;
+    /** Page size, 1-500. */
+    limit?: number;
+  };
+  /** Watcher query; does not register presence. */
+  position_watchers: {
+    /** Lifecycle UUID. */
+    position_id: string;
+    /** Relationship perspective only. */
+    view_as?: Hex;
+  };
   /** Ordered server-owned avatar catalogue. */
   avatar_presets: Record<never, never>;
   /** Public recommendations with optional relationship perspective. */
@@ -189,12 +278,37 @@ export type MobileServerPublicQueryRequestType =
   keyof MobileServerPublicQueryRequestByType;
 
 /**
- * Params for each unsigned `public_execute`, keyed by request `type`. Possession of an active Expo push token
+ * Params for each unsigned `public_execute`, keyed by request `type`. Feed reports use the original browsing
+ * credential and session. Possession of an active Expo push token
  * authorizes these notification-only mutations: the backend resolves the token's owning wallet and mutates
  * its state, so no signature, sender, or nonce is sent. Ordering is the backend's last-write-wins commit
  * order, so callers must serialize their own writes.
  */
 export interface MobileServerPublicExecuteRequestByType {
+  /** Explicit exposure report using the original browsing credential. */
+  record_feed_views: {
+    /** Original reading session. */
+    session_id: string;
+    /** Fully delivered interactive items. */
+    item_ids: string[];
+    /** Original credential. */
+    viewer_token: string;
+  };
+  /** Per-page visitor lease; no wallet signature. */
+  position_presence: {
+    /** Lifecycle UUID. */
+    position_id: string;
+    /** Original reading session. */
+    session_id: string;
+    /** Page-scoped UUID. */
+    view_session_id: string;
+    /** Lease lifecycle state. */
+    state: MobileSocialFeedPresenceState;
+    /** Original browsing credential. */
+    viewer_token: string;
+    /** Omission preserves the display account; null clears it. */
+    watcher_subaccount?: Hex | null;
+  };
   unregister_expo_token: { expo_token: string };
   update_preferences: {
     expo_token: string;

@@ -229,7 +229,7 @@ void describe(
 
     void test('reads a real author, position, and direct item session', async (context) => {
       const page = await mobile.getForYouFeed({ limit: 2 });
-      const item = page.items[0];
+      const item = page.items.find((candidate) => candidate.kind !== 'reply');
       if (!item) {
         context.skip(
           'No published feed item is available to select an author and position.',
@@ -243,7 +243,7 @@ void describe(
       });
       assertPage(authorPage);
       const positionId =
-        item.kind === 'trade_card' ? item.position.positionId : item.positionId;
+        item.kind === 'trade_row' ? item.positionId : item.position.positionId;
       assertPage(
         await mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
       );
@@ -297,10 +297,14 @@ function assertPage(page: MobileSocialFeedPage) {
   assert.ok(Number.isSafeInteger(page.readSession.expiresAtMs));
   assert.ok(page.nextCursor === null || typeof page.nextCursor === 'string');
   for (const item of page.items) {
-    assertEnumMember(item.kind, ['trade_card', 'trade_row'], 'item.kind');
+    assertEnumMember(
+      item.kind,
+      ['trade_card', 'trade_row', 'post', 'reply'],
+      'item.kind',
+    );
     assertFeedAuthor(item.author);
     assert.ok(BigInt(item.version) > 0n);
-    if (item.kind === 'trade_card' && item.interaction.likedByMe !== null) {
+    if (item.kind !== 'trade_row' && item.interaction.likedByMe !== null) {
       assertBoolean(item.interaction.likedByMe, 'item.interaction.likedByMe');
     }
     assertBoolean(item.capabilities.canLike, 'item.capabilities.canLike');
@@ -309,13 +313,21 @@ function assertPage(page: MobileSocialFeedPage) {
       item.capabilities.canRecordView,
       'item.capabilities.canRecordView',
     );
+    const position =
+      item.kind === 'reply'
+        ? item.attachedPosition
+        : item.kind === 'trade_row'
+          ? null
+          : item.position;
     const quantity =
-      item.kind === 'trade_card' ? item.position.quantity : item.quantity;
-    assertBigNumberFinite(quantity, 'item.quantity');
-    assert.ok(quantity.isInteger());
+      item.kind === 'trade_row' ? item.quantity : position?.quantity;
+    if (quantity !== undefined) {
+      assertBigNumberFinite(quantity, 'item.quantity');
+      assert.ok(quantity.isInteger());
+    }
     const price =
-      item.kind === 'trade_card' ? item.position.entryPrice : item.averagePrice;
-    if (price !== null) assertBigNumberFinite(price, 'item.price');
+      item.kind === 'trade_row' ? item.averagePrice : position?.entryPrice;
+    if (price != null) assertBigNumberFinite(price, 'item.price');
   }
 }
 
