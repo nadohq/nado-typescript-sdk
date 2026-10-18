@@ -48,7 +48,9 @@ await mobile.setUsername({
 
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
 `getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
-`getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`.
+`getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`,
+`getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
+`getPositionHistory`, `getPositionChart`, `getPositionWatchers`.
 
 `getProfiles` is the only profile route: it batches up to 25 subaccounts, returns them in the requested order,
 and carries follower totals (`include.followCounts`) and a follow summary (`include.followSummary.viewAs`) as
@@ -73,14 +75,37 @@ All are unsigned. Profile, position, and item reads include the `viewAs` account
 `account_view`; the viewing account is not proof of wallet ownership. Prices are decimal `BigNumber` values;
 quantities, notionals, and PnL retain x18 units. See method and parameter JSDoc for session and polling rules.
 
+`getSelfFeedPositions`, `resolveFeedPosition`, and `resolveFeedAction` require `viewAs` and return eligibility
+hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
+thread pagination. Lists, details, and history return parsed drawings and readable comment previews;
+`getFeedChartDrawing` refreshes a drawing independently when needed.
+
+`getPositionHistory` returns the full action/take timeline, distinct from published-only `getPositionFeed`,
+and a position-mode session for navigation and updates. `getPositionChart` returns candles and action markers,
+keeping execution and liquidation Oracle prices separate. `getPositionWatchers` reads visitor counts without
+registering presence. Watching account previews are self-reported, not proof of account ownership.
+
 ### Public Executes
 
 `unregisterExpoToken`, `updateNotificationPreferences`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
+`recordFeedViews` and `setPositionPresence` use the original reading `sessionId` and `viewerToken`, not a wallet
+signature. Report exposure only after satisfying `viewTracking`; normal reads do not count views. Each viewing
+page owns a distinct `viewSessionId` for entering, heartbeats, and leaving. Omitting `watcherSubaccount`
+preserves the display account, while passing `null` clears it without ending the visit.
+
 ### Signed Executes
 
-`setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`.
+`setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
+`createFeedPost`, `createFeedComment`, `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`.
+
+Publishing and commenting use an author-scoped `clientRequestId`: reuse both it and the exact content for
+idempotent retries. Text and mention code-point offsets are preserved; drawing JSON strings are signed
+unchanged. A saved drawing can contain `false` or `0`. First adding a drawing requires an open owned position;
+updating an existing drawing remains possible after closing it. Serialize drawing writes and re-read nonce
+conflicts rather than automatically overwriting another device's update. Available operations follow the
+server's capabilities and deployment switches.
 
 ### Linked Signers
 

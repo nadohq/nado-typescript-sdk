@@ -721,3 +721,77 @@ describe('[mobile-client]: social feed response mapping', () => {
     });
   });
 });
+
+describe('[mobile-client]: unsigned feed reporting', () => {
+  it('keeps omitted, cleared, and supplied watcher accounts distinct without signing', async () => {
+    const { client, requests } = mockClient({
+      status: 'success',
+      watcher_count: 1,
+      watcher_preview: [],
+      heartbeat_interval_seconds: 15,
+      expires_in_seconds: 45,
+    });
+    client.opts.walletClient = undefined;
+    const params = {
+      positionId,
+      sessionId: 'OriginalSession',
+      viewerToken: 'OriginalToken',
+      viewSessionId: itemId,
+      state: 'heartbeat' as const,
+    };
+    await client.setPositionPresence(params);
+    await client.setPositionPresence({ ...params, watcherSubaccount: null });
+    await client.setPositionPresence({
+      ...params,
+      watcherSubaccount: subaccount,
+    });
+    expect(requests[0].body).not.toHaveProperty('watcher_subaccount');
+    expect(requests[1].body.watcher_subaccount).toBeNull();
+    expect(requests[2].body.watcher_subaccount).toBe(
+      subaccountToHex(subaccount),
+    );
+    for (const request of requests) {
+      expect(request.url).toBe(
+        'https://mobile.example/v1/mobile/public_execute',
+      );
+      expect(request.body).toMatchObject({
+        type: 'position_presence',
+        session_id: 'OriginalSession',
+        viewer_token: 'OriginalToken',
+        view_session_id: itemId,
+        state: 'heartbeat',
+      });
+      expect(request.body).not.toHaveProperty('signature');
+      expect(request.body).not.toHaveProperty('sender');
+      expect(request.body).not.toHaveProperty('nonce');
+      expect(request.body).not.toHaveProperty('view_as');
+    }
+  });
+
+  it('reports exposures with the original credential and maps both deduplication outcomes', async () => {
+    const { client, requests } = mockClient({
+      status: 'success',
+      accepted_item_ids: [itemId],
+      duplicate_item_ids: [positionId],
+    });
+    client.opts.walletClient = undefined;
+    const result = await client.recordFeedViews({
+      sessionId: 'OriginalSession',
+      viewerToken: 'OriginalToken',
+      itemIds: [itemId, positionId],
+    });
+    expect(requests[0].url).toBe(
+      'https://mobile.example/v1/mobile/public_execute',
+    );
+    expect(requests[0].body).toEqual({
+      type: 'record_feed_views',
+      session_id: 'OriginalSession',
+      viewer_token: 'OriginalToken',
+      item_ids: [itemId, positionId],
+    });
+    expect(result).toEqual({
+      acceptedItemIds: [itemId],
+      duplicateItemIds: [positionId],
+    });
+  });
+});

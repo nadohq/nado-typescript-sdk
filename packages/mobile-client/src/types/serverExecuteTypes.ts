@@ -4,6 +4,12 @@ import {
   MobileServerSuccessResponse,
 } from './serverBaseTypes';
 import {
+  MobileServerSocialFeedAuthor,
+  MobileServerSocialFeedDrawing,
+  MobileServerSocialFeedItem,
+  MobileServerSocialFeedReply,
+} from './serverModelTypes';
+import {
   MobileServerExecuteRequestType,
   MobileServerPublicExecuteRequestByType,
   MobileServerPublicExecuteRequestType,
@@ -75,11 +81,20 @@ export interface MobileServerAvatarUploadResponse {
 }
 
 /**
- * Success payloads for each signed `execute`, keyed by request `type`. Most execute routes carry no payload
- * beyond the success discriminant and so map to an empty object; `set_follow` and `set_follow_batch` return
- * their post-commit relationship state, and `create_avatar_upload` returns a temporary upload grant.
+ * Success payloads for each signed `execute`, keyed by request `type`. Mutations return either the success
+ * envelope alone or authoritative post-commit state; avatar upload creation returns a temporary grant.
  */
 export interface MobileServerExecuteResponseByType {
+  /** Published or idempotently recovered item. */
+  create_feed_post: MobileServerSocialFeedPostResponse;
+  /** Atomically published reply and updated count. */
+  create_feed_comment: MobileServerSocialFeedCommentResponse;
+  /** First attached drawing. */
+  create_feed_chart_drawing: MobileServerSocialFeedDrawingMutationResponse;
+  /** Replaced or idempotently recovered drawing. */
+  update_feed_chart_drawing: MobileServerSocialFeedDrawingMutationResponse;
+  /** Post-mutation like state. */
+  set_feed_like: MobileServerSocialFeedLikeResponse;
   /** Bio writes return only the success envelope. */
   set_bio: MobileServerEmptyExecuteResponse;
   /** Avatar writes return only the success envelope. */
@@ -107,3 +122,70 @@ export type MobileServerExecuteSuccessResponse<
 export type MobileServerExecuteResult =
   | MobileServerSuccessResponse
   | MobileServerFailureResponse;
+
+/** Atomic publication success; unlike feed_item, this does not issue a read session. */
+export interface MobileServerSocialFeedPostResponse {
+  /** Published item. */
+  item: MobileServerSocialFeedItem;
+}
+/** Atomic reply publication and authoritative root count. */
+export interface MobileServerSocialFeedCommentResponse {
+  /** Published reply. */
+  comment: MobileServerSocialFeedReply;
+  /** Post-commit root count. */
+  root_comment_count: number;
+}
+/** Successful drawing mutation always returns a saved drawing. */
+export interface MobileServerSocialFeedDrawingMutationResponse {
+  /** Parent UUID. */
+  item_id: string;
+  /** Display version. */
+  item_version: string;
+  /** Saved parsed drawing. */
+  drawing: MobileServerSocialFeedDrawing;
+}
+/** Authoritative like state after the mutation. */
+export interface MobileServerSocialFeedLikeResponse {
+  /** Item UUID. */
+  item_id: string;
+  /** Applied relationship state. */
+  is_liked: boolean;
+  /** Post-mutation count. */
+  like_count: number;
+  /** Display version. */
+  version: string;
+}
+/** Exposure counts deduplicated by browsing credential, item, and UTC day. */
+export interface MobileServerSocialFeedViewsResponse {
+  /** Newly counted items. */
+  accepted_item_ids: string[];
+  /** Already counted items. */
+  duplicate_item_ids: string[];
+}
+/** Page lease result; this response does not carry as_of_ms. */
+export interface MobileServerSocialFeedPresenceResponse {
+  /** Active visitor count. */
+  watcher_count: number;
+  /** Self-reported public account previews. */
+  watcher_preview: MobileServerSocialFeedAuthor[];
+  /** Recommended heartbeat interval. */
+  heartbeat_interval_seconds: number;
+  /** Lease lifetime, bounded by the reading session. */
+  expires_in_seconds: number;
+}
+/** Response payloads for unsigned writes. */
+export interface MobileServerPublicExecuteResponseByType {
+  /** Token removal returns only the success envelope. */
+  unregister_expo_token: MobileServerEmptyExecuteResponse;
+  /** Preference updates return only the success envelope. */
+  update_preferences: MobileServerEmptyExecuteResponse;
+  /** Exposure deduplication result. */
+  record_feed_views: MobileServerSocialFeedViewsResponse;
+  /** Page lease result. */
+  position_presence: MobileServerSocialFeedPresenceResponse;
+}
+/** Full success response for an unsigned write. */
+export type MobileServerPublicExecuteSuccessResponse<
+  T extends MobileServerPublicExecuteRequestType =
+    MobileServerPublicExecuteRequestType,
+> = MobileServerSuccessResponse & MobileServerPublicExecuteResponseByType[T];

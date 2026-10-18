@@ -21,13 +21,27 @@ import {
   mapMobileProfilesIncludeToServer,
   mapMobilePublicProfile,
   mapMobileRegisteredWallet,
+  mapMobileSocialFeedActionResolution,
+  mapMobileSocialFeedCommentResult,
+  mapMobileSocialFeedComments,
+  mapMobileSocialFeedDrawingResult,
+  mapMobileSocialFeedItem,
   mapMobileSocialFeedItemResponse,
+  mapMobileSocialFeedLikeResult,
   mapMobileSocialFeedListParamsToServer,
+  mapMobileSocialFeedMentionToServer,
   mapMobileSocialFeedPage,
+  mapMobileSocialFeedPositionChart,
+  mapMobileSocialFeedPositionHistory,
+  mapMobileSocialFeedPositionResolution,
+  mapMobileSocialFeedPositions,
+  mapMobileSocialFeedPresence,
   mapMobileSocialFeedRankedPage,
   mapMobileSocialFeedReadParamsToServer,
   mapMobileSocialFeedTopTradersPage,
   mapMobileSocialFeedUpdates,
+  mapMobileSocialFeedViewsResult,
+  mapMobileSocialFeedWatchers,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
@@ -37,6 +51,8 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
+  GetMobileFeedChartDrawingParams,
+  GetMobileFeedCommentsParams,
   GetMobileFeedItemParams,
   GetMobileFeedParams,
   GetMobileFeedUpdatesParams,
@@ -46,39 +62,64 @@ import {
   GetMobileFriendsFeedParams,
   GetMobileMarketFeedParams,
   GetMobileNotificationPreferencesParams,
+  GetMobilePositionChartParams,
   GetMobilePositionFeedParams,
+  GetMobilePositionHistoryParams,
+  GetMobilePositionWatchersParams,
   GetMobileProfileFeedParams,
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
+  GetMobileSelfFeedPositionsParams,
   GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
   MobileAvatarPreset,
   MobileAvatarUpload,
   MobileCreateAvatarUploadParams,
+  MobileCreateFeedCommentParams,
+  MobileCreateFeedPostParams,
+  MobileFeedChartDrawingParams,
   MobileFeedPage,
   MobileFollowBatchResultItem,
   MobileFollowListPage,
   MobileFollowMutationResult,
   MobileNotificationPreferences,
+  MobilePositionPresenceParams,
   MobileProfileSearchPage,
   MobilePublicProfile,
+  MobileRecordFeedViewsParams,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
   MobileSetAvatarParams,
   MobileSetBioParams,
+  MobileSetFeedLikeParams,
   MobileSetFollowBatchParams,
   MobileSetFollowParams,
   MobileSetPrivateModeParams,
   MobileSetUsernameParams,
   MobileSignedRequestParams,
+  MobileSocialFeedActionResolutionResult,
+  MobileSocialFeedCommentResult,
+  MobileSocialFeedComments,
+  MobileSocialFeedDrawingResult,
+  MobileSocialFeedItem,
   MobileSocialFeedItemResponse,
+  MobileSocialFeedLikeResult,
   MobileSocialFeedPage,
+  MobileSocialFeedPositionChart,
+  MobileSocialFeedPositionHistory,
+  MobileSocialFeedPositionResolutionResult,
+  MobileSocialFeedPositions,
+  MobileSocialFeedPresence,
   MobileSocialFeedRankedPage,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedUpdates,
+  MobileSocialFeedViewsResult,
+  MobileSocialFeedWatchers,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUsernameAvailability,
+  ResolveMobileFeedActionParams,
+  ResolveMobileFeedPositionParams,
   SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileServerFailureError } from './types/MobileServerFailureError';
@@ -87,6 +128,7 @@ import {
   MobileServerExecuteResult,
   MobileServerExecuteSuccessResponse,
   MobileServerPublicExecuteRequest,
+  MobileServerPublicExecuteSuccessResponse,
 } from './types/serverExecuteTypes';
 import {
   MobileServerPublicQueryRequest,
@@ -94,6 +136,8 @@ import {
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
+  MobileServerPublicExecuteRequestByType,
+  MobileServerPublicExecuteRequestType,
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
 } from './types/serverRequestTypes';
@@ -514,6 +558,185 @@ export class MobileClient {
     return mapMobileRegisteredWallet(data);
   }
 
+  /**
+   * Lists a selected account's current positions without signing or authenticating ownership.
+   * Publication and attachment eligibility are hints that the service rechecks on writes.
+   * @param params - Viewing subaccount, optional market filter, page size, and opaque cursor.
+   * @returns Current position candidates, their eligibility hints, the next cursor, and observation time.
+   * @throws {MobileServerFailureError} On invalid parameters, an unsupported viewing account, or unavailable
+   * position data. An account with no open positions returns an empty page instead of an error.
+   * @throws {Error} If the subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async getSelfFeedPositions(
+    params: GetMobileSelfFeedPositionsParams,
+  ): Promise<MobileSocialFeedPositions> {
+    const body: MobileServerPublicQueryRequest<'self_feed_positions'> = {
+      type: 'self_feed_positions',
+      view_as: subaccountToHex(params.viewAs),
+      product_id: params.productId,
+      cursor: params.cursor,
+      limit: params.limit,
+    };
+    return mapMobileSocialFeedPositions(await this.publicQuery(body));
+  }
+
+  /**
+   * Resolves a slash command against a selected account without changing the caller's input.
+   * @param params - Viewing subaccount, original command text, and optional market disambiguation.
+   * @returns The resolution, nullable market, candidate positions, and reason for an empty result.
+   * @throws {MobileServerFailureError} On invalid parameters, an unsupported viewing account, or unavailable
+   * source data. Unknown markets and accounts without open positions are normal resolution results.
+   * @throws {Error} If the subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async resolveFeedPosition(
+    params: ResolveMobileFeedPositionParams,
+  ): Promise<MobileSocialFeedPositionResolutionResult> {
+    const body: MobileServerPublicQueryRequest<'resolve_feed_position'> = {
+      type: 'resolve_feed_position',
+      view_as: subaccountToHex(params.viewAs),
+      input: params.input,
+      product_id: params.productId,
+    };
+    return mapMobileSocialFeedPositionResolution(await this.publicQuery(body));
+  }
+
+  /**
+   * Resolves every trusted lifecycle segment of an order without requiring a signature.
+   * @param params - Order-owning subaccount and order digest; selecting the account is not authentication.
+   * @returns Trusted action candidates and their observation time, or a pending result with no actions.
+   * @throws {MobileServerFailureError} On invalid parameters, an inaccessible order, or unavailable source
+   * data. Pending projection is a successful result, not a source failure.
+   * @throws {Error} If the subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async resolveFeedAction(
+    params: ResolveMobileFeedActionParams,
+  ): Promise<MobileSocialFeedActionResolutionResult> {
+    const body: MobileServerPublicQueryRequest<'resolve_feed_action'> = {
+      type: 'resolve_feed_action',
+      view_as: subaccountToHex(params.viewAs),
+      order_digest: params.orderDigest,
+    };
+    return mapMobileSocialFeedActionResolution(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads a drawing publicly without issuing a reading session. Supplied sessions retain their scope.
+   * @param params - Parent item, optional viewing account, and optional original session and viewer token.
+   * @returns The parent ID and version, with a nullable drawing whose data may legitimately be false or zero.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, unavailable data,
+   * or `SOCIAL_FEED_DRAWING_UNAVAILABLE` when the parent is inaccessible. A readable parent without a drawing
+   * returns null. Acquire a new reading session when the original has expired.
+   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async getFeedChartDrawing(
+    params: GetMobileFeedChartDrawingParams,
+  ): Promise<MobileSocialFeedDrawingResult> {
+    const body: MobileServerPublicQueryRequest<'feed_chart_drawing'> = {
+      type: 'feed_chart_drawing',
+      item_id: params.itemId,
+      session_id: params.sessionId,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedDrawingResult(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads a comment thread with an optional anchor and bidirectional pagination.
+   * Independent reads create a public-only session; reused sessions retain their original scope.
+   * @param params - Root item, optional anchor or cursor (mutually exclusive), page size, and read perspective.
+   * Paging requires the original session and viewer token.
+   * @returns Replies, total count, forward and backward cursors, the anchor, and the actual reading session.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
+   * or unavailable data. Restart pagination with a new session after expiry; do not reuse the old cursor.
+   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async getFeedComments(
+    params: GetMobileFeedCommentsParams,
+  ): Promise<MobileSocialFeedComments> {
+    const body: MobileServerPublicQueryRequest<'feed_comments'> = {
+      type: 'feed_comments',
+      root_item_id: params.rootItemId,
+      cursor: params.cursor,
+      limit: params.limit,
+      anchor_reply_id: params.anchorReplyId,
+      session_id: params.sessionId,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedComments(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads the full position lifecycle and creates or reuses a position session.
+   * Unlike getPositionFeed, this includes lifecycle actions as well as published takes.
+   * @param params - Position, optional takes-only filter, pagination, and read perspective. Paging requires
+   * the original position session and viewer token, not a feed session.
+   * @returns Position metrics, ordered action/take history, summary, trading hints, cursor, and reading session.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
+   * or unavailable source data. Restart with a new position session after expiry.
+   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async getPositionHistory(
+    params: GetMobilePositionHistoryParams,
+  ): Promise<MobileSocialFeedPositionHistory> {
+    const body: MobileServerPublicQueryRequest<'position_history'> = {
+      type: 'position_history',
+      position_id: params.positionId,
+      takes_only: params.takesOnly,
+      cursor: params.cursor,
+      limit: params.limit,
+      session_id: params.sessionId,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedPositionHistory(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads candles and action markers without creating a reading session.
+   * Preserve the original range, interval, and read perspective when paging with nextBeforeMs.
+   * @param params - Position, candle interval, half-open time range, pagination, and optional original session
+   * and viewer token. An independent read omits both session credentials.
+   * @returns Candles with decimal prices and x18 volume, action markers, a nullable liquidation line, and paging metadata.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
+   * or wholly unavailable chart sources. Partially available data is returned with its quality indicator.
+   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async getPositionChart(
+    params: GetMobilePositionChartParams,
+  ): Promise<MobileSocialFeedPositionChart> {
+    const body: MobileServerPublicQueryRequest<'position_chart'> = {
+      type: 'position_chart',
+      position_id: params.positionId,
+      session_id: params.sessionId,
+      interval: params.interval,
+      range: { from_ms: params.range.fromMs, to_ms: params.range.toMs },
+      before_ms: params.beforeMs,
+      limit: params.limit,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedPositionChart(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads active visitor counts and self-reported account previews without registering presence.
+   * @param params - Position and optional viewing account, used only for preview relationship information.
+   * @returns The visitor count, public account previews, and observation time; previews need not match the count.
+   * @throws {MobileServerFailureError} On invalid parameters, an unavailable position, or unavailable source data.
+   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async getPositionWatchers(
+    params: GetMobilePositionWatchersParams,
+  ): Promise<MobileSocialFeedWatchers> {
+    const body: MobileServerPublicQueryRequest<'position_watchers'> = {
+      type: 'position_watchers',
+      position_id: params.positionId,
+      view_as:
+        params.viewAs === undefined
+          ? undefined
+          : subaccountToHex(params.viewAs),
+    };
+    return mapMobileSocialFeedWatchers(await this.publicQuery(body));
+  }
+
   /*
   Public executes
    */
@@ -559,6 +782,60 @@ export class MobileClient {
       preferences: mapMobileNotificationPreferencesToServer(params.preferences),
     };
     return this.publicExecute(body);
+  }
+
+  /**
+   * Reports qualified exposures without signing. Ordinary reads and root previews do not count as exposures.
+   * The caller must satisfy the session's viewTracking requirements before reporting an item.
+   * @param params - Original reading session and viewer token, plus one to fifty fully delivered, readable,
+   * interactive item IDs. The service deduplicates repeated exposures.
+   * @returns Separate lists of newly accepted and already-counted item IDs.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, or any ineligible item.
+   * A rejected batch is not partially counted. Acquire a new session after expiry and re-evaluate exposure eligibility.
+   * @throws {Error} If the HTTP request fails or the response is malformed.
+   */
+  async recordFeedViews(
+    params: MobileRecordFeedViewsParams,
+  ): Promise<MobileSocialFeedViewsResult> {
+    const body: MobileServerPublicExecuteRequest<'record_feed_views'> = {
+      type: 'record_feed_views',
+      session_id: params.sessionId,
+      item_ids: params.itemIds,
+      viewer_token: params.viewerToken,
+    };
+    return mapMobileSocialFeedViewsResult(await this.publicExecute(body));
+  }
+
+  /**
+   * Registers, renews, or leaves a page lease without signing or authenticating the displayed account.
+   * Omitting watcherSubaccount preserves its value; null clears it. This operation does not record item views.
+   * @param params - Authorized position, original session and viewer token, page-scoped viewSessionId,
+   * lease state, and optional self-reported display account. Retain viewSessionId for the lifetime of the page.
+   * @returns Visitor count, public previews, recommended heartbeat interval, and remaining lease lifetime.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, or an inaccessible
+   * position. Rejected requests leave leases unchanged; acquire a new reading session after expiry.
+   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
+   */
+  async setPositionPresence(
+    params: MobilePositionPresenceParams,
+  ): Promise<MobileSocialFeedPresence> {
+    const body: MobileServerPublicExecuteRequest<'position_presence'> = {
+      type: 'position_presence',
+      position_id: params.positionId,
+      session_id: params.sessionId,
+      view_session_id: params.viewSessionId,
+      state: params.state,
+      viewer_token: params.viewerToken,
+      ...(params.watcherSubaccount === undefined
+        ? {}
+        : {
+            watcher_subaccount:
+              params.watcherSubaccount === null
+                ? null
+                : subaccountToHex(params.watcherSubaccount),
+          }),
+    };
+    return mapMobileSocialFeedPresence(await this.publicExecute(body));
   }
 
   /*
@@ -740,6 +1017,123 @@ export class MobileClient {
     return mapMobileFollowBatchResult(data);
   }
 
+  /**
+   * Publishes text, a drawing, or both atomically using the signed author identity.
+   * For an idempotent retry, reuse clientRequestId and the exact original content with a valid signature.
+   * The SDK does not trim text or reformat the signed drawing JSON.
+   * @param params - Author subaccount and signing options, request UUID, owned position, original text and
+   * mentions, plus an optional trusted action and original drawing JSON.
+   * @returns The published item, including authoritative interaction state and any drawing or comment preview.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication, ownership, eligibility, content, mention, or drawing
+   * errors, or `SOCIAL_FEED_REQUEST_CONFLICT` when a request UUID is reused with different content. Do not
+   * change an earlier request to retry it; use a new UUID for a genuinely new publication.
+   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
+   */
+  async createFeedPost(
+    params: MobileCreateFeedPostParams,
+  ): Promise<MobileSocialFeedItem> {
+    const request = await this.getSignedRequest('create_feed_post', params, {
+      client_request_id: params.clientRequestId,
+      position_id: params.positionId,
+      action_id: params.actionId,
+      text: params.text,
+      mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
+      drawing_data_json: params.drawingDataJson,
+    });
+    return mapMobileSocialFeedItem((await this.execute(request)).item);
+  }
+
+  /**
+   * First attaches a drawing to an owned post or trade card while the author still holds its position.
+   * The original JSON is signed unchanged; false and zero are valid drawing documents.
+   * @param params - Author subaccount and signing options, parent item, and complete original drawing JSON.
+   * @returns The parent ID and updated version together with the stored drawing.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication, ownership, eligibility, or invalid/oversized drawing
+   * errors, an unavailable parent, or `SOCIAL_FEED_DRAWING_EXISTS` for a conflicting existing drawing.
+   * Read the existing drawing and use updateFeedChartDrawing when replacement is intended.
+   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
+   */
+  async createFeedChartDrawing(
+    params: MobileFeedChartDrawingParams,
+  ): Promise<MobileSocialFeedDrawingResult> {
+    const request = await this.getSignedRequest(
+      'create_feed_chart_drawing',
+      params,
+      { item_id: params.itemId, data_json: params.dataJson },
+    );
+    return mapMobileSocialFeedDrawingResult(await this.execute(request));
+  }
+
+  /**
+   * Replaces an existing drawing, including after the associated position has closed.
+   * Serialize writes per item and preserve the original JSON text when retrying.
+   * @param params - Author subaccount and signing options, parent item, and complete replacement JSON.
+   * @returns The parent ID and updated version together with the stored replacement drawing.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication, ownership, or invalid/oversized drawing errors, an
+   * unavailable parent or drawing, or `STALE_SOCIAL_FEED_DRAWING_UPDATE`. Re-read the drawing before retrying
+   * a stale or conflicting update instead of blindly replacing newer content.
+   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
+   */
+  async updateFeedChartDrawing(
+    params: MobileFeedChartDrawingParams,
+  ): Promise<MobileSocialFeedDrawingResult> {
+    const request = await this.getSignedRequest(
+      'update_feed_chart_drawing',
+      params,
+      { item_id: params.itemId, data_json: params.dataJson },
+    );
+    return mapMobileSocialFeedDrawingResult(await this.execute(request));
+  }
+
+  /**
+   * Publishes a comment or reply atomically; an invalid position attachment rejects the entire request.
+   * For an idempotent retry, reuse clientRequestId and the unmodified text, mentions, and attachment.
+   * @param params - Author subaccount and signing options, request UUID, root item, original nonblank text
+   * and mentions, plus an optional reply target in the same thread and currently owned position attachment.
+   * @returns The created reply and authoritative root comment count; this write does not create a reading session.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication, inaccessible content, invalid text/mentions/reply
+   * relationships, an ineligible attachment, or `SOCIAL_FEED_REQUEST_CONFLICT`. Correct invalid input before
+   * a new submission, and never reuse an existing request UUID with different content.
+   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
+   */
+  async createFeedComment(
+    params: MobileCreateFeedCommentParams,
+  ): Promise<MobileSocialFeedCommentResult> {
+    const request = await this.getSignedRequest('create_feed_comment', params, {
+      client_request_id: params.clientRequestId,
+      root_item_id: params.rootItemId,
+      reply_to_item_id: params.replyToItemId,
+      text: params.text,
+      mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
+      attached_position_id: params.attachedPositionId,
+    });
+    return mapMobileSocialFeedCommentResult(await this.execute(request));
+  }
+
+  /**
+   * Sets or clears a signed user's like without requiring an open position.
+   * Serialize mutations per item and author; an exact retry reuses the same nonce and desired state.
+   * @param params - Acting subaccount and signing options, interactive item, and desired like state.
+   * @returns The applied like state, authoritative count, and item version after the mutation.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication errors, inaccessible or non-interactive content,
+   * or `STALE_SOCIAL_FEED_LIKE_UPDATE`. Re-read the current state before submitting a new mutation after a conflict.
+   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
+   */
+  async setFeedLike(
+    params: MobileSetFeedLikeParams,
+  ): Promise<MobileSocialFeedLikeResult> {
+    const request = await this.getSignedRequest('set_feed_like', params, {
+      item_id: params.itemId,
+      is_liked: params.isLiked,
+    });
+    return mapMobileSocialFeedLikeResult(await this.execute(request));
+  }
+
   /*
   Base Fns
    */
@@ -783,9 +1177,9 @@ export class MobileClient {
     return response.data as MobileServerPublicQuerySuccessResponse<T>;
   }
 
-  protected async publicExecute(
-    body: MobileServerPublicExecuteRequest,
-  ): Promise<MobileServerSuccessResponse> {
+  protected async publicExecute<T extends MobileServerPublicExecuteRequestType>(
+    body: { type: T } & MobileServerPublicExecuteRequestByType[T],
+  ): Promise<MobileServerPublicExecuteSuccessResponse<T>> {
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/public_execute`,
       body,
@@ -795,7 +1189,7 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
-    return response.data as MobileServerSuccessResponse;
+    return response.data as MobileServerPublicExecuteSuccessResponse<T>;
   }
 
   // `T` is inferred from the body's `type` rather than declared by the caller, for the same reason
