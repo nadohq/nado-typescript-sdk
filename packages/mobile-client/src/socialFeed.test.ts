@@ -193,7 +193,7 @@ describe('[mobile-client]: social feed transport', () => {
         }),
     },
   ])('rejects an unsupported item kind in $type', async ({ type, execute }) => {
-    const unknownItem = { ...row, kind: 'future_kind' };
+    const unknownItem = { kind: 'future_kind' };
     const { client, requests } = mockClient({
       status: 'success',
       ...emptyPage,
