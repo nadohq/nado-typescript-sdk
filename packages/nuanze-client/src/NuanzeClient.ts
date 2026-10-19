@@ -261,7 +261,8 @@ export class NuanzeClient {
 
   /**
    * Gets the global public leaderboard of subaccounts. Results are sorted by equity-basis account
-   * PnL descending with nulls last. Username and display name are null when unavailable.
+   * PnL descending with nulls last. Username, display name, and avatar URL are null when
+   * unavailable.
    * `globalRank` is independent of the active privacy and trading filters. Pagination uses a
    * filter-bound opaque cursor. Pass `viewAs` with a bytes32 subaccount hex to also receive that
    * subaccount's `filteredRank` plus full item as `viewer` without altering pagination: `viewer`
@@ -642,7 +643,8 @@ export class NuanzeClient {
    * path segment and `ticker` is ignored. Results default to absolute notional descending and
    * can be ordered by signed unrealized PnL or absolute base amount in either direction. Spot
    * markets are not supported. Legs below $10 absolute notional are excluded. Wallet addresses,
-   * nullable synced usernames and display names, and signed exact base amounts are returned.
+   * nullable synced usernames, display names, and avatar URLs, and signed exact base amounts are
+   * returned.
    * Isolated positions include effective leverage computed by Nuanze; cross positions return
    * null leverage.
    *
@@ -666,7 +668,8 @@ export class NuanzeClient {
    * Descending returns the largest gainers and ascending returns the largest losers. This is a
    * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
    * Private subaccounts are excluded unless `includePrivate=true`. Each row includes market
-   * identity, nullable synced username and display name, and its source snapshot timestamp.
+   * identity, nullable synced username, display name, and avatar URL, and its source snapshot
+   * timestamp.
    * Isolated positions include effective leverage computed by Nuanze; cross positions return
    * null leverage.
    *
