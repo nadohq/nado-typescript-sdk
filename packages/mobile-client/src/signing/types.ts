@@ -142,8 +142,4 @@ export type MobileSignedRequest<
 export interface BuildSignedMobileRequestParams extends MobileSignedRequestParams {
   walletClient: WalletClientWithAccount;
   inner: MobileSignedInner;
-  /**
-   * Overrides the generated nonce; mainly useful for tests that pin the signed payload.
-   */
-  nonce?: bigint;
 }

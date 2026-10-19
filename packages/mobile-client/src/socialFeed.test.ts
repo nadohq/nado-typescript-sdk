@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import { Subaccount, subaccountToHex } from '@nadohq/shared';
 import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -13,6 +13,7 @@ import {
   mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import { MobileClient } from './MobileClient';
+import { getMobileNonce } from './signing';
 import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
@@ -390,6 +391,60 @@ describe('[mobile-client]: social feed transport', () => {
       mockClient({ items: [] }).client.getForYouFeed(),
     ).rejects.toThrow('missing success envelope');
   });
+});
+
+describe('[mobile-client]: signed feed nonce overrides', () => {
+  it.each(['owner', 'linked'] as const)(
+    'preserves a server-timed nonce with a slow device clock and %s signer',
+    async (walletMode) => {
+      const serverTimeMillis = 1_800_000_000_000;
+      const dateNow = jest
+        .spyOn(Date, 'now')
+        .mockReturnValue(serverTimeMillis - 33_000);
+      try {
+        const { client, requests } = mockClient(
+          {
+            status: 'failure',
+            error: 'Test rejection',
+            error_code: 1006,
+            request_type: 'execute_create_feed_post',
+          },
+          503,
+        );
+        if (walletMode === 'linked') {
+          client.setLinkedSigner(
+            createWalletClient({
+              account: linked,
+              chain: ink,
+              transport: http(),
+            }),
+          );
+        }
+        const nonce = getMobileNonce(serverTimeMillis + 90_000, 123456);
+        await expect(
+          client.createFeedPost({
+            ...subaccount,
+            chainId: ink.id,
+            verifyingAddr: '0x0000000000000000000000000000000000000001',
+            clientRequestId: itemId,
+            positionId,
+            text: 'Clock regression',
+            mentions: [],
+            nonce,
+          }),
+        ).rejects.toBeInstanceOf(MobileServerFailureError);
+        expect(requests).toHaveLength(1);
+        expect(requests[0].body.nonce).toBe(nonce.toString());
+        expect(requests[0].body.sender).toBe(subaccountToHex(subaccount));
+        expect(getMobileNonce() / 1_000_000n).toBeLessThan(
+          BigInt(serverTimeMillis),
+        );
+        expect(nonce / 1_000_000n).toBe(BigInt(serverTimeMillis + 90_000));
+      } finally {
+        dateNow.mockRestore();
+      }
+    },
+  );
 });
 
 describe('[mobile-client]: social feed response mapping', () => {
