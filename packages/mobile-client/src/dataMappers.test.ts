@@ -5,6 +5,7 @@ import {
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemPatch,
   mapMobileSocialFeedMentionToServer,
+  mapMobileSocialFeedPage,
   mapMobileSocialFeedPositionAction,
   mapMobileSocialFeedPositionChart,
   mapMobileSocialFeedPositionHistory,
@@ -12,6 +13,7 @@ import {
   mapMobileSocialFeedPresence,
 } from './dataMappers';
 import {
+  MobileServerSocialFeedItem,
   MobileServerSocialFeedPost,
   MobileServerSocialFeedReply,
 } from './types/serverModelTypes';
@@ -363,6 +365,61 @@ const history: MobileServerSocialFeedPositionHistoryResponse = {
 };
 
 describe('[mobile-client]: content mapping', () => {
+  it('maps all supported item kinds without dropping items or page metadata', () => {
+    const items: MobileServerSocialFeedItem[] = [
+      {
+        ...post,
+        id: '11111111-1111-4111-8111-111111111111',
+        kind: 'trade_card',
+        action: 'opened',
+      },
+      {
+        ...post,
+        id: '44444444-4444-4444-8444-444444444444',
+        kind: 'trade_row',
+        action: 'increased',
+        position_id: post.position.position_id,
+        direction: 'long',
+        margin_mode: 'cross',
+        leverage: { value: null, basis: 'not_applicable' },
+        leverage_at_ms: null,
+        trade_count: 2,
+        quantity_x18: '100000000000000000',
+        notional_x18: '10200000000000000000000',
+        average_price_x18: '102000000000000000000000',
+      },
+      post,
+      reply,
+    ];
+    const page = mapMobileSocialFeedPage({
+      items,
+      read_session: { ...history.read_session, mode: 'feed' },
+      next_cursor: 'NextCursor',
+      watermark: 'Watermark',
+    });
+
+    expect(page.items.map(({ id, kind }) => ({ id, kind }))).toEqual(
+      items.map(({ id, kind }) => ({ id, kind })),
+    );
+    expect(page.items[0]).toMatchObject({
+      kind: 'trade_card',
+      action: 'opened',
+    });
+    expect(page.items[1]).toMatchObject({ kind: 'trade_row', tradeCount: 2 });
+    expect(page.items[2]).toMatchObject({ kind: 'post', text: post.text });
+    expect(page.items[3]).toMatchObject({
+      kind: 'reply',
+      rootItemId: reply.root_item_id,
+    });
+    expect(page.nextCursor).toBe('NextCursor');
+    expect(page.watermark).toBe('Watermark');
+    expect(page.readSession).toMatchObject({
+      mode: 'feed',
+      sessionId: history.read_session.session_id,
+      viewerToken: history.read_session.viewer_token,
+    });
+  });
+
   it('maps posts, drawings, reply previews, and nullable badges from the documented response', () => {
     const mapped = mapMobileSocialFeedItem({
       ...post,

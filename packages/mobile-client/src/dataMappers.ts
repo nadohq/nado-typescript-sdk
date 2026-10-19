@@ -679,7 +679,7 @@ export function mapMobileSocialFeedItem(
   server: MobileServerSocialFeedItem,
 ): MobileSocialFeedItem {
   const kind = server.kind;
-  switch (server.kind) {
+  switch (kind) {
     case 'trade_card':
       return mapMobileSocialFeedTradeCard(server);
     case 'trade_row':
@@ -689,7 +689,7 @@ export function mapMobileSocialFeedItem(
     case 'reply':
       return mapMobileSocialFeedReply(server);
     default:
-      throw new MobileUnsupportedFeedItemError(kind);
+      throw new MobileUnsupportedFeedItemError(kind satisfies never);
   }
 }
 
