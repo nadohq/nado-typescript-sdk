@@ -196,7 +196,12 @@ export function createClientContext(
     nuanzeClient: new NuanzeClient({
       url: nuanzeEndpoint,
     }),
-    otcClient: new OtcClient({ url: otcEndpoint, clientType }),
+    otcClient: new OtcClient({
+      url: otcEndpoint,
+      walletClient,
+      linkedSignerWalletClient,
+      clientType,
+    }),
   };
 }
 

@@ -47,6 +47,14 @@ export interface OtcSiweMessageParams {
   sender: string;
 }
 
+/** The login's page and chain. The sender is the wallet client's owner and this subaccount. */
+export type OtcLoginParams = Pick<
+  OtcSiweMessageParams,
+  'domain' | 'uri' | 'chainId'
+> & {
+  subaccountName: string;
+};
+
 export interface OtcVerifyAuthParams {
   /** The SIWE text exactly as signed. */
   message: string;
