@@ -356,6 +356,7 @@ export class MobileClient {
    * @param params - Filters, pagination, optional viewing account, and browser credential; no signing identity.
    * @returns A fixed-session page with its ranking version and new-content watermark.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, or unavailable data.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getForYouFeed(
     params: GetMobileForYouFeedParams = {},
@@ -376,6 +377,7 @@ export class MobileClient {
    * @param params - Filters, pagination, optional viewing account, and browser credential.
    * @returns A page with its qualification cohort; an unavailable cohort fails instead of returning an empty ranking.
    * @throws {MobileServerFailureError} On request/session errors or unavailable cohort data.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getTopTradersFeed(
     params: GetMobileTopTradersFeedParams = {},
@@ -395,6 +397,7 @@ export class MobileClient {
    * @param params - Required viewing account on every request, filters, pagination, and browser credential.
    * @returns A chronological Friends page and reading session.
    * @throws {MobileServerFailureError} On invalid viewing account, session errors, or feed query failure.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getFriendsFeed(
     params: GetMobileFriendsFeedParams,
@@ -415,6 +418,7 @@ export class MobileClient {
    * @param params - Target identity, filters, pagination, and optional public viewing account.
    * @returns An author page without main-feed ranking or cohort fields.
    * @throws {MobileServerFailureError} On invalid parameters, session errors, or inaccessible content.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getProfileFeed(
     params: GetMobileProfileFeedParams,
@@ -435,6 +439,7 @@ export class MobileClient {
    * @param params - Product ID, content/size filters, pagination, and public viewing account.
    * @returns A market page without main-feed ranking fields.
    * @throws {MobileServerFailureError} On an unknown market, session errors, or unavailable data.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getMarketFeed(
     params: GetMobileMarketFeedParams,
@@ -455,6 +460,7 @@ export class MobileClient {
    * @param params - Position UUID, filters, pagination, and public viewing account.
    * @returns A fixed-session position feed page.
    * @throws {MobileServerFailureError} On inaccessible content, session errors, or unavailable data.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getPositionFeed(
     params: GetMobilePositionFeedParams,
@@ -475,6 +481,7 @@ export class MobileClient {
    * @param params - Item UUID, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
    * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getFeedItem(
     params: GetMobileFeedItemParams,
@@ -1029,6 +1036,7 @@ export class MobileClient {
    * errors, or `SOCIAL_FEED_REQUEST_CONFLICT` when a request UUID is reused with different content. Do not
    * change an earlier request to retry it; use a new UUID for a genuinely new publication.
    * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
+   * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async createFeedPost(
     params: MobileCreateFeedPostParams,

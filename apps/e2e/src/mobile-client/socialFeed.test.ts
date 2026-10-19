@@ -253,7 +253,12 @@ void describe(
         viewAs,
       });
       debugPrint('Feed item', detail.item);
+      assert.ok(
+        detail.item,
+        'Feed item details must not contain an undefined item',
+      );
       assert.equal(detail.item.id, item.id);
+      assert.equal(detail.item.kind, item.kind);
       assert.equal(detail.readSession.mode, 'item');
       assert.ok(detail.readSession.viewerToken);
       const updates = await mobile.getFeedUpdates({
@@ -297,6 +302,7 @@ function assertPage(page: MobileSocialFeedPage) {
   assert.ok(Number.isSafeInteger(page.readSession.expiresAtMs));
   assert.ok(page.nextCursor === null || typeof page.nextCursor === 'string');
   for (const item of page.items) {
+    assert.ok(item, 'Feed pages must not contain undefined items');
     assertEnumMember(
       item.kind,
       ['trade_card', 'trade_row', 'post', 'reply'],

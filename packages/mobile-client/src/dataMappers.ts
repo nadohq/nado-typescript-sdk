@@ -65,6 +65,7 @@ import {
   MobileSocialFeedWatchers,
   SearchMobileProfilesParams,
 } from './types/clientTypes';
+import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
 import {
   MobileServerAvatarUploadResponse,
   MobileServerFollowBatchResponse,
@@ -672,10 +673,12 @@ export function mapMobileSocialFeedTradeRow(
  * Maps the item variant without mixing card and row fields.
  * @param server - The service response.
  * @returns The mapped social feed item.
+ * @throws {MobileUnsupportedFeedItemError} If an item kind is not supported by this SDK.
  */
 export function mapMobileSocialFeedItem(
   server: MobileServerSocialFeedItem,
 ): MobileSocialFeedItem {
+  const kind = server.kind;
   switch (server.kind) {
     case 'trade_card':
       return mapMobileSocialFeedTradeCard(server);
@@ -685,6 +688,8 @@ export function mapMobileSocialFeedItem(
       return mapMobileSocialFeedPost(server);
     case 'reply':
       return mapMobileSocialFeedReply(server);
+    default:
+      throw new MobileUnsupportedFeedItemError(kind);
   }
 }
 
@@ -713,6 +718,7 @@ export function mapMobileSocialFeedReadSession(
  * Maps a fixed feed page without changing item order or pagination.
  * @param server - The service response.
  * @returns The mapped social feed page.
+ * @throws {MobileUnsupportedFeedItemError} If an item kind is not supported by this SDK.
  */
 export function mapMobileSocialFeedPage(
   server: MobileServerSocialFeedResponse,
@@ -729,6 +735,7 @@ export function mapMobileSocialFeedPage(
  * Maps a main feed page and its ranking version.
  * @param server - The service response.
  * @returns The mapped ranked feed page.
+ * @throws {MobileUnsupportedFeedItemError} If an item kind is not supported by this SDK.
  */
 export function mapMobileSocialFeedRankedPage(
   server: MobileServerSocialFeedRankedResponse,
@@ -743,6 +750,7 @@ export function mapMobileSocialFeedRankedPage(
  * Maps qualified trader items and their shared eligibility snapshot.
  * @param server - The service response.
  * @returns The mapped top traders feed page.
+ * @throws {MobileUnsupportedFeedItemError} If an item kind is not supported by this SDK.
  */
 export function mapMobileSocialFeedTopTradersPage(
   server: MobileServerSocialFeedTopTradersResponse,
@@ -766,6 +774,7 @@ export function mapMobileSocialFeedTopTradersPage(
  * Maps item details and the authorized reading session.
  * @param server - The service response.
  * @returns The mapped social feed item response.
+ * @throws {MobileUnsupportedFeedItemError} If an item kind is not supported by this SDK.
  */
 export function mapMobileSocialFeedItemResponse(
   server: MobileServerSocialFeedItemResponse,
