@@ -296,8 +296,10 @@ export interface MobileRegisteredWallet {
 /**
  * Common params for signed requests that authenticate as a given subaccount.
  */
-export interface MobileSignedRequestParams
-  extends Subaccount, SignatureParams {}
+export interface MobileSignedRequestParams extends Subaccount, SignatureParams {
+  /** Override with getMobileNonce using a server-synchronized deadline to avoid device clock drift. */
+  nonce?: bigint;
+}
 
 /**
  * Common params for the unsigned notification requests, which name their target with an Expo push token
