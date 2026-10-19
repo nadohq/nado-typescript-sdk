@@ -23,6 +23,7 @@ import {
   MobileServerSocialFeedTradeCard,
   MobileServerSocialFeedTradeRow,
   MobileServerSocialFeedUpdatesResponse,
+  MobileUnsupportedFeedItemError,
 } from './types';
 
 const itemId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -148,6 +149,70 @@ function mockClient(data?: unknown, status = 200) {
 }
 
 describe('[mobile-client]: social feed transport', () => {
+  it.each([
+    {
+      type: 'for_you_feed',
+      execute: (client: MobileClient) => client.getForYouFeed(),
+    },
+    {
+      type: 'top_traders_feed',
+      execute: (client: MobileClient) => client.getTopTradersFeed(),
+    },
+    {
+      type: 'friends_feed',
+      execute: (client: MobileClient) =>
+        client.getFriendsFeed({ viewAs: subaccount }),
+    },
+    {
+      type: 'profile_feed',
+      execute: (client: MobileClient) => client.getProfileFeed({ subaccount }),
+    },
+    {
+      type: 'market_feed',
+      execute: (client: MobileClient) => client.getMarketFeed({ productId: 2 }),
+    },
+    {
+      type: 'position_feed',
+      execute: (client: MobileClient) => client.getPositionFeed({ positionId }),
+    },
+    {
+      type: 'feed_item',
+      execute: (client: MobileClient) => client.getFeedItem({ itemId }),
+    },
+    {
+      type: 'create_feed_post',
+      execute: (client: MobileClient) =>
+        client.createFeedPost({
+          ...subaccount,
+          chainId: ink.id,
+          verifyingAddr: '0x0000000000000000000000000000000000000001',
+          clientRequestId: itemId,
+          positionId,
+          text: 'Test publication',
+          mentions: [],
+        }),
+    },
+  ])('rejects an unsupported item kind in $type', async ({ type, execute }) => {
+    const unknownItem = { ...row, kind: 'future_kind' };
+    const { client, requests } = mockClient({
+      status: 'success',
+      ...emptyPage,
+      items: [row, unknownItem],
+      item: unknownItem,
+    });
+    const response = execute(client);
+    await expect(response).rejects.toBeInstanceOf(
+      MobileUnsupportedFeedItemError,
+    );
+    await expect(response).rejects.toMatchObject({
+      name: 'MobileUnsupportedFeedItemError',
+      kind: 'future_kind',
+      message: expect.stringContaining('future_kind'),
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0].body.type).toBe(type);
+  });
+
   it.each(['none', 'owner', 'linked'] as const)(
     'routes all eight reads publicly with %s wallet configuration',
     async (walletMode) => {

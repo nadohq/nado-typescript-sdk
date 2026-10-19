@@ -278,11 +278,12 @@ export type MobileServerPublicQueryRequestType =
   keyof MobileServerPublicQueryRequestByType;
 
 /**
- * Params for each unsigned `public_execute`, keyed by request `type`. Feed reports use the original browsing
- * credential and session. Possession of an active Expo push token
- * authorizes these notification-only mutations: the backend resolves the token's owning wallet and mutates
- * its state, so no signature, sender, or nonce is sent. Ordering is the backend's last-write-wins commit
- * order, so callers must serialize their own writes.
+ * Params for each unsigned `public_execute`, keyed by request `type`. No signature, sender, or nonce is sent.
+ * `record_feed_views` and `position_presence` are authorized by the original reading session (`session_id`)
+ * and browser credential (`viewer_token`), not an Expo push token.
+ * For `unregister_expo_token` and `update_preferences`, possession of an active Expo push token authorizes
+ * the notification mutation: the backend resolves the token's owning wallet and mutates its state. These
+ * notification writes use the backend's last-write-wins commit order, so callers must serialize them.
  */
 export interface MobileServerPublicExecuteRequestByType {
   /** Explicit exposure report using the original browsing credential. */
