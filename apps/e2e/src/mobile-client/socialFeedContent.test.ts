@@ -396,7 +396,7 @@ void describe(
         nonce: getMobileNonce(),
       };
       const created = await tc.mobile.createFeedChartDrawing(drawingParams);
-      assert.equal(created.drawing?.data, false);
+      assert.equal(created.drawing.data, false);
       assert.deepEqual(
         await tc.mobile.createFeedChartDrawing(drawingParams),
         created,
@@ -406,7 +406,7 @@ void describe(
         itemId: post.id,
         dataJson: '0',
       });
-      assert.equal(updated.drawing?.data, 0);
+      assert.equal(updated.drawing.data, 0);
       assert.equal(
         (await mobile.getFeedChartDrawing({ itemId: post.id, viewAs })).drawing
           ?.data,
@@ -488,7 +488,10 @@ async function openPublishablePosition(
     market,
     'BTC perpetual market must exist to open the test position',
   );
-  const amount = BigNumber.maximum(market.minSize, market.sizeIncrement)
+  const amount = BigNumber.maximum(
+    market.minSize.div(market.product.oraclePrice),
+    market.sizeIncrement,
+  )
     .div(market.sizeIncrement)
     .integerValue(BigNumber.ROUND_CEIL)
     .multipliedBy(market.sizeIncrement);

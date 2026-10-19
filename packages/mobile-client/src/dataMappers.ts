@@ -23,10 +23,11 @@ import {
   MobileSocialFeedAuthor,
   MobileSocialFeedCandle,
   MobileSocialFeedCommentResult,
-  MobileSocialFeedComments,
+  MobileSocialFeedCommentsPage,
   MobileSocialFeedCompactCard,
   MobileSocialFeedContentBase,
   MobileSocialFeedDrawing,
+  MobileSocialFeedDrawingMutationResult,
   MobileSocialFeedDrawingResult,
   MobileSocialFeedHistoryMetrics,
   MobileSocialFeedHistoryTake,
@@ -47,7 +48,7 @@ import {
   MobileSocialFeedPositionHistory,
   MobileSocialFeedPositionPatch,
   MobileSocialFeedPositionResolutionResult,
-  MobileSocialFeedPositions,
+  MobileSocialFeedPositionsPage,
   MobileSocialFeedPost,
   MobileSocialFeedPresence,
   MobileSocialFeedPublishablePosition,
@@ -74,6 +75,7 @@ import {
   MobileServerFollowBatchResponse,
   MobileServerFollowMutationResponse,
   MobileServerSocialFeedCommentResponse,
+  MobileServerSocialFeedDrawingMutationResponse,
   MobileServerSocialFeedLikeResponse,
   MobileServerSocialFeedPresenceResponse,
   MobileServerSocialFeedViewsResponse,
@@ -1217,9 +1219,9 @@ export function mapMobileSocialFeedActionMarker(
  * @param server - Service payload with its original wire fields.
  * @returns Mapped position candidates with the original nullable cursor and observation time.
  */
-export function mapMobileSocialFeedPositions(
+export function mapMobileSocialFeedPositionsPage(
   server: MobileServerSocialFeedPositionsResponse,
-): MobileSocialFeedPositions {
+): MobileSocialFeedPositionsPage {
   return {
     positions: server.positions.map(mapMobileSocialFeedPublishablePosition),
     nextCursor: server.next_cursor,
@@ -1232,7 +1234,7 @@ export function mapMobileSocialFeedPositions(
  * @param server - Service payload with its original wire fields.
  * @returns The command resolution, nullable market, position candidates, and original reason for an empty result.
  */
-export function mapMobileSocialFeedPositionResolution(
+export function mapMobileSocialFeedPositionResolutionResult(
   server: MobileServerSocialFeedPositionResolutionResponse,
 ): MobileSocialFeedPositionResolutionResult {
   return {
@@ -1251,7 +1253,7 @@ export function mapMobileSocialFeedPositionResolution(
  * @param server - Service payload with its original wire fields.
  * @returns The original order digest, ready/pending state, mapped actions, and observation time.
  */
-export function mapMobileSocialFeedActionResolution(
+export function mapMobileSocialFeedActionResolutionResult(
   server: MobileServerSocialFeedActionResolutionResponse,
 ): MobileSocialFeedActionResolutionResult {
   return {
@@ -1281,13 +1283,28 @@ export function mapMobileSocialFeedDrawingResult(
 }
 
 /**
+ * Maps a saved drawing after creation or replacement.
+ * @param server - Successful drawing mutation response.
+ * @returns The parent item ID/version and non-null saved drawing.
+ */
+export function mapMobileSocialFeedDrawingMutationResult(
+  server: MobileServerSocialFeedDrawingMutationResponse,
+): MobileSocialFeedDrawingMutationResult {
+  return {
+    itemId: server.item_id,
+    itemVersion: server.item_version,
+    drawing: mapMobileSocialFeedDrawing(server.drawing),
+  };
+}
+
+/**
  * Maps bidirectional comments and the actual returned session.
  * @param server - Service payload with its original wire fields.
  * @returns Mapped replies, total count, bidirectional cursors, nullable anchor, and the actual reading session.
  */
-export function mapMobileSocialFeedComments(
+export function mapMobileSocialFeedCommentsPage(
   server: MobileServerSocialFeedCommentsResponse,
-): MobileSocialFeedComments {
+): MobileSocialFeedCommentsPage {
   return {
     comments: server.comments.map(mapMobileSocialFeedReply),
     totalCount: server.total_count,
@@ -1397,6 +1414,7 @@ export function mapMobileSocialFeedTimelineEntry(
  * Maps full history, preserving action/take order, association, and null facts.
  * @param server - Service payload with its original wire fields.
  * @returns Position metrics, ordered action/take timeline, summary, cursor, quality, reading session, and trading hints.
+ * @throws {MobileUnsupportedFeedItemError} If a timeline entry or take has an unsupported kind.
  */
 export function mapMobileSocialFeedPositionHistory(
   server: MobileServerSocialFeedPositionHistoryResponse,

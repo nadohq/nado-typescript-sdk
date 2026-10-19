@@ -1430,7 +1430,7 @@ export interface GetMobilePositionWatchersParams {
 }
 
 /** Open position candidates for a selected identity. */
-export interface MobileSocialFeedPositions {
+export interface MobileSocialFeedPositionsPage {
   /** Current candidates and eligibility hints. */
   positions: MobileSocialFeedPublishablePosition[];
   /** Next opaque cursor, or null. */
@@ -1473,8 +1473,18 @@ export interface MobileSocialFeedDrawingResult {
   drawing: MobileSocialFeedDrawing | null;
 }
 
+/** Saved drawing returned by successful creation or replacement. */
+export interface MobileSocialFeedDrawingMutationResult {
+  /** Parent item UUID. */
+  itemId: string;
+  /** Post-mutation parent display version. */
+  itemVersion: string;
+  /** Saved parsed drawing. */
+  drawing: MobileSocialFeedDrawing;
+}
+
 /** Comment thread page, including both directions around an anchor. */
-export interface MobileSocialFeedComments {
+export interface MobileSocialFeedCommentsPage {
   /** Requested anchor, or null when reading without one. */
   anchorReplyId: string | null;
   /** Readable replies in service order. */

@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   mapMobileSocialFeedActionCandidate,
-  mapMobileSocialFeedComments,
+  mapMobileSocialFeedCommentsPage,
+  mapMobileSocialFeedDrawingMutationResult,
   mapMobileSocialFeedDrawingResult,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemPatch,
@@ -536,6 +537,25 @@ describe('[mobile-client]: content mapping', () => {
     },
   );
 
+  it.each([false, 0, null, { lines: [] }])(
+    'maps saved drawing mutations with non-null drawings and data %p',
+    (data) => {
+      const result = mapMobileSocialFeedDrawingMutationResult({
+        item_id: post.id,
+        item_version: '9',
+        drawing: { data, created_at_ms: 10, updated_at_ms: 20 },
+      });
+      expect(result.itemId).toBe(post.id);
+      expect(result.itemVersion).toBe('9');
+      expect(result.drawing.data).toEqual(data);
+      expect(result.drawing).toEqual({
+        data,
+        createdAtMs: 10,
+        updatedAtMs: 20,
+      });
+    },
+  );
+
   it('distinguishes missing drawings and explicit attachment clearing from omitted patches', () => {
     expect(
       mapMobileSocialFeedDrawingResult({
@@ -678,7 +698,7 @@ describe('[mobile-client]: content mapping', () => {
   });
 
   it('maps comment cursors and anchor without inventing an observation timestamp', () => {
-    const result = mapMobileSocialFeedComments({
+    const result = mapMobileSocialFeedCommentsPage({
       comments: [reply],
       next_cursor: 'NextOpaque',
       previous_cursor: 'PreviousOpaque',

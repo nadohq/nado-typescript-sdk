@@ -21,9 +21,10 @@ import {
   mapMobileProfilesIncludeToServer,
   mapMobilePublicProfile,
   mapMobileRegisteredWallet,
-  mapMobileSocialFeedActionResolution,
+  mapMobileSocialFeedActionResolutionResult,
   mapMobileSocialFeedCommentResult,
-  mapMobileSocialFeedComments,
+  mapMobileSocialFeedCommentsPage,
+  mapMobileSocialFeedDrawingMutationResult,
   mapMobileSocialFeedDrawingResult,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemResponse,
@@ -33,8 +34,8 @@ import {
   mapMobileSocialFeedPage,
   mapMobileSocialFeedPositionChart,
   mapMobileSocialFeedPositionHistory,
-  mapMobileSocialFeedPositionResolution,
-  mapMobileSocialFeedPositions,
+  mapMobileSocialFeedPositionResolutionResult,
+  mapMobileSocialFeedPositionsPage,
   mapMobileSocialFeedPresence,
   mapMobileSocialFeedRankedPage,
   mapMobileSocialFeedReadParamsToServer,
@@ -99,7 +100,8 @@ import {
   MobileSignedRequestParams,
   MobileSocialFeedActionResolutionResult,
   MobileSocialFeedCommentResult,
-  MobileSocialFeedComments,
+  MobileSocialFeedCommentsPage,
+  MobileSocialFeedDrawingMutationResult,
   MobileSocialFeedDrawingResult,
   MobileSocialFeedItem,
   MobileSocialFeedItemResponse,
@@ -108,7 +110,7 @@ import {
   MobileSocialFeedPositionChart,
   MobileSocialFeedPositionHistory,
   MobileSocialFeedPositionResolutionResult,
-  MobileSocialFeedPositions,
+  MobileSocialFeedPositionsPage,
   MobileSocialFeedPresence,
   MobileSocialFeedRankedPage,
   MobileSocialFeedTopTradersPage,
@@ -575,7 +577,7 @@ export class MobileClient {
    */
   async getSelfFeedPositions(
     params: GetMobileSelfFeedPositionsParams,
-  ): Promise<MobileSocialFeedPositions> {
+  ): Promise<MobileSocialFeedPositionsPage> {
     const body: MobileServerPublicQueryRequest<'self_feed_positions'> = {
       type: 'self_feed_positions',
       view_as: subaccountToHex(params.viewAs),
@@ -583,7 +585,7 @@ export class MobileClient {
       cursor: params.cursor,
       limit: params.limit,
     };
-    return mapMobileSocialFeedPositions(await this.publicQuery(body));
+    return mapMobileSocialFeedPositionsPage(await this.publicQuery(body));
   }
 
   /**
@@ -602,7 +604,9 @@ export class MobileClient {
       input: params.input,
       product_id: params.productId,
     };
-    return mapMobileSocialFeedPositionResolution(await this.publicQuery(body));
+    return mapMobileSocialFeedPositionResolutionResult(
+      await this.publicQuery(body),
+    );
   }
 
   /**
@@ -620,7 +624,9 @@ export class MobileClient {
       view_as: subaccountToHex(params.viewAs),
       order_digest: params.orderDigest,
     };
-    return mapMobileSocialFeedActionResolution(await this.publicQuery(body));
+    return mapMobileSocialFeedActionResolutionResult(
+      await this.publicQuery(body),
+    );
   }
 
   /**
@@ -654,7 +660,7 @@ export class MobileClient {
    */
   async getFeedComments(
     params: GetMobileFeedCommentsParams,
-  ): Promise<MobileSocialFeedComments> {
+  ): Promise<MobileSocialFeedCommentsPage> {
     const body: MobileServerPublicQueryRequest<'feed_comments'> = {
       type: 'feed_comments',
       root_item_id: params.rootItemId,
@@ -664,7 +670,7 @@ export class MobileClient {
       session_id: params.sessionId,
       ...mapMobileSocialFeedReadParamsToServer(params),
     };
-    return mapMobileSocialFeedComments(await this.publicQuery(body));
+    return mapMobileSocialFeedCommentsPage(await this.publicQuery(body));
   }
 
   /**
@@ -675,6 +681,7 @@ export class MobileClient {
    * @returns Position metrics, ordered action/take history, summary, trading hints, cursor, and reading session.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or unavailable source data. Restart with a new position session after expiry.
+   * @throws {MobileUnsupportedFeedItemError} If a timeline entry or take has an unsupported kind.
    */
   async getPositionHistory(
     params: GetMobilePositionHistoryParams,
@@ -1057,13 +1064,15 @@ export class MobileClient {
    */
   async createFeedChartDrawing(
     params: MobileFeedChartDrawingParams,
-  ): Promise<MobileSocialFeedDrawingResult> {
+  ): Promise<MobileSocialFeedDrawingMutationResult> {
     const request = await this.getSignedRequest(
       'create_feed_chart_drawing',
       params,
       { item_id: params.itemId, data_json: params.dataJson },
     );
-    return mapMobileSocialFeedDrawingResult(await this.execute(request));
+    return mapMobileSocialFeedDrawingMutationResult(
+      await this.execute(request),
+    );
   }
 
   /**
@@ -1078,13 +1087,15 @@ export class MobileClient {
    */
   async updateFeedChartDrawing(
     params: MobileFeedChartDrawingParams,
-  ): Promise<MobileSocialFeedDrawingResult> {
+  ): Promise<MobileSocialFeedDrawingMutationResult> {
     const request = await this.getSignedRequest(
       'update_feed_chart_drawing',
       params,
       { item_id: params.itemId, data_json: params.dataJson },
     );
-    return mapMobileSocialFeedDrawingResult(await this.execute(request));
+    return mapMobileSocialFeedDrawingMutationResult(
+      await this.execute(request),
+    );
   }
 
   /**

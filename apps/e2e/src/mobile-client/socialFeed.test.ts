@@ -319,12 +319,11 @@ function assertPage(page: MobileSocialFeedPage) {
       item.capabilities.canRecordView,
       'item.capabilities.canRecordView',
     );
-    const position =
-      item.kind === 'reply'
-        ? item.attachedPosition
-        : item.kind === 'trade_row'
-          ? null
-          : item.position;
+    const position = (() => {
+      if (item.kind === 'trade_row') return null;
+      if (item.kind === 'reply') return item.attachedPosition;
+      return item.position;
+    })();
     const quantity =
       item.kind === 'trade_row' ? item.quantity : position?.quantity;
     if (quantity !== undefined) {
