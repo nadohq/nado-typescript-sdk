@@ -2,6 +2,7 @@ import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
   MobileServerNotificationPreferences,
+  MobileServerSocialFeedChartRange,
   MobileSocialFeedChartInterval,
   MobileSocialFeedMarketCategory,
   MobileSocialFeedPresenceState,
@@ -163,12 +164,7 @@ export interface MobileServerPublicQueryRequestByType {
     /** Candle interval. */
     interval: MobileSocialFeedChartInterval;
     /** Half-open time interval. */
-    range: {
-      /** Inclusive start in milliseconds. */
-      from_ms: number;
-      /** Exclusive end in milliseconds. */
-      to_ms: number;
-    };
+    range: MobileServerSocialFeedChartRange;
     /** Exclusive next-page bound. */
     before_ms?: number;
     /** Page size, 1-500. */

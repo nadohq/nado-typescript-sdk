@@ -128,6 +128,7 @@ export interface MobileServerSocialFeedPostResponse {
   /** Published item. */
   item: MobileServerSocialFeedItem;
 }
+
 /** Atomic reply publication and authoritative root count. */
 export interface MobileServerSocialFeedCommentResponse {
   /** Published reply. */
@@ -135,6 +136,7 @@ export interface MobileServerSocialFeedCommentResponse {
   /** Post-commit root count. */
   root_comment_count: number;
 }
+
 /** Successful drawing mutation always returns a saved drawing. */
 export interface MobileServerSocialFeedDrawingMutationResponse {
   /** Parent UUID. */
@@ -144,6 +146,7 @@ export interface MobileServerSocialFeedDrawingMutationResponse {
   /** Saved parsed drawing. */
   drawing: MobileServerSocialFeedDrawing;
 }
+
 /** Authoritative like state after the mutation. */
 export interface MobileServerSocialFeedLikeResponse {
   /** Item UUID. */
@@ -155,6 +158,7 @@ export interface MobileServerSocialFeedLikeResponse {
   /** Display version. */
   version: string;
 }
+
 /** Exposure counts deduplicated by browsing credential, item, and UTC day. */
 export interface MobileServerSocialFeedViewsResponse {
   /** Newly counted items. */
@@ -162,6 +166,7 @@ export interface MobileServerSocialFeedViewsResponse {
   /** Already counted items. */
   duplicate_item_ids: string[];
 }
+
 /** Page lease result; this response does not carry as_of_ms. */
 export interface MobileServerSocialFeedPresenceResponse {
   /** Active visitor count. */
@@ -173,6 +178,7 @@ export interface MobileServerSocialFeedPresenceResponse {
   /** Lease lifetime, bounded by the reading session. */
   expires_in_seconds: number;
 }
+
 /** Response payloads for unsigned writes. */
 export interface MobileServerPublicExecuteResponseByType {
   /** Token removal returns only the success envelope. */
@@ -184,6 +190,7 @@ export interface MobileServerPublicExecuteResponseByType {
   /** Page lease result. */
   position_presence: MobileServerSocialFeedPresenceResponse;
 }
+
 /** Full success response for an unsigned write. */
 export type MobileServerPublicExecuteSuccessResponse<
   T extends MobileServerPublicExecuteRequestType =

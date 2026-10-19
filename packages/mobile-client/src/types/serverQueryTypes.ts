@@ -13,6 +13,8 @@ import {
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCohort,
   MobileServerSocialFeedDrawing,
+  MobileServerSocialFeedEstimatedLiquidationLine,
+  MobileServerSocialFeedHistorySummary,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemPatch,
   MobileServerSocialFeedMarket,
@@ -23,8 +25,11 @@ import {
   MobileServerSocialFeedReply,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
+  MobileSocialFeedActionResolution,
+  MobileSocialFeedChartDataQuality,
   MobileSocialFeedHistoryQuality,
   MobileSocialFeedPositionResolution,
+  MobileSocialFeedPositionResolutionReason,
   MobileSocialFeedUnavailableTarget,
 } from './serverModelTypes';
 import {
@@ -243,6 +248,7 @@ export interface MobileServerSocialFeedPositionsResponse {
   /** Observation time. */
   as_of_ms: number;
 }
+
 /** Slash-command resolution, including normal empty outcomes. */
 export interface MobileServerSocialFeedPositionResolutionResponse {
   /** Resolution status. */
@@ -252,19 +258,21 @@ export interface MobileServerSocialFeedPositionResolutionResponse {
   /** Current candidates. */
   candidates: MobileServerSocialFeedPublishablePosition[];
   /** Explanation for empty candidates. */
-  reason: 'no_open_position' | 'unknown_market' | null;
+  reason: MobileSocialFeedPositionResolutionReason | null;
 }
+
 /** Authoritative order segments, not an inferred latest trade. */
 export interface MobileServerSocialFeedActionResolutionResponse {
   /** Requested order. */
   order_digest: Hex;
   /** Pending until all confirmed segments are projected. */
-  resolution: 'ready' | 'pending';
+  resolution: MobileSocialFeedActionResolution;
   /** Trusted actions, empty when pending. */
   actions: MobileServerSocialFeedActionCandidate[];
   /** Observation time. */
   as_of_ms: number;
 }
+
 /** Drawing read result; a readable parent without a drawing succeeds with null. */
 export interface MobileServerSocialFeedDrawingResponse {
   /** Parent UUID. */
@@ -274,6 +282,7 @@ export interface MobileServerSocialFeedDrawingResponse {
   /** Parsed drawing, or null. */
   drawing: MobileServerSocialFeedDrawing | null;
 }
+
 /** Comment thread, including bidirectional pagination around an optional anchor. */
 export interface MobileServerSocialFeedCommentsResponse {
   /** Readable comments. */
@@ -289,17 +298,13 @@ export interface MobileServerSocialFeedCommentsResponse {
   /** Original or new session. */
   read_session: MobileServerSocialFeedReadSession;
 }
+
 /** Full position history with additional metrics and trusted trading hints. */
 export interface MobileServerSocialFeedPositionHistoryResponse {
   /** Current or frozen position and history metrics. */
   position: MobileServerSocialFeedPositionHistoryCard;
   /** Counts across the authorized history. */
-  summary: {
-    /** Action count. */
-    action_count: number;
-    /** Published take count. */
-    take_count: number;
-  };
+  summary: MobileServerSocialFeedHistorySummary;
   /** Ordered action and take entries. */
   timeline: MobileServerSocialFeedTimelineEntry[];
   /** Next history cursor. */
@@ -311,6 +316,7 @@ export interface MobileServerSocialFeedPositionHistoryResponse {
   /** Viewing-account state, not authentication. */
   trading_context: MobileServerSocialFeedTradingContext;
 }
+
 /** Candles and actions, with separate estimated risk-price line. */
 export interface MobileServerSocialFeedPositionChartResponse {
   /** Descending candle page. */
@@ -318,19 +324,15 @@ export interface MobileServerSocialFeedPositionChartResponse {
   /** Action markers with explicit price bases. */
   action_markers: MobileServerSocialFeedActionMarker[];
   /** Estimated line, if applicable and available. */
-  estimated_liquidation_line: {
-    /** Estimated price in x18. */
-    price_x18: string;
-    /** Source time. */
-    as_of_ms: number;
-  } | null;
+  estimated_liquidation_line: MobileServerSocialFeedEstimatedLiquidationLine | null;
   /** Exclusive next-page bound. */
   next_before_ms: number | null;
   /** Observation time. */
   as_of_ms: number;
   /** Overall source quality. */
-  data_quality: 'ready' | 'partial' | 'unavailable';
+  data_quality: MobileSocialFeedChartDataQuality;
 }
+
 /** Read-only watcher observation; account previews are self-reported. */
 export interface MobileServerSocialFeedWatchersResponse {
   /** Distinct active browsing credentials. */

@@ -55,7 +55,7 @@ export type MobileSignedInner =
       attached_position_id?: string;
     }
   | {
-      /** First attachment or full replacement. */
+      /** First attachment. */
       type: 'create_feed_chart_drawing';
       /** Parent UUID. */
       item_id: string;

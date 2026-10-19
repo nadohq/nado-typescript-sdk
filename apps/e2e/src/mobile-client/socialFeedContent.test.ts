@@ -1,22 +1,34 @@
 import {
+  getMobileNonce,
   MOBILE_ERROR_CODES,
   MobileClient,
   MobileSocialFeedItem,
   MobileSocialFeedPositionCard,
+  MobileSocialFeedPublishablePosition,
   MobileSocialFeedReadSession,
 } from '@nadohq/mobile-client';
-import { Subaccount } from '@nadohq/shared';
+import {
+  getOrderNonce,
+  getOrderVerifyingAddress,
+  packOrderAppendix,
+  Subaccount,
+} from '@nadohq/shared';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { before, describe, test } from 'node:test';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
   assertBigNumberFinite,
+  assertBoolean,
+  assertEnumMember,
   assertNonEmptyString,
   assertNonNegativeInteger,
 } from '../utils/assertions';
+import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
+import { getExpiration } from '../utils/getExpiration';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import {
@@ -52,9 +64,12 @@ void describe(
       assertNonNegativeInteger(positions.asOfMs, 'positions.asOfMs');
       for (const candidate of positions.positions) {
         assertPosition(candidate.position);
-        assert.equal(typeof candidate.canPublish, 'boolean');
-        assert.equal(typeof candidate.canAttachToComment, 'boolean');
-        assert.equal(typeof candidate.canDrawAnalysis, 'boolean');
+        assertBoolean(candidate.canPublish, 'candidate.canPublish');
+        assertBoolean(
+          candidate.canAttachToComment,
+          'candidate.canAttachToComment',
+        );
+        assertBoolean(candidate.canDrawAnalysis, 'candidate.canDrawAnalysis');
       }
       if (positions.nextCursor !== null) {
         const next = await mobile.getSelfFeedPositions({
@@ -70,10 +85,10 @@ void describe(
         productId: TEST_PRODUCT_IDS.PERP_BTC,
       });
       debugPrint('Position command', resolved);
-      assert.ok(
-        ['resolved', 'choose_position', 'no_open_position'].includes(
-          resolved.resolution,
-        ),
+      assertEnumMember(
+        resolved.resolution,
+        ['resolved', 'choose_position', 'no_open_position'],
+        'resolved.resolution',
       );
       for (const candidate of resolved.candidates)
         assertPosition(candidate.position);
@@ -143,8 +158,10 @@ void describe(
       for (const comment of comments.comments) {
         assert.equal(comment.kind, 'reply');
         assert.equal(comment.rootItemId, rootItemId);
-        assert.ok(
-          ['none', 'visible', 'unavailable'].includes(comment.attachmentStatus),
+        assertEnumMember(
+          comment.attachmentStatus,
+          ['none', 'visible', 'unavailable'],
+          'comment.attachmentStatus',
         );
       }
       if (comments.nextCursor !== null) {
@@ -239,7 +256,13 @@ void describe(
               entry.action.averagePrice,
               'action.averagePrice',
             );
-        } else assert.ok(['post', 'trade_card'].includes(entry.item.kind));
+        } else {
+          assertEnumMember(
+            entry.item.kind,
+            ['post', 'trade_card'],
+            'entry.item.kind',
+          );
+        }
       }
       if (history.nextCursor !== null) {
         const next = await mobile.getPositionHistory({
@@ -260,8 +283,10 @@ void describe(
         limit: 2,
       });
       debugPrint('Position chart', chart);
-      assert.ok(
-        ['ready', 'partial', 'unavailable'].includes(chart.dataQuality),
+      assertEnumMember(
+        chart.dataQuality,
+        ['ready', 'partial'],
+        'chart.dataQuality',
       );
       for (const candle of chart.candles) {
         assertBigNumberFinite(candle.open, 'candle.open');
@@ -333,19 +358,18 @@ void describe(
     });
 
     void test('publishes idempotently, adds and replaces drawing data, comments, likes, and records exposures', async (context) => {
-      const positions = await mobile.getSelfFeedPositions({
-        viewAs,
-        limit: 50,
-      });
-      const candidate = positions.positions.find(
-        (position) => position.canPublish && position.canDrawAnalysis,
-      );
-      if (!candidate) {
-        context.skip(
-          'The test account has no currently publishable open position.',
+      context.after(async () => {
+        await cleanupTestState(
+          { engine: tc.engine, trigger: tc.trigger },
+          {
+            subaccountOwner: tc.walletClientAddress,
+            subaccountName: TEST_SUBACCOUNT_NAME,
+            endpointAddr: tc.endpointAddr,
+            chainId: tc.chainId,
+          },
         );
-        return;
-      }
+      });
+      const candidate = await openPublishablePosition(tc, mobile, viewAs);
       const signed = getMobileSignedParams(tc);
       const params = {
         ...signed,
@@ -365,12 +389,18 @@ void describe(
           }),
         MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
       );
-      const created = await tc.mobile.createFeedChartDrawing({
+      const drawingParams = {
         ...signed,
         itemId: post.id,
         dataJson: 'false',
-      });
+        nonce: getMobileNonce(),
+      };
+      const created = await tc.mobile.createFeedChartDrawing(drawingParams);
       assert.equal(created.drawing?.data, false);
+      assert.deepEqual(
+        await tc.mobile.createFeedChartDrawing(drawingParams),
+        created,
+      );
       const updated = await tc.mobile.updateFeedChartDrawing({
         ...signed,
         itemId: post.id,
@@ -401,6 +431,12 @@ void describe(
         isLiked: true,
       });
       assert.equal(liked.isLiked, true);
+      const retriedLike = await tc.mobile.setFeedLike({
+        ...signed,
+        itemId: post.id,
+        isLiked: true,
+      });
+      assert.deepEqual(retriedLike, liked);
       const unliked = await tc.mobile.setFeedLike({
         ...signed,
         itemId: post.id,
@@ -431,6 +467,83 @@ void describe(
     });
   },
 );
+
+async function openPublishablePosition(
+  context: RunContext,
+  mobile: MobileClient,
+  viewAs: Subaccount,
+): Promise<MobileSocialFeedPublishablePosition> {
+  const productId = TEST_PRODUCT_IDS.PERP_BTC;
+  const existing = await mobile.getSelfFeedPositions({
+    viewAs,
+    productId,
+    limit: 50,
+  });
+  const existingIds = new Set(
+    existing.positions.map((candidate) => candidate.position.positionId),
+  );
+  const markets = await context.engine.getAllMarkets();
+  const market = markets.find((candidate) => candidate.productId === productId);
+  assert.ok(
+    market,
+    'BTC perpetual market must exist to open the test position',
+  );
+  const amount = BigNumber.maximum(market.minSize, market.sizeIncrement)
+    .div(market.sizeIncrement)
+    .integerValue(BigNumber.ROUND_CEIL)
+    .multipliedBy(market.sizeIncrement);
+  const price = market.product.oraclePrice
+    .multipliedBy(1.1)
+    .div(market.priceIncrement)
+    .integerValue(BigNumber.ROUND_CEIL)
+    .multipliedBy(market.priceIncrement);
+  const opened = await context.engine.placeOrder({
+    productId,
+    verifyingAddr: getOrderVerifyingAddress(productId),
+    chainId: context.chainId,
+    nonce: getOrderNonce(),
+    order: {
+      ...viewAs,
+      amount,
+      price,
+      expiration: getExpiration(),
+      appendix: packOrderAppendix({
+        orderExecutionType: 'ioc',
+        isolated: {
+          margin: price
+            .multipliedBy(amount)
+            .div(5)
+            .integerValue(BigNumber.ROUND_CEIL),
+        },
+      }),
+    },
+  });
+  assert.equal(
+    opened.status,
+    'success',
+    'IOC order should open the test position',
+  );
+  const deadline = Date.now() + TEST_TIMEOUTS.DEFAULT;
+  while (Date.now() < deadline) {
+    const positions = await mobile.getSelfFeedPositions({
+      viewAs,
+      productId,
+      limit: 50,
+    });
+    const candidate = positions.positions.find(
+      (position) =>
+        !existingIds.has(position.position.positionId) &&
+        position.position.marginMode === 'isolated' &&
+        position.canPublish &&
+        position.canDrawAnalysis,
+    );
+    if (candidate) return candidate;
+    await delay(TEST_DELAYS.LONG);
+  }
+  throw new Error(
+    'The IOC order did not produce a new publishable position before the projection deadline',
+  );
+}
 
 function getPositionId(item: MobileSocialFeedItem): string | undefined {
   if (item.kind === 'trade_row') return item.positionId;

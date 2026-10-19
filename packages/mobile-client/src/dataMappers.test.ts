@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  mapMobileSocialFeedActionCandidate,
   mapMobileSocialFeedComments,
   mapMobileSocialFeedDrawingResult,
   mapMobileSocialFeedItem,
@@ -11,7 +12,9 @@ import {
   mapMobileSocialFeedPositionHistory,
   mapMobileSocialFeedPositionPatch,
   mapMobileSocialFeedPresence,
+  mapMobileSocialFeedTradeCard,
 } from './dataMappers';
+import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
 import {
   MobileServerSocialFeedItem,
   MobileServerSocialFeedPost,
@@ -365,6 +368,81 @@ const history: MobileServerSocialFeedPositionHistoryResponse = {
 };
 
 describe('[mobile-client]: content mapping', () => {
+  it('rejects unsupported feed item kinds with the typed error', () => {
+    const server = {
+      kind: 'future_kind',
+    } as unknown as MobileServerSocialFeedItem;
+    expect(() => mapMobileSocialFeedItem(server)).toThrow(
+      MobileUnsupportedFeedItemError,
+    );
+    expect(() => mapMobileSocialFeedItem(server)).toThrow('future_kind');
+  });
+
+  it.each([
+    { label: 'timeline entry', entry: { kind: 'future_kind' } },
+    {
+      label: 'history take',
+      entry: { kind: 'take', item: { kind: 'future_kind' } },
+    },
+  ])(
+    'rejects unsupported $label kinds before accessing their payload',
+    ({ entry }) => {
+      const server = {
+        ...history,
+        timeline: [entry],
+      } as unknown as MobileServerSocialFeedPositionHistoryResponse;
+      expect(() => mapMobileSocialFeedPositionHistory(server)).toThrow(
+        MobileUnsupportedFeedItemError,
+      );
+      expect(() => mapMobileSocialFeedPositionHistory(server)).toThrow(
+        'future_kind',
+      );
+    },
+  );
+
+  it('maps shared post and trade card fields consistently, including history takes', () => {
+    const serverCard = {
+      ...post,
+      kind: 'trade_card',
+      action: 'opened',
+    } as const;
+    const mappedPost = mapMobileSocialFeedItem(post);
+    const mappedCard = mapMobileSocialFeedTradeCard(serverCard);
+    expect(mappedCard).toEqual({
+      ...mappedPost,
+      kind: 'trade_card',
+      action: 'opened',
+    });
+    const mappedHistory = mapMobileSocialFeedPositionHistory({
+      ...history,
+      timeline: [
+        { kind: 'take', item: post },
+        { kind: 'take', item: serverCard },
+      ],
+    });
+    expect(mappedHistory.timeline).toEqual([
+      { kind: 'take', item: mappedPost },
+      { kind: 'take', item: mappedCard },
+    ]);
+  });
+
+  it.each([
+    'position_closed',
+    'already_published',
+    'unavailable',
+    null,
+  ] as const)('preserves action publication reason %s', (reason) => {
+    const candidate = mapMobileSocialFeedActionCandidate({
+      action_id: 'action',
+      position_id: post.position.position_id,
+      action: 'opened',
+      can_publish: reason === null,
+      unavailable_reason: reason,
+    });
+    expect(candidate.unavailableReason).toBe(reason);
+    expect(candidate.canPublish).toBe(reason === null);
+  });
+
   it('maps all supported item kinds without dropping items or page metadata', () => {
     const items: MobileServerSocialFeedItem[] = [
       {

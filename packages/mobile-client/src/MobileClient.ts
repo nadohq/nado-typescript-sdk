@@ -572,7 +572,6 @@ export class MobileClient {
    * @returns Current position candidates, their eligibility hints, the next cursor, and observation time.
    * @throws {MobileServerFailureError} On invalid parameters, an unsupported viewing account, or unavailable
    * position data. An account with no open positions returns an empty page instead of an error.
-   * @throws {Error} If the subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async getSelfFeedPositions(
     params: GetMobileSelfFeedPositionsParams,
@@ -593,7 +592,6 @@ export class MobileClient {
    * @returns The resolution, nullable market, candidate positions, and reason for an empty result.
    * @throws {MobileServerFailureError} On invalid parameters, an unsupported viewing account, or unavailable
    * source data. Unknown markets and accounts without open positions are normal resolution results.
-   * @throws {Error} If the subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async resolveFeedPosition(
     params: ResolveMobileFeedPositionParams,
@@ -613,7 +611,6 @@ export class MobileClient {
    * @returns Trusted action candidates and their observation time, or a pending result with no actions.
    * @throws {MobileServerFailureError} On invalid parameters, an inaccessible order, or unavailable source
    * data. Pending projection is a successful result, not a source failure.
-   * @throws {Error} If the subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async resolveFeedAction(
     params: ResolveMobileFeedActionParams,
@@ -633,7 +630,6 @@ export class MobileClient {
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, unavailable data,
    * or `SOCIAL_FEED_DRAWING_UNAVAILABLE` when the parent is inaccessible. A readable parent without a drawing
    * returns null. Acquire a new reading session when the original has expired.
-   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async getFeedChartDrawing(
     params: GetMobileFeedChartDrawingParams,
@@ -655,7 +651,6 @@ export class MobileClient {
    * @returns Replies, total count, forward and backward cursors, the anchor, and the actual reading session.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or unavailable data. Restart pagination with a new session after expiry; do not reuse the old cursor.
-   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async getFeedComments(
     params: GetMobileFeedCommentsParams,
@@ -680,7 +675,6 @@ export class MobileClient {
    * @returns Position metrics, ordered action/take history, summary, trading hints, cursor, and reading session.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or unavailable source data. Restart with a new position session after expiry.
-   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async getPositionHistory(
     params: GetMobilePositionHistoryParams,
@@ -705,7 +699,6 @@ export class MobileClient {
    * @returns Candles with decimal prices and x18 volume, action markers, a nullable liquidation line, and paging metadata.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or wholly unavailable chart sources. Partially available data is returned with its quality indicator.
-   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async getPositionChart(
     params: GetMobilePositionChartParams,
@@ -728,7 +721,6 @@ export class MobileClient {
    * @param params - Position and optional viewing account, used only for preview relationship information.
    * @returns The visitor count, public account previews, and observation time; previews need not match the count.
    * @throws {MobileServerFailureError} On invalid parameters, an unavailable position, or unavailable source data.
-   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async getPositionWatchers(
     params: GetMobilePositionWatchersParams,
@@ -799,7 +791,6 @@ export class MobileClient {
    * @returns Separate lists of newly accepted and already-counted item IDs.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, or any ineligible item.
    * A rejected batch is not partially counted. Acquire a new session after expiry and re-evaluate exposure eligibility.
-   * @throws {Error} If the HTTP request fails or the response is malformed.
    */
   async recordFeedViews(
     params: MobileRecordFeedViewsParams,
@@ -821,7 +812,6 @@ export class MobileClient {
    * @returns Visitor count, public previews, recommended heartbeat interval, and remaining lease lifetime.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, or an inaccessible
    * position. Rejected requests leave leases unchanged; acquire a new reading session after expiry.
-   * @throws {Error} If a supplied subaccount cannot be encoded, the HTTP request fails, or the response is malformed.
    */
   async setPositionPresence(
     params: MobilePositionPresenceParams,
@@ -1035,7 +1025,6 @@ export class MobileClient {
    * @throws {MobileServerFailureError} On authentication, ownership, eligibility, content, mention, or drawing
    * errors, or `SOCIAL_FEED_REQUEST_CONFLICT` when a request UUID is reused with different content. Do not
    * change an earlier request to retry it; use a new UUID for a genuinely new publication.
-   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
    * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async createFeedPost(
@@ -1055,13 +1044,16 @@ export class MobileClient {
   /**
    * First attaches a drawing to an owned post or trade card while the author still holds its position.
    * The original JSON is signed unchanged; false and zero are valid drawing documents.
+   * For an exact retry after a timeout, generate a nonce up front with {@link getMobileNonce} and reuse
+   * that nonce and the original JSON before its receive deadline. A fresh nonce is not an exact replay.
+   * If a retry returns `SOCIAL_FEED_DRAWING_EXISTS`, use {@link getFeedChartDrawing} to confirm that the
+   * stored data matches the intended drawing before treating the original create as successful.
    * @param params - Author subaccount and signing options, parent item, and complete original drawing JSON.
    * @returns The parent ID and updated version together with the stored drawing.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} On authentication, ownership, eligibility, or invalid/oversized drawing
    * errors, an unavailable parent, or `SOCIAL_FEED_DRAWING_EXISTS` for a conflicting existing drawing.
    * Read the existing drawing and use updateFeedChartDrawing when replacement is intended.
-   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
    */
   async createFeedChartDrawing(
     params: MobileFeedChartDrawingParams,
@@ -1083,7 +1075,6 @@ export class MobileClient {
    * @throws {MobileServerFailureError} On authentication, ownership, or invalid/oversized drawing errors, an
    * unavailable parent or drawing, or `STALE_SOCIAL_FEED_DRAWING_UPDATE`. Re-read the drawing before retrying
    * a stale or conflicting update instead of blindly replacing newer content.
-   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
    */
   async updateFeedChartDrawing(
     params: MobileFeedChartDrawingParams,
@@ -1106,7 +1097,6 @@ export class MobileClient {
    * @throws {MobileServerFailureError} On authentication, inaccessible content, invalid text/mentions/reply
    * relationships, an ineligible attachment, or `SOCIAL_FEED_REQUEST_CONFLICT`. Correct invalid input before
    * a new submission, and never reuse an existing request UUID with different content.
-   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
    */
   async createFeedComment(
     params: MobileCreateFeedCommentParams,
@@ -1124,13 +1114,15 @@ export class MobileClient {
 
   /**
    * Sets or clears a signed user's like without requiring an open position.
-   * Serialize mutations per item and author; an exact retry reuses the same nonce and desired state.
+   * Serialize mutations per item and author. Retrying the same isLiked state with a fresh nonce is safe
+   * when no newer change intervenes; an unchanged state does not increment the count or version again.
+   * Pass the original nonce on a retry before its deadline to avoid overwriting a newer change from
+   * another device. Re-read the current state if that retry conflicts.
    * @param params - Acting subaccount and signing options, interactive item, and desired like state.
    * @returns The applied like state, authoritative count, and item version after the mutation.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} On authentication errors, inaccessible or non-interactive content,
    * or `STALE_SOCIAL_FEED_LIKE_UPDATE`. Re-read the current state before submitting a new mutation after a conflict.
-   * @throws {Error} If subaccount encoding or signing fails, the HTTP request fails, or the response is malformed.
    */
   async setFeedLike(
     params: MobileSetFeedLikeParams,

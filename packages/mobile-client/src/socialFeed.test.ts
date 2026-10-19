@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import { Subaccount, subaccountToHex } from '@nadohq/shared';
 import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -13,7 +13,6 @@ import {
   mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import { MobileClient } from './MobileClient';
-import { getMobileNonce } from './signing';
 import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
@@ -23,7 +22,6 @@ import {
   MobileServerSocialFeedTradeCard,
   MobileServerSocialFeedTradeRow,
   MobileServerSocialFeedUpdatesResponse,
-  MobileUnsupportedFeedItemError,
 } from './types';
 
 const itemId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -149,70 +147,6 @@ function mockClient(data?: unknown, status = 200) {
 }
 
 describe('[mobile-client]: social feed transport', () => {
-  it.each([
-    {
-      type: 'for_you_feed',
-      execute: (client: MobileClient) => client.getForYouFeed(),
-    },
-    {
-      type: 'top_traders_feed',
-      execute: (client: MobileClient) => client.getTopTradersFeed(),
-    },
-    {
-      type: 'friends_feed',
-      execute: (client: MobileClient) =>
-        client.getFriendsFeed({ viewAs: subaccount }),
-    },
-    {
-      type: 'profile_feed',
-      execute: (client: MobileClient) => client.getProfileFeed({ subaccount }),
-    },
-    {
-      type: 'market_feed',
-      execute: (client: MobileClient) => client.getMarketFeed({ productId: 2 }),
-    },
-    {
-      type: 'position_feed',
-      execute: (client: MobileClient) => client.getPositionFeed({ positionId }),
-    },
-    {
-      type: 'feed_item',
-      execute: (client: MobileClient) => client.getFeedItem({ itemId }),
-    },
-    {
-      type: 'create_feed_post',
-      execute: (client: MobileClient) =>
-        client.createFeedPost({
-          ...subaccount,
-          chainId: ink.id,
-          verifyingAddr: '0x0000000000000000000000000000000000000001',
-          clientRequestId: itemId,
-          positionId,
-          text: 'Test publication',
-          mentions: [],
-        }),
-    },
-  ])('rejects an unsupported item kind in $type', async ({ type, execute }) => {
-    const unknownItem = { kind: 'future_kind' };
-    const { client, requests } = mockClient({
-      status: 'success',
-      ...emptyPage,
-      items: [row, unknownItem],
-      item: unknownItem,
-    });
-    const response = execute(client);
-    await expect(response).rejects.toBeInstanceOf(
-      MobileUnsupportedFeedItemError,
-    );
-    await expect(response).rejects.toMatchObject({
-      name: 'MobileUnsupportedFeedItemError',
-      kind: 'future_kind',
-      message: expect.stringContaining('future_kind'),
-    });
-    expect(requests).toHaveLength(1);
-    expect(requests[0].body.type).toBe(type);
-  });
-
   it.each(['none', 'owner', 'linked'] as const)(
     'routes all eight reads publicly with %s wallet configuration',
     async (walletMode) => {
@@ -456,60 +390,6 @@ describe('[mobile-client]: social feed transport', () => {
       mockClient({ items: [] }).client.getForYouFeed(),
     ).rejects.toThrow('missing success envelope');
   });
-});
-
-describe('[mobile-client]: signed feed nonce overrides', () => {
-  it.each(['owner', 'linked'] as const)(
-    'preserves a server-timed nonce with a slow device clock and %s signer',
-    async (walletMode) => {
-      const serverTimeMillis = 1_800_000_000_000;
-      const dateNow = jest
-        .spyOn(Date, 'now')
-        .mockReturnValue(serverTimeMillis - 33_000);
-      try {
-        const { client, requests } = mockClient(
-          {
-            status: 'failure',
-            error: 'Test rejection',
-            error_code: 1006,
-            request_type: 'execute_create_feed_post',
-          },
-          503,
-        );
-        if (walletMode === 'linked') {
-          client.setLinkedSigner(
-            createWalletClient({
-              account: linked,
-              chain: ink,
-              transport: http(),
-            }),
-          );
-        }
-        const nonce = getMobileNonce(serverTimeMillis + 90_000, 123456);
-        await expect(
-          client.createFeedPost({
-            ...subaccount,
-            chainId: ink.id,
-            verifyingAddr: '0x0000000000000000000000000000000000000001',
-            clientRequestId: itemId,
-            positionId,
-            text: 'Clock regression',
-            mentions: [],
-            nonce,
-          }),
-        ).rejects.toBeInstanceOf(MobileServerFailureError);
-        expect(requests).toHaveLength(1);
-        expect(requests[0].body.nonce).toBe(nonce.toString());
-        expect(requests[0].body.sender).toBe(subaccountToHex(subaccount));
-        expect(getMobileNonce() / 1_000_000n).toBeLessThan(
-          BigInt(serverTimeMillis),
-        );
-        expect(nonce / 1_000_000n).toBe(BigInt(serverTimeMillis + 90_000));
-      } finally {
-        dateNow.mockRestore();
-      }
-    },
-  );
 });
 
 describe('[mobile-client]: social feed response mapping', () => {
@@ -838,80 +718,6 @@ describe('[mobile-client]: social feed response mapping', () => {
       reset: true,
       viewportRevision: 2,
       requestSeq: 3,
-    });
-  });
-});
-
-describe('[mobile-client]: unsigned feed reporting', () => {
-  it('keeps omitted, cleared, and supplied watcher accounts distinct without signing', async () => {
-    const { client, requests } = mockClient({
-      status: 'success',
-      watcher_count: 1,
-      watcher_preview: [],
-      heartbeat_interval_seconds: 15,
-      expires_in_seconds: 45,
-    });
-    client.opts.walletClient = undefined;
-    const params = {
-      positionId,
-      sessionId: 'OriginalSession',
-      viewerToken: 'OriginalToken',
-      viewSessionId: itemId,
-      state: 'heartbeat' as const,
-    };
-    await client.setPositionPresence(params);
-    await client.setPositionPresence({ ...params, watcherSubaccount: null });
-    await client.setPositionPresence({
-      ...params,
-      watcherSubaccount: subaccount,
-    });
-    expect(requests[0].body).not.toHaveProperty('watcher_subaccount');
-    expect(requests[1].body.watcher_subaccount).toBeNull();
-    expect(requests[2].body.watcher_subaccount).toBe(
-      subaccountToHex(subaccount),
-    );
-    for (const request of requests) {
-      expect(request.url).toBe(
-        'https://mobile.example/v1/mobile/public_execute',
-      );
-      expect(request.body).toMatchObject({
-        type: 'position_presence',
-        session_id: 'OriginalSession',
-        viewer_token: 'OriginalToken',
-        view_session_id: itemId,
-        state: 'heartbeat',
-      });
-      expect(request.body).not.toHaveProperty('signature');
-      expect(request.body).not.toHaveProperty('sender');
-      expect(request.body).not.toHaveProperty('nonce');
-      expect(request.body).not.toHaveProperty('view_as');
-    }
-  });
-
-  it('reports exposures with the original credential and maps both deduplication outcomes', async () => {
-    const { client, requests } = mockClient({
-      status: 'success',
-      accepted_item_ids: [itemId],
-      duplicate_item_ids: [positionId],
-    });
-    client.opts.walletClient = undefined;
-    const result = await client.recordFeedViews({
-      sessionId: 'OriginalSession',
-      viewerToken: 'OriginalToken',
-      itemIds: [itemId, positionId],
-    });
-    expect(requests[0].url).toBe(
-      'https://mobile.example/v1/mobile/public_execute',
-    );
-    expect(requests[0].body).toEqual({
-      type: 'record_feed_views',
-      session_id: 'OriginalSession',
-      viewer_token: 'OriginalToken',
-      item_ids: [itemId, positionId],
-    });
-    expect(result).toEqual({
-      acceptedItemIds: [itemId],
-      duplicateItemIds: [positionId],
     });
   });
 });

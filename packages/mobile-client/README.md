@@ -90,22 +90,15 @@ registering presence. Watching account previews are self-reported, not proof of 
 `unregisterExpoToken`, `updateNotificationPreferences`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
-`recordFeedViews` and `setPositionPresence` use the original reading `sessionId` and `viewerToken`, not a wallet
-signature. Report exposure only after satisfying `viewTracking`; normal reads do not count views. Each viewing
-page owns a distinct `viewSessionId` for entering, heartbeats, and leaving. Omitting `watcherSubaccount`
-preserves the display account, while passing `null` clears it without ending the visit.
+`recordFeedViews` and `setPositionPresence` use reading-session credentials rather than wallet signatures.
+See method and parameter JSDoc for exposure reporting and page-scoped presence rules.
 
 ### Signed Executes
 
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
 `createFeedPost`, `createFeedComment`, `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`.
 
-Publishing and commenting use an author-scoped `clientRequestId`: reuse both it and the exact content for
-idempotent retries. Text and mention code-point offsets are preserved; drawing JSON strings are signed
-unchanged. A saved drawing can contain `false` or `0`. First adding a drawing requires an open owned position;
-updating an existing drawing remains possible after closing it. Serialize drawing writes and re-read nonce
-conflicts rather than automatically overwriting another device's update. Available operations follow the
-server's capabilities and deployment switches.
+See method and parameter JSDoc for publication, retries, mention offsets, drawing data, and mutation ordering.
 
 ### Linked Signers
 

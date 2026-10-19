@@ -482,12 +482,8 @@ export interface MobileServerSocialFeedItemBase {
   capabilities: MobileServerSocialFeedCapabilities;
 }
 
-/** Trade card with optional authored text and analysis. */
-export interface MobileServerSocialFeedTradeCard extends MobileServerSocialFeedItemBase {
-  /** Card discriminant. */
-  kind: 'trade_card';
-  /** Trading action. */
-  action: MobileSocialFeedTradeCardAction;
+/** Content shared by authored posts and trade cards. */
+export interface MobileServerSocialFeedContentBase extends MobileServerSocialFeedItemBase {
   /** Card text, empty for automatic cards. */
   text: string;
   /** Mentions in the original, unmodified text. */
@@ -498,6 +494,14 @@ export interface MobileServerSocialFeedTradeCard extends MobileServerSocialFeedI
   interaction: MobileServerSocialFeedInteraction;
   /** Readable comment preview. */
   comment_preview: MobileServerSocialFeedCommentPreview;
+}
+
+/** Trade card with optional authored text and analysis. */
+export interface MobileServerSocialFeedTradeCard extends MobileServerSocialFeedContentBase {
+  /** Card discriminant. */
+  kind: 'trade_card';
+  /** Trading action. */
+  action: MobileSocialFeedTradeCardAction;
 }
 
 /** Fields shared by size-change and liquidation trade rows. */
@@ -624,6 +628,7 @@ export type MobileSocialFeedAttachmentStatus =
   | 'none'
   | 'visible'
   | 'unavailable';
+
 /** Supported chart candle intervals. */
 export type MobileSocialFeedChartInterval =
   | '1m'
@@ -632,18 +637,57 @@ export type MobileSocialFeedChartInterval =
   | '1h'
   | '4h'
   | '1d';
+
 /** Position lifecycle action. */
 export type MobileSocialFeedAction =
   | MobileSocialFeedTradeCardAction
   | 'liquidated';
+
 /** Result of resolving a position command. */
 export type MobileSocialFeedPositionResolution =
   | 'resolved'
   | 'choose_position'
   | 'no_open_position'
   | 'unknown_market';
+
+/** Resolution of a viewing account's trading targets. */
+export type MobileSocialFeedTradingResolution =
+  | 'no_viewing_account'
+  | 'none'
+  | 'unique'
+  | 'choose_position'
+  | 'unavailable';
+
+/** Price source for a historical action marker. */
+export type MobileSocialFeedActionPriceBasis =
+  | 'execution'
+  | 'liquidation_oracle';
+
+/** Chart source completeness; wholly unavailable sources fail the request. */
+export type MobileSocialFeedChartDataQuality = 'ready' | 'partial';
+
+/** Projection state of an order's authoritative action segments. */
+export type MobileSocialFeedActionResolution = 'ready' | 'pending';
+
+/** Explanation for an empty position command result. */
+export type MobileSocialFeedPositionResolutionReason =
+  | 'no_open_position'
+  | 'unknown_market';
+
+/** Reason an action cannot be published. */
+export type MobileSocialFeedActionUnavailableReason =
+  | 'position_closed'
+  | 'already_published'
+  | 'unavailable';
+
+/** Availability of an estimated liquidation price. */
+export type MobileSocialFeedLiquidationPriceQuality =
+  | MobileSocialFeedPnlQuality
+  | 'not_applicable';
+
 /** Presence lifecycle reported by an individual page. */
 export type MobileSocialFeedPresenceState = 'watching' | 'heartbeat' | 'left';
+
 /** Mention offsets refer to Unicode code points in the original text, not UTF-16 indices. */
 export interface MobileSocialFeedMention {
   /** Mentioned identity. */
@@ -655,6 +699,7 @@ export interface MobileSocialFeedMention {
   /** Label matching the original text. */
   label: string;
 }
+
 /** Parsed drawing; data is opaque to the SDK and may legitimately be false or zero. */
 export interface MobileServerSocialFeedDrawing {
   /** Already parsed drawing document; do not JSON.parse again. */
@@ -664,6 +709,7 @@ export interface MobileServerSocialFeedDrawing {
   /** Last update time in milliseconds. */
   updated_at_ms: number;
 }
+
 /** Nonrecursive root-post preview carried by replies. */
 export interface MobileServerSocialFeedCompactCard {
   /** Root item UUID. */
@@ -680,21 +726,13 @@ export interface MobileServerSocialFeedCompactCard {
   /** Whether the root has published analysis. */
   has_analysis: boolean;
 }
+
 /** Authored position post, including text-only, drawing-only, and combined content. */
-export interface MobileServerSocialFeedPost extends MobileServerSocialFeedItemBase {
+export interface MobileServerSocialFeedPost extends MobileServerSocialFeedContentBase {
   /** Post discriminant. */
   kind: 'post';
-  /** Original text, possibly empty for a drawing-only post. */
-  text: string;
-  /** Mentions in the text. */
-  mentions: MobileSocialFeedMention[];
-  /** Current or frozen position. */
-  position: MobileServerSocialFeedPositionCard;
-  /** Interaction state. */
-  interaction: MobileServerSocialFeedInteraction;
-  /** Readable recent comments. */
-  comment_preview: MobileServerSocialFeedCommentPreview;
 }
+
 /** Reply with independently permissioned position attachment and nonrecursive root preview. */
 export interface MobileServerSocialFeedReply extends MobileServerSocialFeedItemBase {
   /** Reply discriminant. */
@@ -718,6 +756,7 @@ export interface MobileServerSocialFeedReply extends MobileServerSocialFeedItemB
   /** Reply interaction state. */
   interaction: MobileServerSocialFeedInteraction;
 }
+
 /** Current eligibility hints; actual writes still recheck the signed author. */
 export interface MobileServerSocialFeedPublishablePosition {
   /** Candidate position. */
@@ -731,6 +770,7 @@ export interface MobileServerSocialFeedPublishablePosition {
   /** Unavailability explanation, or null. */
   unavailable_reason: string | null;
 }
+
 /** An authoritative lifecycle segment of an order. */
 export interface MobileServerSocialFeedActionCandidate {
   /** Action UUID. */
@@ -741,15 +781,16 @@ export interface MobileServerSocialFeedActionCandidate {
   action: MobileSocialFeedAction;
   /** Current publishing eligibility, not proof of caller ownership. */
   can_publish: boolean;
-  /** Closed-position explanation, or null. */
-  unavailable_reason: 'position_closed' | null;
+  /** Publication restriction, or null when eligible. */
+  unavailable_reason: MobileSocialFeedActionUnavailableReason | null;
 }
+
 /** Additional history metrics; unavailable values are not zero. */
 export interface MobileServerSocialFeedHistoryMetrics {
   /** Estimated liquidation price in x18, independent of event Oracle and execution prices. */
   estimated_liquidation_price_x18: string | null;
   /** Availability of the estimated price. */
-  liquidation_price_quality: MobileSocialFeedPnlQuality | 'not_applicable';
+  liquidation_price_quality: MobileSocialFeedLiquidationPriceQuality;
   /** Source time in milliseconds. */
   liquidation_price_as_of_ms: number | null;
   /** Signed funding amount in x18. */
@@ -759,11 +800,13 @@ export interface MobileServerSocialFeedHistoryMetrics {
   /** Funding source time in milliseconds. */
   funding_as_of_ms: number | null;
 }
+
 /** Full position card displayed above its historical timeline. */
 export interface MobileServerSocialFeedPositionHistoryCard
   extends
     MobileServerSocialFeedPositionCard,
     MobileServerSocialFeedHistoryMetrics {}
+
 /** Persisted action facts, independent of whether a feed item was published. */
 export interface MobileServerSocialFeedPositionAction {
   /** Action UUID. */
@@ -805,10 +848,12 @@ export interface MobileServerSocialFeedPositionAction {
   /** Decimal-string version. */
   version: string;
 }
+
 /** Full published content appearing in a position timeline. */
 export type MobileServerSocialFeedHistoryTake =
   | MobileServerSocialFeedTradeCard
   | MobileServerSocialFeedPost;
+
 /** A historical action or authored take; preserve service ordering. */
 export type MobileServerSocialFeedTimelineEntry =
   | {
@@ -827,6 +872,7 @@ export type MobileServerSocialFeedTimelineEntry =
       /** Full published content. */
       item: MobileServerSocialFeedHistoryTake;
     };
+
 /** Trusted trading target; this hint does not authorize trading. */
 export interface MobileServerSocialFeedTradingTarget {
   /** Lifecycle UUID. */
@@ -846,6 +892,7 @@ export interface MobileServerSocialFeedTradingTarget {
   /** Source time in milliseconds. */
   state_as_of_ms: number;
 }
+
 /** Viewing-account trading hints, not authenticated permissions. */
 export interface MobileServerSocialFeedTradingContext {
   /** Market product ID. */
@@ -853,12 +900,7 @@ export interface MobileServerSocialFeedTradingContext {
   /** Suggested trade direction. */
   suggested_direction: MobileFeedTradePositionDirection;
   /** Resolution of the viewing account's positions. */
-  resolution:
-    | 'no_viewing_account'
-    | 'none'
-    | 'unique'
-    | 'choose_position'
-    | 'unavailable';
+  resolution: MobileSocialFeedTradingResolution;
   /** Trusted candidates. */
   candidates: MobileServerSocialFeedTradingTarget[];
   /** Unique candidate, or null. */
@@ -866,6 +908,7 @@ export interface MobileServerSocialFeedTradingContext {
   /** Whether the selected account has a unique reducible position. */
   can_reduce: boolean;
 }
+
 /** Historical candle; volume is a quantity, not a price. */
 export interface MobileServerSocialFeedCandle {
   /** Candle start time in milliseconds. */
@@ -881,6 +924,7 @@ export interface MobileServerSocialFeedCandle {
   /** Base asset volume in x18. */
   volume_x18: string;
 }
+
 /** Chart action marker with explicitly identified price basis. */
 export interface MobileServerSocialFeedActionMarker {
   /** Action UUID. */
@@ -894,5 +938,29 @@ export interface MobileServerSocialFeedActionMarker {
   /** Direction. */
   direction: MobileFeedTradePositionDirection;
   /** Never substitute actual execution for a liquidation Oracle. */
-  price_basis: 'execution' | 'liquidation_oracle';
+  price_basis: MobileSocialFeedActionPriceBasis;
+}
+
+/** Counts across the authorized position history. */
+export interface MobileServerSocialFeedHistorySummary {
+  /** Action count. */
+  action_count: number;
+  /** Published take count. */
+  take_count: number;
+}
+
+/** Estimated liquidation price and its source time. */
+export interface MobileServerSocialFeedEstimatedLiquidationLine {
+  /** Estimated price in x18. */
+  price_x18: string;
+  /** Source time in milliseconds. */
+  as_of_ms: number;
+}
+
+/** Half-open chart range, preserved across pages. */
+export interface MobileServerSocialFeedChartRange {
+  /** Inclusive start in milliseconds. */
+  from_ms: number;
+  /** Exclusive end in milliseconds. */
+  to_ms: number;
 }

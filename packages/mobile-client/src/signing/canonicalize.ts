@@ -1,4 +1,3 @@
-import { Hex } from 'viem';
 import { MobileSocialFeedMention } from '../types/serverModelTypes';
 import { MobileSignedInner } from './types';
 
@@ -16,11 +15,11 @@ export function canonicalizeMobileInner(
     case 'create_feed_post':
       return {
         type: inner.type,
-        client_request_id: inner.client_request_id.toLowerCase(),
-        position_id: inner.position_id.toLowerCase(),
+        client_request_id: inner.client_request_id,
+        position_id: inner.position_id,
         ...(inner.action_id === undefined
           ? {}
-          : { action_id: inner.action_id.toLowerCase() }),
+          : { action_id: inner.action_id }),
         text: inner.text,
         mentions: inner.mentions.map(canonicalizeMention),
         ...(inner.drawing_data_json === undefined
@@ -30,28 +29,28 @@ export function canonicalizeMobileInner(
     case 'create_feed_comment':
       return {
         type: inner.type,
-        client_request_id: inner.client_request_id.toLowerCase(),
-        root_item_id: inner.root_item_id.toLowerCase(),
+        client_request_id: inner.client_request_id,
+        root_item_id: inner.root_item_id,
         ...(inner.reply_to_item_id === undefined
           ? {}
-          : { reply_to_item_id: inner.reply_to_item_id.toLowerCase() }),
+          : { reply_to_item_id: inner.reply_to_item_id }),
         text: inner.text,
         mentions: inner.mentions.map(canonicalizeMention),
         ...(inner.attached_position_id === undefined
           ? {}
-          : { attached_position_id: inner.attached_position_id.toLowerCase() }),
+          : { attached_position_id: inner.attached_position_id }),
       };
     case 'create_feed_chart_drawing':
     case 'update_feed_chart_drawing':
       return {
         type: inner.type,
-        item_id: inner.item_id.toLowerCase(),
+        item_id: inner.item_id,
         data_json: inner.data_json,
       };
     case 'set_feed_like':
       return {
         type: inner.type,
-        item_id: inner.item_id.toLowerCase(),
+        item_id: inner.item_id,
         is_liked: inner.is_liked,
       };
     case 'set_bio':
@@ -110,7 +109,7 @@ function canonicalizeMention(
   mention: MobileSocialFeedMention,
 ): MobileSocialFeedMention {
   return {
-    subaccount: mention.subaccount.toLowerCase() as Hex,
+    subaccount: mention.subaccount,
     start: mention.start,
     end: mention.end,
     label: mention.label,

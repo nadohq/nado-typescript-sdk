@@ -25,9 +25,11 @@ import {
   MobileSocialFeedCommentResult,
   MobileSocialFeedComments,
   MobileSocialFeedCompactCard,
+  MobileSocialFeedContentBase,
   MobileSocialFeedDrawing,
   MobileSocialFeedDrawingResult,
   MobileSocialFeedHistoryMetrics,
+  MobileSocialFeedHistoryTake,
   MobileSocialFeedInteraction,
   MobileSocialFeedItem,
   MobileSocialFeedItemBase,
@@ -53,6 +55,7 @@ import {
   MobileSocialFeedReadParams,
   MobileSocialFeedReadSession,
   MobileSocialFeedReply,
+  MobileSocialFeedTimelineEntry,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedTradeCard,
   MobileSocialFeedTradeRow,
@@ -89,8 +92,10 @@ import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCompactCard,
+  MobileServerSocialFeedContentBase,
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedHistoryMetrics,
+  MobileServerSocialFeedHistoryTake,
   MobileServerSocialFeedInteraction,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemBase,
@@ -104,6 +109,7 @@ import {
   MobileServerSocialFeedPublishablePosition,
   MobileServerSocialFeedReadSession,
   MobileServerSocialFeedReply,
+  MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradeCard,
   MobileServerSocialFeedTradeRow,
   MobileServerSocialFeedTradeRowBase,
@@ -589,17 +595,15 @@ export function mapMobileSocialFeedItemBase(
 }
 
 /**
- * Maps a trade card, authored content, and position and interaction metadata.
+ * Maps the content, position, interaction, and comment preview shared by posts and trade cards.
  * @param server - The service response.
- * @returns The mapped social trade card.
+ * @returns The mapped shared content fields.
  */
-export function mapMobileSocialFeedTradeCard(
-  server: MobileServerSocialFeedTradeCard,
-): MobileSocialFeedTradeCard {
+export function mapMobileSocialFeedContentBase(
+  server: MobileServerSocialFeedContentBase,
+): MobileSocialFeedContentBase {
   return {
     ...mapMobileSocialFeedItemBase(server),
-    kind: server.kind,
-    action: server.action,
     text: server.text,
     mentions: server.mentions,
     position: mapMobileSocialFeedPositionCard(server.position),
@@ -609,6 +613,21 @@ export function mapMobileSocialFeedTradeCard(
       totalCount: server.comment_preview.total_count,
       nextCursor: server.comment_preview.next_cursor,
     },
+  };
+}
+
+/**
+ * Maps a trade card, authored content, and position and interaction metadata.
+ * @param server - The service response.
+ * @returns The mapped social trade card.
+ */
+export function mapMobileSocialFeedTradeCard(
+  server: MobileServerSocialFeedTradeCard,
+): MobileSocialFeedTradeCard {
+  return {
+    ...mapMobileSocialFeedContentBase(server),
+    kind: server.kind,
+    action: server.action,
   };
 }
 
@@ -924,19 +943,6 @@ export function mapMobileSocialFeedReadParamsToServer(
  * @param params - Caller-provided mention and original text offsets.
  * @returns The wire-format mention, preserving the original label and code-point offsets.
  * @throws {Error} If the owner is not a 20-byte address or the subaccount name cannot be encoded in 12 bytes.
- * @example
- * ```ts
- * const mention = mapMobileSocialFeedMentionToServer({
- *   subaccount: {
- *     subaccountOwner: '0x1111111111111111111111111111111111111111',
- *     subaccountName: 'default',
- *   },
- *   start: 0,
- *   end: 6,
- *   label: '@alice',
- * });
- * console.log(mention.start, mention.end, mention.label); // 0, 6, "@alice"
- * ```
  */
 export function mapMobileSocialFeedMentionToServer(
   params: MobileSocialFeedMentionParams,
@@ -948,19 +954,11 @@ export function mapMobileSocialFeedMentionToServer(
     label: params.label,
   };
 }
+
 /**
  * Preserves parsed drawing data, including false and zero.
  * @param server - Service payload with its original wire fields.
  * @returns The original parsed drawing data and its creation/update timestamps in milliseconds.
- * @example
- * ```ts
- * const drawing = mapMobileSocialFeedDrawing({
- *   data: false,
- *   created_at_ms: 1700000000000,
- *   updated_at_ms: 1700000001000,
- * });
- * console.log(drawing.data); // false, not null
- * ```
  */
 export function mapMobileSocialFeedDrawing(
   server: MobileServerSocialFeedDrawing,
@@ -971,16 +969,11 @@ export function mapMobileSocialFeedDrawing(
     updatedAtMs: server.updated_at_ms,
   };
 }
+
 /**
  * Maps a nonrecursive root preview, retaining nullable position visibility.
  * @param server - Service payload with its original wire fields.
  * @returns A nonrecursive preview with a nullable position and notional retained as an x18 BigNumber.
- * @example
- * ```ts
- * declare const serverPreview: MobileServerSocialFeedCompactCard;
- * const preview = mapMobileSocialFeedCompactCard(serverPreview);
- * const notionalX18 = preview.position?.notional.toFixed();
- * ```
  */
 export function mapMobileSocialFeedCompactCard(
   server: MobileServerSocialFeedCompactCard,
@@ -1002,46 +995,25 @@ export function mapMobileSocialFeedCompactCard(
     hasAnalysis: server.has_analysis,
   };
 }
+
 /**
  * Maps an authored post and its readable comments and drawing.
  * @param server - Service payload with its original wire fields.
  * @returns A post with its unchanged text and mentions, mapped position, drawing, interactions, and reply preview.
- * @example
- * ```ts
- * declare const serverPost: MobileServerSocialFeedPost;
- * const post = mapMobileSocialFeedPost(serverPost);
- * const replies = post.commentPreview.items;
- * const nextReplyCursor = post.commentPreview.nextCursor;
- * ```
  */
 export function mapMobileSocialFeedPost(
   server: MobileServerSocialFeedPost,
 ): MobileSocialFeedPost {
   return {
-    ...mapMobileSocialFeedItemBase(server),
+    ...mapMobileSocialFeedContentBase(server),
     kind: server.kind,
-    text: server.text,
-    mentions: server.mentions,
-    position: mapMobileSocialFeedPositionCard(server.position),
-    interaction: mapMobileSocialFeedInteraction(server.interaction),
-    commentPreview: {
-      items: server.comment_preview.items.map(mapMobileSocialFeedReply),
-      totalCount: server.comment_preview.total_count,
-      nextCursor: server.comment_preview.next_cursor,
-    },
   };
 }
+
 /**
  * Maps reply visibility without treating an unavailable attachment as an absent one.
  * @param server - Service payload with its original wire fields.
  * @returns A reply preserving omitted reply targets, nullable attachments, and the separate attachment visibility status.
- * @example
- * ```ts
- * declare const serverReply: MobileServerSocialFeedReply;
- * const reply = mapMobileSocialFeedReply(serverReply);
- * const attachmentUnavailable = reply.attachmentStatus === 'unavailable';
- * const attachedPosition = reply.attachedPosition;
- * ```
  */
 export function mapMobileSocialFeedReply(
   server: MobileServerSocialFeedReply,
@@ -1068,17 +1040,11 @@ export function mapMobileSocialFeedReply(
     interaction: mapMobileSocialFeedInteraction(server.interaction),
   };
 }
+
 /**
  * Maps current eligibility hints without implying caller ownership.
  * @param server - Service payload with its original wire fields.
  * @returns A position with current publication, attachment, and drawing eligibility hints and an unavailable reason.
- * @example
- * ```ts
- * declare const serverCandidate: MobileServerSocialFeedPublishablePosition;
- * const candidate = mapMobileSocialFeedPublishablePosition(serverCandidate);
- * const publicationHint = candidate.canPublish;
- * const attachmentHint = candidate.canAttachToComment;
- * ```
  */
 export function mapMobileSocialFeedPublishablePosition(
   server: MobileServerSocialFeedPublishablePosition,
@@ -1091,19 +1057,11 @@ export function mapMobileSocialFeedPublishablePosition(
     unavailableReason: server.unavailable_reason,
   };
 }
+
 /**
  * Maps all order action identifiers and eligibility hints.
  * @param server - Service payload with its original wire fields.
  * @returns Trusted action and position identifiers, action kind, publication eligibility, and an unavailable reason.
- * @example
- * ```ts
- * declare const serverCandidate: MobileServerSocialFeedActionCandidate;
- * const candidate = mapMobileSocialFeedActionCandidate(serverCandidate);
- * const publicationTarget = {
- *   actionId: candidate.actionId,
- *   positionId: candidate.positionId,
- * };
- * ```
  */
 export function mapMobileSocialFeedActionCandidate(
   server: MobileServerSocialFeedActionCandidate,
@@ -1116,17 +1074,11 @@ export function mapMobileSocialFeedActionCandidate(
     unavailableReason: server.unavailable_reason,
   };
 }
+
 /**
  * Maps history risk prices to decimals while retaining funding amounts in x18 units.
  * @param server - Service payload with its original wire fields.
  * @returns Nullable decimal liquidation price and x18 funding PnL, with their independent quality and observation metadata.
- * @example
- * ```ts
- * declare const serverMetrics: MobileServerSocialFeedHistoryMetrics;
- * const metrics = mapMobileSocialFeedHistoryMetrics(serverMetrics);
- * const liquidationPrice = metrics.estimatedLiquidationPrice?.toFixed();
- * const fundingPnlX18 = metrics.fundingPnl?.toFixed();
- * ```
  */
 export function mapMobileSocialFeedHistoryMetrics(
   server: MobileServerSocialFeedHistoryMetrics,
@@ -1145,18 +1097,11 @@ export function mapMobileSocialFeedHistoryMetrics(
     fundingAsOfMs: server.funding_as_of_ms,
   };
 }
+
 /**
  * Maps action prices independently; all amounts and quantities retain x18 units.
  * @param server - Service payload with its original wire fields.
  * @returns An action with decimal prices, x18 quantities/amounts, and independently nullable financial facts.
- * @example
- * ```ts
- * declare const serverAction: MobileServerSocialFeedPositionAction;
- * const action = mapMobileSocialFeedPositionAction(serverAction);
- * const averagePrice = action.averagePrice?.toFixed();
- * const executedQuantityX18 = action.executedQuantity.toFixed();
- * const realizedPnlX18 = action.realizedPnlDelta?.toFixed();
- * ```
  */
 export function mapMobileSocialFeedPositionAction(
   server: MobileServerSocialFeedPositionAction,
@@ -1192,17 +1137,11 @@ export function mapMobileSocialFeedPositionAction(
     version: server.version,
   };
 }
+
 /**
  * Maps a trusted target without treating the viewing account as authenticated.
  * @param server - Service payload with its original wire fields.
  * @returns A trading target retaining distinct identity/trading subaccounts, margin mode, and observation time.
- * @example
- * ```ts
- * declare const serverTarget: MobileServerSocialFeedTradingTarget;
- * const target = mapMobileSocialFeedTradingTarget(serverTarget);
- * const identity = target.identitySubaccount;
- * const tradingAccount = target.tradingSubaccount;
- * ```
  */
 export function mapMobileSocialFeedTradingTarget(
   server: MobileServerSocialFeedTradingTarget,
@@ -1218,17 +1157,11 @@ export function mapMobileSocialFeedTradingTarget(
     stateAsOfMs: server.state_as_of_ms,
   };
 }
+
 /**
  * Maps viewing-account trading hints.
  * @param server - Service payload with its original wire fields.
  * @returns Trading hints with ordered target candidates, nullable viewer position, and the current reduction hint.
- * @example
- * ```ts
- * declare const serverContext: MobileServerSocialFeedTradingContext;
- * const context = mapMobileSocialFeedTradingContext(serverContext);
- * const candidateAccounts = context.candidates.map((target) => target.tradingSubaccount);
- * const canReduce = context.canReduce;
- * ```
  */
 export function mapMobileSocialFeedTradingContext(
   server: MobileServerSocialFeedTradingContext,
@@ -1242,23 +1175,11 @@ export function mapMobileSocialFeedTradingContext(
     canReduce: server.can_reduce,
   };
 }
+
 /**
  * Converts OHLC prices to decimals but preserves base-asset volume in x18.
  * @param server - Service payload with its original wire fields.
  * @returns A candle with decimal OHLC BigNumbers, base-asset volume retained in x18, and its timestamp in milliseconds.
- * @example
- * ```ts
- * const candle = mapMobileSocialFeedCandle({
- *   timestamp_ms: 1700000000000,
- *   open_x18: '2000000000000000000',
- *   high_x18: '3000000000000000000',
- *   low_x18: '1000000000000000000',
- *   close_x18: '2000000000000000000',
- *   volume_x18: '4000000000000000000',
- * });
- * console.log(candle.close.toFixed()); // '2'
- * console.log(candle.volume.toFixed()); // '4000000000000000000'
- * ```
  */
 export function mapMobileSocialFeedCandle(
   server: MobileServerSocialFeedCandle,
@@ -1272,19 +1193,11 @@ export function mapMobileSocialFeedCandle(
     volume: toBigNumber(server.volume_x18),
   };
 }
+
 /**
  * Maps markers without replacing unknown Oracle prices with execution prices.
  * @param server - Service payload with its original wire fields.
  * @returns An action marker with its original price basis and a nullable decimal price, without substituting another source.
- * @example
- * ```ts
- * declare const serverMarker: MobileServerSocialFeedActionMarker;
- * const marker = mapMobileSocialFeedActionMarker({
- *   ...serverMarker,
- *   price_x18: null,
- * });
- * console.log(marker.price); // null
- * ```
  */
 export function mapMobileSocialFeedActionMarker(
   server: MobileServerSocialFeedActionMarker,
@@ -1303,15 +1216,6 @@ export function mapMobileSocialFeedActionMarker(
  * Maps selected-account open positions.
  * @param server - Service payload with its original wire fields.
  * @returns Mapped position candidates with the original nullable cursor and observation time.
- * @example
- * ```ts
- * const page = mapMobileSocialFeedPositions({
- *   positions: [],
- *   next_cursor: null,
- *   as_of_ms: 1700000000000,
- * });
- * console.log(page.positions.length, page.nextCursor); // 0, null
- * ```
  */
 export function mapMobileSocialFeedPositions(
   server: MobileServerSocialFeedPositionsResponse,
@@ -1322,20 +1226,11 @@ export function mapMobileSocialFeedPositions(
     asOfMs: server.as_of_ms,
   };
 }
+
 /**
  * Maps normal empty and ambiguous command results.
  * @param server - Service payload with its original wire fields.
  * @returns The command resolution, nullable market, position candidates, and original reason for an empty result.
- * @example
- * ```ts
- * const result = mapMobileSocialFeedPositionResolution({
- *   resolution: 'unknown_market',
- *   product: null,
- *   candidates: [],
- *   reason: 'unknown_market',
- * });
- * console.log(result.resolution, result.product); // 'unknown_market', null
- * ```
  */
 export function mapMobileSocialFeedPositionResolution(
   server: MobileServerSocialFeedPositionResolutionResponse,
@@ -1350,20 +1245,11 @@ export function mapMobileSocialFeedPositionResolution(
     reason: server.reason,
   };
 }
+
 /**
  * Preserves pending order projection without inventing action candidates.
  * @param server - Service payload with its original wire fields.
  * @returns The original order digest, ready/pending state, mapped actions, and observation time.
- * @example
- * ```ts
- * const result = mapMobileSocialFeedActionResolution({
- *   order_digest: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
- *   resolution: 'pending',
- *   actions: [],
- *   as_of_ms: 1700000000000,
- * });
- * console.log(result.resolution, result.actions.length); // 'pending', 0
- * ```
  */
 export function mapMobileSocialFeedActionResolution(
   server: MobileServerSocialFeedActionResolutionResponse,
@@ -1375,19 +1261,11 @@ export function mapMobileSocialFeedActionResolution(
     asOfMs: server.as_of_ms,
   };
 }
+
 /**
  * Distinguishes no drawing from falsy drawing data.
  * @param server - Service payload with its original wire fields.
  * @returns The parent item ID/version and a nullable drawing, retaining false or zero drawing data.
- * @example
- * ```ts
- * const result = mapMobileSocialFeedDrawingResult({
- *   item_id: '00000000-0000-4000-8000-000000000001',
- *   item_version: '2',
- *   drawing: null,
- * });
- * console.log(result.drawing); // null means no drawing
- * ```
  */
 export function mapMobileSocialFeedDrawingResult(
   server: MobileServerSocialFeedDrawingResponse,
@@ -1401,18 +1279,11 @@ export function mapMobileSocialFeedDrawingResult(
         : mapMobileSocialFeedDrawing(server.drawing),
   };
 }
+
 /**
  * Maps bidirectional comments and the actual returned session.
  * @param server - Service payload with its original wire fields.
  * @returns Mapped replies, total count, bidirectional cursors, nullable anchor, and the actual reading session.
- * @example
- * ```ts
- * declare const serverPage: MobileServerSocialFeedCommentsResponse;
- * const page = mapMobileSocialFeedComments(serverPage);
- * const nextCursor = page.nextCursor;
- * const previousCursor = page.previousCursor;
- * const readSession = page.readSession;
- * ```
  */
 export function mapMobileSocialFeedComments(
   server: MobileServerSocialFeedCommentsResponse,
@@ -1426,17 +1297,11 @@ export function mapMobileSocialFeedComments(
     readSession: mapMobileSocialFeedReadSession(server.read_session),
   };
 }
+
 /**
  * Maps atomic reply publication without inventing a reading session.
  * @param server - Service payload with its original wire fields.
  * @returns The created reply and authoritative root comment count, without a fabricated reading session.
- * @example
- * ```ts
- * declare const serverResult: MobileServerSocialFeedCommentResponse;
- * const result = mapMobileSocialFeedCommentResult(serverResult);
- * const createdReply = result.comment;
- * const rootCommentCount = result.rootCommentCount;
- * ```
  */
 export function mapMobileSocialFeedCommentResult(
   server: MobileServerSocialFeedCommentResponse,
@@ -1446,20 +1311,11 @@ export function mapMobileSocialFeedCommentResult(
     rootCommentCount: server.root_comment_count,
   };
 }
+
 /**
  * Maps authoritative like state and count.
  * @param server - Service payload with its original wire fields.
  * @returns The applied like state, authoritative count, and item ID/version after the mutation.
- * @example
- * ```ts
- * const result = mapMobileSocialFeedLikeResult({
- *   item_id: '00000000-0000-4000-8000-000000000001',
- *   is_liked: false,
- *   like_count: 0,
- *   version: '2',
- * });
- * console.log(result.isLiked, result.likeCount); // false, 0
- * ```
  */
 export function mapMobileSocialFeedLikeResult(
   server: MobileServerSocialFeedLikeResponse,
@@ -1471,18 +1327,11 @@ export function mapMobileSocialFeedLikeResult(
     version: server.version,
   };
 }
+
 /**
  * Maps exposure deduplication results without adding timestamps.
  * @param server - Service payload with its original wire fields.
  * @returns Newly accepted and duplicate item ID lists without inventing an observation timestamp.
- * @example
- * ```ts
- * const result = mapMobileSocialFeedViewsResult({
- *   accepted_item_ids: [],
- *   duplicate_item_ids: ['00000000-0000-4000-8000-000000000001'],
- * });
- * console.log(result.acceptedItemIds.length, result.duplicateItemIds.length); // 0, 1
- * ```
  */
 export function mapMobileSocialFeedViewsResult(
   server: MobileServerSocialFeedViewsResponse,
@@ -1492,17 +1341,62 @@ export function mapMobileSocialFeedViewsResult(
     duplicateItemIds: server.duplicate_item_ids,
   };
 }
+
+/**
+ * Maps a published history take without treating unknown kinds as posts.
+ * @param server - The published service item.
+ * @returns The mapped post or trade card.
+ * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported take kind.
+ */
+export function mapMobileSocialFeedHistoryTake(
+  server: MobileServerSocialFeedHistoryTake,
+): MobileSocialFeedHistoryTake {
+  const kind = server.kind;
+  switch (kind) {
+    case 'trade_card':
+      return mapMobileSocialFeedTradeCard(server);
+    case 'post':
+      return mapMobileSocialFeedPost(server);
+    default:
+      throw new MobileUnsupportedFeedItemError(kind satisfies never);
+  }
+}
+
+/**
+ * Maps a historical action or published take while preserving its discriminant.
+ * @param server - The service timeline entry.
+ * @returns The mapped action or take entry.
+ * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported entry or take kind.
+ */
+export function mapMobileSocialFeedTimelineEntry(
+  server: MobileServerSocialFeedTimelineEntry,
+): MobileSocialFeedTimelineEntry {
+  const kind = server.kind;
+  switch (kind) {
+    case 'action':
+      return {
+        kind,
+        action: mapMobileSocialFeedPositionAction(server.action),
+        relatedItemId: server.related_item_id,
+        relatedTake:
+          server.related_take === null
+            ? null
+            : mapMobileSocialFeedTradeCard(server.related_take),
+      };
+    case 'take':
+      return {
+        kind,
+        item: mapMobileSocialFeedHistoryTake(server.item),
+      };
+    default:
+      throw new MobileUnsupportedFeedItemError(kind satisfies never);
+  }
+}
+
 /**
  * Maps full history, preserving action/take order, association, and null facts.
  * @param server - Service payload with its original wire fields.
  * @returns Position metrics, ordered action/take timeline, summary, cursor, quality, reading session, and trading hints.
- * @example
- * ```ts
- * declare const serverHistory: MobileServerSocialFeedPositionHistoryResponse;
- * const history = mapMobileSocialFeedPositionHistory(serverHistory);
- * const actions = history.timeline.filter((entry) => entry.kind === 'action');
- * const readSession = history.readSession;
- * ```
  */
 export function mapMobileSocialFeedPositionHistory(
   server: MobileServerSocialFeedPositionHistoryResponse,
@@ -1516,42 +1410,18 @@ export function mapMobileSocialFeedPositionHistory(
       actionCount: server.summary.action_count,
       takeCount: server.summary.take_count,
     },
-    timeline: server.timeline.map((entry) =>
-      entry.kind === 'action'
-        ? {
-            kind: entry.kind,
-            action: mapMobileSocialFeedPositionAction(entry.action),
-            relatedItemId: entry.related_item_id,
-            relatedTake:
-              entry.related_take === null
-                ? null
-                : mapMobileSocialFeedTradeCard(entry.related_take),
-          }
-        : {
-            kind: entry.kind,
-            item:
-              entry.item.kind === 'trade_card'
-                ? mapMobileSocialFeedTradeCard(entry.item)
-                : mapMobileSocialFeedPost(entry.item),
-          },
-    ),
+    timeline: server.timeline.map(mapMobileSocialFeedTimelineEntry),
     nextCursor: server.next_cursor,
     historyQuality: server.history_quality,
     readSession: mapMobileSocialFeedReadSession(server.read_session),
     tradingContext: mapMobileSocialFeedTradingContext(server.trading_context),
   };
 }
+
 /**
  * Maps candles and independent price sources, preserving explicit nulls.
  * @param server - Service payload with its original wire fields.
  * @returns Decimal-price candles and markers with x18 volume, a nullable liquidation line, and paging/quality metadata.
- * @example
- * ```ts
- * declare const serverChart: MobileServerSocialFeedPositionChartResponse;
- * const chart = mapMobileSocialFeedPositionChart(serverChart);
- * const liquidationPrice = chart.estimatedLiquidationLine?.price.toFixed();
- * const nextBeforeMs = chart.nextBeforeMs;
- * ```
  */
 export function mapMobileSocialFeedPositionChart(
   server: MobileServerSocialFeedPositionChartResponse,
@@ -1571,19 +1441,11 @@ export function mapMobileSocialFeedPositionChart(
     dataQuality: server.data_quality,
   };
 }
+
 /**
  * Maps watcher observations; account previews are self-reported, not authenticated.
  * @param server - Service payload with its original wire fields.
  * @returns The visitor count, self-reported public account previews, and observation time.
- * @example
- * ```ts
- * const watchers = mapMobileSocialFeedWatchers({
- *   watcher_count: 3,
- *   watcher_preview: [],
- *   as_of_ms: 1700000000000,
- * });
- * console.log(watchers.watcherCount, watchers.watcherPreview.length); // 3, 0
- * ```
  */
 export function mapMobileSocialFeedWatchers(
   server: MobileServerSocialFeedWatchersResponse,
@@ -1594,20 +1456,11 @@ export function mapMobileSocialFeedWatchers(
     asOfMs: server.as_of_ms,
   };
 }
+
 /**
  * Maps a page lease without inventing an observation timestamp.
  * @param server - Service payload with its original wire fields.
  * @returns Visitor count and public previews with heartbeat/lease durations in seconds, without an observation timestamp.
- * @example
- * ```ts
- * const presence = mapMobileSocialFeedPresence({
- *   watcher_count: 2,
- *   watcher_preview: [],
- *   heartbeat_interval_seconds: 15,
- *   expires_in_seconds: 0,
- * });
- * console.log(presence.expiresInSeconds); // 0 after leaving the page
- * ```
  */
 export function mapMobileSocialFeedPresence(
   server: MobileServerSocialFeedPresenceResponse,
