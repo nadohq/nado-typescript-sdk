@@ -4,6 +4,7 @@ import { MobileSignedRequestParams } from '../types/clientTypes';
 import {
   MobileNotificationPlatform,
   MobileServerAvatarSelection,
+  MobileSocialFeedMention,
 } from '../types/serverModelTypes';
 
 /**
@@ -21,6 +22,62 @@ import {
  * lowercases; unlike bytes32, string fields such as `display_name` are hashed as-is and keep their casing.
  */
 export type MobileSignedInner =
+  | {
+      /** Atomic post publication. */
+      type: 'create_feed_post';
+      /** Author-scoped idempotency UUID. */
+      client_request_id: string;
+      /** Owned position UUID. */
+      position_id: string;
+      /** Optional trusted action UUID, omitted rather than encoded as nil. */
+      action_id?: string;
+      /** Unmodified original text. */
+      text: string;
+      /** Ordered mentions into the original text. */
+      mentions: MobileSocialFeedMention[];
+      /** Original JSON text; omitted when absent. */
+      drawing_data_json?: string;
+    }
+  | {
+      /** Atomic comment publication. */
+      type: 'create_feed_comment';
+      /** Author-scoped idempotency UUID. */
+      client_request_id: string;
+      /** Root UUID. */
+      root_item_id: string;
+      /** Optional same-thread reply UUID. */
+      reply_to_item_id?: string;
+      /** Unmodified original text. */
+      text: string;
+      /** Ordered mentions. */
+      mentions: MobileSocialFeedMention[];
+      /** Optional owned position UUID. */
+      attached_position_id?: string;
+    }
+  | {
+      /** First attachment. */
+      type: 'create_feed_chart_drawing';
+      /** Parent UUID. */
+      item_id: string;
+      /** Original JSON text, not parsed or reformatted before hashing. */
+      data_json: string;
+    }
+  | {
+      /** Full replacement of an existing drawing. */
+      type: 'update_feed_chart_drawing';
+      /** Parent UUID. */
+      item_id: string;
+      /** Original JSON text. */
+      data_json: string;
+    }
+  | {
+      /** Idempotent relationship mutation. */
+      type: 'set_feed_like';
+      /** Item UUID. */
+      item_id: string;
+      /** Desired relationship state. */
+      is_liked: boolean;
+    }
   | { type: 'set_bio'; bio: string }
   | { type: 'create_avatar_upload'; content_length: number }
   | {
@@ -85,8 +142,4 @@ export type MobileSignedRequest<
 export interface BuildSignedMobileRequestParams extends MobileSignedRequestParams {
   walletClient: WalletClientWithAccount;
   inner: MobileSignedInner;
-  /**
-   * Overrides the generated nonce; mainly useful for tests that pin the signed payload.
-   */
-  nonce?: bigint;
 }

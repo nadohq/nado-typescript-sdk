@@ -48,6 +48,16 @@ export const MOBILE_ERROR_CODES = {
   INVALID_FEED_FILTER: 6300,
   /** Feed cursor is malformed or bound to a different filter. Discard it and restart from the first page. */
   INVALID_FEED_CURSOR: 6301,
+  /** Drawing JSON, outer value, storage representation, or nonce is invalid. */
+  INVALID_SOCIAL_FEED_DRAWING: 6302,
+  /** Original drawing JSON exceeds 256 KiB UTF-8. */
+  SOCIAL_FEED_DRAWING_TOO_LARGE: 6303,
+  /** Drawing parent is unavailable, or an update targets a missing drawing. */
+  SOCIAL_FEED_DRAWING_UNAVAILABLE: 6304,
+  /** A different drawing already exists when first attaching one. */
+  SOCIAL_FEED_DRAWING_EXISTS: 6305,
+  /** Drawing nonce is stale or reused for different content. Re-read before retrying. */
+  STALE_SOCIAL_FEED_DRAWING_UPDATE: 6306,
   /** Invalid social feed parameters, including missing fields, invalid types/formats, filters, or Content-Type. */
   INVALID_SOCIAL_FEED_PARAMS: 6310,
   /** Session, credential, viewing account, cursor, source, or viewport mismatch; also a request sequence or viewport revision rollback. */
@@ -56,8 +66,26 @@ export const MOBILE_ERROR_CODES = {
   SOCIAL_FEED_SESSION_EXPIRED: 6312,
   /** Content does not exist or is not currently accessible. */
   SOCIAL_FEED_CONTENT_UNAVAILABLE: 6313,
+  /** Position no longer qualifies for publication or a new attachment. */
+  SOCIAL_FEED_POSITION_CLOSED: 6314,
+  /** Selected position does not belong to the signed author. */
+  SOCIAL_FEED_POSITION_NOT_OWNED: 6315,
+  /** Item or action does not support the requested operation. */
+  INVALID_SOCIAL_FEED_OPERATION: 6316,
+  /** Published body cannot be edited; existing drawings may still be updated. */
+  SOCIAL_FEED_CONTENT_ALREADY_PUBLISHED: 6317,
+  /** Mention offsets, mentioned identity, or reply relationship is invalid. */
+  INVALID_SOCIAL_FEED_MENTION: 6318,
+  /** Author-scoped request ID was already used with different content. */
+  SOCIAL_FEED_REQUEST_CONFLICT: 6319,
   /** Required authoritative position, action, cohort, or market data is unavailable. */
   SOCIAL_FEED_DATA_UNAVAILABLE: 6320,
+  /** Text or mention count exceeds the operation's limit. */
+  SOCIAL_FEED_CONTENT_TOO_LARGE: 6321,
+  /** Like nonce is stale or reused with a different state. */
+  STALE_SOCIAL_FEED_LIKE_UPDATE: 6322,
+  /** A post has neither nonblank text nor a drawing, or a comment is blank. */
+  EMPTY_SOCIAL_FEED_CONTENT: 6323,
   /** Feed reads are only available through public_query. */
   SOCIAL_FEED_QUERY_REMOVED: 6325,
 } as const;
