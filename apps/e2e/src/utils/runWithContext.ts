@@ -16,7 +16,7 @@ import {
   TRIGGER_CLIENT_ENDPOINTS,
   TriggerClient,
 } from '@nadohq/trigger-client';
-import { createPublicClient, createWalletClient, fallback, http } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
 import { nonceManager, privateKeyToAccount } from 'viem/accounts';
 import { env } from './env';
 import { RunContext } from './types';
@@ -35,32 +35,16 @@ export function createTestContext(): RunContext {
 
   const account = privateKeyToAccount(env.privateKey, { nonceManager });
   const chain = CHAIN_ENV_TO_CHAIN[env.chainEnv];
-  const createTransport = () =>
-    env.chainEnv === 'inkTestnet'
-      ? fallback(
-          [
-            http('https://rpc-qnd-sepolia.inkonchain.com', {
-              timeout: 10_000,
-              retryCount: 0,
-            }),
-            http('https://rpc-ten-sepolia.inkonchain.com', {
-              timeout: 10_000,
-              retryCount: 0,
-            }),
-          ],
-          { retryCount: 0 },
-        )
-      : http();
 
   const walletClient = createWalletClient({
     account,
     chain,
-    transport: createTransport(),
+    transport: http(),
   });
 
   const publicClient = createPublicClient({
     chain,
-    transport: createTransport(),
+    transport: http(),
   }) as RunContext['publicClient'];
 
   const endpoints = {
