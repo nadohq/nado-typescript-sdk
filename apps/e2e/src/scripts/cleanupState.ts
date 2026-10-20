@@ -6,7 +6,12 @@ const { engine, trigger, walletClientAddress, endpointAddr, chainId } =
 
 await cleanupTestState(
   { engine, trigger },
-  { subaccountOwner: walletClientAddress, endpointAddr, chainId },
+  {
+    subaccountOwner: walletClientAddress,
+    subaccountName: process.argv[2],
+    endpointAddr,
+    chainId,
+  },
 );
 
 console.log('Cleanup complete.');

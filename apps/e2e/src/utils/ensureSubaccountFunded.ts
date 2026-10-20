@@ -9,12 +9,13 @@ import { waitForTransaction } from './waitForTransaction';
  * subaccount. Intended for test environment setup on testnet.
  *
  * @param context - The test run context providing wallet and chain clients.
+ * @param subaccountName - Subaccount to fund; defaults to the shared E2E account.
  */
 export async function ensureSubaccountFunded(
   context: RunContext,
+  subaccountName = TEST_SUBACCOUNT_NAME,
 ): Promise<void> {
   const depositAmount = addDecimals(1000, 6);
-  const subaccountName = TEST_SUBACCOUNT_NAME;
 
   const nadoClient: NadoClient = createNadoClient(
     { chainEnv: context.env.chainEnv },

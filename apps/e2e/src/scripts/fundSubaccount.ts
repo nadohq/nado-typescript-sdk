@@ -2,6 +2,6 @@ import { ensureSubaccountFunded } from '../utils/ensureSubaccountFunded';
 import { createTestContext } from '../utils/runWithContext';
 
 const context = createTestContext();
-await ensureSubaccountFunded(context);
+await ensureSubaccountFunded(context, process.argv[2]);
 
 console.log('Subaccount funded successfully.');

@@ -8,9 +8,12 @@ import {
   MobileSocialFeedReadSession,
 } from '@nadohq/mobile-client';
 import {
+  addDecimals,
   getOrderNonce,
   getOrderVerifyingAddress,
   packOrderAppendix,
+  ProductEngineType,
+  QUOTE_PRODUCT_ID,
   Subaccount,
 } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
@@ -30,18 +33,24 @@ import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
 import { getExpiration } from '../utils/getExpiration';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
+import {
+  getMobilePositionTestOrder,
+  MOBILE_POSITION_SUBACCOUNT_NAME,
+  MOBILE_POSITION_WAIT_MS,
+  waitForMobilePositionRead,
+} from '../utils/mobilePositionTestUtils';
 import { createTestContext } from '../utils/runWithContext';
 import {
+  PENDING_TRIGGER_STATUS_TYPES,
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
-  TEST_SUBACCOUNT_NAME,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
 void describe(
   '[mobile-client]: social content and position history',
-  { timeout: TEST_TIMEOUTS.LONG * 3 },
+  { timeout: TEST_TIMEOUTS.LONG * 8 },
   () => {
     let tc: RunContext;
     let mobile: MobileClient;
@@ -51,14 +60,24 @@ void describe(
       await delay(TEST_DELAYS.LONG);
       tc = createTestContext();
       mobile = new MobileClient({ url: tc.endpoints.mobile });
+      mobile.axiosInstance.defaults.timeout = TEST_TIMEOUTS.DEFAULT;
       viewAs = {
         subaccountOwner: tc.walletClientAddress,
-        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountName: MOBILE_POSITION_SUBACCOUNT_NAME,
       };
+      await assertPositionTestSubaccountClean(tc, viewAs);
     });
 
     void test('reads selected-account positions and resolves commands without a wallet', async () => {
-      const positions = await mobile.getSelfFeedPositions({ viewAs, limit: 2 });
+      const readDeadline = Date.now() + MOBILE_POSITION_WAIT_MS;
+      const readOptions = () => ({
+        phase: 'selected-account position reads before any order',
+        timeoutMs: Math.max(0, readDeadline - Date.now()),
+      });
+      const positions = await waitForMobilePositionRead(
+        () => mobile.getSelfFeedPositions({ viewAs, limit: 2 }),
+        readOptions(),
+      );
       debugPrint('Publishable positions', positions);
       assert.ok(positions.positions.length <= 2);
       assertNonNegativeInteger(positions.asOfMs, 'positions.asOfMs');
@@ -72,18 +91,27 @@ void describe(
         assertBoolean(candidate.canDrawAnalysis, 'candidate.canDrawAnalysis');
       }
       if (positions.nextCursor !== null) {
-        const next = await mobile.getSelfFeedPositions({
-          viewAs,
-          limit: 2,
-          cursor: positions.nextCursor,
-        });
+        const cursor = positions.nextCursor;
+        const next = await waitForMobilePositionRead(
+          () =>
+            mobile.getSelfFeedPositions({
+              viewAs,
+              limit: 2,
+              cursor,
+            }),
+          readOptions(),
+        );
         assert.ok(Array.isArray(next.positions));
       }
-      const resolved = await mobile.resolveFeedPosition({
-        viewAs,
-        input: '/position',
-        productId: TEST_PRODUCT_IDS.PERP_BTC,
-      });
+      const resolved = await waitForMobilePositionRead(
+        () =>
+          mobile.resolveFeedPosition({
+            viewAs,
+            input: '/position',
+            productId: TEST_PRODUCT_IDS.PERP_BTC,
+          }),
+        readOptions(),
+      );
       debugPrint('Position command', resolved);
       assertEnumMember(
         resolved.resolution,
@@ -92,10 +120,14 @@ void describe(
       );
       for (const candidate of resolved.candidates)
         assertPosition(candidate.position);
-      const unknown = await mobile.resolveFeedPosition({
-        viewAs,
-        input: '/sdkunknownmarket',
-      });
+      const unknown = await waitForMobilePositionRead(
+        () =>
+          mobile.resolveFeedPosition({
+            viewAs,
+            input: '/sdkunknownmarket',
+          }),
+        readOptions(),
+      );
       assert.equal(unknown.resolution, 'unknown_market');
       assert.equal(unknown.product, null);
       assert.deepEqual(unknown.candidates, []);
@@ -357,114 +389,122 @@ void describe(
       }
     });
 
-    void test('publishes idempotently, adds and replaces drawing data, comments, likes, and records exposures', async (context) => {
-      context.after(async () => {
-        await cleanupTestState(
-          { engine: tc.engine, trigger: tc.trigger },
-          {
-            subaccountOwner: tc.walletClientAddress,
-            subaccountName: TEST_SUBACCOUNT_NAME,
-            endpointAddr: tc.endpointAddr,
-            chainId: tc.chainId,
+    void test(
+      'publishes idempotently, adds and replaces drawing data, comments, likes, and records exposures',
+      { timeout: TEST_TIMEOUTS.LONG * 5 },
+      async (context) => {
+        await assertPositionTestSubaccountClean(tc, viewAs);
+        context.after(
+          async () => {
+            await cleanupTestState(
+              { engine: tc.engine, trigger: tc.trigger },
+              {
+                ...viewAs,
+                endpointAddr: tc.endpointAddr,
+                chainId: tc.chainId,
+              },
+            );
+            await assertPositionTestSubaccountClean(tc, viewAs);
           },
+          { timeout: TEST_TIMEOUTS.LONG },
         );
-      });
-      const candidate = await openPublishablePosition(tc, mobile, viewAs);
-      const signed = getMobileSignedParams(tc);
-      const params = {
-        ...signed,
-        clientRequestId: randomUUID(),
-        positionId: candidate.position.positionId,
-        text: 'SDK integration verification',
-        mentions: [],
-      };
-      const post = await tc.mobile.createFeedPost(params);
-      assert.equal(post.kind, 'post');
-      assert.equal((await tc.mobile.createFeedPost(params)).id, post.id);
-      await assertRejectsWithMobileErrorCode(
-        () =>
-          tc.mobile.createFeedPost({
-            ...params,
-            text: 'Different retry content',
-          }),
-        MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
-      );
-      const drawingParams = {
-        ...signed,
-        itemId: post.id,
-        dataJson: 'false',
-        nonce: getMobileNonce(),
-      };
-      const created = await tc.mobile.createFeedChartDrawing(drawingParams);
-      assert.equal(created.drawing.data, false);
-      assert.deepEqual(
-        await tc.mobile.createFeedChartDrawing(drawingParams),
-        created,
-      );
-      const updated = await tc.mobile.updateFeedChartDrawing({
-        ...signed,
-        itemId: post.id,
-        dataJson: '0',
-      });
-      assert.equal(updated.drawing.data, 0);
-      assert.equal(
-        (await mobile.getFeedChartDrawing({ itemId: post.id, viewAs })).drawing
-          ?.data,
-        0,
-      );
-      const commentParams = {
-        ...signed,
-        clientRequestId: randomUUID(),
-        rootItemId: post.id,
-        text: 'SDK comment verification',
-        mentions: [],
-      };
-      const comment = await tc.mobile.createFeedComment(commentParams);
-      assert.equal(comment.comment.rootItemId, post.id);
-      assert.equal(
-        (await tc.mobile.createFeedComment(commentParams)).comment.id,
-        comment.comment.id,
-      );
-      const liked = await tc.mobile.setFeedLike({
-        ...signed,
-        itemId: post.id,
-        isLiked: true,
-      });
-      assert.equal(liked.isLiked, true);
-      const retriedLike = await tc.mobile.setFeedLike({
-        ...signed,
-        itemId: post.id,
-        isLiked: true,
-      });
-      assert.deepEqual(retriedLike, liked);
-      const unliked = await tc.mobile.setFeedLike({
-        ...signed,
-        itemId: post.id,
-        isLiked: false,
-      });
-      assert.equal(unliked.isLiked, false);
-      const detail = await mobile.getFeedItem({ itemId: post.id, viewAs });
-      const session = getSessionParams(detail.readSession);
-      await delay(detail.readSession.viewTracking.minDurationMs);
-      const recorded = await mobile.recordFeedViews({
-        ...session,
-        itemIds: [post.id],
-      });
-      assert.ok(
-        recorded.acceptedItemIds.includes(post.id) ||
-          recorded.duplicateItemIds.includes(post.id),
-      );
-      const duplicate = await mobile.recordFeedViews({
-        ...session,
-        itemIds: [post.id],
-      });
-      assert.ok(duplicate.duplicateItemIds.includes(post.id));
-      debugPrint('Published content verification', {
-        postId: post.id,
-        commentId: comment.comment.id,
-        rootCommentCount: comment.rootCommentCount,
-      });
-    });
+        const candidate = await openPublishablePosition(tc, mobile, viewAs);
+        const signed = { ...getMobileSignedParams(tc), ...viewAs };
+        const params = {
+          ...signed,
+          clientRequestId: randomUUID(),
+          positionId: candidate.position.positionId,
+          text: 'SDK integration verification',
+          mentions: [],
+        };
+        const post = await tc.mobile.createFeedPost(params);
+        assert.equal(post.kind, 'post');
+        assert.equal((await tc.mobile.createFeedPost(params)).id, post.id);
+        await assertRejectsWithMobileErrorCode(
+          () =>
+            tc.mobile.createFeedPost({
+              ...params,
+              text: 'Different retry content',
+            }),
+          MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
+        );
+        const drawingParams = {
+          ...signed,
+          itemId: post.id,
+          dataJson: 'false',
+          nonce: getMobileNonce(),
+        };
+        const created = await tc.mobile.createFeedChartDrawing(drawingParams);
+        assert.equal(created.drawing.data, false);
+        assert.deepEqual(
+          await tc.mobile.createFeedChartDrawing(drawingParams),
+          created,
+        );
+        const updated = await tc.mobile.updateFeedChartDrawing({
+          ...signed,
+          itemId: post.id,
+          dataJson: '0',
+        });
+        assert.equal(updated.drawing.data, 0);
+        assert.equal(
+          (await mobile.getFeedChartDrawing({ itemId: post.id, viewAs }))
+            .drawing?.data,
+          0,
+        );
+        const commentParams = {
+          ...signed,
+          clientRequestId: randomUUID(),
+          rootItemId: post.id,
+          text: 'SDK comment verification',
+          mentions: [],
+        };
+        const comment = await tc.mobile.createFeedComment(commentParams);
+        assert.equal(comment.comment.rootItemId, post.id);
+        assert.equal(
+          (await tc.mobile.createFeedComment(commentParams)).comment.id,
+          comment.comment.id,
+        );
+        const liked = await tc.mobile.setFeedLike({
+          ...signed,
+          itemId: post.id,
+          isLiked: true,
+        });
+        assert.equal(liked.isLiked, true);
+        const retriedLike = await tc.mobile.setFeedLike({
+          ...signed,
+          itemId: post.id,
+          isLiked: true,
+        });
+        assert.deepEqual(retriedLike, liked);
+        const unliked = await tc.mobile.setFeedLike({
+          ...signed,
+          itemId: post.id,
+          isLiked: false,
+        });
+        assert.equal(unliked.isLiked, false);
+        const detail = await mobile.getFeedItem({ itemId: post.id, viewAs });
+        const session = getSessionParams(detail.readSession);
+        await delay(detail.readSession.viewTracking.minDurationMs);
+        const recorded = await mobile.recordFeedViews({
+          ...session,
+          itemIds: [post.id],
+        });
+        assert.ok(
+          recorded.acceptedItemIds.includes(post.id) ||
+            recorded.duplicateItemIds.includes(post.id),
+        );
+        const duplicate = await mobile.recordFeedViews({
+          ...session,
+          itemIds: [post.id],
+        });
+        assert.ok(duplicate.duplicateItemIds.includes(post.id));
+        debugPrint('Published content verification', {
+          postId: post.id,
+          commentId: comment.comment.id,
+          rootCommentCount: comment.rootCommentCount,
+        });
+      },
+    );
   },
 );
 
@@ -474,11 +514,15 @@ async function openPublishablePosition(
   viewAs: Subaccount,
 ): Promise<MobileSocialFeedPublishablePosition> {
   const productId = TEST_PRODUCT_IDS.PERP_BTC;
-  const existing = await mobile.getSelfFeedPositions({
-    viewAs,
-    productId,
-    limit: 50,
-  });
+  const existing = await waitForMobilePositionRead(
+    () =>
+      mobile.getSelfFeedPositions({
+        viewAs,
+        productId,
+        limit: 50,
+      }),
+    { phase: 'pre-order position baseline' },
+  );
   const existingIds = new Set(
     existing.positions.map((candidate) => candidate.position.positionId),
   );
@@ -488,18 +532,15 @@ async function openPublishablePosition(
     market,
     'BTC perpetual market must exist to open the test position',
   );
-  const amount = BigNumber.maximum(
-    market.minSize.div(market.product.oraclePrice),
-    market.sizeIncrement,
-  )
-    .div(market.sizeIncrement)
-    .integerValue(BigNumber.ROUND_CEIL)
-    .multipliedBy(market.sizeIncrement);
-  const price = market.product.oraclePrice
-    .multipliedBy(1.1)
-    .div(market.priceIncrement)
-    .integerValue(BigNumber.ROUND_CEIL)
-    .multipliedBy(market.priceIncrement);
+  const { amount, price } = getMobilePositionTestOrder(market);
+  const summary = await context.engine.getSubaccountSummary(viewAs);
+  const collateral = summary.balances.find(
+    (balance) => balance.productId === QUOTE_PRODUCT_ID,
+  );
+  assert.ok(
+    collateral && collateral.amount.gte(addDecimals('50')),
+    'Fund the dedicated test subaccount first: bun --cwd apps/e2e fund e2emobfeed',
+  );
   const opened = await context.engine.placeOrder({
     productId,
     verifyingAddr: getOrderVerifyingAddress(productId),
@@ -526,25 +567,72 @@ async function openPublishablePosition(
     'success',
     'IOC order should open the test position',
   );
-  const deadline = Date.now() + TEST_TIMEOUTS.DEFAULT;
-  while (Date.now() < deadline) {
-    const positions = await mobile.getSelfFeedPositions({
-      viewAs,
-      productId,
-      limit: 50,
-    });
-    const candidate = positions.positions.find(
-      (position) =>
-        !existingIds.has(position.position.positionId) &&
-        position.position.marginMode === 'isolated' &&
-        position.canPublish &&
-        position.canDrawAnalysis,
-    );
-    if (candidate) return candidate;
-    await delay(TEST_DELAYS.LONG);
-  }
-  throw new Error(
-    'The IOC order did not produce a new publishable position before the projection deadline',
+  const isNewPublishablePosition = (
+    position: MobileSocialFeedPublishablePosition,
+  ) =>
+    !existingIds.has(position.position.positionId) &&
+    position.position.marginMode === 'isolated' &&
+    position.canPublish &&
+    position.canDrawAnalysis;
+  const positions = await waitForMobilePositionRead(
+    () =>
+      mobile.getSelfFeedPositions({
+        viewAs,
+        productId,
+        limit: 50,
+      }),
+    {
+      phase: 'post-order publishable position projection',
+      isReady: (page) => page.positions.some(isNewPublishablePosition),
+    },
+  );
+  const candidate = positions.positions.find(isNewPublishablePosition);
+  assert.ok(
+    candidate,
+    'The completed read must contain the new publishable position',
+  );
+  return candidate;
+}
+
+async function assertPositionTestSubaccountClean(
+  context: RunContext,
+  subaccount: Subaccount,
+): Promise<void> {
+  const { symbols } = await context.engine.getSymbols({});
+  const orders = await context.engine.getSubaccountMultiProductOrders({
+    ...subaccount,
+    productIds: Object.values(symbols)
+      .filter((symbol) => symbol.productId !== QUOTE_PRODUCT_ID)
+      .map((symbol) => symbol.productId),
+  });
+  assert.ok(
+    orders.productOrders.every((product) => product.orders.length === 0),
+    'Dedicated Mobile test subaccount has leftover engine orders; clean it before running',
+  );
+  const triggerOrders = await context.trigger.listOrders({
+    ...subaccount,
+    chainId: context.chainId,
+    verifyingAddr: context.endpointAddr,
+    statusTypes: PENDING_TRIGGER_STATUS_TYPES,
+    limit: 1,
+  });
+  assert.equal(
+    triggerOrders.orders.length,
+    0,
+    'Dedicated Mobile test subaccount has leftover trigger orders; clean it before running',
+  );
+  const summary = await context.engine.getSubaccountSummary(subaccount);
+  assert.ok(
+    summary.balances.every(
+      (balance) =>
+        balance.type !== ProductEngineType.PERP || balance.amount.isZero(),
+    ),
+    'Dedicated Mobile test subaccount has an open cross position',
+  );
+  const isolated = await context.engine.getIsolatedPositions(subaccount);
+  assert.ok(
+    isolated.every((position) => position.baseBalance.amount.isZero()),
+    'Dedicated Mobile test subaccount has an open isolated position',
   );
 }
 
