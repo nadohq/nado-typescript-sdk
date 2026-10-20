@@ -2,6 +2,7 @@ import {
   getMobileNonce,
   MOBILE_ERROR_CODES,
   MobileClient,
+  MobileServerFailureError,
   MobileSocialFeedItem,
   MobileSocialFeedPositionCard,
   MobileSocialFeedPublishablePosition,
@@ -528,12 +529,14 @@ async function openPublishablePosition(
   );
   const deadline = Date.now() + TEST_TIMEOUTS.DEFAULT;
   while (Date.now() < deadline) {
-    const positions = await mobile.getSelfFeedPositions({
-      viewAs,
-      productId,
-      limit: 50,
-    });
-    const candidate = positions.positions.find(
+    const positions = await mobile
+      .getSelfFeedPositions({ viewAs, productId, limit: 50 })
+      .catch((error: unknown) => {
+        // The new fill is still being projected; poll again
+        if (isFeedDataUnavailable(error)) return undefined;
+        throw error;
+      });
+    const candidate = positions?.positions.find(
       (position) =>
         !existingIds.has(position.position.positionId) &&
         position.position.marginMode === 'isolated' &&
@@ -545,6 +548,13 @@ async function openPublishablePosition(
   }
   throw new Error(
     'The IOC order did not produce a new publishable position before the projection deadline',
+  );
+}
+
+function isFeedDataUnavailable(error: unknown): boolean {
+  return (
+    error instanceof MobileServerFailureError &&
+    error.errorCode === MOBILE_ERROR_CODES.SOCIAL_FEED_DATA_UNAVAILABLE
   );
 }
 
