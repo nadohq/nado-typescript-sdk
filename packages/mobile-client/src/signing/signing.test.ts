@@ -588,6 +588,16 @@ describe('[mobile-client]: social content signing', () => {
 
   const payloads: MobileSignedInner[] = [
     {
+      type: 'create_feed_post_image_uploads',
+      content_hash:
+        '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
+    {
+      type: 'create_feed_comment_image_uploads',
+      content_hash:
+        '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
+    {
       type: 'create_feed_post',
       client_request_id: requestId,
       position_id: positionId,

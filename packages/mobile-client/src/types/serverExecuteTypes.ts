@@ -81,16 +81,16 @@ export interface MobileServerAvatarUploadResponse {
   expires_in_seconds: number;
 }
 
-/**
- * Success payloads for each signed `execute`, keyed by request `type`. Mutations return either the success
- * envelope alone or authoritative post-commit state; avatar upload creation returns a temporary grant.
- */
 /** Ready image returned by a direct multipart upload. */
 export interface MobileServerSocialFeedImageUploadResponse {
   /** Ready image metadata, including original and thumbnail paths. */
   image: MobileServerSocialFeedImage;
 }
 
+/**
+ * Success payloads for each signed `execute`, keyed by request `type`. Mutations return either the success
+ * envelope alone or authoritative post-commit state; avatar upload creation returns a temporary grant.
+ */
 export interface MobileServerExecuteResponseByType {
   /** Published or idempotently recovered item. */
   create_feed_post: MobileServerSocialFeedPostResponse;

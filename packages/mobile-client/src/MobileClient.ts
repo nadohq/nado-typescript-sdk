@@ -5,7 +5,7 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { keccak256 } from 'viem';
+import { bytesToString, keccak256 } from 'viem';
 import {
   mapMobileAvatarPreset,
   mapMobileAvatarSelectionToServer,
@@ -1125,7 +1125,16 @@ export class MobileClient {
         },
       },
     );
-    this.checkResponseStatus(response);
+    if (response.status < 200 || response.status >= 300) {
+      const responseText = bytesToString(new Uint8Array(response.data));
+      let errorData: unknown;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = responseText;
+      }
+      this.checkResponseStatus({ ...response, data: errorData });
+    }
     return new Uint8Array(response.data);
   }
 
@@ -1319,6 +1328,10 @@ export class MobileClient {
   /**
    * Posts a signed execute as multipart/form-data: `payload` (JSON) + `file` (raw bytes).
    * Built without DOM FormData/Blob so Node, browsers, and React Native share one path.
+   * @param body - Signed execute payload with the original file's content hash.
+   * @param params - Original file bytes and optional multipart filename.
+   * @returns The successful execute response.
+   * @throws {MobileServerFailureError} If the service rejects the upload.
    */
   protected async executeMultipart<T extends MobileServerExecuteRequestType>(
     body: MobileSignedRequest & { type: T },

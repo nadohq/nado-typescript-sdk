@@ -830,7 +830,7 @@ export type MobileSocialFeedItem =
   | MobileSocialFeedPost
   | MobileSocialFeedReply;
 
-/** Fixed-duration social feed reading session. Credentials and cursors must be returned unchanged. */
+/** Idle-renewed social feed reading session. Credentials and cursors must be returned unchanged. */
 export interface MobileSocialFeedReadSession {
   /** Session identifier. */
   sessionId: string;

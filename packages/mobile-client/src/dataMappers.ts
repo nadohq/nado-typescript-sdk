@@ -753,7 +753,7 @@ export function mapMobileSocialFeedItem(
 }
 
 /**
- * Maps a fixed reading session, preserving opaque credentials and cursors.
+ * Maps a reading session and its current idle expiration, preserving opaque credentials and cursors.
  * @param server - The service response.
  * @returns The mapped feed read session.
  */

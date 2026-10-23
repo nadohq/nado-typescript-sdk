@@ -4,12 +4,12 @@
  */
 function encodeAscii(value: string): Uint8Array {
   const bytes = new Uint8Array(value.length);
-  for (let i = 0; i < value.length; i += 1) {
-    const code = value.charCodeAt(i);
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
     if (code > 0x7f) {
       throw new Error('multipart preamble must be ASCII');
     }
-    bytes[i] = code;
+    bytes[index] = code;
   }
   return bytes;
 }

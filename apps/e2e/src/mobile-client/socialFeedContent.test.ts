@@ -17,6 +17,7 @@ import {
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { before, describe, test } from 'node:test';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
@@ -358,7 +359,65 @@ void describe(
       }
     });
 
-    void test('publishes idempotently, adds and replaces drawing data, comments, likes, and records exposures', async (context) => {
+    void test('uploads ready images for posts and comments', async () => {
+      const fileBytes = new Uint8Array(
+        await readFile(new URL('./fixtures/avatar.jpg', import.meta.url)),
+      );
+      const signed = getMobileSignedParams(tc);
+      for (const upload of [
+        tc.mobile.createFeedPostImageUpload.bind(tc.mobile),
+        tc.mobile.createFeedCommentImageUpload.bind(tc.mobile),
+      ]) {
+        const image = await upload({
+          ...signed,
+          fileBytes,
+          fileName: 'feed.jpg',
+        });
+        assertNonEmptyString(image.imageId, 'image.imageId');
+        assert.equal(image.contentType, 'image/jpeg');
+        assert.equal(image.byteSize, fileBytes.byteLength);
+        assert.ok(image.width > 0 && image.height > 0);
+        assert.ok(image.thumbnail.width > 0 && image.thumbnail.height > 0);
+        assert.ok(
+          Math.max(image.thumbnail.width, image.thumbnail.height) <= 512,
+        );
+        assertNonEmptyString(image.url, 'image.url');
+        assertNonEmptyString(image.thumbnail.url, 'image.thumbnail.url');
+      }
+    });
+
+    void test('rejects invalid image uploads and preserves protected image errors', async () => {
+      const signed = getMobileSignedParams(tc);
+      for (const upload of [
+        tc.mobile.createFeedPostImageUpload.bind(tc.mobile),
+        tc.mobile.createFeedCommentImageUpload.bind(tc.mobile),
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () => upload({ ...signed, fileBytes: new Uint8Array([1, 2, 3]) }),
+          MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_IMAGE,
+        );
+      }
+      const page = await mobile.getForYouFeed({ viewAs, limit: 1 });
+      await assert.rejects(
+        () =>
+          mobile.getFeedImageBytes({
+            ...getSessionParams(page.readSession),
+            path: `/v1/mobile/feed/images/${randomUUID()}/standard`,
+          }),
+        (error: unknown) => {
+          assert.ok(error instanceof MobileServerFailureError);
+          assert.equal(
+            error.errorCode,
+            MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+          );
+          assert.equal(error.httpStatus, 404);
+          assert.equal(error.requestType, 'feed_image');
+          return true;
+        },
+      );
+    });
+
+    void test('publishes images idempotently, reads originals and thumbnails, updates drawings, comments, likes, and records exposures', async (context) => {
       context.after(async () => {
         await cleanupTestState(
           { engine: tc.engine, trigger: tc.trigger },
@@ -372,15 +431,30 @@ void describe(
       });
       const candidate = await openPublishablePosition(tc, mobile, viewAs);
       const signed = getMobileSignedParams(tc);
+      const fileBytes = new Uint8Array(
+        await readFile(new URL('./fixtures/avatar.jpg', import.meta.url)),
+      );
+      const postImage = await tc.mobile.createFeedPostImageUpload({
+        ...signed,
+        fileBytes,
+        fileName: 'post.jpg',
+      });
+      assert.equal(postImage.contentType, 'image/jpeg');
+      assert.equal(postImage.byteSize, fileBytes.byteLength);
       const params = {
         ...signed,
         clientRequestId: randomUUID(),
         positionId: candidate.position.positionId,
         text: 'SDK integration verification',
         mentions: [],
+        imageIds: [postImage.imageId],
       };
       const post = await tc.mobile.createFeedPost(params);
-      assert.equal(post.kind, 'post');
+      assert.ok(post.kind === 'post');
+      assert.deepEqual(
+        post.images.map((image) => image.imageId),
+        params.imageIds,
+      );
       assert.equal((await tc.mobile.createFeedPost(params)).id, post.id);
       await assertRejectsWithMobileErrorCode(
         () =>
@@ -413,15 +487,25 @@ void describe(
           ?.data,
         0,
       );
+      const commentImage = await tc.mobile.createFeedCommentImageUpload({
+        ...signed,
+        fileBytes,
+        fileName: 'comment.jpg',
+      });
       const commentParams = {
         ...signed,
         clientRequestId: randomUUID(),
         rootItemId: post.id,
         text: 'SDK comment verification',
         mentions: [],
+        imageIds: [commentImage.imageId],
       };
       const comment = await tc.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
+      assert.deepEqual(
+        comment.comment.images.map((image) => image.imageId),
+        commentParams.imageIds,
+      );
       assert.equal(
         (await tc.mobile.createFeedComment(commentParams)).comment.id,
         comment.comment.id,
@@ -446,6 +530,47 @@ void describe(
       assert.equal(unliked.isLiked, false);
       const detail = await mobile.getFeedItem({ itemId: post.id, viewAs });
       const session = getSessionParams(detail.readSession);
+      assert.ok(detail.item.kind === 'post');
+      assert.deepEqual(
+        detail.item.images.map((image) => image.imageId),
+        params.imageIds,
+      );
+      assert.deepEqual(
+        await mobile.getFeedImageBytes({
+          ...session,
+          path: detail.item.images[0].url,
+        }),
+        fileBytes,
+      );
+      assert.ok(
+        (
+          await mobile.getFeedImageBytes({
+            ...session,
+            path: detail.item.images[0].thumbnail.url,
+          })
+        ).byteLength > 0,
+      );
+      const commentDetail = await mobile.getFeedItem({
+        itemId: comment.comment.id,
+        viewAs,
+      });
+      assert.ok(commentDetail.item.kind === 'reply');
+      const commentSession = getSessionParams(commentDetail.readSession);
+      assert.deepEqual(
+        await mobile.getFeedImageBytes({
+          ...commentSession,
+          path: commentDetail.item.images[0].url,
+        }),
+        fileBytes,
+      );
+      assert.ok(
+        (
+          await mobile.getFeedImageBytes({
+            ...commentSession,
+            path: commentDetail.item.images[0].thumbnail.url,
+          })
+        ).byteLength > 0,
+      );
       assert.equal(detail.readSession.viewTracking.mode, 'detail_visit');
       const recorded = await mobile.recordFeedViews({
         ...session,
