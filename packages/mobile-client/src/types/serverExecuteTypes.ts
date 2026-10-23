@@ -6,6 +6,7 @@ import {
 import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedDrawing,
+  MobileServerSocialFeedImage,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedReply,
 } from './serverModelTypes';
@@ -84,11 +85,21 @@ export interface MobileServerAvatarUploadResponse {
  * Success payloads for each signed `execute`, keyed by request `type`. Mutations return either the success
  * envelope alone or authoritative post-commit state; avatar upload creation returns a temporary grant.
  */
+/** Ready image returned by a direct multipart upload. */
+export interface MobileServerSocialFeedImageUploadResponse {
+  /** Ready image metadata, including original and thumbnail paths. */
+  image: MobileServerSocialFeedImage;
+}
+
 export interface MobileServerExecuteResponseByType {
   /** Published or idempotently recovered item. */
   create_feed_post: MobileServerSocialFeedPostResponse;
   /** Atomically published reply and updated count. */
   create_feed_comment: MobileServerSocialFeedCommentResponse;
+  /** Direct post-image upload; the image is ready immediately. */
+  create_feed_post_image_uploads: MobileServerSocialFeedImageUploadResponse;
+  /** Direct comment-image upload; the image is ready immediately. */
+  create_feed_comment_image_uploads: MobileServerSocialFeedImageUploadResponse;
   /** First attached drawing. */
   create_feed_chart_drawing: MobileServerSocialFeedDrawingMutationResponse;
   /** Replaced or idempotently recovered drawing. */

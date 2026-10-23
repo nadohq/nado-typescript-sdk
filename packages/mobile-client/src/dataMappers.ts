@@ -31,6 +31,7 @@ import {
   MobileSocialFeedDrawingResult,
   MobileSocialFeedHistoryMetrics,
   MobileSocialFeedHistoryTake,
+  MobileSocialFeedImage,
   MobileSocialFeedInteraction,
   MobileSocialFeedItem,
   MobileSocialFeedItemBase,
@@ -76,6 +77,7 @@ import {
   MobileServerFollowMutationResponse,
   MobileServerSocialFeedCommentResponse,
   MobileServerSocialFeedDrawingMutationResponse,
+  MobileServerSocialFeedImageUploadResponse,
   MobileServerSocialFeedLikeResponse,
   MobileServerSocialFeedPresenceResponse,
   MobileServerSocialFeedViewsResponse,
@@ -98,6 +100,7 @@ import {
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedHistoryMetrics,
   MobileServerSocialFeedHistoryTake,
+  MobileServerSocialFeedImage,
   MobileServerSocialFeedInteraction,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemBase,
@@ -569,6 +572,40 @@ export function mapMobileSocialFeedInteraction(
 }
 
 /**
+ * Maps uploaded image metadata; bytes remain behind a protected GET.
+ * @param server - The service response.
+ * @returns The mapped feed image.
+ */
+export function mapMobileSocialFeedImage(
+  server: MobileServerSocialFeedImage,
+): MobileSocialFeedImage {
+  return {
+    imageId: server.image_id,
+    url: server.url,
+    width: server.width,
+    height: server.height,
+    contentType: server.content_type,
+    byteSize: server.byte_size,
+    thumbnail: {
+      url: server.thumbnail.url,
+      width: server.thumbnail.width,
+      height: server.thumbnail.height,
+    },
+  };
+}
+
+/**
+ * Maps a ready image from a direct multipart upload.
+ * @param server - The service response.
+ * @returns The mapped ready image.
+ */
+export function mapMobileSocialFeedImageUpload(
+  server: MobileServerSocialFeedImageUploadResponse,
+): MobileSocialFeedImage {
+  return mapMobileSocialFeedImage(server.image);
+}
+
+/**
  * Maps common item metadata and server capabilities.
  * @param server - The service response.
  * @returns The mapped social feed item base.
@@ -606,6 +643,7 @@ export function mapMobileSocialFeedContentBase(
 ): MobileSocialFeedContentBase {
   return {
     ...mapMobileSocialFeedItemBase(server),
+    images: server.images.map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
     position: mapMobileSocialFeedPositionCard(server.position),
@@ -726,10 +764,7 @@ export function mapMobileSocialFeedReadSession(
     sessionId: server.session_id,
     mode: server.mode,
     expiresAtMs: server.expires_at_ms,
-    viewTracking: {
-      minVisibleRatio: server.view_tracking.min_visible_ratio,
-      minDurationMs: server.view_tracking.min_duration_ms,
-    },
+    viewTracking: { mode: server.view_tracking.mode },
     updateCursor: server.update_cursor,
     viewerToken: server.viewer_token,
   };
@@ -1023,6 +1058,7 @@ export function mapMobileSocialFeedReply(
   return {
     ...mapMobileSocialFeedItemBase(server),
     kind: server.kind,
+    images: server.images.map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
     rootItemId: server.root_item_id,

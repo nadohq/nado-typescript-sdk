@@ -5,6 +5,7 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { keccak256 } from 'viem';
 import {
   mapMobileAvatarPreset,
   mapMobileAvatarSelectionToServer,
@@ -26,6 +27,7 @@ import {
   mapMobileSocialFeedCommentsPage,
   mapMobileSocialFeedDrawingMutationResult,
   mapMobileSocialFeedDrawingResult,
+  mapMobileSocialFeedImageUpload,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedLikeResult,
@@ -54,6 +56,7 @@ import {
 import {
   GetMobileFeedChartDrawingParams,
   GetMobileFeedCommentsParams,
+  GetMobileFeedImageBytesParams,
   GetMobileFeedItemParams,
   GetMobileFeedParams,
   GetMobileFeedUpdatesParams,
@@ -77,6 +80,7 @@ import {
   MobileAvatarUpload,
   MobileCreateAvatarUploadParams,
   MobileCreateFeedCommentParams,
+  MobileCreateFeedImageUploadParams,
   MobileCreateFeedPostParams,
   MobileFeedChartDrawingParams,
   MobileFeedPage,
@@ -103,6 +107,7 @@ import {
   MobileSocialFeedCommentsPage,
   MobileSocialFeedDrawingMutationResult,
   MobileSocialFeedDrawingResult,
+  MobileSocialFeedImage,
   MobileSocialFeedItem,
   MobileSocialFeedItemResponse,
   MobileSocialFeedLikeResult,
@@ -143,6 +148,7 @@ import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
 } from './types/serverRequestTypes';
+import { buildMobileFeedImageMultipart } from './utils/buildMobileFeedImageMultipart';
 import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
@@ -792,7 +798,7 @@ export class MobileClient {
 
   /**
    * Reports qualified exposures without signing. Ordinary reads and root previews do not count as exposures.
-   * The caller must satisfy the session's viewTracking requirements before reporting an item.
+   * Report after the primary detail target is shown in the foreground (`viewTracking.mode` is `detail_visit`).
    * @param params - Original reading session and viewer token, plus one to fifty fully delivered, readable,
    * interactive item IDs. The service deduplicates repeated exposures.
    * @returns Separate lists of newly accepted and already-counted item IDs.
@@ -1044,8 +1050,83 @@ export class MobileClient {
       text: params.text,
       mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
       drawing_data_json: params.drawingDataJson,
+      image_ids: params.imageIds,
     });
     return mapMobileSocialFeedItem((await this.execute(request)).item);
+  }
+
+  /**
+   * Uploads one static JPEG/PNG for a later {@link createFeedPost} via multipart execute.
+   * The whole HTTP request must stay within 2 MiB including signature overhead; upload one file per call
+   * and bind up to nine ready IDs at publication. There is no complete/PUT step — success means ready.
+   * @param params - Author subaccount and signing options, plus the original file bytes.
+   * @returns Ready image metadata, including original and thumbnail paths.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication, format/size/hash errors (`INVALID_SOCIAL_FEED_IMAGE`),
+   * or when publishing is disabled (`SERVICE_UNAVAILABLE`).
+   */
+  async createFeedPostImageUpload(
+    params: MobileCreateFeedImageUploadParams,
+  ): Promise<MobileSocialFeedImage> {
+    return this.createFeedImageUpload('create_feed_post_image_uploads', params);
+  }
+
+  /**
+   * Uploads one static JPEG/PNG for a later {@link createFeedComment} via multipart execute.
+   * Same size and readiness rules as {@link createFeedPostImageUpload}; comment text remains required.
+   * @param params - Author subaccount and signing options, plus the original file bytes.
+   * @returns Ready image metadata, including original and thumbnail paths.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication, format/size/hash errors (`INVALID_SOCIAL_FEED_IMAGE`),
+   * or when comments are disabled (`SERVICE_UNAVAILABLE`).
+   */
+  async createFeedCommentImageUpload(
+    params: MobileCreateFeedImageUploadParams,
+  ): Promise<MobileSocialFeedImage> {
+    return this.createFeedImageUpload(
+      'create_feed_comment_image_uploads',
+      params,
+    );
+  }
+
+  /**
+   * Resolves a feed image path from {@link MobileSocialFeedImage} against this client's base URL.
+   * @param path - Relative backend path or absolute URL from image metadata.
+   * @returns An absolute URL suitable for authenticated fetches.
+   */
+  resolveFeedImageUrl(path: string): string {
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const stripped = path
+      .replace(/^\/v1\/mobile(?=\/)/, '')
+      .replace(/^\/mobile\/v1(?=\/)/, '');
+    const base = this.opts.url.replace(/\/$/, '');
+    return `${base}${stripped.startsWith('/') ? stripped : `/${stripped}`}`;
+  }
+
+  /**
+   * Fetches protected feed image bytes using the reading session that fully delivered the parent item.
+   * Does not count as a detail visit or recorded view.
+   * @param params - Image path from metadata plus the original session credentials.
+   * @returns Raw image bytes.
+   * @throws {MobileServerFailureError} On session, permission, or availability errors.
+   */
+  async getFeedImageBytes(
+    params: GetMobileFeedImageBytesParams,
+  ): Promise<Uint8Array> {
+    const response = await this.axiosInstance.get<ArrayBuffer>(
+      this.resolveFeedImageUrl(params.path),
+      {
+        responseType: 'arraybuffer',
+        headers: {
+          'x-feed-session-id': params.sessionId,
+          'x-feed-viewer-token': params.viewerToken,
+        },
+      },
+    );
+    this.checkResponseStatus(response);
+    return new Uint8Array(response.data);
   }
 
   /**
@@ -1119,6 +1200,7 @@ export class MobileClient {
       text: params.text,
       mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
       attached_position_id: params.attachedPositionId,
+      image_ids: params.imageIds,
     });
     return mapMobileSocialFeedCommentResult(await this.execute(request));
   }
@@ -1217,6 +1299,46 @@ export class MobileClient {
     this.checkServerStatus(response);
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
+    return response.data as MobileServerExecuteSuccessResponse<T>;
+  }
+
+  private async createFeedImageUpload(
+    type:
+      | 'create_feed_post_image_uploads'
+      | 'create_feed_comment_image_uploads',
+    params: MobileCreateFeedImageUploadParams,
+  ): Promise<MobileSocialFeedImage> {
+    const contentHash = keccak256(params.fileBytes);
+    const request = await this.getSignedRequest(type, params, {
+      content_hash: contentHash,
+    });
+    const data = await this.executeMultipart(request, params);
+    return mapMobileSocialFeedImageUpload(data);
+  }
+
+  /**
+   * Posts a signed execute as multipart/form-data: `payload` (JSON) + `file` (raw bytes).
+   * Built without DOM FormData/Blob so Node, browsers, and React Native share one path.
+   */
+  protected async executeMultipart<T extends MobileServerExecuteRequestType>(
+    body: MobileSignedRequest & { type: T },
+    params: Pick<MobileCreateFeedImageUploadParams, 'fileBytes' | 'fileName'>,
+  ): Promise<MobileServerExecuteSuccessResponse<T>> {
+    const { body: multipartBody, contentType } = buildMobileFeedImageMultipart(
+      JSON.stringify(body),
+      params.fileBytes,
+      params.fileName ?? 'image.bin',
+    );
+
+    const response = await this.axiosInstance.post<MobileServerExecuteResult>(
+      `${this.opts.url}/execute`,
+      multipartBody,
+      { headers: { 'Content-Type': contentType } },
+    );
+
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+
     return response.data as MobileServerExecuteSuccessResponse<T>;
   }
 

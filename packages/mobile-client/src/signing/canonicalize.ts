@@ -25,6 +25,9 @@ export function canonicalizeMobileInner(
         ...(inner.drawing_data_json === undefined
           ? {}
           : { drawing_data_json: inner.drawing_data_json }),
+        ...(inner.image_ids === undefined
+          ? {}
+          : { image_ids: [...inner.image_ids] }),
       };
     case 'create_feed_comment':
       return {
@@ -39,6 +42,15 @@ export function canonicalizeMobileInner(
         ...(inner.attached_position_id === undefined
           ? {}
           : { attached_position_id: inner.attached_position_id }),
+        ...(inner.image_ids === undefined
+          ? {}
+          : { image_ids: [...inner.image_ids] }),
+      };
+    case 'create_feed_post_image_uploads':
+    case 'create_feed_comment_image_uploads':
+      return {
+        type: inner.type,
+        content_hash: inner.content_hash,
       };
     case 'create_feed_chart_drawing':
     case 'update_feed_chart_drawing':

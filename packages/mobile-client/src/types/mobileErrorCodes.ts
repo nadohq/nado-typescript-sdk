@@ -88,6 +88,8 @@ export const MOBILE_ERROR_CODES = {
   EMPTY_SOCIAL_FEED_CONTENT: 6323,
   /** Feed reads are only available through public_query. */
   SOCIAL_FEED_QUERY_REMOVED: 6325,
+  /** Image format, dimensions, integrity, ownership, readiness, expiry, hash, or count is invalid. */
+  INVALID_SOCIAL_FEED_IMAGE: 6326,
 } as const;
 
 /**

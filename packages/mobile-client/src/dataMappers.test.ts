@@ -52,6 +52,7 @@ const post: MobileServerSocialFeedPost = {
     can_comment: true,
     can_record_view: true,
   },
+  images: [],
   text: 'BTC 回踩后继续持有多仓。',
   mentions: [],
   position: {
@@ -136,6 +137,7 @@ const reply: MobileServerSocialFeedReply = {
     can_comment: true,
     can_record_view: false,
   },
+  images: [],
   text: '我会继续观察支撑位。',
   mentions: [],
   root_item_id: '11111111-1111-4111-8111-111111111111',
@@ -280,6 +282,7 @@ const history: MobileServerSocialFeedPositionHistoryResponse = {
           can_comment: true,
           can_record_view: true,
         },
+        images: [],
         text: '持有这一仓位，关注后续价格变化。',
         mentions: [],
         position: {
@@ -362,8 +365,7 @@ const history: MobileServerSocialFeedPositionHistoryResponse = {
     update_cursor: null,
     viewer_token: 'viewer_example_opaque',
     view_tracking: {
-      min_visible_ratio: 0.5,
-      min_duration_ms: 1000,
+      mode: 'detail_visit',
     },
   },
 };
@@ -497,6 +499,52 @@ describe('[mobile-client]: content mapping', () => {
       sessionId: history.read_session.session_id,
       viewerToken: history.read_session.viewer_token,
     });
+  });
+
+  it('maps feed images and detail-visit read sessions', () => {
+    const mapped = mapMobileSocialFeedItem({
+      ...post,
+      images: [
+        {
+          image_id: '88888888-8888-4888-8888-888888888888',
+          url: '/v1/mobile/feed/images/88888888-8888-4888-8888-888888888888/standard',
+          width: 1024,
+          height: 256,
+          content_type: 'image/png',
+          byte_size: 123456,
+          thumbnail: {
+            url: '/v1/mobile/feed/images/88888888-8888-4888-8888-888888888888/thumbnail',
+            width: 512,
+            height: 128,
+          },
+        },
+      ],
+    });
+    expect(mapped.kind).toBe('post');
+    if (mapped.kind !== 'post') throw new Error('Expected post');
+    expect(mapped.images).toEqual([
+      {
+        imageId: '88888888-8888-4888-8888-888888888888',
+        url: '/v1/mobile/feed/images/88888888-8888-4888-8888-888888888888/standard',
+        width: 1024,
+        height: 256,
+        contentType: 'image/png',
+        byteSize: 123456,
+        thumbnail: {
+          url: '/v1/mobile/feed/images/88888888-8888-4888-8888-888888888888/thumbnail',
+          width: 512,
+          height: 128,
+        },
+      },
+    ]);
+    expect(
+      mapMobileSocialFeedPage({
+        items: [],
+        next_cursor: null,
+        watermark: 'w',
+        read_session: history.read_session,
+      }).readSession.viewTracking,
+    ).toEqual({ mode: 'detail_visit' });
   });
 
   it('maps posts, drawings, reply previews, and nullable badges from the documented response', () => {

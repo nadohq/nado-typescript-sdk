@@ -446,7 +446,7 @@ void describe(
       assert.equal(unliked.isLiked, false);
       const detail = await mobile.getFeedItem({ itemId: post.id, viewAs });
       const session = getSessionParams(detail.readSession);
-      await delay(detail.readSession.viewTracking.minDurationMs);
+      assert.equal(detail.readSession.viewTracking.mode, 'detail_visit');
       const recorded = await mobile.recordFeedViews({
         ...session,
         itemIds: [post.id],
