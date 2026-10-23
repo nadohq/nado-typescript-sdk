@@ -68,7 +68,7 @@ export interface MobileServerSocialFeedListParams {
   minimum_notional?: number;
   /** Page size, 1–50; defaults to 20. */
   limit?: number;
-  /** Fixed 15-minute reading session; required with cursor. */
+  /** Original reading session; required with cursor. Legitimate requests renew its idle expiration. */
   session_id?: string;
   /** Opaque pagination cursor, distinct from update_cursor and watermark. */
   cursor?: string;
@@ -331,9 +331,10 @@ export type MobileServerExecuteRequestType = MobileSignedInner['type'];
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
  * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
  * writes (e.g. `execute_set_username`). The prefix names the route, so it never carries the `mobile:` prefix
- * that the EIP-712 method does.
+ * that the EIP-712 method does. Protected image reads use `feed_image` without a route prefix.
  */
 export type MobileServerRequestType =
+  | 'feed_image'
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

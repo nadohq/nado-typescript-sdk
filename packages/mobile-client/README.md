@@ -91,14 +91,21 @@ registering presence. Watching account previews are self-reported, not proof of 
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 `recordFeedViews` and `setPositionPresence` use reading-session credentials rather than wallet signatures.
-See method and parameter JSDoc for exposure reporting and page-scoped presence rules.
+Exposure follows `readSession.viewTracking.mode === 'detail_visit'`: report the primary detail target after it
+is shown in the foreground. Fetch image bytes with `getFeedImageBytes` using the same session credentials and
+paths from `images` / `thumbnail.url`. Legitimate session reads renew the idle expiration; use the latest
+`expiresAtMs` rather than treating the first value as fixed.
 
 ### Signed Executes
 
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
-`createFeedPost`, `createFeedComment`, `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`.
+`createFeedPost`, `createFeedComment`, `createFeedPostImageUpload`, `createFeedCommentImageUpload`,
+`createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`.
 
-See method and parameter JSDoc for publication, retries, mention offsets, drawing data, and mutation ordering.
+Upload images one at a time with the multipart helpers (≤ 2 MiB whole request), then pass ordered ready
+`imageIds` to `createFeedPost` / `createFeedComment`. Posts still require nonblank text or a drawing; comments
+still require nonblank text. See method and parameter JSDoc for publication, retries, mention offsets, drawing
+data, and mutation ordering.
 
 ### Linked Signers
 

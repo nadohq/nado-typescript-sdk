@@ -82,7 +82,7 @@ const readSession: MobileServerSocialFeedReadSession = {
   session_id: 'OpaqueSession',
   mode: 'feed',
   expires_at_ms: 42,
-  view_tracking: { min_visible_ratio: 0.5, min_duration_ms: 1000 },
+  view_tracking: { mode: 'detail_visit' },
   update_cursor: null,
   viewer_token: 'OpaqueViewer',
 };
@@ -309,7 +309,7 @@ describe('[mobile-client]: social feed transport', () => {
         session_id: 'Session',
         mode: 'feed',
         expires_at_ms: 42,
-        view_tracking: { min_visible_ratio: 0.5, min_duration_ms: 1000 },
+        view_tracking: { mode: 'detail_visit' },
         update_cursor: null,
         viewer_token: 'Viewer',
       },
@@ -660,6 +660,7 @@ describe('[mobile-client]: social feed response mapping', () => {
       ...row,
       kind: 'trade_card',
       action: 'opened',
+      images: [],
       text: '',
       mentions: [],
       author: {

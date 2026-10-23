@@ -9,6 +9,10 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
 > = {
   create_feed_post: 'mobile:execute_create_feed_post',
   create_feed_comment: 'mobile:execute_create_feed_comment',
+  create_feed_post_image_uploads:
+    'mobile:execute_create_feed_post_image_uploads',
+  create_feed_comment_image_uploads:
+    'mobile:execute_create_feed_comment_image_uploads',
   create_feed_chart_drawing: 'mobile:execute_create_feed_chart_drawing',
   update_feed_chart_drawing: 'mobile:execute_update_feed_chart_drawing',
   set_feed_like: 'mobile:execute_set_feed_like',

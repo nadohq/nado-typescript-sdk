@@ -435,7 +435,9 @@ describe('[mobile-client]: social content signing', () => {
   const drawing = ' { "lines" : [], "enabled": false } ';
 
   it('canonicalizes every post field and nested mention without changing content', () => {
+    const imageIds = ['88888888-8888-4888-8888-888888888888'];
     const input: MobileSignedInner = {
+      image_ids: imageIds,
       drawing_data_json: drawing,
       mentions: [mention],
       text,
@@ -453,6 +455,7 @@ describe('[mobile-client]: social content signing', () => {
       'text',
       'mentions',
       'drawing_data_json',
+      'image_ids',
     ]);
     if (result.type !== 'create_feed_post') throw new Error('Expected post');
     expect(Object.keys(result.mentions[0])).toEqual([
@@ -466,6 +469,8 @@ describe('[mobile-client]: social content signing', () => {
     expect(result.position_id).toBe(positionId);
     expect(result.text).toBe(text);
     expect(result.drawing_data_json).toBe(drawing);
+    expect(result.image_ids).toEqual(imageIds);
+    expect(result.image_ids).not.toBe(imageIds);
     expect(result.mentions[0]).toEqual({
       subaccount: FIXTURE_TARGET_SUBACCOUNT,
       start: 2,
@@ -582,6 +587,16 @@ describe('[mobile-client]: social content signing', () => {
   });
 
   const payloads: MobileSignedInner[] = [
+    {
+      type: 'create_feed_post_image_uploads',
+      content_hash:
+        '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
+    {
+      type: 'create_feed_comment_image_uploads',
+      content_hash:
+        '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
     {
       type: 'create_feed_post',
       client_request_id: requestId,
