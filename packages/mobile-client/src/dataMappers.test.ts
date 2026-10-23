@@ -6,6 +6,7 @@ import {
   mapMobileSocialFeedDrawingResult,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemPatch,
+  mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedMentionToServer,
   mapMobileSocialFeedPage,
   mapMobileSocialFeedPositionAction,
@@ -500,6 +501,73 @@ describe('[mobile-client]: content mapping', () => {
       viewerToken: history.read_session.viewer_token,
     });
   });
+
+  it.each(['omitted', 'null'] as const)(
+    'maps %s images to empty arrays in feeds, item details, and comments',
+    (imageField) => {
+      const serverReply = { ...reply };
+      const serverPost = {
+        ...post,
+        comment_preview: {
+          ...post.comment_preview,
+          items: [serverReply],
+        },
+      };
+      const serverCard = {
+        ...serverPost,
+        kind: 'trade_card',
+        action: 'opened',
+      } as const;
+      const items: MobileServerSocialFeedItem[] = [
+        serverPost,
+        serverCard,
+        serverReply,
+      ];
+      for (const item of items) {
+        if (imageField === 'omitted') {
+          Reflect.deleteProperty(item, 'images');
+        } else {
+          Reflect.set(item, 'images', null);
+        }
+      }
+      const page = mapMobileSocialFeedPage({
+        items,
+        next_cursor: null,
+        watermark: 'Watermark',
+        read_session: history.read_session,
+      });
+      expect(page.items).toMatchObject([
+        {
+          kind: 'post',
+          images: [],
+          commentPreview: { items: [{ images: [] }] },
+        },
+        {
+          kind: 'trade_card',
+          images: [],
+          commentPreview: { items: [{ images: [] }] },
+        },
+        { kind: 'reply', images: [] },
+      ]);
+      for (const item of items) {
+        expect(
+          mapMobileSocialFeedItemResponse({
+            item,
+            read_session: history.read_session,
+          }).item,
+        ).toMatchObject({ kind: item.kind, images: [] });
+      }
+      const comments = mapMobileSocialFeedCommentsPage({
+        comments: [serverReply],
+        total_count: 1,
+        next_cursor: null,
+        previous_cursor: null,
+        anchor_reply_id: null,
+        read_session: history.read_session,
+      });
+      expect(comments.comments).toMatchObject([{ kind: 'reply', images: [] }]);
+    },
+  );
 
   it('maps feed images and detail-visit read sessions', () => {
     const mapped = mapMobileSocialFeedItem({

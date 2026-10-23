@@ -643,7 +643,7 @@ export function mapMobileSocialFeedContentBase(
 ): MobileSocialFeedContentBase {
   return {
     ...mapMobileSocialFeedItemBase(server),
-    images: server.images.map(mapMobileSocialFeedImage),
+    images: (server.images ?? []).map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
     position: mapMobileSocialFeedPositionCard(server.position),
@@ -1058,7 +1058,7 @@ export function mapMobileSocialFeedReply(
   return {
     ...mapMobileSocialFeedItemBase(server),
     kind: server.kind,
-    images: server.images.map(mapMobileSocialFeedImage),
+    images: (server.images ?? []).map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
     rootItemId: server.root_item_id,
