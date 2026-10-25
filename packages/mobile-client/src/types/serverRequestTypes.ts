@@ -213,6 +213,8 @@ export interface MobileServerPublicQueryRequestByType {
   feed_item: MobileServerSocialFeedReadParams & {
     /** Target item UUID. */
     item_id: string;
+    /** Detail-visit event; omit for prefetch. Does not increment the count alone. */
+    view_event_id?: string;
     /** Preview size, 0-3. */
     comment_preview_limit?: number;
     /** Omit to create a new reading session. */
@@ -282,14 +284,16 @@ export type MobileServerPublicQueryRequestType =
  * notification writes use the backend's last-write-wins commit order, so callers must serialize them.
  */
 export interface MobileServerPublicExecuteRequestByType {
-  /** Explicit exposure report using the original browsing credential. */
+  /** Explicit detail-visit report using the original browsing credential. */
   record_feed_views: {
     /** Original reading session. */
     session_id: string;
-    /** Fully delivered interactive items. */
-    item_ids: string[];
     /** Original credential. */
     viewer_token: string;
+    /** Detail-visit event previously registered on feed_item. */
+    view_event_id: string;
+    /** Exactly one fully delivered detail-target item. */
+    item_ids: string[];
   };
   /** Per-page visitor lease; no wallet signature. */
   position_presence: {

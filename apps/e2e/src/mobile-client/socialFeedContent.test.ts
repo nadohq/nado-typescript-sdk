@@ -528,7 +528,12 @@ void describe(
         isLiked: false,
       });
       assert.equal(unliked.isLiked, false);
-      const detail = await mobile.getFeedItem({ itemId: post.id, viewAs });
+      const viewEventId = randomUUID();
+      const detail = await mobile.getFeedItem({
+        itemId: post.id,
+        viewEventId,
+        viewAs,
+      });
       const session = getSessionParams(detail.readSession);
       assert.ok(detail.item.kind === 'post');
       assert.deepEqual(
@@ -574,6 +579,7 @@ void describe(
       assert.equal(detail.readSession.viewTracking.mode, 'detail_visit');
       const recorded = await mobile.recordFeedViews({
         ...session,
+        viewEventId,
         itemIds: [post.id],
       });
       assert.ok(
@@ -582,6 +588,7 @@ void describe(
       );
       const duplicate = await mobile.recordFeedViews({
         ...session,
+        viewEventId,
         itemIds: [post.id],
       });
       assert.ok(duplicate.duplicateItemIds.includes(post.id));

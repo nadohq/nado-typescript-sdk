@@ -1,0 +1,4 @@
+# Normalize text files to LF in the repo and working tree (avoids Windows CRLF noise).
+* text=auto eol=lf
+*.{ts,tsx,js,cjs,mjs,json,md,yml,yaml,css,html} text eol=lf
+*.{png,jpg,jpeg,gif,webp,ico,woff,woff2,ttf,eot} binary

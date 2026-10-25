@@ -70,10 +70,12 @@ page is ordered by the listed relationship alone and `isFollowing` is absent rat
 
 `getFeed` returns the global trade feed. Session-based feeds include `getForYouFeed`, `getTopTradersFeed`,
 and `getFriendsFeed` (requires `viewAs`), plus `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`.
-`getFeedItem` reads one item; `getFeedUpdates` polls session patches using the returned `viewerToken`.
-All are unsigned. Profile, position, and item reads include the `viewAs` account's own hidden content under
-`account_view`; the viewing account is not proof of wallet ownership. Prices are decimal `BigNumber` values;
-quantities, notionals, and PnL retain x18 units. See method and parameter JSDoc for session and polling rules.
+`getFeedItem` reads one item; pass `viewEventId` when the user navigates into the detail so a later
+`recordFeedViews` can count that visit, and omit it for prefetch. `getFeedUpdates` polls session patches
+using the returned `viewerToken`. All are unsigned. Profile, position, and item reads include the `viewAs`
+account's own hidden content under `account_view`; the viewing account is not proof of wallet ownership.
+Prices are decimal `BigNumber` values; quantities, notionals, and PnL retain x18 units. See method and
+parameter JSDoc for session and polling rules.
 
 `getSelfFeedPositions`, `resolveFeedPosition`, and `resolveFeedAction` require `viewAs` and return eligibility
 hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
@@ -91,10 +93,13 @@ registering presence. Watching account previews are self-reported, not proof of 
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 `recordFeedViews` and `setPositionPresence` use reading-session credentials rather than wallet signatures.
-Exposure follows `readSession.viewTracking.mode === 'detail_visit'`: report the primary detail target after it
-is shown in the foreground. Fetch image bytes with `getFeedImageBytes` using the same session credentials and
-paths from `images` / `thumbnail.url`. Legitimate session reads renew the idle expiration; use the latest
-`expiresAtMs` rather than treating the first value as fixed.
+Exposure follows `readSession.viewTracking.mode === 'detail_visit'`: after the primary detail target is shown
+in the foreground, call `recordFeedViews` with the same `viewEventId` previously sent to `getFeedItem`, plus
+that response's `sessionId` / `viewerToken` and exactly one detail-target `itemId`. Reuse the event on retries
+for the same visit; generate a new UUID only after leaving and re-entering. Fetch image bytes with
+`getFeedImageBytes` using the same session credentials and paths from `images` / `thumbnail.url`. Legitimate
+session reads renew the idle expiration; use the latest `expiresAtMs` rather than treating the first value as
+fixed.
 
 ### Signed Executes
 

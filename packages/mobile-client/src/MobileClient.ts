@@ -486,7 +486,9 @@ export class MobileClient {
   /**
    * Reads one item visible to viewAs, including that account's own hidden content.
    * Creates an item session directly when sessionId is omitted.
-   * @param params - Item UUID, preview limit, and optional existing session/read identity.
+   * Pass {@link GetMobileFeedItemParams.viewEventId} when the user navigates into the detail so the
+   * subsequent {@link recordFeedViews} call can count that visit; omit it for prefetch.
+   * @param params - Item UUID, optional detail-visit event, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
    * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
    * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
@@ -497,6 +499,7 @@ export class MobileClient {
     const body: MobileServerPublicQueryRequest<'feed_item'> = {
       type: 'feed_item',
       item_id: params.itemId,
+      view_event_id: params.viewEventId,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
       ...mapMobileSocialFeedReadParamsToServer(params),
@@ -797,13 +800,16 @@ export class MobileClient {
   }
 
   /**
-   * Reports qualified exposures without signing. Ordinary reads and root previews do not count as exposures.
-   * Report after the primary detail target is shown in the foreground (`viewTracking.mode` is `detail_visit`).
-   * @param params - Original reading session and viewer token, plus one to fifty fully delivered, readable,
-   * interactive item IDs. The service deduplicates repeated exposures.
-   * @returns Separate lists of newly accepted and already-counted item IDs.
-   * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, or any ineligible item.
-   * A rejected batch is not partially counted. Acquire a new session after expiry and re-evaluate exposure eligibility.
+   * Reports a detail visit without signing. Feed-list card impressions and previews do not count.
+   * After the primary detail target is shown in the foreground, send the same viewEventId previously
+   * registered through {@link getFeedItem}, together with that response's sessionId and viewerToken.
+   * Reuse the event ID on retries for the same visit; generate a new one only after leaving and re-entering.
+   * @param params - Original reading session and viewer token, the registered detail-visit event, and exactly
+   * one fully delivered, readable detail-target item ID.
+   * @returns Separate lists of newly accepted and already-counted item IDs for that event.
+   * @throws {MobileServerFailureError} On invalid parameters, an unregistered or rebound event
+   * (`SOCIAL_FEED_VIEW_EVENT_REBOUND`), session mismatch or expiry, or an ineligible item.
+   * Acquire a new session after expiry, re-register the same event via getFeedItem, then retry.
    */
   async recordFeedViews(
     params: MobileRecordFeedViewsParams,
@@ -811,8 +817,9 @@ export class MobileClient {
     const body: MobileServerPublicExecuteRequest<'record_feed_views'> = {
       type: 'record_feed_views',
       session_id: params.sessionId,
-      item_ids: params.itemIds,
       viewer_token: params.viewerToken,
+      view_event_id: params.viewEventId,
+      item_ids: params.itemIds,
     };
     return mapMobileSocialFeedViewsResult(await this.publicExecute(body));
   }

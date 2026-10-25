@@ -180,6 +180,7 @@ describe('[mobile-client]: social feed transport', () => {
       });
       await client.getFeedItem({
         itemId: itemId.toUpperCase(),
+        viewEventId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
         commentPreviewLimit: 0,
         viewAs,
       });
@@ -222,6 +223,9 @@ describe('[mobile-client]: social feed transport', () => {
       expect(requests[3].body.subaccount).not.toBe(requests[3].body.view_as);
       expect(requests[5].body.position_id).toBe(positionId.toUpperCase());
       expect(requests[6].body.item_id).toBe(itemId.toUpperCase());
+      expect(requests[6].body.view_event_id).toBe(
+        'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      );
       expect(requests[6].body.comment_preview_limit).toBe(0);
       expect(requests[7].body).toEqual({
         type: 'feed_updates',
@@ -234,6 +238,37 @@ describe('[mobile-client]: social feed transport', () => {
       });
     },
   );
+
+  it('reports detail visits with the registered view event over public_execute', async () => {
+    const { client, requests } = mockClient({
+      status: 'success',
+      accepted_item_ids: [itemId],
+      duplicate_item_ids: [],
+    });
+    client.opts.walletClient = undefined;
+    const result = await client.recordFeedViews({
+      sessionId: 'OpaqueSession',
+      viewerToken: 'OpaqueViewer',
+      viewEventId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      itemIds: [itemId],
+    });
+    expect(result).toEqual({
+      acceptedItemIds: [itemId],
+      duplicateItemIds: [],
+    });
+    expect(requests).toEqual([
+      {
+        url: 'https://mobile.example/v1/mobile/public_execute',
+        body: {
+          type: 'record_feed_views',
+          session_id: 'OpaqueSession',
+          viewer_token: 'OpaqueViewer',
+          view_event_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          item_ids: [itemId],
+        },
+      },
+    ]);
+  });
 
   it('preserves update IDs, session credentials, and cursors unchanged', async () => {
     const { client, requests } = mockClient();

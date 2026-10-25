@@ -1004,6 +1004,12 @@ export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
 export type GetMobileFeedItemParams = MobileSocialFeedReadParams & {
   /** Target item UUID. */
   itemId: string;
+  /**
+   * Detail-visit event UUID generated once per real navigation into this item.
+   * Reuse the same value on retries for the same visit; omit for prefetch.
+   * Registering the event does not increment the view count by itself.
+   */
+  viewEventId?: string;
   /** Preview size, 0–3. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
@@ -1403,13 +1409,21 @@ export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
   isLiked: boolean;
 }
 
-/** Unsigned exposure report; only send after satisfying the session's viewTracking requirements. */
+/**
+ * Unsigned detail-visit report. Call after the primary detail target is shown in the foreground,
+ * using the same {@link GetMobileFeedItemParams.viewEventId} previously sent to `getFeedItem`.
+ */
 export interface MobileRecordFeedViewsParams {
-  /** Original reading session. */
+  /** Original reading session returned by the detail read. */
   sessionId: string;
-  /** Original opaque browsing credential. */
+  /** Original opaque browsing credential from that read session. */
   viewerToken: string;
-  /** One to fifty fully delivered, readable, interactive item UUIDs. */
+  /**
+   * Detail-visit event UUID registered on the preceding feed_item call.
+   * Reuse across retries for the same visit; generate a new UUID only after leaving and re-entering.
+   */
+  viewEventId: string;
+  /** Exactly one fully delivered, readable detail-target item UUID. */
   itemIds: string[];
 }
 
