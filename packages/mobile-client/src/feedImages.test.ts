@@ -37,15 +37,40 @@ function mockImageClient(data: ArrayBuffer | Uint8Array, status = 200) {
 }
 
 describe('[mobile-client]: feed image reads', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it.each([
+    '/v1/mobile/feed/images/test/standard',
+    '/feed/images/test/standard',
+    '/v1/mobile/feed/comment-images/test/thumbnail',
+  ])('exposes a native image request without fetching bytes: %s', (path) => {
+    const client = new MobileClient({
+      url: 'https://mobile.example/mobile/v1',
+    });
+    const get = jest.spyOn(client.axiosInstance, 'get');
+    expect(client.getFeedImageRequest({ ...session, path })).toEqual({
+      url: client.resolveFeedImageUrl(path),
+      headers: {
+        'x-feed-session-id': session.sessionId,
+        'x-feed-viewer-token': session.viewerToken,
+      },
+    });
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it.each(['uint8array', 'arraybuffer'] as const)(
     'preserves successful image bytes from %s responses',
     async (format) => {
       const data =
         format === 'uint8array' ? imageBytes : imageBytes.slice().buffer;
       const client = mockImageClient(data);
+      const getRequest = jest.spyOn(client, 'getFeedImageRequest');
       await expect(
         client.getFeedImageBytes({ ...session, path: imagePath }),
       ).resolves.toEqual(imageBytes);
+      expect(getRequest).toHaveBeenCalledWith({ ...session, path: imagePath });
     },
   );
 
@@ -53,17 +78,22 @@ describe('[mobile-client]: feed image reads', () => {
     '%s error responses',
     (format) => {
       it.each([
-        [401, MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_EXPIRED],
-        [403, MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_MISMATCH],
-        [404, MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE],
-      ])(
+        [401, MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_EXPIRED, 'feed_image'],
+        [403, MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_MISMATCH, 'feed_image'],
+        [404, MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE, 'feed_image'],
+        [
+          404,
+          MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+          'feed_comment_image',
+        ],
+      ] as const)(
         'preserves the failure envelope for HTTP %i',
-        async (status, errorCode) => {
+        async (status, errorCode, requestType) => {
           const failure: MobileServerFailureResponse = {
             status: 'failure',
             error: 'Image unavailable: \u56fe\u7247\u4e0d\u53ef\u7528',
             error_code: errorCode,
-            request_type: 'feed_image',
+            request_type: requestType,
           };
           const encoded = stringToBytes(JSON.stringify(failure));
           const data =
@@ -76,7 +106,7 @@ describe('[mobile-client]: feed image reads', () => {
           await expect(result).rejects.toBeInstanceOf(MobileServerFailureError);
           await expect(result).rejects.toMatchObject({
             errorCode,
-            requestType: 'feed_image',
+            requestType,
             httpStatus: status,
             responseData: failure,
           });
@@ -207,28 +237,32 @@ describe.each([
     jest.restoreAllMocks();
   });
 
-  it.each([-1, 0, 1])(
-    'checks the complete body at the limit %+i',
-    async (offset) => {
-      jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
-      jest.spyOn(Math, 'random').mockReturnValue(0.5);
+  it.each(
+    [-1, 0, 1].flatMap((offset) =>
+      [1n, undefined].map((nonce) => ({ offset, nonce })),
+    ),
+  )(
+    'checks the complete body at offset $offset with nonce $nonce',
+    async ({ offset, nonce }) => {
       const account = privateKeyToAccount(
         '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b786907',
       );
+      const walletClient = createWalletClient({
+        account,
+        chain: ink,
+        transport: http(),
+      });
+      const sign = jest.spyOn(walletClient, 'signTypedData');
       const client = new MobileClient({
         url: 'https://mobile.example/mobile/v1',
-        walletClient: createWalletClient({
-          account,
-          chain: ink,
-          transport: http(),
-        }),
+        walletClient,
       });
       const params = {
         subaccountOwner: account.address,
         subaccountName: 'default',
         chainId: ink.id,
         verifyingAddr: '0x0000000000000000000000000000000000000001',
-        nonce: 1n,
+        nonce,
       } as const;
       const post = jest.spyOn(client.axiosInstance, 'post').mockResolvedValue({
         data: {
@@ -250,6 +284,7 @@ describe.each([
       if (!(emptyBody instanceof Uint8Array))
         throw new Error('Expected multipart bytes');
       post.mockClear();
+      sign.mockClear();
       const fileBytes = new Uint8Array(
         MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES - emptyBody.byteLength + offset,
       );
@@ -258,8 +293,10 @@ describe.each([
         await expect(result).rejects.toBeInstanceOf(RangeError);
         await expect(result).rejects.toThrow('2097152 bytes (2 MiB)');
         expect(post).not.toHaveBeenCalled();
+        expect(sign).not.toHaveBeenCalled();
       } else {
         await expect(result).resolves.toMatchObject({ imageId: 'test' });
+        expect(sign).toHaveBeenCalledTimes(1);
         expect(post).toHaveBeenCalledTimes(1);
         const body: unknown = post.mock.calls[0][1];
         expect(body).toHaveProperty(

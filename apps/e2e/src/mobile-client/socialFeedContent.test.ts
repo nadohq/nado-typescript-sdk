@@ -4,6 +4,7 @@ import {
   MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES,
   MobileClient,
   MobileServerFailureError,
+  MobileServerFailureResponse,
   MobileSocialFeedItem,
   MobileSocialFeedPositionCard,
   MobileSocialFeedPublishablePosition,
@@ -15,6 +16,7 @@ import {
   packOrderAppendix,
   Subaccount,
 } from '@nadohq/shared';
+import axios from 'axios';
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -403,6 +405,37 @@ void describe(
       }
     });
 
+    void test('prepares authenticated image requests for native image components', async () => {
+      const page = await mobile.getForYouFeed({ viewAs, limit: 1 });
+      const session = getSessionParams(page.readSession);
+      for (const resource of ['images', 'comment-images']) {
+        const request = mobile.getFeedImageRequest({
+          ...session,
+          path: `/v1/mobile/feed/${resource}/${randomUUID()}/standard`,
+        });
+        assert.deepEqual(request.headers, {
+          'x-feed-session-id': session.sessionId,
+          'x-feed-viewer-token': session.viewerToken,
+        });
+        const response = await axios.get<MobileServerFailureResponse>(
+          request.url,
+          {
+            headers: request.headers,
+            validateStatus: () => true,
+          },
+        );
+        assert.equal(response.status, 404);
+        assert.equal(
+          response.data.error_code,
+          MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+        );
+        assert.equal(
+          response.data.request_type,
+          resource === 'images' ? 'feed_image' : 'feed_comment_image',
+        );
+      }
+    });
+
     void test('rejects invalid image uploads and preserves protected image errors', async () => {
       const signed = getMobileSignedParams(tc);
       for (const upload of [
@@ -551,6 +584,15 @@ void describe(
       });
       const session = getSessionParams(detail.readSession);
       assert.ok(detail.item.kind === 'post');
+      const imageRequest = mobile.getFeedImageRequest({
+        ...session,
+        path: detail.item.images[0].url,
+      });
+      const imageResponse = await axios.get<ArrayBuffer>(imageRequest.url, {
+        headers: imageRequest.headers,
+        responseType: 'arraybuffer',
+      });
+      assert.deepEqual(new Uint8Array(imageResponse.data), fileBytes);
       assert.deepEqual(
         detail.item.images.map((image) => image.imageId),
         params.imageIds,

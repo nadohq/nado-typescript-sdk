@@ -698,14 +698,17 @@ export interface MobileSocialFeedImage {
   /** Original file size in bytes. */
   byteSize: number;
   /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
-  thumbnail: {
-    /** Backend path for the thumbnail bytes. */
-    url: string;
-    /** Thumbnail width in pixels. */
-    width: number;
-    /** Thumbnail height in pixels. */
-    height: number;
-  };
+  thumbnail: MobileSocialFeedImageThumbnail;
+}
+
+/** Thumbnail metadata for an uploaded feed image. */
+export interface MobileSocialFeedImageThumbnail {
+  /** Backend path for the thumbnail bytes. */
+  url: string;
+  /** Thumbnail width in pixels. */
+  width: number;
+  /** Thumbnail height in pixels. */
+  height: number;
 }
 
 /** Coverage of the candidate authors in a qualification snapshot. */
@@ -1338,14 +1341,25 @@ export interface MobileCreateFeedImageUploadParams extends MobileSignedRequestPa
   fileBytes: Uint8Array;
 }
 
-/** Parameters for fetching protected feed image bytes with a reading session. */
-export interface GetMobileFeedImageBytesParams {
+/** Parameters for preparing a protected feed image request with a reading session. */
+export interface GetMobileFeedImageRequestParams {
   /** Backend path from {@link MobileSocialFeedImage.url} or thumbnail.url. */
   path: string;
   /** Reading session that fully delivered the parent item. */
   sessionId: string;
   /** Browser credential for that session. */
   viewerToken: string;
+}
+
+/** Parameters for fetching protected feed image bytes with a reading session. */
+export type GetMobileFeedImageBytesParams = GetMobileFeedImageRequestParams;
+
+/** URL and authentication headers for native image components or direct image reads. */
+export interface MobileFeedImageRequest {
+  /** Absolute image URL; pass as the native image source URI. */
+  url: string;
+  /** Original reading-session credentials required to access the image. */
+  headers: Record<string, string>;
 }
 
 /** Parameters for first adding or replacing a drawing. Writes must be serialized by the caller. */

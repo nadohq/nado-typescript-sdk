@@ -48,6 +48,7 @@ import {
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
+  getMobileNonce,
   MobileSignedInner,
   MobileSignedInnerByType,
   MobileSignedInnerParams,
@@ -57,6 +58,7 @@ import {
   GetMobileFeedChartDrawingParams,
   GetMobileFeedCommentsParams,
   GetMobileFeedImageBytesParams,
+  GetMobileFeedImageRequestParams,
   GetMobileFeedItemParams,
   GetMobileFeedParams,
   GetMobileFeedUpdatesParams,
@@ -83,6 +85,7 @@ import {
   MobileCreateFeedImageUploadParams,
   MobileCreateFeedPostParams,
   MobileFeedChartDrawingParams,
+  MobileFeedImageRequest,
   MobileFeedPage,
   MobileFollowBatchResultItem,
   MobileFollowListPage,
@@ -669,6 +672,24 @@ export class MobileClient {
   }
 
   /**
+   * Prepares a protected image request for native image components without downloading or encoding bytes.
+   * Does not count as a detail visit or recorded view.
+   * @param params - Image path from metadata plus the original session credentials.
+   * @returns Absolute URL and headers; pass them as the image source's URI and headers.
+   */
+  getFeedImageRequest(
+    params: GetMobileFeedImageRequestParams,
+  ): MobileFeedImageRequest {
+    return {
+      url: this.resolveFeedImageUrl(params.path),
+      headers: {
+        'x-feed-session-id': params.sessionId,
+        'x-feed-viewer-token': params.viewerToken,
+      },
+    };
+  }
+
+  /**
    * Fetches protected feed image bytes using the reading session that fully delivered the parent item.
    * Does not count as a detail visit or recorded view.
    * @param params - Image path from metadata plus the original session credentials.
@@ -678,10 +699,8 @@ export class MobileClient {
   async getFeedImageBytes(
     params: GetMobileFeedImageBytesParams,
   ): Promise<Uint8Array> {
-    return this.publicGetBytes(this.resolveFeedImageUrl(params.path), {
-      'x-feed-session-id': params.sessionId,
-      'x-feed-viewer-token': params.viewerToken,
-    });
+    const { url, headers } = this.getFeedImageRequest(params);
+    return this.publicGetBytes(url, headers);
   }
 
   /**
@@ -1097,7 +1116,8 @@ export class MobileClient {
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {RangeError} If the complete multipart request exceeds {@link MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES}.
    * @throws {MobileServerFailureError} On authentication, format/size/hash errors (`INVALID_SOCIAL_FEED_IMAGE`),
-   * or when publishing is disabled (`SERVICE_UNAVAILABLE`).
+   * or when publishing is disabled (`SERVICE_UNAVAILABLE`), or image storage is unavailable
+   * (`SOCIAL_FEED_DATA_UNAVAILABLE`, 6320, HTTP 503).
    */
   async createFeedPostImageUpload(
     params: MobileCreateFeedImageUploadParams,
@@ -1113,7 +1133,8 @@ export class MobileClient {
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {RangeError} If the complete multipart request exceeds {@link MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES}.
    * @throws {MobileServerFailureError} On authentication, format/size/hash errors (`INVALID_SOCIAL_FEED_IMAGE`),
-   * or when comments are disabled (`SERVICE_UNAVAILABLE`).
+   * or when comments are disabled (`SERVICE_UNAVAILABLE`), or image storage is unavailable
+   * (`SOCIAL_FEED_DATA_UNAVAILABLE`, 6320, HTTP 503).
    */
   async createFeedCommentImageUpload(
     params: MobileCreateFeedImageUploadParams,
@@ -1311,13 +1332,8 @@ export class MobileClient {
       fileBytes == null
         ? undefined
         : buildMobileFeedImageMultipart(JSON.stringify(body), fileBytes);
-    if (
-      multipart &&
-      multipart.body.byteLength > MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES
-    ) {
-      throw new RangeError(
-        `Feed image upload request exceeds ${MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES} bytes (2 MiB).`,
-      );
+    if (multipart) {
+      this.checkFeedImageRequestSize(multipart.body.byteLength);
     }
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/execute`,
@@ -1340,12 +1356,37 @@ export class MobileClient {
       | 'create_feed_comment_image_uploads',
     params: MobileCreateFeedImageUploadParams,
   ): Promise<MobileSocialFeedImage> {
+    const nonce = params.nonce ?? getMobileNonce();
+    const sizePayload = {
+      type,
+      content_hash: `0x${'00'.repeat(32)}`,
+      signature: `0x${'00'.repeat(65)}`,
+      sender: subaccountToHex(params),
+      nonce: nonce.toString(),
+    };
+    const overhead = buildMobileFeedImageMultipart(
+      JSON.stringify(sizePayload),
+      new Uint8Array(),
+    ).body.byteLength;
+    this.checkFeedImageRequestSize(overhead + params.fileBytes.byteLength);
     const contentHash = keccak256(params.fileBytes);
-    const request = await this.getSignedRequest(type, params, {
-      content_hash: contentHash,
-    });
+    const request = await this.getSignedRequest(
+      type,
+      { ...params, nonce },
+      {
+        content_hash: contentHash,
+      },
+    );
     const data = await this.execute(request, params.fileBytes);
     return mapMobileSocialFeedImage(data.image);
+  }
+
+  private checkFeedImageRequestSize(byteLength: number): void {
+    if (byteLength > MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES) {
+      throw new RangeError(
+        `Feed image upload request exceeds ${MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES} bytes (2 MiB).`,
+      );
+    }
   }
 
   /**

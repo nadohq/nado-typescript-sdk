@@ -11,7 +11,11 @@ export function buildMobileFeedImageMultipart(
   payloadJson: string,
   fileBytes: Uint8Array,
 ): { body: Uint8Array; contentType: string } {
-  const boundary = `----nadoFeedImage${Date.now().toString(16)}${Math.floor(Math.random() * 1e6).toString(16)}`;
+  const boundary = `----nadoFeedImage${Date.now().toString(16).padStart(14, '0')}${Math.floor(
+    Math.random() * 1e6,
+  )
+    .toString(16)
+    .padStart(5, '0')}`;
   const preamble =
     `--${boundary}\r\n` +
     'Content-Disposition: form-data; name="payload"\r\n' +

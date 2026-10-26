@@ -101,6 +101,18 @@ for the same visit; generate a new UUID only after leaving and re-entering. Fetc
 session reads renew the idle expiration; use the latest `expiresAtMs` rather than treating the first value as
 fixed.
 
+For React Native `Image` or expo-image, use `getFeedImageRequest` to pass the authenticated
+URL and headers directly without converting bytes to base64:
+
+```ts
+const { url, headers } = mobile.getFeedImageRequest({
+  path: image.url,
+  sessionId: readSession.sessionId,
+  viewerToken: readSession.viewerToken,
+});
+const source = { uri: url, headers };
+```
+
 ### Signed Executes
 
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
@@ -108,8 +120,9 @@ fixed.
 `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`.
 
 Upload images one at a time with the multipart helpers (≤ 2 MiB whole request), then pass ordered ready
-`imageIds` to `createFeedPost` / `createFeedComment`. The SDK throws `RangeError` before sending a request
+`imageIds` to `createFeedPost` / `createFeedComment`. The SDK throws `RangeError` before requesting a signature or sending a request
 that exceeds `MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES`, including the signed payload and multipart framing.
+Unconfigured image storage returns `SOCIAL_FEED_DATA_UNAVAILABLE` (6320, HTTP 503).
 Posts still require nonblank text or a drawing; comments
 still require nonblank text. See method and parameter JSDoc for publication, retries, mention offsets, drawing
 data, and mutation ordering.

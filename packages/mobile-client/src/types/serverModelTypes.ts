@@ -454,14 +454,17 @@ export interface MobileServerSocialFeedImage {
   /** Original file size in bytes. */
   byte_size: number;
   /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
-  thumbnail: {
-    /** Backend path for the thumbnail bytes. */
-    url: string;
-    /** Thumbnail width in pixels. */
-    width: number;
-    /** Thumbnail height in pixels. */
-    height: number;
-  };
+  thumbnail: MobileServerSocialFeedImageThumbnail;
+}
+
+/** Thumbnail metadata for an uploaded feed image. */
+export interface MobileServerSocialFeedImageThumbnail {
+  /** Backend path for the thumbnail bytes. */
+  url: string;
+  /** Thumbnail width in pixels. */
+  width: number;
+  /** Thumbnail height in pixels. */
+  height: number;
 }
 
 /** Coverage of the candidate authors in a qualification snapshot. */
