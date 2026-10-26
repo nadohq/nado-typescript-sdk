@@ -34,6 +34,28 @@ export interface MobileServerAvatarPreset {
 export type MobileNotificationPlatform = 'ios' | 'android';
 
 /**
+ * Notification types supported by the v2 payload protocol.
+ */
+export type MobileNotificationTypeId =
+  | 'new_follower'
+  | 'followed_you_back'
+  | 'order_fill'
+  | 'order_update'
+  | 'liquidation'
+  | 'trader_opened'
+  | 'trader_closed'
+  | 'position_milestone'
+  | 'market_movement'
+  | 'trader_streak'
+  | 'account_drama'
+  | 'weekly_digest';
+
+/**
+ * Named navigation destinations supported by notification payloads.
+ */
+export type MobileNotificationRouteName = MobileServerNotificationRoute['name'];
+
+/**
  * Category of push notification.
  */
 export type MobileNotificationCategory =
@@ -221,6 +243,130 @@ export interface MobileServerNotificationPreferences {
   /** Only `1` is accepted by the backend for the MVP. */
   schema_version: 1;
   categories: MobileServerNotificationCategoryPreference[];
+}
+
+/**
+ * Stored push-device metadata shared by registration requests and token ownership responses.
+ */
+export interface MobileServerNotificationDeviceMetadata {
+  /** Device operating system. */
+  platform: MobileNotificationPlatform;
+  /** Locale tag, or null when absent; at most 35 UTF-8 bytes. */
+  locale: string | null;
+  /** App version, or null when absent; at most 64 UTF-8 bytes. */
+  app_version: string | null;
+}
+
+/**
+ * Device capabilities shared by v2 registration and v1/v2 registration queries.
+ * The default is v2-only; registration queries also permit the legacy [1] declaration.
+ * @typeParam PayloadVersions - Single-version tuple; mixed [1, 2] declarations are not supported.
+ */
+export interface MobileServerNotificationCapabilities<
+  PayloadVersions extends [1] | [2] = [2],
+> {
+  /** Exactly one supported payload version. */
+  payload_versions: PayloadVersions;
+  /** Supported subset of the twelve registered notification types. */
+  type_ids: MobileNotificationTypeId[];
+  /** Supported subset of the three named destinations. */
+  routes: MobileNotificationRouteName[];
+}
+
+/**
+ * Server-side wallet settings; all nine fields are required on replacement.
+ */
+export interface MobileServerNotificationSettings {
+  /** Own position milestones and the initial weekly digest. */
+  my_positions: boolean;
+  /** One to three unique values; the minimum selects the starting milestone tier. */
+  position_thresholds: (10 | 25 | 50)[];
+  /** Combined order fill/update switch; does not control liquidation notifications. */
+  my_orders: boolean;
+  /** Ordinary followed-trader notifications; enabled bells override this switch. */
+  following_trades: boolean;
+  /** Reserved; no post notification producer currently exists. */
+  following_posts: boolean;
+  /** Reserved; currently not applied as a delivery filter. */
+  min_trade_size_usd: 0 | 100 | 1000 | 10000;
+  /** New followers and follow-backs. */
+  new_followers: boolean;
+  /** Maps to the legacy announcement preference. */
+  announcements: boolean;
+  /** Opt-in trader streak and account drama discovery notifications. */
+  discovery: boolean;
+}
+
+/**
+ * Server-side allowlisted destination; notification data must never be interpreted as an arbitrary URL.
+ */
+export type MobileServerNotificationRoute =
+  | {
+      /** Public profile destination. */
+      name: 'profile';
+      /** Profile subaccount as bytes32. */
+      subaccount: Hex;
+    }
+  | {
+      /** Market destination. */
+      name: 'market';
+      /** Positive product ID. */
+      product_id: number;
+    }
+  | {
+      /** Own portfolio destination. */
+      name: 'portfolio';
+    };
+
+/**
+ * Server-side v2 push/inbox navigation data, not a complete historical trade or notification body.
+ */
+export interface MobileServerNotificationPayloadV2 {
+  /** Payload protocol version. */
+  payload_version: 2;
+  /** Logical notification UUID, used for click deduplication. */
+  notification_id: string;
+  /** Intended wallet; private navigation must wait for this wallet to connect. */
+  recipient_wallet: Hex;
+  /** Registered notification type. */
+  type_id: MobileNotificationTypeId;
+  /** Supported template version. */
+  template_version: 1;
+  /** Named destination and its parameters. */
+  route: MobileServerNotificationRoute;
+}
+
+/**
+ * Server-side accepted logical notification; does not prove device delivery or read status.
+ */
+export interface MobileServerNotificationInboxItem extends Pick<
+  MobileServerNotificationPayloadV2,
+  'notification_id' | 'type_id'
+> {
+  /** Navigation data, without title, body, or read state. */
+  data: MobileServerNotificationPayloadV2;
+  /** Intent acceptance time in milliseconds. */
+  created_at: number;
+  /** Backend-computed trade attribution; older services may omit it. */
+  trade_within_24h?: boolean;
+}
+
+/**
+ * Server-side product analytics event; unused nullable fields must be explicitly null.
+ */
+export interface MobileServerProductEvent {
+  /** Stable event UUID; reuse across retries. */
+  client_event_id: string;
+  /** Supported interaction; notif_opened is not a read-state mutation. */
+  event_name: 'notif_opened' | 'market_viewed' | 'chart_opened' | 'search';
+  /** Required for notif_opened and owned by the signing wallet; otherwise null. */
+  notification_id: string | null;
+  /** Actual event time in milliseconds, within the past 7 days or next 5 minutes. */
+  occurred_at: number;
+  /** Required for market_viewed/chart_opened; otherwise null. */
+  product_id: number | null;
+  /** Required for search, nonblank and at most 80 Unicode characters; otherwise null. */
+  query: string | null;
 }
 
 /** Content filters accepted by the six social feed lists. Empty or omitted means all. */

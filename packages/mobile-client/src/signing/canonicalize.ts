@@ -1,3 +1,4 @@
+import { Hex } from 'viem';
 import { MobileSignedInner } from './types';
 
 /**
@@ -11,6 +12,60 @@ export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
+    case 'register_expo_token_v2':
+      return {
+        type: inner.type,
+        expo_token: inner.expo_token,
+        platform: inner.platform,
+        locale: inner.locale ?? null,
+        app_version: inner.app_version ?? null,
+        capabilities: {
+          payload_versions: [...inner.capabilities.payload_versions],
+          type_ids: [...inner.capabilities.type_ids],
+          routes: [...inner.capabilities.routes],
+        },
+      };
+    case 'notification_subscriptions':
+      return { type: inner.type };
+    case 'update_notification_subscriptions':
+      return {
+        type: inner.type,
+        expected_revision: inner.expected_revision,
+        trader_bell:
+          inner.trader_bell == null
+            ? null
+            : {
+                subaccount: inner.trader_bell.subaccount.toLowerCase() as Hex,
+                enabled: inner.trader_bell.enabled,
+              },
+        market:
+          inner.market == null
+            ? null
+            : {
+                product_id: inner.market.product_id,
+                subscribed: inner.market.subscribed,
+              },
+        import_markets:
+          inner.import_markets == null ? null : [...inner.import_markets],
+      };
+    case 'notification_inbox_v2':
+      return {
+        type: inner.type,
+        cursor: inner.cursor ?? null,
+        limit: inner.limit ?? null,
+      };
+    case 'record_product_events':
+      return {
+        type: inner.type,
+        events: inner.events.map((event) => ({
+          client_event_id: event.client_event_id,
+          event_name: event.event_name,
+          notification_id: event.notification_id ?? null,
+          occurred_at: event.occurred_at,
+          product_id: event.product_id ?? null,
+          query: event.query ?? null,
+        })),
+      };
     case 'set_bio':
       return { type: 'set_bio', bio: inner.bio };
     case 'create_avatar_upload':

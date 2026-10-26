@@ -3,6 +3,7 @@ import {
   MobileServerFailureResponse,
   MobileServerSuccessResponse,
 } from './serverBaseTypes';
+import { MobileServerNotificationSettingsV2Response } from './serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
   MobileServerPublicExecuteRequestByType,
@@ -80,6 +81,12 @@ export interface MobileServerAvatarUploadResponse {
  * their post-commit relationship state, and `create_avatar_upload` returns a temporary upload grant.
  */
 export interface MobileServerExecuteResponseByType {
+  /** Capability-aware device registration returns only status. */
+  register_expo_token_v2: MobileServerEmptyExecuteResponse;
+  /** Re-query subscriptions after success to obtain the new revision. */
+  update_notification_subscriptions: MobileServerEmptyExecuteResponse;
+  /** Atomic event recording returns only status. */
+  record_product_events: MobileServerEmptyExecuteResponse;
   /** Bio writes return only the success envelope. */
   set_bio: MobileServerEmptyExecuteResponse;
   /** Avatar writes return only the success envelope. */
@@ -107,3 +114,23 @@ export type MobileServerExecuteSuccessResponse<
 export type MobileServerExecuteResult =
   | MobileServerSuccessResponse
   | MobileServerFailureResponse;
+
+/**
+ * Success payloads for each token-authenticated `public_execute`, keyed by request `type`.
+ */
+export interface MobileServerPublicExecuteResponseByType {
+  /** Device unregistration returns only status. */
+  unregister_expo_token: MobileServerEmptyExecuteResponse;
+  /** Legacy preference replacement returns only status. */
+  update_preferences: MobileServerEmptyExecuteResponse;
+  /** Saved document, including the advanced settings revision. */
+  update_notification_settings_v2: MobileServerNotificationSettingsV2Response;
+}
+
+/**
+ * Full success response for a `public_execute`, with its type-specific payload inlined alongside `status`.
+ */
+export type MobileServerPublicExecuteSuccessResponse<
+  T extends MobileServerPublicExecuteRequestType =
+    MobileServerPublicExecuteRequestType,
+> = MobileServerSuccessResponse & MobileServerPublicExecuteResponseByType[T];

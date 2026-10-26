@@ -7,6 +7,12 @@ import {
   MobileFeedTradePositionDirection,
   MobileNotificationCategory,
   MobileNotificationPlatform,
+  MobileServerNotificationCapabilities,
+  MobileServerNotificationInboxItem,
+  MobileServerNotificationPayloadV2,
+  MobileServerNotificationRoute,
+  MobileServerNotificationSettings,
+  MobileServerProductEvent,
   MobileSocialFeedCohortStatus,
   MobileSocialFeedHistoryQuality,
   MobileSocialFeedLeverage,
@@ -25,6 +31,13 @@ import {
   MobileSocialFeedType,
   MobileSocialFeedUnavailableTarget,
 } from './serverModelTypes';
+import {
+  MobileServerNotificationInboxV2Response,
+  MobileServerNotificationRegistrationV2Response,
+  MobileServerNotificationSettingsV2Response,
+  MobileServerNotificationSubscriptionsResponse,
+} from './serverQueryTypes';
+import { MobileServerNotificationSubscriptionsUpdate } from './serverRequestTypes';
 
 /**
  * Server-owned preset presented in catalogue order.
@@ -288,6 +301,66 @@ export interface MobileRegisteredWallet {
 }
 
 /**
+ * Device capabilities for v2 registration. Preserves the notification API's documented snake_case fields.
+ */
+export type MobileNotificationCapabilities =
+  MobileServerNotificationCapabilities;
+
+/**
+ * Latest registration generation and v1/v2 capabilities, returned without renaming wire-format fields.
+ */
+export type MobileNotificationRegistrationV2 =
+  MobileServerNotificationRegistrationV2Response;
+
+/**
+ * Complete wallet-level notification settings. All nine snake_case fields are required on replacement.
+ */
+export type MobileNotificationSettings = MobileServerNotificationSettings;
+
+/**
+ * Versioned settings document returned by both v2 reads and writes, preserving snake_case fields.
+ */
+export type MobileNotificationSettingsV2 =
+  MobileServerNotificationSettingsV2Response;
+
+/**
+ * Wallet market subscriptions and the signing Identity's enabled trader bells, preserving snake_case fields.
+ */
+export type MobileNotificationSubscriptions =
+  MobileServerNotificationSubscriptionsResponse;
+
+/**
+ * One subscription operation in wire format; unused operations must explicitly be null.
+ */
+export type MobileNotificationSubscriptionsUpdate =
+  MobileServerNotificationSubscriptionsUpdate;
+
+/**
+ * Allowlisted notification destination in wire format, never an arbitrary URL.
+ */
+export type MobileNotificationRoute = MobileServerNotificationRoute;
+
+/**
+ * V2 push/inbox navigation data in wire format, not a complete historical trade or notification body.
+ */
+export type MobileNotificationPayloadV2 = MobileServerNotificationPayloadV2;
+
+/**
+ * Accepted logical notification in wire format; does not prove device delivery or read status.
+ */
+export type MobileNotificationInboxItem = MobileServerNotificationInboxItem;
+
+/**
+ * Private notification page, ordered newest first and preserving snake_case fields.
+ */
+export type MobileNotificationInboxV2 = MobileServerNotificationInboxV2Response;
+
+/**
+ * Product analytics event in wire format; unused nullable fields must be explicitly null.
+ */
+export type MobileProductEvent = MobileServerProductEvent;
+
+/**
  * Common params for signed requests that authenticate as a given subaccount.
  */
 export interface MobileSignedRequestParams
@@ -484,11 +557,8 @@ export type GetMobileFollowingParams = GetMobileFollowListParams;
 /**
  * Params for {@link MobileClient.registerExpoToken}.
  */
-export interface MobileRegisterExpoTokenParams extends MobileSignedRequestParams {
-  /**
-   * Expo push token, e.g. `ExponentPushToken[...]`.
-   */
-  expoToken: string;
+export interface MobileRegisterExpoTokenParams
+  extends MobileSignedRequestParams, MobileWithExpoTokenParams {
   platform: MobileNotificationPlatform;
   /**
    * BCP-47 locale tag, max 35 chars.
@@ -521,6 +591,67 @@ export type GetMobileNotificationPreferencesParams = MobileWithExpoTokenParams;
  * Params for {@link MobileClient.getRegisteredWallet}.
  */
 export type GetMobileRegisteredWalletParams = MobileWithExpoTokenParams;
+
+/**
+ * Params for {@link MobileClient.registerExpoTokenV2}.
+ */
+export interface MobileRegisterExpoTokenV2Params extends MobileRegisterExpoTokenParams {
+  /** Actual notification types and routes supported by this device. */
+  capabilities: MobileNotificationCapabilities;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationRegistrationV2}.
+ */
+export type GetMobileNotificationRegistrationV2Params =
+  MobileWithExpoTokenParams;
+
+/**
+ * Params for {@link MobileClient.getNotificationSettingsV2}.
+ */
+export type GetMobileNotificationSettingsV2Params = MobileWithExpoTokenParams;
+
+/**
+ * Params for {@link MobileClient.updateNotificationSettingsV2}.
+ */
+export interface MobileUpdateNotificationSettingsV2Params extends MobileWithExpoTokenParams {
+  /** Latest settings revision; stale values fail with 6203. */
+  expectedRevision: number;
+  /** Full replacement, not a partial patch. */
+  settings: MobileNotificationSettings;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationSubscriptions}; no Expo token is needed.
+ */
+export type GetMobileNotificationSubscriptionsParams =
+  MobileSignedRequestParams;
+
+/**
+ * Params for {@link MobileClient.updateNotificationSubscriptions}.
+ */
+export interface MobileUpdateNotificationSubscriptionsParams extends MobileSignedRequestParams {
+  /** Exactly one non-null operation, with the latest subscription revision. */
+  update: MobileNotificationSubscriptionsUpdate;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationInboxV2}; no Expo token is needed.
+ */
+export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestParams {
+  /** Previous next_cursor; omit or pass null for the first page. */
+  cursor?: string | null;
+  /** Page size from 1 to 50; omission/null uses the server default of 20. */
+  limit?: number | null;
+}
+
+/**
+ * Params for {@link MobileClient.recordProductEvents}.
+ */
+export interface MobileRecordProductEventsParams extends MobileSignedRequestParams {
+  /** One to fifty events, validated and committed atomically. */
+  events: MobileProductEvent[];
+}
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileSocialFeedTraderBadge {

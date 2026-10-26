@@ -1,10 +1,54 @@
 import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
+  MobileServerNotificationDeviceMetadata,
   MobileServerNotificationPreferences,
+  MobileServerNotificationSettings,
   MobileSocialFeedMarketCategory,
   MobileSocialFeedType,
 } from './serverModelTypes';
+
+/**
+ * Common wire-format credential for token-authenticated notification requests.
+ * Unregistration also accepts an inactive or unknown well-formed token.
+ */
+export interface MobileServerWithExpoTokenParams {
+  /** Expo push token; never expose it to another user. */
+  expo_token: string;
+}
+
+/**
+ * Registration fields shared by v1 and v2 signed inner payloads.
+ * Nullable metadata keys remain present when signing so the MessagePack hash matches the backend.
+ */
+export interface MobileServerRegisterExpoTokenParams
+  extends
+    MobileServerWithExpoTokenParams,
+    MobileServerNotificationDeviceMetadata {}
+
+/**
+ * One subscription operation; exactly one operation is non-null and unused operations must be null.
+ */
+export interface MobileServerNotificationSubscriptionsUpdate {
+  /** Latest subscription revision, not the settings revision. */
+  expected_revision: number;
+  /** Set one bell; enabling requires an existing follow relationship. */
+  trader_bell: {
+    /** Target non-isolated subaccount belonging to another wallet. */
+    subaccount: Hex;
+    /** Desired bell state. */
+    enabled: boolean;
+  } | null;
+  /** Subscribe or unsubscribe one known market. */
+  market: {
+    /** Positive market product ID. */
+    product_id: number;
+    /** Desired subscription state. */
+    subscribed: boolean;
+  } | null;
+  /** One-time merge of up to 500 local market IDs; mutually exclusive with the other operations. */
+  import_markets: number[] | null;
+}
 
 /**
  * Opt-in extras for a `profiles` query. Each one costs extra rate-limit weight per profile and adds fields
@@ -178,8 +222,12 @@ export interface MobileServerPublicQueryRequestByType {
      */
     cursor?: string;
   };
-  notification_preferences: { expo_token: string };
-  registered_wallet: { expo_token: string };
+  notification_preferences: MobileServerWithExpoTokenParams;
+  /** Persisted device generation and capabilities. */
+  notification_registration_v2: MobileServerWithExpoTokenParams;
+  /** Versioned notification settings. */
+  notification_settings_v2: MobileServerWithExpoTokenParams;
+  registered_wallet: MobileServerWithExpoTokenParams;
 }
 
 /**
@@ -191,13 +239,19 @@ export type MobileServerPublicQueryRequestType =
 /**
  * Params for each unsigned `public_execute`, keyed by request `type`. Possession of an active Expo push token
  * authorizes these notification-only mutations: the backend resolves the token's owning wallet and mutates
- * its state, so no signature, sender, or nonce is sent. Ordering is the backend's last-write-wins commit
- * order, so callers must serialize their own writes.
+ * its state, so no signature, sender, or nonce is sent. Legacy preference writes are last-write-wins;
+ * v2 settings require the latest settings revision.
  */
 export interface MobileServerPublicExecuteRequestByType {
-  unregister_expo_token: { expo_token: string };
-  update_preferences: {
-    expo_token: string;
+  /** Full settings replacement with optimistic concurrency control. */
+  update_notification_settings_v2: MobileServerWithExpoTokenParams & {
+    /** Latest settings revision. */
+    expected_revision: number;
+    /** All nine settings fields. */
+    settings: MobileServerNotificationSettings;
+  };
+  unregister_expo_token: MobileServerWithExpoTokenParams;
+  update_preferences: MobileServerWithExpoTokenParams & {
     preferences: MobileServerNotificationPreferences;
   };
 }
@@ -209,20 +263,30 @@ export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
 /**
- * Discriminant `type` values for signed `execute` requests. Every signed route the SDK calls is a write, so
- * this is the full set of {@link MobileSignedInner} tags. Unlike the public queries these carry no separate
- * params map — a signed request body *is* its inner payload flattened with the envelope, so
+ * Discriminant `type` values for signed `execute` requests, excluding signed queries. Unlike the public
+ * queries these carry no separate params map — a signed request body is its inner payload flattened with the envelope, so
  * {@link MobileSignedInner} is the single source of truth for both the fields and their significant order.
  */
-export type MobileServerExecuteRequestType = MobileSignedInner['type'];
+export type MobileServerExecuteRequestType = Exclude<
+  MobileSignedInner['type'],
+  MobileServerSignedQueryRequestType
+>;
+
+/**
+ * Discriminant `type` values for signed `query` requests, distinct from unsigned `public_query` requests.
+ */
+export type MobileServerSignedQueryRequestType =
+  | 'notification_subscriptions'
+  | 'notification_inbox_v2';
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
  * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
- * writes (e.g. `execute_set_username`). The prefix names the route, so it never carries the `mobile:` prefix
- * that the EIP-712 method does.
+ * writes (e.g. `execute_set_username`), or `query_*` for signed reads. Unlike the EIP-712 method,
+ * these values never carry the `mobile:` prefix.
  */
 export type MobileServerRequestType =
+  | `query_${MobileServerSignedQueryRequestType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

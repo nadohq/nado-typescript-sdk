@@ -2,9 +2,14 @@ import { WalletClientWithAccount } from '@nadohq/shared';
 import { Hex } from 'viem';
 import { MobileSignedRequestParams } from '../types/clientTypes';
 import {
-  MobileNotificationPlatform,
   MobileServerAvatarSelection,
+  MobileServerNotificationCapabilities,
+  MobileServerProductEvent,
 } from '../types/serverModelTypes';
+import {
+  MobileServerNotificationSubscriptionsUpdate,
+  MobileServerRegisterExpoTokenParams,
+} from '../types/serverRequestTypes';
 
 /**
  * Unsigned inner payloads that can be authenticated against the mobile service API.
@@ -21,6 +26,35 @@ import {
  * lowercases; unlike bytes32, string fields such as `display_name` are hashed as-is and keep their casing.
  */
 export type MobileSignedInner =
+  | ({
+      /** Capability-aware device registration. */
+      type: 'register_expo_token_v2';
+    } & MobileServerRegisterExpoTokenParams & {
+        /** Supported payload versions, types, and routes. */
+        capabilities: MobileServerNotificationCapabilities;
+      })
+  | {
+      /** Signed query for wallet markets and Identity bells. */
+      type: 'notification_subscriptions';
+    }
+  | ({
+      /** One revision-guarded subscription operation. */
+      type: 'update_notification_subscriptions';
+    } & MobileServerNotificationSubscriptionsUpdate)
+  | {
+      /** Signed query for the wallet's private notification page. */
+      type: 'notification_inbox_v2';
+      /** Previous page cursor, or nil for the first page. */
+      cursor: string | null;
+      /** Page size, or nil for the server default. */
+      limit: number | null;
+    }
+  | {
+      /** Atomic product analytics batch. */
+      type: 'record_product_events';
+      /** Events in caller order. */
+      events: MobileServerProductEvent[];
+    }
   | { type: 'set_bio'; bio: string }
   | { type: 'create_avatar_upload'; content_length: number }
   | {
@@ -29,15 +63,10 @@ export type MobileSignedInner =
     }
   | { type: 'set_username'; display_name: string }
   | { type: 'set_private_mode'; private_mode: boolean }
-  | {
+  | ({
+      /** Legacy device registration without a capability declaration. */
       type: 'register_expo_token';
-      expo_token: string;
-      platform: MobileNotificationPlatform;
-      // Optional on the wire, but always present (null when unset) so the msgpack payload hash matches the
-      // backend, which serializes `Option::None` as nil under the same key.
-      locale: string | null;
-      app_version: string | null;
-    }
+    } & MobileServerRegisterExpoTokenParams)
   | {
       type: 'set_follow';
       subaccount: Hex;
