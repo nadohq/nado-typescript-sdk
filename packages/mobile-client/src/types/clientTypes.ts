@@ -1336,13 +1336,11 @@ export interface MobileCreateFeedPostParams extends MobileSignedRequestParams {
 export interface MobileCreateFeedImageUploadParams extends MobileSignedRequestParams {
   /** Raw original file bytes; format is validated by the service. */
   fileBytes: Uint8Array;
-  /** Multipart filename only; not used for format detection. */
-  fileName?: string;
 }
 
 /** Parameters for fetching protected feed image bytes with a reading session. */
 export interface GetMobileFeedImageBytesParams {
-  /** Relative or absolute path from {@link MobileSocialFeedImage.url} or thumbnail.url. */
+  /** Backend path from {@link MobileSocialFeedImage.url} or thumbnail.url. */
   path: string;
   /** Reading session that fully delivered the parent item. */
   sessionId: string;
@@ -1424,7 +1422,7 @@ export interface MobileRecordFeedViewsParams {
    */
   viewEventId: string;
   /** Exactly one fully delivered, readable detail-target item UUID. */
-  itemIds: string[];
+  itemId: string;
 }
 
 /** Parameters for full position history, not just published feed items. */

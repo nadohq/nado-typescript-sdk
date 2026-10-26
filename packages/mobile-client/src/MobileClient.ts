@@ -27,7 +27,7 @@ import {
   mapMobileSocialFeedCommentsPage,
   mapMobileSocialFeedDrawingMutationResult,
   mapMobileSocialFeedDrawingResult,
-  mapMobileSocialFeedImageUpload,
+  mapMobileSocialFeedImage,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedLikeResult,
@@ -149,6 +149,7 @@ import {
   MobileServerPublicQueryRequestType,
 } from './types/serverRequestTypes';
 import { buildMobileFeedImageMultipart } from './utils/buildMobileFeedImageMultipart';
+import { MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES } from './utils/feed';
 import {
   isMobileServerFailureResponse,
   isMobileServerSuccessResponse,
@@ -659,6 +660,31 @@ export class MobileClient {
   }
 
   /**
+   * Resolves a backend feed image path against this client's mobile gateway URL.
+   * @param path - Backend path from image metadata, rooted at /v1/mobile or the mobile service root.
+   * @returns An absolute URL suitable for authenticated fetches.
+   */
+  resolveFeedImageUrl(path: string): string {
+    return `${this.opts.url}${path.replace(/^\/v1\/mobile(?=\/)/, '')}`;
+  }
+
+  /**
+   * Fetches protected feed image bytes using the reading session that fully delivered the parent item.
+   * Does not count as a detail visit or recorded view.
+   * @param params - Image path from metadata plus the original session credentials.
+   * @returns Raw image bytes.
+   * @throws {MobileServerFailureError} On session, permission, or availability errors.
+   */
+  async getFeedImageBytes(
+    params: GetMobileFeedImageBytesParams,
+  ): Promise<Uint8Array> {
+    return this.publicGetBytes(this.resolveFeedImageUrl(params.path), {
+      'x-feed-session-id': params.sessionId,
+      'x-feed-viewer-token': params.viewerToken,
+    });
+  }
+
+  /**
    * Reads a comment thread with an optional anchor and bidirectional pagination.
    * Independent reads create a public-only session; reused sessions retain their original scope.
    * @param params - Root item, optional anchor or cursor (mutually exclusive), page size, and read perspective.
@@ -819,7 +845,7 @@ export class MobileClient {
       session_id: params.sessionId,
       viewer_token: params.viewerToken,
       view_event_id: params.viewEventId,
-      item_ids: params.itemIds,
+      item_ids: [params.itemId],
     };
     return mapMobileSocialFeedViewsResult(await this.publicExecute(body));
   }
@@ -1069,6 +1095,7 @@ export class MobileClient {
    * @param params - Author subaccount and signing options, plus the original file bytes.
    * @returns Ready image metadata, including original and thumbnail paths.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {RangeError} If the complete multipart request exceeds {@link MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES}.
    * @throws {MobileServerFailureError} On authentication, format/size/hash errors (`INVALID_SOCIAL_FEED_IMAGE`),
    * or when publishing is disabled (`SERVICE_UNAVAILABLE`).
    */
@@ -1084,6 +1111,7 @@ export class MobileClient {
    * @param params - Author subaccount and signing options, plus the original file bytes.
    * @returns Ready image metadata, including original and thumbnail paths.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {RangeError} If the complete multipart request exceeds {@link MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES}.
    * @throws {MobileServerFailureError} On authentication, format/size/hash errors (`INVALID_SOCIAL_FEED_IMAGE`),
    * or when comments are disabled (`SERVICE_UNAVAILABLE`).
    */
@@ -1094,55 +1122,6 @@ export class MobileClient {
       'create_feed_comment_image_uploads',
       params,
     );
-  }
-
-  /**
-   * Resolves a feed image path from {@link MobileSocialFeedImage} against this client's base URL.
-   * @param path - Relative backend path or absolute URL from image metadata.
-   * @returns An absolute URL suitable for authenticated fetches.
-   */
-  resolveFeedImageUrl(path: string): string {
-    if (/^https?:\/\//i.test(path)) {
-      return path;
-    }
-    const stripped = path
-      .replace(/^\/v1\/mobile(?=\/)/, '')
-      .replace(/^\/mobile\/v1(?=\/)/, '');
-    const base = this.opts.url.replace(/\/$/, '');
-    return `${base}${stripped.startsWith('/') ? stripped : `/${stripped}`}`;
-  }
-
-  /**
-   * Fetches protected feed image bytes using the reading session that fully delivered the parent item.
-   * Does not count as a detail visit or recorded view.
-   * @param params - Image path from metadata plus the original session credentials.
-   * @returns Raw image bytes.
-   * @throws {MobileServerFailureError} On session, permission, or availability errors.
-   */
-  async getFeedImageBytes(
-    params: GetMobileFeedImageBytesParams,
-  ): Promise<Uint8Array> {
-    const response = await this.axiosInstance.get<ArrayBuffer>(
-      this.resolveFeedImageUrl(params.path),
-      {
-        responseType: 'arraybuffer',
-        headers: {
-          'x-feed-session-id': params.sessionId,
-          'x-feed-viewer-token': params.viewerToken,
-        },
-      },
-    );
-    if (response.status < 200 || response.status >= 300) {
-      const responseText = bytesToString(new Uint8Array(response.data));
-      let errorData: unknown;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = responseText;
-      }
-      this.checkResponseStatus({ ...response, data: errorData });
-    }
-    return new Uint8Array(response.data);
   }
 
   /**
@@ -1286,6 +1265,27 @@ export class MobileClient {
     return response.data as MobileServerPublicQuerySuccessResponse<T>;
   }
 
+  protected async publicGetBytes(
+    url: string,
+    headers: Record<string, string>,
+  ): Promise<Uint8Array> {
+    const response = await this.axiosInstance.get<ArrayBuffer>(url, {
+      responseType: 'arraybuffer',
+      headers,
+    });
+    if (response.status < 200 || response.status >= 300) {
+      const responseText = bytesToString(new Uint8Array(response.data));
+      let errorData: unknown;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch {
+        errorData = responseText;
+      }
+      this.checkResponseStatus({ ...response, data: errorData });
+    }
+    return new Uint8Array(response.data);
+  }
+
   protected async publicExecute<T extends MobileServerPublicExecuteRequestType>(
     body: { type: T } & MobileServerPublicExecuteRequestByType[T],
   ): Promise<MobileServerPublicExecuteSuccessResponse<T>> {
@@ -1305,10 +1305,26 @@ export class MobileClient {
   // `publicQuery` spells its body out as an intersection: an indexed access is not an inference site.
   protected async execute<T extends MobileServerExecuteRequestType>(
     body: MobileSignedRequest & { type: T },
+    fileBytes?: Uint8Array,
   ): Promise<MobileServerExecuteSuccessResponse<T>> {
+    const multipart =
+      fileBytes == null
+        ? undefined
+        : buildMobileFeedImageMultipart(JSON.stringify(body), fileBytes);
+    if (
+      multipart &&
+      multipart.body.byteLength > MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES
+    ) {
+      throw new RangeError(
+        `Feed image upload request exceeds ${MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES} bytes (2 MiB).`,
+      );
+    }
     const response = await this.axiosInstance.post<MobileServerExecuteResult>(
       `${this.opts.url}/execute`,
-      body,
+      multipart?.body ?? body,
+      multipart
+        ? { headers: { 'Content-Type': multipart.contentType } }
+        : undefined,
     );
 
     this.checkResponseStatus(response);
@@ -1328,38 +1344,8 @@ export class MobileClient {
     const request = await this.getSignedRequest(type, params, {
       content_hash: contentHash,
     });
-    const data = await this.executeMultipart(request, params);
-    return mapMobileSocialFeedImageUpload(data);
-  }
-
-  /**
-   * Posts a signed execute as multipart/form-data: `payload` (JSON) + `file` (raw bytes).
-   * Built without DOM FormData/Blob so Node, browsers, and React Native share one path.
-   * @param body - Signed execute payload with the original file's content hash.
-   * @param params - Original file bytes and optional multipart filename.
-   * @returns The successful execute response.
-   * @throws {MobileServerFailureError} If the service rejects the upload.
-   */
-  protected async executeMultipart<T extends MobileServerExecuteRequestType>(
-    body: MobileSignedRequest & { type: T },
-    params: Pick<MobileCreateFeedImageUploadParams, 'fileBytes' | 'fileName'>,
-  ): Promise<MobileServerExecuteSuccessResponse<T>> {
-    const { body: multipartBody, contentType } = buildMobileFeedImageMultipart(
-      JSON.stringify(body),
-      params.fileBytes,
-      params.fileName ?? 'image.bin',
-    );
-
-    const response = await this.axiosInstance.post<MobileServerExecuteResult>(
-      `${this.opts.url}/execute`,
-      multipartBody,
-      { headers: { 'Content-Type': contentType } },
-    );
-
-    this.checkResponseStatus(response);
-    this.checkServerStatus(response);
-
-    return response.data as MobileServerExecuteSuccessResponse<T>;
+    const data = await this.execute(request, params.fileBytes);
+    return mapMobileSocialFeedImage(data.image);
   }
 
   /**

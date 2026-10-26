@@ -77,7 +77,6 @@ import {
   MobileServerFollowMutationResponse,
   MobileServerSocialFeedCommentResponse,
   MobileServerSocialFeedDrawingMutationResponse,
-  MobileServerSocialFeedImageUploadResponse,
   MobileServerSocialFeedLikeResponse,
   MobileServerSocialFeedPresenceResponse,
   MobileServerSocialFeedViewsResponse,
@@ -595,17 +594,6 @@ export function mapMobileSocialFeedImage(
 }
 
 /**
- * Maps a ready image from a direct multipart upload.
- * @param server - The service response.
- * @returns The mapped ready image.
- */
-export function mapMobileSocialFeedImageUpload(
-  server: MobileServerSocialFeedImageUploadResponse,
-): MobileSocialFeedImage {
-  return mapMobileSocialFeedImage(server.image);
-}
-
-/**
  * Maps common item metadata and server capabilities.
  * @param server - The service response.
  * @returns The mapped social feed item base.
@@ -643,7 +631,7 @@ export function mapMobileSocialFeedContentBase(
 ): MobileSocialFeedContentBase {
   return {
     ...mapMobileSocialFeedItemBase(server),
-    images: (server.images ?? []).map(mapMobileSocialFeedImage),
+    images: server.images.map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
     position: mapMobileSocialFeedPositionCard(server.position),
@@ -1058,7 +1046,7 @@ export function mapMobileSocialFeedReply(
   return {
     ...mapMobileSocialFeedItemBase(server),
     kind: server.kind,
-    images: (server.images ?? []).map(mapMobileSocialFeedImage),
+    images: server.images.map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
     rootItemId: server.root_item_id,

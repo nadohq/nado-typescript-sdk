@@ -1,6 +1,7 @@
 import {
   getMobileNonce,
   MOBILE_ERROR_CODES,
+  MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES,
   MobileClient,
   MobileServerFailureError,
   MobileSocialFeedItem,
@@ -371,7 +372,6 @@ void describe(
         const image = await upload({
           ...signed,
           fileBytes,
-          fileName: 'feed.jpg',
         });
         assertNonEmptyString(image.imageId, 'image.imageId');
         assert.equal(image.contentType, 'image/jpeg');
@@ -383,6 +383,23 @@ void describe(
         );
         assertNonEmptyString(image.url, 'image.url');
         assertNonEmptyString(image.thumbnail.url, 'image.thumbnail.url');
+      }
+    });
+
+    void test('rejects oversized image upload requests locally', async () => {
+      const signed = getMobileSignedParams(tc);
+      for (const upload of [
+        tc.mobile.createFeedPostImageUpload.bind(tc.mobile),
+        tc.mobile.createFeedCommentImageUpload.bind(tc.mobile),
+      ]) {
+        await assert.rejects(
+          () =>
+            upload({
+              ...signed,
+              fileBytes: new Uint8Array(MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES),
+            }),
+          RangeError,
+        );
       }
     });
 
@@ -437,7 +454,6 @@ void describe(
       const postImage = await tc.mobile.createFeedPostImageUpload({
         ...signed,
         fileBytes,
-        fileName: 'post.jpg',
       });
       assert.equal(postImage.contentType, 'image/jpeg');
       assert.equal(postImage.byteSize, fileBytes.byteLength);
@@ -490,7 +506,6 @@ void describe(
       const commentImage = await tc.mobile.createFeedCommentImageUpload({
         ...signed,
         fileBytes,
-        fileName: 'comment.jpg',
       });
       const commentParams = {
         ...signed,
@@ -580,7 +595,7 @@ void describe(
       const recorded = await mobile.recordFeedViews({
         ...session,
         viewEventId,
-        itemIds: [post.id],
+        itemId: post.id,
       });
       assert.ok(
         recorded.acceptedItemIds.includes(post.id) ||
@@ -589,7 +604,7 @@ void describe(
       const duplicate = await mobile.recordFeedViews({
         ...session,
         viewEventId,
-        itemIds: [post.id],
+        itemId: post.id,
       });
       assert.ok(duplicate.duplicateItemIds.includes(post.id));
       debugPrint('Published content verification', {

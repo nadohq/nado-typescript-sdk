@@ -250,7 +250,7 @@ describe('[mobile-client]: social feed transport', () => {
       sessionId: 'OpaqueSession',
       viewerToken: 'OpaqueViewer',
       viewEventId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-      itemIds: [itemId],
+      itemId,
     });
     expect(result).toEqual({
       acceptedItemIds: [itemId],

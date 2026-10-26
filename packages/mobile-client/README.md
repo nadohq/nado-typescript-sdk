@@ -108,7 +108,9 @@ fixed.
 `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`.
 
 Upload images one at a time with the multipart helpers (≤ 2 MiB whole request), then pass ordered ready
-`imageIds` to `createFeedPost` / `createFeedComment`. Posts still require nonblank text or a drawing; comments
+`imageIds` to `createFeedPost` / `createFeedComment`. The SDK throws `RangeError` before sending a request
+that exceeds `MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES`, including the signed payload and multipart framing.
+Posts still require nonblank text or a drawing; comments
 still require nonblank text. See method and parameter JSDoc for publication, retries, mention offsets, drawing
 data, and mutation ordering.
 

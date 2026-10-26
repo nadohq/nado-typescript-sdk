@@ -7,12 +7,11 @@ describe('buildMobileFeedImageMultipart', () => {
     const { body, contentType } = buildMobileFeedImageMultipart(
       '{"type":"create_feed_post_image_uploads"}',
       fileBytes,
-      'shot.png',
     );
     const text = String.fromCharCode(...body);
     expect(contentType.startsWith('multipart/form-data; boundary=')).toBe(true);
     expect(text).toContain('name="payload"');
-    expect(text).toContain('name="file"; filename="shot.png"');
+    expect(text).toContain('name="file"; filename="image"');
     expect(text).toContain('{"type":"create_feed_post_image_uploads"}');
     const boundary = contentType.split('boundary=')[1];
     const fileStart = text.indexOf('\r\n\r\n', text.indexOf('name="file"')) + 4;
@@ -24,18 +23,4 @@ describe('buildMobileFeedImageMultipart', () => {
     );
     expect(text.startsWith(`--${boundary}\r\n`)).toBe(true);
   });
-
-  it.each(['unsafe\r\n"name.jpg', '', '\u56fe\u7247.png'])(
-    'sanitizes the multipart filename %s',
-    (fileName) => {
-      const { body } = buildMobileFeedImageMultipart(
-        '{}',
-        new Uint8Array(),
-        fileName,
-      );
-      const text = String.fromCharCode(...body);
-      const expected = fileName.replace(/[^\w.-]+/g, '_') || 'image.bin';
-      expect(text).toContain(`name="file"; filename="${expected}"\r\n`);
-    },
-  );
 });
