@@ -1,6 +1,7 @@
 export * from './clientTypes';
 export * from './mobileErrorCodes';
 export * from './MobileServerFailureError';
+export * from './MobileUnsupportedFeedItemError';
 export * from './serverBaseTypes';
 export * from './serverExecuteTypes';
 export * from './serverModelTypes';

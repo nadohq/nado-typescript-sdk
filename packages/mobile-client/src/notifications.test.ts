@@ -11,20 +11,27 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import { MobileClient } from './MobileClient';
 import {
+  canonicalizeMobileInner,
   getMobilePayloadHash,
   MobileSignedInner,
   MobileSignedRequest,
 } from './signing';
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_NOTIFICATION_MIN_TRADE_SIZES_USD,
+  MOBILE_NOTIFICATION_POSITION_THRESHOLDS,
   MobileNotificationCapabilities,
   MobileNotificationRegistrationV2,
+  MobileNotificationRoute,
   MobileNotificationRouteName,
   MobileNotificationSettingsV2,
   MobileNotificationSubscriptionsUpdate,
   MobileProductEvent,
   MobileServerFailureError,
   MobileServerNotificationDeviceMetadata,
+  MobileServerNotificationInboxItem,
+  MobileServerNotificationRoute,
+  MobileServerNotificationSettingsV2Response,
   MobileServerRegisteredWalletResponse,
   MobileServerRegisterExpoTokenParams,
   MobileServerWithExpoTokenParams,
@@ -58,10 +65,32 @@ const target =
   '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd64656661756c740000000000' as const;
 const capabilities: MobileNotificationCapabilities = {
   routes: ['portfolio', 'profile'],
-  type_ids: ['order_fill', 'new_follower'],
-  payload_versions: [2],
+  typeIds: ['order_fill', 'new_follower'],
+  payloadVersions: [2],
 };
 const settings: MobileNotificationSettingsV2 = {
+  schemaVersion: 2,
+  revision: 7,
+  settings: {
+    myPositions: true,
+    positionThresholds: [25],
+    myOrders: true,
+    followingTrades: false,
+    followingPosts: true,
+    minTradeSizeUsd: 0,
+    newFollowers: true,
+    announcements: false,
+    discovery: false,
+  },
+};
+const searchEvent: MobileProductEvent = {
+  query: 'BTC',
+  occurredAt: 1792886400000,
+  eventName: 'search',
+  clientEventId: eventId,
+};
+
+const serverSettings: MobileServerNotificationSettingsV2Response = {
   schema_version: 2,
   revision: 7,
   settings: {
@@ -76,15 +105,6 @@ const settings: MobileNotificationSettingsV2 = {
     discovery: false,
   },
 };
-const searchEvent: MobileProductEvent = {
-  query: 'BTC',
-  product_id: null,
-  occurred_at: 1792886400000,
-  notification_id: null,
-  event_name: 'search',
-  client_event_id: eventId,
-};
-
 function mockClient(
   data: unknown = { status: 'success' },
   status = 200,
@@ -164,13 +184,11 @@ const signedCases: {
       client.updateNotificationSubscriptions({
         ...auth,
         update: {
-          import_markets: null,
-          market: null,
-          trader_bell: {
+          traderBell: {
             enabled: true,
-            subaccount: `0x${target.slice(2).toUpperCase()}`,
+            subaccount: target,
           },
-          expected_revision: 3,
+          expectedRevision: 3,
         },
       }),
     expected: {
@@ -194,7 +212,7 @@ const signedCases: {
           client_event_id: eventId,
           event_name: 'search',
           notification_id: null,
-          occurred_at: searchEvent.occurred_at,
+          occurred_at: searchEvent.occurredAt,
           product_id: null,
           query: 'BTC',
         },
@@ -208,7 +226,19 @@ describe('[mobile-client]: notification v2 signing and transport', () => {
     it.each(signedCases)(
       '$name uses the correct route, method, sender and canonical hash',
       async ({ route, method, run, expected }) => {
-        const { client, requests } = mockClient();
+        const { client, requests } = mockClient(
+          route === 'query'
+            ? {
+                status: 'success',
+                revision: 0,
+                favorites_imported: false,
+                market_ids: [],
+                trader_bells: [],
+                notifications: [],
+                next_cursor: null,
+              }
+            : undefined,
+        );
         if (useLinkedSigner) {
           client.setLinkedSigner(
             createWalletClient({
@@ -261,28 +291,32 @@ describe('[mobile-client]: notification v2 signing and transport', () => {
 
   it.each<MobileNotificationSubscriptionsUpdate>([
     {
-      expected_revision: 0,
-      trader_bell: null,
-      market: { subscribed: false, product_id: 2 },
-      import_markets: null,
+      expectedRevision: 0,
+      market: { subscribed: false, productId: 2 },
     },
     {
-      expected_revision: 1,
-      trader_bell: null,
-      market: null,
-      import_markets: [4, 2, 4],
+      expectedRevision: 1,
+      importMarkets: [4, 2, 4],
     },
     {
-      expected_revision: 2,
-      trader_bell: null,
-      market: null,
-      import_markets: [],
+      expectedRevision: 2,
+      importMarkets: [],
     },
   ])('preserves market/import operations: %j', async (update) => {
     const original = JSON.stringify(update);
     const { client, requests } = mockClient();
     await client.updateNotificationSubscriptions({ ...auth, update });
-    expect(requests[0].body).toMatchObject({ ...update });
+    expect(requests[0].body).toMatchObject({
+      expected_revision: update.expectedRevision,
+      trader_bell: null,
+      market: update.market
+        ? {
+            product_id: update.market.productId,
+            subscribed: update.market.subscribed,
+          }
+        : null,
+      import_markets: update.importMarkets ?? null,
+    });
     if (requests[0].body.market) {
       expect(Object.keys(requests[0].body.market)).toEqual([
         'product_id',
@@ -295,22 +329,22 @@ describe('[mobile-client]: notification v2 signing and transport', () => {
   it('preserves all product event kinds, stable IDs, nulls, and timestamps across retries', async () => {
     const events: MobileProductEvent[] = [
       {
-        ...searchEvent,
-        event_name: 'notif_opened',
-        notification_id: notificationId,
-        query: null,
+        clientEventId: eventId,
+        occurredAt: searchEvent.occurredAt,
+        eventName: 'notif_opened',
+        notificationId: notificationId,
       },
       {
-        ...searchEvent,
-        event_name: 'market_viewed',
-        product_id: 2,
-        query: null,
+        clientEventId: eventId,
+        occurredAt: searchEvent.occurredAt,
+        eventName: 'market_viewed',
+        productId: 2,
       },
       {
-        ...searchEvent,
-        event_name: 'chart_opened',
-        product_id: 4,
-        query: null,
+        clientEventId: eventId,
+        occurredAt: searchEvent.occurredAt,
+        eventName: 'chart_opened',
+        productId: 4,
       },
       searchEvent,
     ];
@@ -318,8 +352,42 @@ describe('[mobile-client]: notification v2 signing and transport', () => {
     const { client, requests } = mockClient();
     await client.recordProductEvents({ ...auth, events });
     await client.recordProductEvents({ ...auth, events });
-    expect(requests[0].body.events).toEqual(events);
-    expect(requests[1].body.events).toEqual(events);
+    const wireEvents = [
+      {
+        client_event_id: eventId,
+        event_name: 'notif_opened',
+        notification_id: notificationId,
+        occurred_at: searchEvent.occurredAt,
+        product_id: null,
+        query: null,
+      },
+      {
+        client_event_id: eventId,
+        event_name: 'market_viewed',
+        notification_id: null,
+        occurred_at: searchEvent.occurredAt,
+        product_id: 2,
+        query: null,
+      },
+      {
+        client_event_id: eventId,
+        event_name: 'chart_opened',
+        notification_id: null,
+        occurred_at: searchEvent.occurredAt,
+        product_id: 4,
+        query: null,
+      },
+      {
+        client_event_id: eventId,
+        event_name: 'search',
+        notification_id: null,
+        occurred_at: searchEvent.occurredAt,
+        product_id: null,
+        query: 'BTC',
+      },
+    ];
+    expect(requests[0].body.events).toEqual(wireEvents);
+    expect(requests[1].body.events).toEqual(wireEvents);
     expect(requests[0].body.nonce).not.toBe(requests[1].body.nonce);
     expect(JSON.stringify(events)).toBe(original);
   });
@@ -328,22 +396,22 @@ describe('[mobile-client]: notification v2 signing and transport', () => {
 describe('[mobile-client]: notification v2 responses and failures', () => {
   it('keeps v2 registration and legacy query capability versions distinct', () => {
     const registrationVersions: [
-      IsAssignable<[1], MobileNotificationCapabilities['payload_versions']>,
-      IsAssignable<[2], MobileNotificationCapabilities['payload_versions']>,
-      IsAssignable<[1, 2], MobileNotificationCapabilities['payload_versions']>,
+      IsAssignable<[1], MobileNotificationCapabilities['payloadVersions']>,
+      IsAssignable<[2], MobileNotificationCapabilities['payloadVersions']>,
+      IsAssignable<[1, 2], MobileNotificationCapabilities['payloadVersions']>,
     ] = [false, true, false];
     const queriedVersions: [
       IsAssignable<
         [1],
-        MobileNotificationRegistrationV2['capabilities']['payload_versions']
+        MobileNotificationRegistrationV2['capabilities']['payloadVersions']
       >,
       IsAssignable<
         [2],
-        MobileNotificationRegistrationV2['capabilities']['payload_versions']
+        MobileNotificationRegistrationV2['capabilities']['payloadVersions']
       >,
       IsAssignable<
         [1, 2],
-        MobileNotificationRegistrationV2['capabilities']['payload_versions']
+        MobileNotificationRegistrationV2['capabilities']['payloadVersions']
       >,
     ] = [true, true, false];
     expect(registrationVersions).toEqual([false, true, false]);
@@ -419,20 +487,28 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
     'reads version %i capabilities without a wallet and preserves generation precision',
     async (version) => {
       const registration: MobileNotificationRegistrationV2 = {
-        registration_generation: '9007199254740993',
+        registrationGeneration: '9007199254740993',
         capabilities:
           version === 1
-            ? { payload_versions: [1], type_ids: [], routes: [] }
+            ? { payloadVersions: [1], typeIds: [], routes: [] }
             : capabilities,
       };
       const { client, requests } = mockClient(
-        { status: 'success', ...registration },
+        {
+          status: 'success',
+          registration_generation: registration.registrationGeneration,
+          capabilities: {
+            payload_versions: registration.capabilities.payloadVersions,
+            type_ids: registration.capabilities.typeIds,
+            routes: registration.capabilities.routes,
+          },
+        },
         200,
         false,
       );
-      expect(
-        await client.getNotificationRegistrationV2({ expoToken }),
-      ).toMatchObject({ ...registration });
+      expect(await client.getNotificationRegistrationV2({ expoToken })).toEqual(
+        registration,
+      );
       expect(requests[0]).toEqual({
         url: 'https://mobile.example/v1/mobile/public_query',
         body: { type: 'notification_registration_v2', expo_token: expoToken },
@@ -442,13 +518,13 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
 
   it('reads and replaces the full settings document without a signer', async () => {
     const { client, requests } = mockClient(
-      { status: 'success', ...settings },
+      { status: 'success', ...serverSettings },
       200,
       false,
     );
-    expect(await client.getNotificationSettingsV2({ expoToken })).toMatchObject(
-      { ...settings },
-    );
+    expect(await client.getNotificationSettingsV2({ expoToken })).toEqual({
+      ...settings,
+    });
     expect(requests[0]).toEqual({
       url: 'https://mobile.example/v1/mobile/public_query',
       body: { type: 'notification_settings_v2', expo_token: expoToken },
@@ -466,12 +542,12 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
         type: 'update_notification_settings_v2',
         expo_token: expoToken,
         expected_revision: 6,
-        settings: settings.settings,
+        settings: serverSettings.settings,
       },
     });
   });
 
-  it('returns subscription state without renaming or losing fields', async () => {
+  it('returns subscription state without the response envelope', async () => {
     const response = {
       status: 'success',
       revision: 4,
@@ -480,12 +556,17 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
       trader_bells: [target],
     };
     const { client } = mockClient(response);
-    expect(await client.getNotificationSubscriptions(auth)).toEqual(response);
+    expect(await client.getNotificationSubscriptions(auth)).toEqual({
+      revision: 4,
+      favoritesImported: true,
+      marketIds: [2, 4],
+      traderBells: [target],
+    });
   });
 
   it.each([true, false])(
-    'preserves inbox navigation and optional attribution: %s',
-    async (withAttribution) => {
+    'preserves inbox navigation and boolean attribution: %s',
+    async (tradeWithin24h) => {
       const response = {
         status: 'success',
         notifications: [
@@ -501,7 +582,7 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
               template_version: 1,
               route: { name: 'profile', subaccount: target },
             },
-            ...(withAttribution ? { trade_within_24h: false } : {}),
+            trade_within_24h: tradeWithin24h,
           },
         ],
         next_cursor: notificationId,
@@ -513,7 +594,25 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
           cursor: notificationId,
           limit: 50,
         }),
-      ).toEqual(response);
+      ).toEqual({
+        notifications: [
+          {
+            notificationId,
+            typeId: 'new_follower',
+            createdAt: 1792886400000,
+            tradeWithin24h,
+            data: {
+              payloadVersion: 2,
+              notificationId,
+              recipientWallet: owner.address,
+              typeId: 'new_follower',
+              templateVersion: 1,
+              route: { name: 'profile', subaccount: target },
+            },
+          },
+        ],
+        nextCursor: notificationId,
+      });
       expect(requests[0].body).toMatchObject({
         type: 'notification_inbox_v2',
         cursor: notificationId,
@@ -529,10 +628,25 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
       next_cursor: null,
     };
     const { client } = mockClient(response);
-    expect(await client.getNotificationInboxV2(auth)).toEqual(response);
+    expect(await client.getNotificationInboxV2(auth)).toEqual({
+      notifications: [],
+      nextCursor: null,
+    });
   });
 
   it.each([
+    {
+      status: 400,
+      errorCode: MOBILE_ERROR_CODES.NOTIFICATION_DEVICE_LIMIT,
+      requestType: 'execute_register_expo_token_v2',
+      run: (client: MobileClient) =>
+        client.registerExpoTokenV2({
+          ...auth,
+          expoToken,
+          platform: 'ios',
+          capabilities,
+        }),
+    },
     {
       status: 400,
       errorCode: MOBILE_ERROR_CODES.INVALID_EXPO_TOKEN,
@@ -559,10 +673,8 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
         client.updateNotificationSubscriptions({
           ...auth,
           update: {
-            expected_revision: 0,
-            trader_bell: null,
-            market: null,
-            import_markets: [],
+            expectedRevision: 0,
+            importMarkets: [],
           },
         }),
     },
@@ -652,4 +764,132 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
       },
     });
   });
+});
+
+describe('[mobile-client]: notification v2 contracts', () => {
+  it('exposes the supported notification setting options', () => {
+    expect(MOBILE_NOTIFICATION_POSITION_THRESHOLDS).toEqual([10, 25, 50]);
+    expect(MOBILE_NOTIFICATION_MIN_TRADE_SIZES_USD).toEqual([
+      0, 100, 1000, 10000,
+    ]);
+  });
+
+  it('requires exactly one subscription operation at compile time', () => {
+    const acceptsNoOperation: IsAssignable<
+      { expectedRevision: number },
+      MobileNotificationSubscriptionsUpdate
+    > = false;
+    const acceptsMultipleOperations: IsAssignable<
+      {
+        expectedRevision: number;
+        market: { productId: number; subscribed: boolean };
+        importMarkets: number[];
+      },
+      MobileNotificationSubscriptionsUpdate
+    > = false;
+    const acceptsAllOperations: IsAssignable<
+      {
+        expectedRevision: number;
+        traderBell: { subaccount: typeof target; enabled: boolean };
+        market: { productId: number; subscribed: boolean };
+        importMarkets: number[];
+      },
+      MobileNotificationSubscriptionsUpdate
+    > = false;
+    expect([
+      acceptsNoOperation,
+      acceptsMultipleOperations,
+      acceptsAllOperations,
+    ]).toEqual([false, false, false]);
+  });
+
+  it('requires event-specific fields and rejects unrelated fields at compile time', () => {
+    type EventBase = { clientEventId: string; occurredAt: number };
+    const acceptsMissingFields: [
+      IsAssignable<EventBase & { eventName: 'search' }, MobileProductEvent>,
+      IsAssignable<
+        EventBase & { eventName: 'market_viewed' },
+        MobileProductEvent
+      >,
+      IsAssignable<
+        EventBase & { eventName: 'chart_opened' },
+        MobileProductEvent
+      >,
+      IsAssignable<
+        EventBase & { eventName: 'notif_opened' },
+        MobileProductEvent
+      >,
+    ] = [false, false, false, false];
+    const acceptsUnrelatedField: IsAssignable<
+      EventBase & { eventName: 'search'; query: string; productId: number },
+      MobileProductEvent
+    > = false;
+    const acceptsMissingAttribution: IsAssignable<
+      Omit<MobileServerNotificationInboxItem, 'trade_within_24h'>,
+      MobileServerNotificationInboxItem
+    > = false;
+    expect(acceptsMissingFields).toEqual([false, false, false, false]);
+    expect(acceptsUnrelatedField).toBe(false);
+    expect(acceptsMissingAttribution).toBe(false);
+  });
+
+  it('canonicalizes bell key order without rewriting caller-provided bytes32', () => {
+    const subaccount = `0x${target.slice(2).toUpperCase()}` as const;
+    const inner: MobileSignedInner = {
+      type: 'update_notification_subscriptions',
+      expected_revision: 1,
+      trader_bell: { enabled: true, subaccount },
+      market: null,
+      import_markets: null,
+    };
+    expect(canonicalizeMobileInner(inner)).toEqual(inner);
+    expect(Object.keys(canonicalizeMobileInner(inner))).toEqual([
+      'type',
+      'expected_revision',
+      'trader_bell',
+      'market',
+      'import_markets',
+    ]);
+  });
+
+  it.each<[MobileServerNotificationRoute, MobileNotificationRoute]>([
+    [
+      { name: 'profile', subaccount: target },
+      { name: 'profile', subaccount: target },
+    ],
+    [
+      { name: 'market', product_id: 2 },
+      { name: 'market', productId: 2 },
+    ],
+    [{ name: 'portfolio' }, { name: 'portfolio' }],
+  ])(
+    'maps inbox destination %j and strips the envelope',
+    async (wireRoute, clientRoute) => {
+      const { client } = mockClient({
+        status: 'success',
+        notifications: [
+          {
+            notification_id: notificationId,
+            type_id: 'new_follower',
+            created_at: 123,
+            trade_within_24h: true,
+            data: {
+              payload_version: 2,
+              notification_id: notificationId,
+              recipient_wallet: owner.address,
+              type_id: 'new_follower',
+              template_version: 1,
+              route: wireRoute,
+            },
+          },
+        ],
+        next_cursor: null,
+      });
+      const result = await client.getNotificationInboxV2(auth);
+      expect(result).not.toHaveProperty('status');
+      expect(result.notifications[0].data.route).toEqual(clientRoute);
+      expect(result.notifications[0].tradeWithin24h).toBe(true);
+      expect(result.notifications[0]).not.toHaveProperty('trade_within_24h');
+    },
+  );
 });

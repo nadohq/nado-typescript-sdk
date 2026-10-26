@@ -48,7 +48,9 @@ await mobile.setUsername({
 
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
 `getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
-`getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`.
+`getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`,
+`getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
+`getPositionHistory`, `getPositionChart`, `getPositionWatchers`.
 
 `getNotificationRegistrationV2` and `getNotificationSettingsV2` use an active Expo token as their credential,
 not a wallet signature. Verify the token's owner with `getRegisteredWallet` before accessing wallet settings.
@@ -76,14 +78,28 @@ All are unsigned. Profile, position, and item reads include the `viewAs` account
 `account_view`; the viewing account is not proof of wallet ownership. Prices are decimal `BigNumber` values;
 quantities, notionals, and PnL retain x18 units. See method and parameter JSDoc for session and polling rules.
 
+`getSelfFeedPositions`, `resolveFeedPosition`, and `resolveFeedAction` require `viewAs` and return eligibility
+hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
+thread pagination. Lists, details, and history return parsed drawings and readable comment previews;
+`getFeedChartDrawing` refreshes a drawing independently when needed.
+
+`getPositionHistory` returns the full action/take timeline, distinct from published-only `getPositionFeed`,
+and a position-mode session for navigation and updates. `getPositionChart` returns candles and action markers,
+keeping execution and liquidation Oracle prices separate. `getPositionWatchers` reads visitor counts without
+registering presence. Watching account previews are self-reported, not proof of account ownership.
+
 ### Public Executes
 
 `unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
+`recordFeedViews` and `setPositionPresence` use reading-session credentials rather than wallet signatures.
+See method and parameter JSDoc for exposure reporting and page-scoped presence rules.
+
 ### Signed Executes
 
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
+`createFeedPost`, `createFeedComment`, `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`,
 `registerExpoTokenV2`, `updateNotificationSubscriptions`, `recordProductEvents`.
 
 ### Signed Queries
@@ -93,9 +109,9 @@ They do not require an Expo token or system push permission. The configured link
 
 ### Notifications V2
 
-All eight new operations are available on `MobileClient`, including `client.context.mobileClient` from
-`@nadohq/client`. Nested settings, capabilities, subscriptions, inbox data, and product events retain the
-documented snake_case fields; top-level SDK arguments such as `expoToken` and `expectedRevision` use camelCase.
+The notification v2 operations are available on `MobileClient`, including `client.context.mobileClient` from
+`@nadohq/client`. Settings, capabilities, subscriptions, inbox data, and product events use camelCase SDK models.
+The SDK maps requests to snake_case wire fields and removes the success envelope from read results.
 
 ```ts
 const auth = {
@@ -110,8 +126,8 @@ await mobile.registerExpoTokenV2({
   expoToken,
   platform: 'ios',
   capabilities: {
-    payload_versions: [2],
-    type_ids: ['order_fill', 'new_follower'],
+    payloadVersions: [2],
+    typeIds: ['order_fill', 'new_follower'],
     routes: ['portfolio', 'profile'],
   },
 });
@@ -120,17 +136,15 @@ const current = await mobile.getNotificationSettingsV2({ expoToken });
 const saved = await mobile.updateNotificationSettingsV2({
   expoToken,
   expectedRevision: current.revision,
-  settings: { ...current.settings, position_thresholds: [25] },
+  settings: { ...current.settings, positionThresholds: [25] },
 });
 
 const subscriptions = await mobile.getNotificationSubscriptions(auth);
 await mobile.updateNotificationSubscriptions({
   ...auth,
   update: {
-    expected_revision: subscriptions.revision,
-    trader_bell: null,
-    market: { product_id: 2, subscribed: true },
-    import_markets: null,
+    expectedRevision: subscriptions.revision,
+    market: { productId: 2, subscribed: true },
   },
 });
 const updatedSubscriptions = await mobile.getNotificationSubscriptions(auth);
@@ -139,19 +153,21 @@ const inbox = await mobile.getNotificationInboxV2({ ...auth, limit: 20 });
 
 - Declare only types/routes the application handles. Re-registration advances the generation and cancels
   old pending deliveries; calling legacy `registerExpoToken` resets capabilities to v1.
-- Settings replacement requires all nine fields. Settings and subscription revisions are independent.
+- Settings replacement requires every field. Settings and subscription revisions are independent.
   On `MOBILE_ERROR_CODES.NOTIFICATION_REVISION_CONFLICT` (6203), re-read and merge only the current user change.
-- A subscription update selects exactly one operation; unused fields are `null`. Successful subscription
+- A subscription update selects exactly one operation; omit the other operations and the SDK sends them as `null`. Successful subscription
   updates return only status, so re-query even after repeated ON/OFF. Favorites import merges once, never replaces.
 - Enabling a bell requires following the target. Unfollowing clears its bell without advancing the subscription
   revision; refresh subscriptions after follow mutations. Bells are Identity-scoped; markets are wallet-scoped.
 - Inbox pages are accepted intents, not delivery/read receipts. There is no title/body, unread count, mark-read,
   or delete operation. Do not use the unimplemented legacy `notification_history` route.
-- `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Send all six event fields, unused
-  fields as `null`, actual millisecond timestamps, and stable `client_event_id` UUIDs across retries. Supported
+- `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,
+  actual millisecond timestamps, and stable `clientEventId` UUIDs across retries. The SDK fills unused wire fields with `null`. Supported
   names are `notif_opened`, `market_viewed`, `chart_opened`, and `search`; obtain analytics consent first.
 - Legacy preferences remain supported and synchronize overlapping v2 fields. Keep legacy push parsing because
   order notifications may use a v1 fallback even for v2 registrations.
+
+See method and parameter JSDoc for publication, retries, mention offsets, drawing data, and mutation ordering.
 
 ### Linked Signers
 

@@ -1,5 +1,7 @@
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_NOTIFICATION_MIN_TRADE_SIZES_USD,
+  MOBILE_NOTIFICATION_POSITION_THRESHOLDS,
   MobileClient,
   MobileNotificationCapabilities,
   MobileNotificationSettings,
@@ -26,8 +28,8 @@ import {
 } from '../utils/testConstants';
 
 const capabilities: MobileNotificationCapabilities = {
-  payload_versions: [2],
-  type_ids: ['new_follower', 'order_fill', 'market_movement'],
+  payloadVersions: [2],
+  typeIds: ['new_follower', 'order_fill', 'market_movement'],
   routes: ['profile', 'market', 'portfolio'],
 };
 
@@ -85,7 +87,7 @@ void describe(
       const registration = await mobile.getNotificationRegistrationV2({
         expoToken,
       });
-      assert.match(registration.registration_generation, /^\d+$/);
+      assert.match(registration.registrationGeneration, /^\d+$/);
       assert.deepEqual(registration.capabilities, capabilities);
       const wallet = await mobile.getRegisteredWallet({ expoToken });
       assert.equal(
@@ -97,8 +99,8 @@ void describe(
         expoToken,
       });
       assert.notEqual(
-        refreshed.registration_generation,
-        registration.registration_generation,
+        refreshed.registrationGeneration,
+        registration.registrationGeneration,
       );
     });
 
@@ -107,8 +109,8 @@ void describe(
       assertNotificationSettingsShape(original);
       const changed: MobileNotificationSettings = {
         ...original.settings,
-        my_orders: !original.settings.my_orders,
-        position_thresholds: [25],
+        myOrders: !original.settings.myOrders,
+        positionThresholds: [25],
       };
       try {
         const saved = await mobile.updateNotificationSettingsV2({
@@ -124,7 +126,7 @@ void describe(
           assert.equal(
             legacy.categories.find((entry) => entry.category === category)
               ?.enabled,
-            changed.my_orders,
+            changed.myOrders,
           );
         }
         await assertRejectsWithMobileErrorCode(
@@ -159,31 +161,27 @@ void describe(
       const productId = TEST_PRODUCT_IDS.PERP_BTC;
       const initial = await mobile.getNotificationSubscriptions(auth);
       assert.equal(initial.revision, 0);
-      assert.equal(initial.favorites_imported, false);
-      assert.deepEqual(initial.market_ids, []);
-      assert.deepEqual(initial.trader_bells, []);
+      assert.equal(initial.favoritesImported, false);
+      assert.deepEqual(initial.marketIds, []);
+      assert.deepEqual(initial.traderBells, []);
       await mobile.updateNotificationSubscriptions({
         ...auth,
         update: {
-          expected_revision: initial.revision,
-          trader_bell: null,
-          market: null,
-          import_markets: [productId, productId],
+          expectedRevision: initial.revision,
+          importMarkets: [productId, productId],
         },
       });
       const imported = await mobile.getNotificationSubscriptions(auth);
-      assert.equal(imported.favorites_imported, true);
-      assert.deepEqual(imported.market_ids, [productId]);
+      assert.equal(imported.favoritesImported, true);
+      assert.deepEqual(imported.marketIds, [productId]);
       assert.equal(imported.revision, initial.revision + 1);
       await assertRejectsWithMobileErrorCode(
         () =>
           mobile.updateNotificationSubscriptions({
             ...auth,
             update: {
-              expected_revision: initial.revision,
-              trader_bell: null,
-              market: { product_id: productId, subscribed: false },
-              import_markets: null,
+              expectedRevision: initial.revision,
+              market: { productId: productId, subscribed: false },
             },
           }),
         MOBILE_ERROR_CODES.NOTIFICATION_REVISION_CONFLICT,
@@ -191,25 +189,21 @@ void describe(
       await mobile.updateNotificationSubscriptions({
         ...auth,
         update: {
-          expected_revision: imported.revision,
-          trader_bell: null,
-          market: { product_id: productId, subscribed: false },
-          import_markets: null,
+          expectedRevision: imported.revision,
+          market: { productId: productId, subscribed: false },
         },
       });
       const removed = await mobile.getNotificationSubscriptions(auth);
-      assert.deepEqual(removed.market_ids, []);
+      assert.deepEqual(removed.marketIds, []);
       await mobile.updateNotificationSubscriptions({
         ...auth,
         update: {
-          expected_revision: removed.revision,
-          trader_bell: null,
-          market: null,
-          import_markets: [productId],
+          expectedRevision: removed.revision,
+          importMarkets: [productId],
         },
       });
       const repeatedImport = await mobile.getNotificationSubscriptions(auth);
-      assert.deepEqual(repeatedImport.market_ids, []);
+      assert.deepEqual(repeatedImport.marketIds, []);
       assert.equal(repeatedImport.revision, removed.revision + 1);
     });
 
@@ -220,10 +214,8 @@ void describe(
           mobile.updateNotificationSubscriptions({
             ...auth,
             update: {
-              expected_revision: current.revision,
-              trader_bell: null,
-              market: null,
-              import_markets: null,
+              expectedRevision: current.revision,
+              market: { productId: 0, subscribed: true },
             },
           }),
         MOBILE_ERROR_CODES.INVALID_NOTIFICATION_REQUEST,
@@ -233,10 +225,8 @@ void describe(
           mobile.updateNotificationSubscriptions({
             ...auth,
             update: {
-              expected_revision: current.revision,
-              trader_bell: { subaccount: subaccountToHex(auth), enabled: true },
-              market: null,
-              import_markets: null,
+              expectedRevision: current.revision,
+              traderBell: { subaccount: subaccountToHex(auth), enabled: true },
             },
           }),
         MOBILE_ERROR_CODES.INVALID_IDENTITY_TARGET,
@@ -250,13 +240,13 @@ void describe(
     void test('queries the private inbox without an Expo token and validates pagination', async () => {
       const page = await mobile.getNotificationInboxV2({ ...auth, limit: 1 });
       assert.deepEqual(page.notifications, []);
-      assert.equal(page.next_cursor, null);
+      assert.equal(page.nextCursor, null);
       const unknownCursor = await mobile.getNotificationInboxV2({
         ...auth,
         cursor: randomUUID(),
       });
       assert.deepEqual(unknownCursor.notifications, []);
-      assert.equal(unknownCursor.next_cursor, null);
+      assert.equal(unknownCursor.nextCursor, null);
       await assertRejectsWithMobileErrorCode(
         () => mobile.getNotificationInboxV2({ ...auth, limit: 51 }),
         MOBILE_ERROR_CODES.INVALID_NOTIFICATION_REQUEST,
@@ -266,28 +256,22 @@ void describe(
     void test('records product events, accepts stable-ID retries, and rejects invalid batches/ownership', async () => {
       const events: MobileProductEvent[] = [
         {
-          client_event_id: randomUUID(),
-          event_name: 'search',
-          notification_id: null,
-          occurred_at: Date.now(),
-          product_id: null,
+          clientEventId: randomUUID(),
+          eventName: 'search',
+          occurredAt: Date.now(),
           query: 'BTC',
         },
         {
-          client_event_id: randomUUID(),
-          event_name: 'market_viewed',
-          notification_id: null,
-          occurred_at: Date.now(),
-          product_id: TEST_PRODUCT_IDS.PERP_BTC,
-          query: null,
+          clientEventId: randomUUID(),
+          eventName: 'market_viewed',
+          occurredAt: Date.now(),
+          productId: TEST_PRODUCT_IDS.PERP_BTC,
         },
         {
-          client_event_id: randomUUID(),
-          event_name: 'chart_opened',
-          notification_id: null,
-          occurred_at: Date.now(),
-          product_id: TEST_PRODUCT_IDS.PERP_BTC,
-          query: null,
+          clientEventId: randomUUID(),
+          eventName: 'chart_opened',
+          occurredAt: Date.now(),
+          productId: TEST_PRODUCT_IDS.PERP_BTC,
         },
       ];
       assert.equal(
@@ -308,12 +292,10 @@ void describe(
             ...auth,
             events: [
               {
-                client_event_id: randomUUID(),
-                event_name: 'notif_opened',
-                notification_id: randomUUID(),
-                occurred_at: Date.now(),
-                product_id: null,
-                query: null,
+                clientEventId: randomUUID(),
+                eventName: 'notif_opened',
+                notificationId: randomUUID(),
+                occurredAt: Date.now(),
               },
             ],
           }),
@@ -325,8 +307,8 @@ void describe(
       await mobile.registerExpoToken({ ...auth, expoToken, platform: 'ios' });
       const legacy = await mobile.getNotificationRegistrationV2({ expoToken });
       assert.deepEqual(legacy.capabilities, {
-        payload_versions: [1],
-        type_ids: [],
+        payloadVersions: [1],
+        typeIds: [],
         routes: [],
       });
       await mobile.unregisterExpoToken({ expoToken });
@@ -356,19 +338,25 @@ void describe(
 function assertNotificationSettingsShape(
   document: MobileNotificationSettingsV2,
 ): void {
-  assert.equal(document.schema_version, 2);
+  assert.equal(document.schemaVersion, 2);
   assertNonNegativeInteger(document.revision, 'revision');
   assert.equal(Object.keys(document.settings).length, 9);
-  assert.ok(document.settings.position_thresholds.length >= 1);
-  for (const threshold of document.settings.position_thresholds) {
-    assert.ok([10, 25, 50].includes(threshold));
+  assert.ok(document.settings.positionThresholds.length >= 1);
+  for (const threshold of document.settings.positionThresholds) {
+    assert.ok(MOBILE_NOTIFICATION_POSITION_THRESHOLDS.includes(threshold));
   }
+  assert.ok(
+    MOBILE_NOTIFICATION_MIN_TRADE_SIZES_USD.includes(
+      document.settings.minTradeSizeUsd,
+    ),
+  );
+  assert.equal('status' in document, false);
   for (const field of [
-    'my_positions',
-    'my_orders',
-    'following_trades',
-    'following_posts',
-    'new_followers',
+    'myPositions',
+    'myOrders',
+    'followingTrades',
+    'followingPosts',
+    'newFollowers',
     'announcements',
     'discovery',
   ] as const) {

@@ -308,6 +308,9 @@ function assertPositionIdentity(
   if (position.displayName !== null) {
     assertString(position.displayName, `${label}.displayName`);
   }
+  if (position.avatarUrl !== null) {
+    assertString(position.avatarUrl, `${label}.avatarUrl`);
+  }
 }
 
 function assertPositionShape(

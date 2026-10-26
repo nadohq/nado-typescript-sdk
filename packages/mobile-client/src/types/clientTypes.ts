@@ -6,38 +6,42 @@ import {
   MobileFeedTradePosition,
   MobileFeedTradePositionDirection,
   MobileNotificationCategory,
+  MobileNotificationMinTradeSizeUsd,
   MobileNotificationPlatform,
-  MobileServerNotificationCapabilities,
-  MobileServerNotificationInboxItem,
-  MobileServerNotificationPayloadV2,
-  MobileServerNotificationRoute,
-  MobileServerNotificationSettings,
-  MobileServerProductEvent,
+  MobileNotificationPositionThreshold,
+  MobileNotificationRouteName,
+  MobileNotificationTypeId,
+  MobileSocialFeedAction,
+  MobileSocialFeedActionPriceBasis,
+  MobileSocialFeedActionResolution,
+  MobileSocialFeedActionUnavailableReason,
+  MobileSocialFeedAttachmentStatus,
+  MobileSocialFeedChartDataQuality,
+  MobileSocialFeedChartInterval,
   MobileSocialFeedCohortStatus,
   MobileSocialFeedHistoryQuality,
   MobileSocialFeedLeverage,
+  MobileSocialFeedLiquidationPriceQuality,
   MobileSocialFeedMarketCategory,
+  MobileSocialFeedMention,
   MobileSocialFeedPnlBasis,
   MobileSocialFeedPnlMode,
   MobileSocialFeedPnlQuality,
   MobileSocialFeedPositionDisplayBasis,
+  MobileSocialFeedPositionResolution,
+  MobileSocialFeedPositionResolutionReason,
   MobileSocialFeedPositionState,
+  MobileSocialFeedPresenceState,
   MobileSocialFeedReadSessionMode,
   MobileSocialFeedSourceCategory,
   MobileSocialFeedTradeCardAction,
   MobileSocialFeedTradeSizeChangeAction,
   MobileSocialFeedTraderBadgeCode,
   MobileSocialFeedTraderDataStatus,
+  MobileSocialFeedTradingResolution,
   MobileSocialFeedType,
   MobileSocialFeedUnavailableTarget,
 } from './serverModelTypes';
-import {
-  MobileServerNotificationInboxV2Response,
-  MobileServerNotificationRegistrationV2Response,
-  MobileServerNotificationSettingsV2Response,
-  MobileServerNotificationSubscriptionsResponse,
-} from './serverQueryTypes';
-import { MobileServerNotificationSubscriptionsUpdate } from './serverRequestTypes';
 
 /**
  * Server-owned preset presented in catalogue order.
@@ -300,71 +304,224 @@ export interface MobileRegisteredWallet {
   lastSeenAt: number;
 }
 
-/**
- * Device capabilities for v2 registration. Preserves the notification API's documented snake_case fields.
- */
-export type MobileNotificationCapabilities =
-  MobileServerNotificationCapabilities;
+/** Device capabilities declared when registering a v2 device. */
+export interface MobileNotificationCapabilities {
+  /** Registration accepts only the v2 protocol. */
+  payloadVersions: [2];
+  /** Notification types the device can handle. */
+  typeIds: MobileNotificationTypeId[];
+  /** Supported named navigation destinations. */
+  routes: MobileNotificationRouteName[];
+}
 
-/**
- * Latest registration generation and v1/v2 capabilities, returned without renaming wire-format fields.
- */
-export type MobileNotificationRegistrationV2 =
-  MobileServerNotificationRegistrationV2Response;
+/** Latest device generation and saved capabilities, including legacy registrations. */
+export interface MobileNotificationRegistrationV2 {
+  /** Opaque generation string; do not convert to a JavaScript number. */
+  registrationGeneration: string;
+  /** Legacy registrations have empty type and route lists. */
+  capabilities: {
+    /** The single saved protocol version. */
+    payloadVersions: [1] | [2];
+    /** Supported notification types. */
+    typeIds: MobileNotificationTypeId[];
+    /** Supported navigation destinations. */
+    routes: MobileNotificationRouteName[];
+  };
+}
 
-/**
- * Complete wallet-level notification settings. All nine snake_case fields are required on replacement.
- */
-export type MobileNotificationSettings = MobileServerNotificationSettings;
+/** Complete wallet-level notification settings; every field is required on replacement. */
+export interface MobileNotificationSettings {
+  /** Own position milestones and the initial weekly digest. */
+  myPositions: boolean;
+  /** Unique milestone thresholds; the minimum selects the starting tier. */
+  positionThresholds: MobileNotificationPositionThreshold[];
+  /** Combined order fill/update switch; does not control liquidation notifications. */
+  myOrders: boolean;
+  /** Ordinary followed-trader notifications; enabled bells override this switch. */
+  followingTrades: boolean;
+  /** Reserved; no post notification producer currently exists. */
+  followingPosts: boolean;
+  /** Reserved minimum trade size in whole USD. */
+  minTradeSizeUsd: MobileNotificationMinTradeSizeUsd;
+  /** New followers and follow-backs. */
+  newFollowers: boolean;
+  /** Maps to the legacy announcement preference. */
+  announcements: boolean;
+  /** Opt-in trader streak and account drama discovery notifications. */
+  discovery: boolean;
+}
 
-/**
- * Versioned settings document returned by both v2 reads and writes, preserving snake_case fields.
- */
-export type MobileNotificationSettingsV2 =
-  MobileServerNotificationSettingsV2Response;
+/** Versioned settings document returned by v2 reads and writes. */
+export interface MobileNotificationSettingsV2 {
+  /** Settings schema version. */
+  schemaVersion: 2;
+  /** Settings revision, independent of subscription revisions. */
+  revision: number;
+  /** Full saved settings. */
+  settings: MobileNotificationSettings;
+}
 
-/**
- * Wallet market subscriptions and the signing Identity's enabled trader bells, preserving snake_case fields.
- */
-export type MobileNotificationSubscriptions =
-  MobileServerNotificationSubscriptionsResponse;
+/** Wallet market subscriptions and the signing Identity's enabled trader bells. */
+export interface MobileNotificationSubscriptions {
+  /** Wallet-level subscription revision; refresh after every mutation. */
+  revision: number;
+  /** Whether the one-time local favorites import has completed. */
+  favoritesImported: boolean;
+  /** Subscribed market IDs in ascending order. */
+  marketIds: number[];
+  /** Followed subaccounts with enabled bells, encoded as bytes32. */
+  traderBells: Hex[];
+}
 
-/**
- * One subscription operation in wire format; unused operations must explicitly be null.
- */
-export type MobileNotificationSubscriptionsUpdate =
-  MobileServerNotificationSubscriptionsUpdate;
+/** Exactly one revision-guarded subscription operation; the SDK fills unused wire fields with null. */
+export type MobileNotificationSubscriptionsUpdate = {
+  /** Latest subscription revision, not the settings revision. */
+  expectedRevision: number;
+} & (
+  | {
+      /** Set a bell; enabling requires an existing follow relationship. */
+      traderBell: {
+        /** Target non-isolated subaccount as lowercase bytes32, for example from subaccountToHex. */
+        subaccount: Hex;
+        /** Desired bell state. */
+        enabled: boolean;
+      };
+      /** Cannot be combined with a trader bell operation. */
+      market?: never;
+      /** Cannot be combined with a trader bell operation. */
+      importMarkets?: never;
+    }
+  | {
+      /** Subscribe or unsubscribe one known market. */
+      market: {
+        /** Positive product ID. */
+        productId: number;
+        /** Desired subscription state. */
+        subscribed: boolean;
+      };
+      /** Cannot be combined with a market operation. */
+      traderBell?: never;
+      /** Cannot be combined with a market operation. */
+      importMarkets?: never;
+    }
+  | {
+      /** One-time merge of up to 500 local market IDs. */
+      importMarkets: number[];
+      /** Cannot be combined with an import operation. */
+      traderBell?: never;
+      /** Cannot be combined with an import operation. */
+      market?: never;
+    }
+);
 
-/**
- * Allowlisted notification destination in wire format, never an arbitrary URL.
- */
-export type MobileNotificationRoute = MobileServerNotificationRoute;
+/** Allowlisted notification destination; never interpret it as an arbitrary URL. */
+export type MobileNotificationRoute =
+  | {
+      /** Public profile destination. */
+      name: 'profile';
+      /** Profile subaccount as bytes32. */
+      subaccount: Hex;
+    }
+  | {
+      /** Market destination. */
+      name: 'market';
+      /** Positive product ID. */
+      productId: number;
+    }
+  | {
+      /** Own portfolio destination. */
+      name: 'portfolio';
+    };
 
-/**
- * V2 push/inbox navigation data in wire format, not a complete historical trade or notification body.
- */
-export type MobileNotificationPayloadV2 = MobileServerNotificationPayloadV2;
+/** V2 push/inbox navigation data, not a complete historical trade or notification body. */
+export interface MobileNotificationPayloadV2 {
+  /** Payload protocol version. */
+  payloadVersion: 2;
+  /** Logical notification UUID for click deduplication. */
+  notificationId: string;
+  /** Intended wallet; private navigation must wait for this wallet to connect. */
+  recipientWallet: Hex;
+  /** Registered notification type. */
+  typeId: MobileNotificationTypeId;
+  /** Supported template version. */
+  templateVersion: 1;
+  /** Named destination and its parameters. */
+  route: MobileNotificationRoute;
+}
 
-/**
- * Accepted logical notification in wire format; does not prove device delivery or read status.
- */
-export type MobileNotificationInboxItem = MobileServerNotificationInboxItem;
+/** Accepted logical notification; does not prove device delivery or read status. */
+export interface MobileNotificationInboxItem {
+  /** Logical notification UUID. */
+  notificationId: string;
+  /** Registered notification type. */
+  typeId: MobileNotificationTypeId;
+  /** Navigation data, without title, body, or read state. */
+  data: MobileNotificationPayloadV2;
+  /** Intent acceptance time in milliseconds. */
+  createdAt: number;
+  /** Backend-computed trade attribution. */
+  tradeWithin24h: boolean;
+}
 
-/**
- * Private notification page, ordered newest first and preserving snake_case fields.
- */
-export type MobileNotificationInboxV2 = MobileServerNotificationInboxV2Response;
+/** Private notification page, ordered newest first. */
+export interface MobileNotificationInboxV2 {
+  /** Accepted intents owned by the signing wallet. */
+  notifications: MobileNotificationInboxItem[];
+  /** Pass unchanged to the next request, or null when pagination is complete. */
+  nextCursor: string | null;
+}
 
-/**
- * Product analytics event in wire format; unused nullable fields must be explicitly null.
- */
-export type MobileProductEvent = MobileServerProductEvent;
+/** Analytics event with the fields required by its interaction; unused wire fields are filled with null. */
+export type MobileProductEvent = {
+  /** Stable event UUID; reuse across retries. */
+  clientEventId: string;
+  /** Actual event time in milliseconds, within the past 7 days or next 5 minutes. */
+  occurredAt: number;
+} & (
+  | {
+      /** Notification open; not a read-state mutation. */
+      eventName: 'notif_opened';
+      /** Notification owned by the signing wallet. */
+      notificationId: string;
+      /** Not used for notification opens. */
+      productId?: never;
+      /** Not used for notification opens. */
+      query?: never;
+    }
+  | {
+      /** Market or chart interaction. */
+      eventName: 'market_viewed' | 'chart_opened';
+      /** Positive product ID. */
+      productId: number;
+      /** Not used for market/chart interactions. */
+      notificationId?: never;
+      /** Not used for market/chart interactions. */
+      query?: never;
+    }
+  | {
+      /** Search interaction. */
+      eventName: 'search';
+      /** Nonblank search query, at most 80 Unicode characters. */
+      query: string;
+      /** Not used for searches. */
+      notificationId?: never;
+      /** Not used for searches. */
+      productId?: never;
+    }
+);
 
 /**
  * Common params for signed requests that authenticate as a given subaccount.
  */
-export interface MobileSignedRequestParams
-  extends Subaccount, SignatureParams {}
+export interface MobileSignedRequestParams extends Subaccount, SignatureParams {
+  /**
+   * Optional nonce from {@link getMobileNonce}. For clock synchronization, use EngineWebClient.getTime()
+   * from @nadohq/engine-client as a reference; the mobile service has no time endpoint. The receive deadline
+   * must be later than mobile server time and no more than 100 seconds ahead, expressed in milliseconds.
+   * The SDK does not fetch server time automatically.
+   */
+  nonce?: bigint;
+}
 
 /**
  * Common params for the unsigned notification requests, which name their target with an Expo push token
@@ -631,7 +788,7 @@ export type GetMobileNotificationSubscriptionsParams =
  * Params for {@link MobileClient.updateNotificationSubscriptions}.
  */
 export interface MobileUpdateNotificationSubscriptionsParams extends MobileSignedRequestParams {
-  /** Exactly one non-null operation, with the latest subscription revision. */
+  /** Exactly one operation, with the latest subscription revision. */
   update: MobileNotificationSubscriptionsUpdate;
 }
 
@@ -639,7 +796,7 @@ export interface MobileUpdateNotificationSubscriptionsParams extends MobileSigne
  * Params for {@link MobileClient.getNotificationInboxV2}; no Expo token is needed.
  */
 export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestParams {
-  /** Previous next_cursor; omit or pass null for the first page. */
+  /** Previous nextCursor; omit or pass null for the first page. */
   cursor?: string | null;
   /** Page size from 1 to 50; omission/null uses the server default of 20. */
   limit?: number | null;
@@ -711,6 +868,8 @@ export interface MobileSocialFeedPnl {
 
 /** Complete mutable position fields delivered together at one version. */
 export interface MobileSocialFeedPositionPatch {
+  /** Additional metrics for a position history session, when supplied. */
+  currentPosition?: MobileSocialFeedHistoryMetrics;
   /** Position lifecycle UUID. */
   positionId: string;
   /** Positive integer string; compare as integers without Number conversion. */
@@ -751,7 +910,7 @@ export interface MobileSocialFeedPositionCard extends MobileSocialFeedPositionPa
   direction: MobileFeedTradePositionDirection;
 }
 
-/** Interaction counters; interaction writes are not currently available. */
+/** Interaction counters and the viewing account's relationship state. */
 export interface MobileSocialFeedInteraction {
   /** Number of likes. */
   likeCount: number;
@@ -759,7 +918,7 @@ export interface MobileSocialFeedInteraction {
   commentCount: number;
   /** Number of recorded views. */
   viewCount: number;
-  /** Null while likes are unavailable, including with a viewing account. */
+  /** Null when no viewing account is selected. */
   likedByMe: boolean | null;
 }
 
@@ -775,8 +934,8 @@ export interface MobileSocialFeedCapabilities {
 
 /** Comment preview metadata for a social trade card. */
 export interface MobileSocialFeedCommentPreview {
-  /** Currently empty. */
-  items: never[];
+  /** Most recent readable replies. */
+  items: MobileSocialFeedReply[];
   /** Comment count. */
   totalCount: number;
   /** Comment cursor, if available. */
@@ -813,14 +972,14 @@ export interface MobileSocialFeedCohort {
   coverage: MobileSocialFeedCohortCoverage;
 }
 
-/** Metadata shared by the automatic trade cards and rows available from the social feed. */
+/** Metadata shared by social feed content. */
 export interface MobileSocialFeedItemBase {
   /** Item UUID. */
   id: string;
   /** Whether authored analysis exists. */
   hasAnalysis: boolean;
-  /** Drawings are not currently available. */
-  drawing: null;
+  /** Parsed drawing document, or null when no drawing is readable. */
+  drawing: MobileSocialFeedDrawing | null;
   /** Author identity, badge, and follow perspective. */
   author: MobileSocialFeedAuthor;
   /** Creation time in Unix milliseconds. */
@@ -831,26 +990,30 @@ export interface MobileSocialFeedItemBase {
   version: string;
   /** Market metadata. */
   market: MobileSocialFeedMarket;
-  /** Server capability flags; currently all false. */
+  /** Server capability flags, subject to the corresponding write switches. */
   capabilities: MobileSocialFeedCapabilities;
 }
 
-/** Automatic trade card returned by the social feed. */
-export interface MobileSocialFeedTradeCard extends MobileSocialFeedItemBase {
-  /** Card discriminant. */
-  kind: 'trade_card';
-  /** Trading action. */
-  action: MobileSocialFeedTradeCardAction;
+/** Content shared by authored posts and trade cards. */
+export interface MobileSocialFeedContentBase extends MobileSocialFeedItemBase {
   /** Card text, empty for automatic cards. */
   text: string;
-  /** Automatic cards have no mentions. */
-  mentions: never[];
+  /** Mentions in the original, unmodified text. */
+  mentions: MobileSocialFeedMention[];
   /** Current or frozen position display. */
   position: MobileSocialFeedPositionCard;
   /** Interaction counters. */
   interaction: MobileSocialFeedInteraction;
-  /** Comment content is not currently available. */
+  /** Readable comment preview. */
   commentPreview: MobileSocialFeedCommentPreview;
+}
+
+/** Trade card with optional authored text and analysis. */
+export interface MobileSocialFeedTradeCard extends MobileSocialFeedContentBase {
+  /** Card discriminant. */
+  kind: 'trade_card';
+  /** Trading action. */
+  action: MobileSocialFeedTradeCardAction;
 }
 
 /** Fields shared by size-change and liquidation trade rows. */
@@ -900,20 +1063,22 @@ export type MobileSocialFeedTradeRow = MobileSocialFeedTradeRowBase &
       }
   );
 
-/** Automatic feed content; excludes posts, replies, drawings, and interaction writes. */
+/** Discriminated social feed content. */
 export type MobileSocialFeedItem =
   | MobileSocialFeedTradeCard
-  | MobileSocialFeedTradeRow;
+  | MobileSocialFeedTradeRow
+  | MobileSocialFeedPost
+  | MobileSocialFeedReply;
 
 /** Fixed-duration social feed reading session. Credentials and cursors must be returned unchanged. */
 export interface MobileSocialFeedReadSession {
   /** Session identifier. */
   sessionId: string;
-  /** Feed or direct item session. */
+  /** Feed, item, or full position history session. */
   mode: MobileSocialFeedReadSessionMode;
   /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
   expiresAtMs: number;
-  /** Exposure metadata only; recording is not available from the social feed. */
+  /** Visibility requirements for explicit exposure reporting. */
   viewTracking: MobileSocialFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   updateCursor: string | null;
@@ -955,6 +1120,10 @@ export interface MobileSocialFeedItemResponse {
 
 /** Item delta: omitted means unchanged; explicit null clears a prior value. */
 export interface MobileSocialFeedItemPatch {
+  /** Updated reply attachment; null clears it, omission leaves it unchanged. */
+  attachedPosition?: MobileSocialFeedPositionCard | null;
+  /** Updated reply attachment visibility. */
+  attachmentStatus?: MobileSocialFeedAttachmentStatus;
   /** Current author identity, follow state, and qualification badge. */
   author: MobileSocialFeedAuthor;
   /** Target item UUID. */
@@ -1100,3 +1269,593 @@ export type GetMobileFeedUpdatesParams = {
   /** Credential belonging to the original public session. */
   viewerToken: string;
 };
+
+/** Parsed drawing; data is opaque to the SDK and may legitimately be false or zero. */
+export interface MobileSocialFeedDrawing {
+  /** Already parsed drawing document; do not JSON.parse again. */
+  data: unknown;
+  /** Original creation time in milliseconds. */
+  createdAtMs: number;
+  /** Last update time in milliseconds. */
+  updatedAtMs: number;
+}
+
+/** Nonrecursive root-post preview carried by replies. */
+export interface MobileSocialFeedCompactCard {
+  /** Root item UUID. */
+  id: string;
+  /** Root author. */
+  author: MobileSocialFeedAuthor;
+  /** Original text excerpt. */
+  textExcerpt: string;
+  /** Visible position summary, or null. */
+  position: Pick<
+    MobileSocialFeedPositionCard,
+    'positionId' | 'market' | 'direction' | 'state' | 'notional'
+  > | null;
+  /** Whether the root has published analysis. */
+  hasAnalysis: boolean;
+}
+
+/** Authored position post, including text-only, drawing-only, and combined content. */
+export interface MobileSocialFeedPost extends MobileSocialFeedContentBase {
+  /** Post discriminant. */
+  kind: 'post';
+}
+
+/** Reply with independently permissioned position attachment and nonrecursive root preview. */
+export interface MobileSocialFeedReply extends MobileSocialFeedItemBase {
+  /** Reply discriminant. */
+  kind: 'reply';
+  /** Original text. */
+  text: string;
+  /** Mentions in the text. */
+  mentions: MobileSocialFeedMention[];
+  /** Actual root item UUID. */
+  rootItemId: string;
+  /** Omitted for a direct reply to the root. */
+  replyToItemId?: string;
+  /** Author being replied to, or null. */
+  replyToAuthor: MobileSocialFeedAuthor | null;
+  /** Readable attachment; null when absent or unavailable. */
+  attachedPosition: MobileSocialFeedPositionCard | null;
+  /** Distinguishes an absent attachment from an unreadable one. */
+  attachmentStatus: MobileSocialFeedAttachmentStatus;
+  /** Root preview; does not register root exposure. */
+  original: MobileSocialFeedCompactCard;
+  /** Reply interaction state. */
+  interaction: MobileSocialFeedInteraction;
+}
+
+/** Current eligibility hints; actual writes still recheck the signed author. */
+export interface MobileSocialFeedPublishablePosition {
+  /** Candidate position. */
+  position: MobileSocialFeedPositionCard;
+  /** Whether this account can publish. */
+  canPublish: boolean;
+  /** Whether this account can attach the position to a comment. */
+  canAttachToComment: boolean;
+  /** Whether this account can first add analysis. */
+  canDrawAnalysis: boolean;
+  /** Unavailability explanation, or null. */
+  unavailableReason: string | null;
+}
+
+/** An authoritative lifecycle segment of an order. */
+export interface MobileSocialFeedActionCandidate {
+  /** Action UUID. */
+  actionId: string;
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Lifecycle action. */
+  action: MobileSocialFeedAction;
+  /** Current publishing eligibility, not proof of caller ownership. */
+  canPublish: boolean;
+  /** Publication restriction, or null when eligible. */
+  unavailableReason: MobileSocialFeedActionUnavailableReason | null;
+}
+
+/** Additional history metrics; unavailable values are not zero. */
+export interface MobileSocialFeedHistoryMetrics {
+  /** Estimated liquidation price in decimal units, independent of event Oracle and execution prices. */
+  estimatedLiquidationPrice: BigNumber | null;
+  /** Availability of the estimated price. */
+  liquidationPriceQuality: MobileSocialFeedLiquidationPriceQuality;
+  /** Source time in milliseconds. */
+  liquidationPriceAsOfMs: number | null;
+  /** Signed funding amount in x18. */
+  fundingPnl: BigNumber | null;
+  /** Funding availability. */
+  fundingQuality: MobileSocialFeedPnlQuality;
+  /** Funding source time in milliseconds. */
+  fundingAsOfMs: number | null;
+}
+
+/** Full position card displayed above its historical timeline. */
+export interface MobileSocialFeedPositionHistoryCard
+  extends MobileSocialFeedPositionCard, MobileSocialFeedHistoryMetrics {}
+
+/** Persisted action facts, independent of whether a feed item was published. */
+export interface MobileSocialFeedPositionAction {
+  /** Action UUID. */
+  id: string;
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Lifecycle action. */
+  action: MobileSocialFeedAction;
+  /** Position direction. */
+  direction: MobileFeedTradePositionDirection;
+  /** Historical margin mode. */
+  marginMode: MobileFeedMarginMode;
+  /** Quantity before the action, in x18. */
+  quantityBefore: BigNumber;
+  /** Quantity after the action, in x18. */
+  quantityAfter: BigNumber;
+  /** Executed quantity, in x18. */
+  executedQuantity: BigNumber;
+  /** Actual executed notional in x18; may be unknown for liquidation. */
+  executedNotional: BigNumber | null;
+  /** Actual execution price in decimal units. */
+  averagePrice: BigNumber | null;
+  /** Entry price before the action, in decimal units. */
+  entryPriceBefore: BigNumber | null;
+  /** Liquidation event Oracle price in decimal units. */
+  liquidationOraclePrice: BigNumber | null;
+  /** Liquidation Oracle-based notional in x18. */
+  liquidationNotional: BigNumber | null;
+  /** Signed realized trading PnL in x18, excluding ordinary fees and funding. */
+  realizedPnlDelta: BigNumber | null;
+  /** Historical effective leverage. */
+  leverage: MobileSocialFeedLeverage;
+  /** Leverage source time in milliseconds. */
+  leverageAtMs: number | null;
+  /** First event time in milliseconds. */
+  firstEventAtMs: number;
+  /** Last event time in milliseconds. */
+  lastEventAtMs: number;
+  /** Decimal-string version. */
+  version: string;
+}
+
+/** Full published content appearing in a position timeline. */
+export type MobileSocialFeedHistoryTake =
+  | MobileSocialFeedTradeCard
+  | MobileSocialFeedPost;
+
+/** A historical action or authored take; preserve service ordering. */
+export type MobileSocialFeedTimelineEntry =
+  | {
+      /** Action entry. */
+      kind: 'action';
+      /** Full action facts. */
+      action: MobileSocialFeedPositionAction;
+      /** Actually associated feed item, or null. */
+      relatedItemId: string | null;
+      /** Full published trade card, or null. */
+      relatedTake: MobileSocialFeedTradeCard | null;
+    }
+  | {
+      /** Published take entry. */
+      kind: 'take';
+      /** Full published content. */
+      item: MobileSocialFeedHistoryTake;
+    };
+
+/** Trusted trading target; this hint does not authorize trading. */
+export interface MobileSocialFeedTradingTarget {
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Parent identity. */
+  identitySubaccount: Hex;
+  /** Actual trading subaccount, possibly isolated. */
+  tradingSubaccount: Hex;
+  /** Market product ID. */
+  productId: number;
+  /** Margin mode. */
+  marginMode: MobileFeedMarginMode;
+  /** Isolated name, or null for cross margin. */
+  isoSubaccountName: string | null;
+  /** Position direction. */
+  direction: MobileFeedTradePositionDirection;
+  /** Source time in milliseconds. */
+  stateAsOfMs: number;
+}
+
+/** Viewing-account trading hints, not authenticated permissions. */
+export interface MobileSocialFeedTradingContext {
+  /** Market product ID. */
+  productId: number;
+  /** Suggested trade direction. */
+  suggestedDirection: MobileFeedTradePositionDirection;
+  /** Resolution of the viewing account's positions. */
+  resolution: MobileSocialFeedTradingResolution;
+  /** Trusted candidates. */
+  candidates: MobileSocialFeedTradingTarget[];
+  /** Unique candidate, or null. */
+  viewerPositionId: string | null;
+  /** Whether the selected account has a unique reducible position. */
+  canReduce: boolean;
+}
+
+/** Historical candle; volume is a quantity, not a price. */
+export interface MobileSocialFeedCandle {
+  /** Candle start time in milliseconds. */
+  timestampMs: number;
+  /** Open price in decimal units. */
+  open: BigNumber;
+  /** High price in decimal units. */
+  high: BigNumber;
+  /** Low price in decimal units. */
+  low: BigNumber;
+  /** Close price in decimal units. */
+  close: BigNumber;
+  /** Base asset volume in x18. */
+  volume: BigNumber;
+}
+
+/** Chart action marker with explicitly identified price basis. */
+export interface MobileSocialFeedActionMarker {
+  /** Action UUID. */
+  actionId: string;
+  /** Event time in milliseconds. */
+  timestampMs: number;
+  /** Price in decimal units; null does not remove the action. */
+  price: BigNumber | null;
+  /** Lifecycle action. */
+  action: MobileSocialFeedAction;
+  /** Direction. */
+  direction: MobileFeedTradePositionDirection;
+  /** Never substitute actual execution for a liquidation Oracle. */
+  priceBasis: MobileSocialFeedActionPriceBasis;
+}
+
+/** Parameters for listing the selected account's open position candidates. */
+export interface GetMobileSelfFeedPositionsParams {
+  /** Full non-isolated identity; selecting it is not authentication. */
+  viewAs: Subaccount;
+  /** Optional market filter. */
+  productId?: number;
+  /** Opaque cursor bound to the account and filters. */
+  cursor?: string;
+  /** Page size, 1-50; defaults to 20. */
+  limit?: number;
+}
+
+/** Parameters for resolving a slash command against the selected account. */
+export interface ResolveMobileFeedPositionParams {
+  /** Required non-isolated viewing account. */
+  viewAs: Subaccount;
+  /** Original command, such as /position or /BTC; passed unchanged. */
+  input: string;
+  /** Optional market disambiguation. */
+  productId?: number;
+}
+
+/** Parameters for resolving all trusted lifecycle segments of an order. */
+export interface ResolveMobileFeedActionParams {
+  /** Required order-owning identity; the caller need not own it to read. */
+  viewAs: Subaccount;
+  /** Order digest returned by trading. */
+  orderDigest: Hex;
+}
+
+/** Parameters for atomic text, drawing, or combined publication. */
+export interface MobileCreateFeedPostParams extends MobileSignedRequestParams {
+  /** Author-scoped idempotency UUID; reuse unchanged for a retry. */
+  clientRequestId: string;
+  /** Lifecycle still held by the signed author. */
+  positionId: string;
+  /** Trusted action for a trading annotation; omit for an independent post. */
+  actionId?: string;
+  /** Original text, at most 2,000 code points; empty is allowed with a drawing. */
+  text: string;
+  /** At most ten mentions, with offsets into the original text. */
+  mentions: MobileSocialFeedMentionParams[];
+  /** Original JSON text, at most 256 KiB UTF-8; never reformatted by the SDK. */
+  drawingDataJson?: string;
+}
+
+/** Parameters for first adding or replacing a drawing. Writes must be serialized by the caller. */
+export interface MobileFeedChartDrawingParams extends MobileSignedRequestParams {
+  /** Author-owned item UUID. */
+  itemId: string;
+  /** Complete original JSON text; false and zero are valid documents. */
+  dataJson: string;
+}
+
+/** Parameters for reading a drawing with the original session or an independent account perspective. */
+export interface GetMobileFeedChartDrawingParams extends MobileSocialFeedReadParams {
+  /** Parent item UUID. */
+  itemId: string;
+  /** If supplied, the original viewerToken is required; independent reads omit both. */
+  sessionId?: string;
+}
+
+/** Parameters for a comment thread; cursor and anchorReplyId are mutually exclusive. */
+export interface GetMobileFeedCommentsParams extends MobileSocialFeedReadParams {
+  /** Root post UUID. */
+  rootItemId: string;
+  /** Forward or backward opaque cursor from the same session. */
+  cursor?: string;
+  /** Page size, 1-50; defaults to 20. */
+  limit?: number;
+  /** First-page reply anchor; cannot be combined with cursor. */
+  anchorReplyId?: string;
+  /** Reuse the original session and viewerToken when navigating or paging. */
+  sessionId?: string;
+}
+
+/** Parameters for posting a comment or reply with an optional owned position attachment. */
+export interface MobileCreateFeedCommentParams extends MobileSignedRequestParams {
+  /** Author-scoped idempotency UUID. */
+  clientRequestId: string;
+  /** Commentable root UUID. */
+  rootItemId: string;
+  /** Reply within the same thread; omit to reply to the root. */
+  replyToItemId?: string;
+  /** Nonblank original text, at most 1,000 Unicode code points. */
+  text: string;
+  /** At most ten mentions into the original text. */
+  mentions: MobileSocialFeedMentionParams[];
+  /** Position still held by the signed author; invalid attachment rejects the whole request. */
+  attachedPositionId?: string;
+}
+
+/** Parameters for setting or cancelling a signed user's like. */
+export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
+  /** Readable, interactive item UUID. */
+  itemId: string;
+  /** Desired relationship state. */
+  isLiked: boolean;
+}
+
+/** Unsigned exposure report; only send after satisfying the session's viewTracking requirements. */
+export interface MobileRecordFeedViewsParams {
+  /** Original reading session. */
+  sessionId: string;
+  /** Original opaque browsing credential. */
+  viewerToken: string;
+  /** One to fifty fully delivered, readable, interactive item UUIDs. */
+  itemIds: string[];
+}
+
+/** Parameters for full position history, not just published feed items. */
+export interface GetMobilePositionHistoryParams extends MobileSocialFeedReadParams {
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Only published takes when true; defaults to false. */
+  takesOnly?: boolean;
+  /** Opaque history cursor; requires the original position session and viewerToken. */
+  cursor?: string;
+  /** Page size, 1-50; defaults to 20. */
+  limit?: number;
+  /** History session; do not substitute a feed session. */
+  sessionId?: string;
+}
+
+/** Counts across the authorized position history. */
+export interface MobileSocialFeedHistorySummary {
+  /** Action count. */
+  actionCount: number;
+  /** Published take count. */
+  takeCount: number;
+}
+
+/** Estimated liquidation price and its source time. */
+export interface MobileSocialFeedEstimatedLiquidationLine {
+  /** Decimal price. */
+  price: BigNumber;
+  /** Source time in milliseconds. */
+  asOfMs: number;
+}
+
+/** Half-open chart range, preserved across pages. */
+export interface MobileSocialFeedChartRange {
+  /** Inclusive start in milliseconds. */
+  fromMs: number;
+  /** Exclusive end in milliseconds. */
+  toMs: number;
+}
+
+/** Parameters for position candles and action markers. */
+export interface GetMobilePositionChartParams extends MobileSocialFeedReadParams {
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Original session, if reusing one; must be paired with viewerToken. */
+  sessionId?: string;
+  /** Candle interval. */
+  interval: MobileSocialFeedChartInterval;
+  /** Half-open time range; preserve it when paging. */
+  range: MobileSocialFeedChartRange;
+  /** Exclusive candle upper bound for subsequent pages. */
+  beforeMs?: number;
+  /** Candle count, 1-500; defaults to 200. */
+  limit?: number;
+}
+
+/** Unsigned, page-scoped presence registration using the original reading credential. */
+export interface MobilePositionPresenceParams {
+  /** Lifecycle UUID authorized by the session. */
+  positionId: string;
+  /** Original reading session. */
+  sessionId: string;
+  /** Original browsing credential; determines visitor deduplication. */
+  viewerToken: string;
+  /** UUID generated per page, retained for that page's lifetime. */
+  viewSessionId: string;
+  /** Enter, renew, or leave the page. */
+  state: MobileSocialFeedPresenceState;
+  /** Self-reported display account: omission preserves it, null clears it. Not authentication. */
+  watcherSubaccount?: Subaccount | null;
+}
+
+/** Parameters for read-only watcher counts; this query never registers presence. */
+export interface GetMobilePositionWatchersParams {
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Optional relationship perspective, not a watcher registration. */
+  viewAs?: Subaccount;
+}
+
+/** Open position candidates for a selected identity. */
+export interface MobileSocialFeedPositionsPage {
+  /** Current candidates and eligibility hints. */
+  positions: MobileSocialFeedPublishablePosition[];
+  /** Next opaque cursor, or null. */
+  nextCursor: string | null;
+  /** Observation time in milliseconds. */
+  asOfMs: number;
+}
+
+/** Position command result, including normal empty/unknown outcomes. */
+export interface MobileSocialFeedPositionResolutionResult {
+  /** Resolution outcome. */
+  resolution: MobileSocialFeedPositionResolution;
+  /** Resolved market, or null for an unknown or unconstrained market. */
+  product: MobileSocialFeedMarket | null;
+  /** Eligible open position candidates. */
+  candidates: MobileSocialFeedPublishablePosition[];
+  /** Explanation for no position or unknown market. */
+  reason: MobileSocialFeedPositionResolutionReason | null;
+}
+
+/** Trusted order actions; pending is distinct from a source failure. */
+export interface MobileSocialFeedActionResolutionResult {
+  /** Requested order digest. */
+  orderDigest: Hex;
+  /** Ready when all currently confirmed segments have been projected. */
+  resolution: MobileSocialFeedActionResolution;
+  /** All trusted segments, or an empty array when pending. */
+  actions: MobileSocialFeedActionCandidate[];
+  /** Observation time in milliseconds. */
+  asOfMs: number;
+}
+
+/** Readable drawing and parent display version; drawing data is already parsed. */
+export interface MobileSocialFeedDrawingResult {
+  /** Parent item UUID. */
+  itemId: string;
+  /** Current parent display version. */
+  itemVersion: string;
+  /** Null when the readable parent has no drawing. */
+  drawing: MobileSocialFeedDrawing | null;
+}
+
+/** Saved drawing returned by successful creation or replacement. */
+export interface MobileSocialFeedDrawingMutationResult {
+  /** Parent item UUID. */
+  itemId: string;
+  /** Post-mutation parent display version. */
+  itemVersion: string;
+  /** Saved parsed drawing. */
+  drawing: MobileSocialFeedDrawing;
+}
+
+/** Comment thread page, including both directions around an anchor. */
+export interface MobileSocialFeedCommentsPage {
+  /** Requested anchor, or null when reading without one. */
+  anchorReplyId: string | null;
+  /** Readable replies in service order. */
+  comments: MobileSocialFeedReply[];
+  /** Total readable comment count. */
+  totalCount: number;
+  /** Forward cursor, or null. */
+  nextCursor: string | null;
+  /** Backward cursor, or null. */
+  previousCursor: string | null;
+  /** Original or newly created reading session. */
+  readSession: MobileSocialFeedReadSession;
+}
+
+/** Atomic comment publication result. */
+export interface MobileSocialFeedCommentResult {
+  /** Published reply. */
+  comment: MobileSocialFeedReply;
+  /** Post-commit root comment count. */
+  rootCommentCount: number;
+}
+
+/** Authoritative post-mutation like state. */
+export interface MobileSocialFeedLikeResult {
+  /** Item UUID. */
+  itemId: string;
+  /** Desired applied state. */
+  isLiked: boolean;
+  /** Post-mutation count. */
+  likeCount: number;
+  /** Item display version. */
+  version: string;
+}
+
+/** Exposure deduplication result for the current UTC day. */
+export interface MobileSocialFeedViewsResult {
+  /** Newly counted item UUIDs. */
+  acceptedItemIds: string[];
+  /** Already counted item UUIDs. */
+  duplicateItemIds: string[];
+}
+
+/** Full position history and viewing-account trading hints. */
+export interface MobileSocialFeedPositionHistory {
+  /** Position and additional history metrics. */
+  position: MobileSocialFeedPositionHistoryCard;
+  /** Whole-history counts. */
+  summary: MobileSocialFeedHistorySummary;
+  /** Ordered actions and takes; no synthesized items. */
+  timeline: MobileSocialFeedTimelineEntry[];
+  /** Next cursor, or null. */
+  nextCursor: string | null;
+  /** Completeness, independent of whether any items were published. */
+  historyQuality: MobileSocialFeedHistoryQuality;
+  /** Position-mode session for navigation, updates, and statistics. */
+  readSession: MobileSocialFeedReadSession;
+  /** Hints only; actual trading requires authentication. */
+  tradingContext: MobileSocialFeedTradingContext;
+}
+
+/** Candle page and event-price markers, independent of drawing data. */
+export interface MobileSocialFeedPositionChart {
+  /** Candles in descending timestamp order. */
+  candles: MobileSocialFeedCandle[];
+  /** Actions, retaining markers whose price is unknown. */
+  actionMarkers: MobileSocialFeedActionMarker[];
+  /** Estimated price, never substituted for execution or Oracle event prices. */
+  estimatedLiquidationLine: MobileSocialFeedEstimatedLiquidationLine | null;
+  /** Exclusive candle upper bound for the next page. */
+  nextBeforeMs: number | null;
+  /** Observation time in milliseconds. */
+  asOfMs: number;
+  /** Reliability of this response. */
+  dataQuality: MobileSocialFeedChartDataQuality;
+}
+
+/** Current visitor count and self-reported public account previews. */
+export interface MobileSocialFeedWatchers {
+  /** Distinct active browsing credentials, not unique accounts. */
+  watcherCount: number;
+  /** Deduplicated self-reported accounts; may be fewer than watcherCount. */
+  watcherPreview: MobileSocialFeedAuthor[];
+  /** Observation time in milliseconds. */
+  asOfMs: number;
+}
+
+/** Presence result; does not include an observation timestamp. */
+export interface MobileSocialFeedPresence {
+  /** Distinct active browsing credentials. */
+  watcherCount: number;
+  /** Self-reported account previews, not authenticated visitors. */
+  watcherPreview: MobileSocialFeedAuthor[];
+  /** Recommended heartbeat cadence in seconds. */
+  heartbeatIntervalSeconds: number;
+  /** Remaining lease lifetime in seconds. */
+  expiresInSeconds: number;
+}
+
+/** Mention input, using the same structured subaccount convention as other signed SDK inputs. */
+export interface MobileSocialFeedMentionParams extends Omit<
+  MobileSocialFeedMention,
+  'subaccount'
+> {
+  /** Mentioned identity; serialized to bytes32 for signing. */
+  subaccount: Subaccount;
+}

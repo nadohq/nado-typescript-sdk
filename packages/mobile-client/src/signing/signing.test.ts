@@ -10,6 +10,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import { buildSignedMobileRequest } from './buildSignedMobileRequest';
 import { canonicalizeMobileInner } from './canonicalize';
+import { MOBILE_EIP712_METHOD_BY_TYPE } from './eip712MethodByType';
 import { getMobileNonce } from './nonce';
 import { getMobilePayloadHash } from './payloadHash';
 import { MobileSignedInner } from './types';
@@ -22,6 +23,20 @@ const FIXED_VERIFYING_ADDR = '0x0000000000000000000000000000000000000001';
 // Every hash here mirrors the backend's pinned fixtures in mobile/src/api, so a divergence is a
 // real wire-format break rather than a stale expectation.
 const PINNED_HASHES = {
+  create_feed_post:
+    '0x5066f6cf7834957d8ecd713cd87d81da4ddaeffe863b86464fbad1f511713c39',
+  create_feed_chart_drawing:
+    '0x8ad450257f13a75e7632345676ce2da0f55feda3aa1908ea26e8cccb36ce80e2',
+  update_feed_chart_drawing:
+    '0xe1b04cd83027aaca1e075a59003f70801164f68552abf47a957721d7d5249cf7',
+  create_feed_comment:
+    '0x2ceb8d696c5f634db823f2e43274bdf565c36819b305315a61964208effc0476',
+  create_feed_comment_reply:
+    '0x82c728da0f1c11301dba141a346ac065bd840ab61b69e0c3aea2ceafa77137ae',
+  set_feed_like_true:
+    '0xbf58b6299a44bfe0a7442cb3920e2f1476eb68d00b137a7d63ade73deb4aded0',
+  set_feed_like_false:
+    '0xed313b08252b37e58f45dff89afe7e2ab2706a5218db15da7e1d77f2eb43aae5',
   set_bio: '0x96206cad01c9b00d69412721842ca0866bb1a82ec90f3979b8bcc91dc96a1243',
   create_avatar_upload:
     '0xb3811340e751e2799d3a24467fa50aeb221e1ecea5aa6599ab09bd2426162495',
@@ -55,8 +70,122 @@ const FIXTURE_TARGET_SUBACCOUNT =
 const FIXTURE_SECOND_TARGET_SUBACCOUNT =
   '0x2222222222222222222222222222222222222222222222222222222222222222' as const;
 
+/**
+ * Feed vectors from nado-mobile-be at 77ccc52988cdc871ba30d6188fd21015b4b1d49f:
+ * mobile/tests/fixtures/feed-{publishing,comment,interaction}-signing.json.
+ * Pinned hashes are derived from the backend payload_msgpack_hex, not SDK serialization.
+ */
+const FEED_SIGNING_FIXTURES = [
+  {
+    name: 'create_feed_post',
+    inner: {
+      type: 'create_feed_post',
+      client_request_id: '11111111-1111-4111-8111-111111111111',
+      position_id: '22222222-2222-4222-8222-222222222222',
+      action_id: '33333333-3333-4333-8333-333333333333',
+      text: '观点 @Bob',
+      mentions: [
+        {
+          subaccount:
+            '0x1111111111111111111111111111111111111111111111111111111111111111',
+          start: 3,
+          end: 7,
+          label: '@Bob',
+        },
+      ],
+      drawing_data_json: '{ "lines": [] }',
+    },
+    method: 'mobile:execute_create_feed_post',
+  },
+  {
+    name: 'create_feed_chart_drawing',
+    inner: {
+      type: 'create_feed_chart_drawing',
+      item_id: '11111111-1111-4111-8111-111111111111',
+      data_json: 'false',
+    },
+    method: 'mobile:execute_create_feed_chart_drawing',
+  },
+  {
+    name: 'update_feed_chart_drawing',
+    inner: {
+      type: 'update_feed_chart_drawing',
+      item_id: '11111111-1111-4111-8111-111111111111',
+      data_json: '0',
+    },
+    method: 'mobile:execute_update_feed_chart_drawing',
+  },
+  {
+    name: 'create_feed_comment',
+    inner: {
+      type: 'create_feed_comment',
+      client_request_id: '11111111-1111-4111-8111-111111111111',
+      root_item_id: '22222222-2222-4222-8222-222222222222',
+      text: 'comment',
+      mentions: [],
+    },
+    method: 'mobile:execute_create_feed_comment',
+  },
+  {
+    name: 'create_feed_comment_reply',
+    inner: {
+      type: 'create_feed_comment',
+      client_request_id: '11111111-1111-4111-8111-111111111111',
+      root_item_id: '22222222-2222-4222-8222-222222222222',
+      reply_to_item_id: '33333333-3333-4333-8333-333333333333',
+      text: '评论 @Alice',
+      mentions: [
+        {
+          subaccount:
+            '0x1111111111111111111111111111111111111111111111111111111111111111',
+          start: 3,
+          end: 9,
+          label: '@Alice',
+        },
+      ],
+      attached_position_id: '44444444-4444-4444-8444-444444444444',
+    },
+    method: 'mobile:execute_create_feed_comment',
+  },
+  {
+    name: 'set_feed_like_true',
+    inner: {
+      type: 'set_feed_like',
+      item_id: '11111111-1111-4111-8111-111111111111',
+      is_liked: true,
+    },
+    method: 'mobile:execute_set_feed_like',
+  },
+  {
+    name: 'set_feed_like_false',
+    inner: {
+      type: 'set_feed_like',
+      item_id: '11111111-1111-4111-8111-111111111111',
+      is_liked: false,
+    },
+    method: 'mobile:execute_set_feed_like',
+  },
+] satisfies {
+  name: keyof typeof PINNED_HASHES;
+  inner: MobileSignedInner;
+  method: string;
+}[];
+
 describe('[mobile-client]: signing (offline)', () => {
   describe('pinned payload hashes', () => {
+    it.each(FEED_SIGNING_FIXTURES)(
+      '$name matches the backend signing vector',
+      ({ name, inner, method }) => {
+        const reordered = Object.fromEntries(
+          Object.entries(inner).reverse(),
+        ) as MobileSignedInner;
+        expect(getMobilePayloadHash(canonicalizeMobileInner(reordered))).toBe(
+          PINNED_HASHES[name],
+        );
+        expect(MOBILE_EIP712_METHOD_BY_TYPE[inner.type]).toBe(method);
+      },
+    );
+
     it('set_bio', () => {
       const inner: MobileSignedInner = {
         type: 'set_bio',
@@ -290,4 +419,222 @@ describe('[mobile-client]: signing (offline)', () => {
 
     expect(recoveredAddress.toLowerCase()).toBe(account.address.toLowerCase());
   });
+});
+
+describe('[mobile-client]: social content signing', () => {
+  const requestId = 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA';
+  const positionId = 'BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB';
+  const itemId = 'CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC';
+  const mention = {
+    label: '@Alice',
+    end: 8,
+    start: 2,
+    subaccount: FIXTURE_TARGET_SUBACCOUNT,
+  };
+  const text = '🚀 @Alice  ';
+  const drawing = ' { "lines" : [], "enabled": false } ';
+
+  it('canonicalizes every post field and nested mention without changing content', () => {
+    const input: MobileSignedInner = {
+      drawing_data_json: drawing,
+      mentions: [mention],
+      text,
+      action_id: itemId,
+      position_id: positionId,
+      client_request_id: requestId,
+      type: 'create_feed_post',
+    };
+    const result = canonicalizeMobileInner(input);
+    expect(Object.keys(result)).toEqual([
+      'type',
+      'client_request_id',
+      'position_id',
+      'action_id',
+      'text',
+      'mentions',
+      'drawing_data_json',
+    ]);
+    if (result.type !== 'create_feed_post') throw new Error('Expected post');
+    expect(Object.keys(result.mentions[0])).toEqual([
+      'subaccount',
+      'start',
+      'end',
+      'label',
+    ]);
+    expect(result.client_request_id).toBe(requestId);
+    expect(result.action_id).toBe(itemId);
+    expect(result.position_id).toBe(positionId);
+    expect(result.text).toBe(text);
+    expect(result.drawing_data_json).toBe(drawing);
+    expect(result.mentions[0]).toEqual({
+      subaccount: FIXTURE_TARGET_SUBACCOUNT,
+      start: 2,
+      end: 8,
+      label: '@Alice',
+    });
+    expect(input.position_id).toBe(positionId);
+    expect(Object.keys(mention)).toEqual([
+      'label',
+      'end',
+      'start',
+      'subaccount',
+    ]);
+  });
+
+  it('omits absent optional fields but retains empty text and mention arrays', () => {
+    const post = canonicalizeMobileInner({
+      type: 'create_feed_post',
+      client_request_id: requestId,
+      position_id: positionId,
+      action_id: undefined,
+      text: '',
+      mentions: [],
+      drawing_data_json: 'false',
+    });
+    expect(Object.keys(post)).toEqual([
+      'type',
+      'client_request_id',
+      'position_id',
+      'text',
+      'mentions',
+      'drawing_data_json',
+    ]);
+    const comment = canonicalizeMobileInner({
+      type: 'create_feed_comment',
+      client_request_id: requestId,
+      root_item_id: itemId,
+      reply_to_item_id: undefined,
+      text,
+      mentions: [],
+      attached_position_id: undefined,
+    });
+    expect(Object.keys(comment)).toEqual([
+      'type',
+      'client_request_id',
+      'root_item_id',
+      'text',
+      'mentions',
+    ]);
+    expect(getMobilePayloadHash(comment)).not.toBe(
+      getMobilePayloadHash({
+        ...comment,
+        reply_to_item_id: null,
+      } as unknown as MobileSignedInner),
+    );
+  });
+
+  it('canonicalizes comment optionals in backend order and preserves whitespace', () => {
+    const comment = canonicalizeMobileInner({
+      attached_position_id: positionId,
+      mentions: [mention],
+      text,
+      reply_to_item_id: itemId,
+      root_item_id: requestId,
+      client_request_id: requestId,
+      type: 'create_feed_comment',
+    });
+    expect(Object.keys(comment)).toEqual([
+      'type',
+      'client_request_id',
+      'root_item_id',
+      'reply_to_item_id',
+      'text',
+      'mentions',
+      'attached_position_id',
+    ]);
+    if (comment.type !== 'create_feed_comment')
+      throw new Error('Expected comment');
+    expect(comment.attached_position_id).toBe(positionId);
+    expect(comment.text).toBe(text);
+    expect(Object.keys(comment.mentions[0])).toEqual([
+      'subaccount',
+      'start',
+      'end',
+      'label',
+    ]);
+  });
+
+  it('does not reformat JSON before hashing or normalize falsy drawing values', () => {
+    const inner: MobileSignedInner = {
+      type: 'update_feed_chart_drawing',
+      item_id: itemId,
+      data_json: drawing,
+    };
+    const canonical = canonicalizeMobileInner(inner);
+    expect(Object.keys(canonical)).toEqual(['type', 'item_id', 'data_json']);
+    expect(getMobilePayloadHash(canonical)).not.toBe(
+      getMobilePayloadHash(
+        canonicalizeMobileInner({
+          ...inner,
+          data_json: JSON.stringify(JSON.parse(drawing)),
+        }),
+      ),
+    );
+    for (const dataJson of ['false', '0']) {
+      expect(
+        canonicalizeMobileInner({ ...inner, data_json: dataJson }),
+      ).toEqual({
+        type: inner.type,
+        item_id: itemId,
+        data_json: dataJson,
+      });
+    }
+  });
+
+  const payloads: MobileSignedInner[] = [
+    {
+      type: 'create_feed_post',
+      client_request_id: requestId,
+      position_id: positionId,
+      text,
+      mentions: [mention],
+    },
+    {
+      type: 'create_feed_comment',
+      client_request_id: requestId,
+      root_item_id: itemId,
+      text,
+      mentions: [],
+    },
+    { type: 'create_feed_chart_drawing', item_id: itemId, data_json: 'false' },
+    { type: 'update_feed_chart_drawing', item_id: itemId, data_json: '0' },
+    { type: 'set_feed_like', item_id: itemId, is_liked: false },
+  ];
+  it.each(payloads)(
+    'recovers the signer for $type using its execute method domain',
+    async (inner) => {
+      const account = privateKeyToAccount(FIXED_PRIVATE_KEY);
+      const walletClient = createWalletClient({
+        account,
+        chain: ink,
+        transport: http(),
+      });
+      const nonce = 30_000_000_000_000n;
+      const signed = await buildSignedMobileRequest({
+        walletClient,
+        subaccountOwner: account.address,
+        subaccountName: 'default',
+        chainId: ink.id,
+        verifyingAddr: FIXED_VERIFYING_ADDR,
+        nonce,
+        inner,
+      });
+      const canonical = canonicalizeMobileInner(inner);
+      const recovered = await recoverTypedDataAddress({
+        domain: getNadoEIP712Domain(FIXED_VERIFYING_ADDR, ink.id),
+        types: getNadoEIP712Types('nado_authentication'),
+        primaryType: getNadoEIP712PrimaryType('nado_authentication'),
+        message: {
+          method: 'mobile:execute_' + inner.type,
+          sender: signed.sender,
+          payloadHash: getMobilePayloadHash(canonical),
+          nonce,
+        },
+        signature: signed.signature,
+      });
+      expect(recovered.toLowerCase()).toBe(account.address.toLowerCase());
+      expect(signed).toMatchObject({ ...canonical });
+      expect(signed).not.toHaveProperty('payload');
+    },
+  );
 });
