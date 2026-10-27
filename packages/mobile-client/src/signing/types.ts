@@ -68,6 +68,8 @@ export type MobileSignedInner =
       mentions: MobileSocialFeedMention[];
       /** Original JSON text; omitted when absent. */
       drawing_data_json?: string;
+      /** Ordered ready image UUIDs; omitted when absent. */
+      image_ids?: string[];
     }
   | {
       /** Atomic comment publication. */
@@ -84,6 +86,20 @@ export type MobileSignedInner =
       mentions: MobileSocialFeedMention[];
       /** Optional owned position UUID. */
       attached_position_id?: string;
+      /** Ordered ready image UUIDs; omitted when absent. */
+      image_ids?: string[];
+    }
+  | {
+      /** Direct multipart post-image upload; content_hash is Keccak256 of the raw file bytes. */
+      type: 'create_feed_post_image_uploads';
+      /** `0x`-prefixed lowercase Keccak256 of the original file bytes. */
+      content_hash: Hex;
+    }
+  | {
+      /** Direct multipart comment-image upload; content_hash is Keccak256 of the raw file bytes. */
+      type: 'create_feed_comment_image_uploads';
+      /** `0x`-prefixed lowercase Keccak256 of the original file bytes. */
+      content_hash: Hex;
     }
   | {
       /** First attachment. */

@@ -944,10 +944,39 @@ export interface MobileSocialFeedCommentPreview {
 
 /** Exposure requirements associated with a reading session. */
 export interface MobileSocialFeedViewTracking {
-  /** Required visible fraction. */
-  minVisibleRatio: number;
-  /** Required visible duration in milliseconds. */
-  minDurationMs: number;
+  /**
+   * Detail-visit exposure: report the primary detail target after it is shown in the foreground.
+   * List visible-ratio / dwell thresholds are no longer used.
+   */
+  mode: 'detail_visit';
+}
+
+/** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
+export interface MobileSocialFeedImage {
+  /** Image UUID. */
+  imageId: string;
+  /** Backend path for the original image bytes. */
+  url: string;
+  /** Display-orientation width in pixels. */
+  width: number;
+  /** Display-orientation height in pixels. */
+  height: number;
+  /** Detected content type. */
+  contentType: 'image/jpeg' | 'image/png';
+  /** Original file size in bytes. */
+  byteSize: number;
+  /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
+  thumbnail: MobileSocialFeedImageThumbnail;
+}
+
+/** Thumbnail metadata for an uploaded feed image. */
+export interface MobileSocialFeedImageThumbnail {
+  /** Backend path for the thumbnail bytes. */
+  url: string;
+  /** Thumbnail width in pixels. */
+  width: number;
+  /** Thumbnail height in pixels. */
+  height: number;
 }
 
 /** Coverage of the candidate authors in a qualification snapshot. */
@@ -996,6 +1025,8 @@ export interface MobileSocialFeedItemBase {
 
 /** Content shared by authored posts and trade cards. */
 export interface MobileSocialFeedContentBase extends MobileSocialFeedItemBase {
+  /** Bound images in display order; empty when none. */
+  images: MobileSocialFeedImage[];
   /** Card text, empty for automatic cards. */
   text: string;
   /** Mentions in the original, unmodified text. */
@@ -1070,13 +1101,13 @@ export type MobileSocialFeedItem =
   | MobileSocialFeedPost
   | MobileSocialFeedReply;
 
-/** Fixed-duration social feed reading session. Credentials and cursors must be returned unchanged. */
+/** Idle-renewed social feed reading session. Credentials and cursors must be returned unchanged. */
 export interface MobileSocialFeedReadSession {
   /** Session identifier. */
   sessionId: string;
   /** Feed, item, or full position history session. */
   mode: MobileSocialFeedReadSessionMode;
-  /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
+  /** Current idle expiration in Unix milliseconds; legitimate session requests renew it. */
   expiresAtMs: number;
   /** Visibility requirements for explicit exposure reporting. */
   viewTracking: MobileSocialFeedViewTracking;
@@ -1244,6 +1275,12 @@ export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
 export type GetMobileFeedItemParams = MobileSocialFeedReadParams & {
   /** Target item UUID. */
   itemId: string;
+  /**
+   * Detail-visit event UUID generated once per real navigation into this item.
+   * Reuse the same value on retries for the same visit; omit for prefetch.
+   * Registering the event does not increment the view count by itself.
+   */
+  viewEventId?: string;
   /** Preview size, 0–3. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
@@ -1307,6 +1344,8 @@ export interface MobileSocialFeedPost extends MobileSocialFeedContentBase {
 export interface MobileSocialFeedReply extends MobileSocialFeedItemBase {
   /** Reply discriminant. */
   kind: 'reply';
+  /** Bound images in display order; empty when none. */
+  images: MobileSocialFeedImage[];
   /** Original text. */
   text: string;
   /** Mentions in the text. */
@@ -1553,6 +1592,42 @@ export interface MobileCreateFeedPostParams extends MobileSignedRequestParams {
   mentions: MobileSocialFeedMentionParams[];
   /** Original JSON text, at most 256 KiB UTF-8; never reformatted by the SDK. */
   drawingDataJson?: string;
+  /**
+   * Up to nine distinct ready image UUIDs owned by the signer, in display order.
+   * Omit or pass `[]` when none; order participates in the signature and idempotency hash.
+   * Images alone are not enough — nonblank text or a valid drawing is still required.
+   */
+  imageIds?: string[];
+}
+
+/**
+ * Direct multipart upload of one static JPEG/PNG (whole request ≤ 2 MiB including signature overhead).
+ * The SDK hashes the bytes as Keccak256 for signing; the service verifies the received file matches.
+ */
+export interface MobileCreateFeedImageUploadParams extends MobileSignedRequestParams {
+  /** Raw original file bytes; format is validated by the service. */
+  fileBytes: Uint8Array;
+}
+
+/** Parameters for preparing a protected feed image request with a reading session. */
+export interface GetMobileFeedImageRequestParams {
+  /** Backend path from {@link MobileSocialFeedImage.url} or thumbnail.url. */
+  path: string;
+  /** Reading session that fully delivered the parent item. */
+  sessionId: string;
+  /** Browser credential for that session. */
+  viewerToken: string;
+}
+
+/** Parameters for fetching protected feed image bytes with a reading session. */
+export type GetMobileFeedImageBytesParams = GetMobileFeedImageRequestParams;
+
+/** URL and authentication headers for native image components or direct image reads. */
+export interface MobileFeedImageRequest {
+  /** Absolute image URL; pass as the native image source URI. */
+  url: string;
+  /** Original reading-session credentials required to access the image. */
+  headers: Record<string, string>;
 }
 
 /** Parameters for first adding or replacing a drawing. Writes must be serialized by the caller. */
@@ -1599,6 +1674,11 @@ export interface MobileCreateFeedCommentParams extends MobileSignedRequestParams
   mentions: MobileSocialFeedMentionParams[];
   /** Position still held by the signed author; invalid attachment rejects the whole request. */
   attachedPositionId?: string;
+  /**
+   * Up to nine distinct ready image UUIDs owned by the signer, in display order.
+   * Omit or pass `[]` when none; images cannot replace the required nonblank text.
+   */
+  imageIds?: string[];
 }
 
 /** Parameters for setting or cancelling a signed user's like. */
@@ -1609,14 +1689,22 @@ export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
   isLiked: boolean;
 }
 
-/** Unsigned exposure report; only send after satisfying the session's viewTracking requirements. */
+/**
+ * Unsigned detail-visit report. Call after the primary detail target is shown in the foreground,
+ * using the same {@link GetMobileFeedItemParams.viewEventId} previously sent to `getFeedItem`.
+ */
 export interface MobileRecordFeedViewsParams {
-  /** Original reading session. */
+  /** Original reading session returned by the detail read. */
   sessionId: string;
-  /** Original opaque browsing credential. */
+  /** Original opaque browsing credential from that read session. */
   viewerToken: string;
-  /** One to fifty fully delivered, readable, interactive item UUIDs. */
-  itemIds: string[];
+  /**
+   * Detail-visit event UUID registered on the preceding feed_item call.
+   * Reuse across retries for the same visit; generate a new UUID only after leaving and re-entering.
+   */
+  viewEventId: string;
+  /** Exactly one fully delivered, readable detail-target item UUID. */
+  itemId: string;
 }
 
 /** Parameters for full position history, not just published feed items. */

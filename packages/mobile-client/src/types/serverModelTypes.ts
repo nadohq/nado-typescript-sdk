@@ -598,10 +598,39 @@ export interface MobileServerSocialFeedCommentPreview {
 
 /** Exposure requirements associated with a reading session. */
 export interface MobileServerSocialFeedViewTracking {
-  /** Required visible fraction. */
-  min_visible_ratio: number;
-  /** Required visible duration in milliseconds. */
-  min_duration_ms: number;
+  /**
+   * Detail-visit exposure: report the primary detail target after it is shown in the foreground.
+   * List visible-ratio / dwell thresholds are no longer used.
+   */
+  mode: 'detail_visit';
+}
+
+/** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
+export interface MobileServerSocialFeedImage {
+  /** Image UUID. */
+  image_id: string;
+  /** Backend path for the original image bytes. */
+  url: string;
+  /** Display-orientation width in pixels. */
+  width: number;
+  /** Display-orientation height in pixels. */
+  height: number;
+  /** Detected content type. */
+  content_type: 'image/jpeg' | 'image/png';
+  /** Original file size in bytes. */
+  byte_size: number;
+  /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
+  thumbnail: MobileServerSocialFeedImageThumbnail;
+}
+
+/** Thumbnail metadata for an uploaded feed image. */
+export interface MobileServerSocialFeedImageThumbnail {
+  /** Backend path for the thumbnail bytes. */
+  url: string;
+  /** Thumbnail width in pixels. */
+  width: number;
+  /** Thumbnail height in pixels. */
+  height: number;
 }
 
 /** Coverage of the candidate authors in a qualification snapshot. */
@@ -650,6 +679,8 @@ export interface MobileServerSocialFeedItemBase {
 
 /** Content shared by authored posts and trade cards. */
 export interface MobileServerSocialFeedContentBase extends MobileServerSocialFeedItemBase {
+  /** Bound images in display order; empty when none. */
+  images: MobileServerSocialFeedImage[];
   /** Card text, empty for automatic cards. */
   text: string;
   /** Mentions in the original, unmodified text. */
@@ -725,13 +756,13 @@ export type MobileServerSocialFeedItem =
   | MobileServerSocialFeedPost
   | MobileServerSocialFeedReply;
 
-/** Fixed-duration social feed reading session. Credentials and cursors must be returned unchanged. */
+/** Idle-renewed social feed reading session. Credentials and cursors must be returned unchanged. */
 export interface MobileServerSocialFeedReadSession {
   /** Session identifier. */
   session_id: string;
   /** Feed, item, or full position history session. */
   mode: MobileSocialFeedReadSessionMode;
-  /** Fixed expiration time in Unix milliseconds; pagination does not extend it. */
+  /** Current idle expiration in Unix milliseconds; legitimate session requests renew it. */
   expires_at_ms: number;
   /** Visibility requirements for explicit exposure reporting. */
   view_tracking: MobileServerSocialFeedViewTracking;
@@ -903,6 +934,8 @@ export interface MobileServerSocialFeedPost extends MobileServerSocialFeedConten
 export interface MobileServerSocialFeedReply extends MobileServerSocialFeedItemBase {
   /** Reply discriminant. */
   kind: 'reply';
+  /** Bound images in display order; empty when none. */
+  images: MobileServerSocialFeedImage[];
   /** Original text. */
   text: string;
   /** Mentions in the text. */

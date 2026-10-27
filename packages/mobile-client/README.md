@@ -74,10 +74,12 @@ page is ordered by the listed relationship alone and `isFollowing` is absent rat
 
 `getFeed` returns the global trade feed. Session-based feeds include `getForYouFeed`, `getTopTradersFeed`,
 and `getFriendsFeed` (requires `viewAs`), plus `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`.
-`getFeedItem` reads one item; `getFeedUpdates` polls session patches using the returned `viewerToken`.
-All are unsigned. Profile, position, and item reads include the `viewAs` account's own hidden content under
-`account_view`; the viewing account is not proof of wallet ownership. Prices are decimal `BigNumber` values;
-quantities, notionals, and PnL retain x18 units. See method and parameter JSDoc for session and polling rules.
+`getFeedItem` reads one item; pass `viewEventId` when the user navigates into the detail so a later
+`recordFeedViews` can count that visit, and omit it for prefetch. `getFeedUpdates` polls session patches
+using the returned `viewerToken`. All are unsigned. Profile, position, and item reads include the `viewAs`
+account's own hidden content under `account_view`; the viewing account is not proof of wallet ownership.
+Prices are decimal `BigNumber` values; quantities, notionals, and PnL retain x18 units. See method and
+parameter JSDoc for session and polling rules.
 
 `getSelfFeedPositions`, `resolveFeedPosition`, and `resolveFeedAction` require `viewAs` and return eligibility
 hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
@@ -95,13 +97,40 @@ registering presence. Watching account previews are self-reported, not proof of 
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 `recordFeedViews` and `setPositionPresence` use reading-session credentials rather than wallet signatures.
-See method and parameter JSDoc for exposure reporting and page-scoped presence rules.
+Exposure follows `readSession.viewTracking.mode === 'detail_visit'`: after the primary detail target is shown
+in the foreground, call `recordFeedViews` with the same `viewEventId` previously sent to `getFeedItem`, plus
+that response's `sessionId` / `viewerToken` and exactly one detail-target `itemId`. Reuse the event on retries
+for the same visit; generate a new UUID only after leaving and re-entering. Fetch image bytes with
+`getFeedImageBytes` using the same session credentials and paths from `images` / `thumbnail.url`. Legitimate
+session reads renew the idle expiration; use the latest `expiresAtMs` rather than treating the first value as
+fixed.
+
+For React Native `Image` or expo-image, use `getFeedImageRequest` to pass the authenticated
+URL and headers directly without converting bytes to base64:
+
+```ts
+const { url, headers } = mobile.getFeedImageRequest({
+  path: image.url,
+  sessionId: readSession.sessionId,
+  viewerToken: readSession.viewerToken,
+});
+const source = { uri: url, headers };
+```
 
 ### Signed Executes
 
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
-`createFeedPost`, `createFeedComment`, `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`,
-`registerExpoTokenV2`, `updateNotificationSubscriptions`, `recordProductEvents`.
+`createFeedPost`, `createFeedComment`, `createFeedPostImageUpload`, `createFeedCommentImageUpload`,
+`createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`, `registerExpoTokenV2`,
+`updateNotificationSubscriptions`, `recordProductEvents`.
+
+Upload images one at a time with the multipart helpers (≤ 2 MiB whole request), then pass ordered ready
+`imageIds` to `createFeedPost` / `createFeedComment`. The SDK throws `RangeError` before requesting a signature or sending a request
+that exceeds `MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES`, including the signed payload and multipart framing.
+Unconfigured image storage returns `SOCIAL_FEED_DATA_UNAVAILABLE` (6320, HTTP 503).
+Posts still require nonblank text or a drawing; comments
+still require nonblank text. See method and parameter JSDoc for publication, retries, mention offsets, drawing
+data, and mutation ordering.
 
 ### Signed Queries
 
@@ -163,14 +192,12 @@ const inbox = await mobile.getNotificationInboxV2({ ...auth, limit: 20 });
   Pass `traderBell.subaccount` as a `Subaccount` (`subaccountOwner` and `subaccountName`); the SDK encodes it for signing.
 - Inbox pages are accepted intents, not delivery/read receipts. There is no title/body, unread count, mark-read,
   or delete operation. Do not use the unimplemented legacy `notification_history` route.
-  An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`; update the SDK to support that route.
+  An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,
   actual millisecond timestamps, and stable `clientEventId` UUIDs across retries. The SDK fills unused wire fields with `null`. Supported
   names are `notif_opened`, `market_viewed`, `chart_opened`, and `search`; obtain analytics consent first.
 - Legacy preferences remain supported and synchronize overlapping v2 fields. Keep legacy push parsing because
   order notifications may use a v1 fallback even for v2 registrations.
-
-See method and parameter JSDoc for publication, retries, mention offsets, drawing data, and mutation ordering.
 
 ### Linked Signers
 

@@ -9,9 +9,7 @@ export class MobileUnsupportedNotificationRouteError extends Error {
    * @param routeName - The unrecognized service route name.
    */
   constructor(routeName: string) {
-    super(
-      `Unsupported mobile notification route "${routeName}". Update the SDK to support this route.`,
-    );
+    super(`Unsupported mobile notification route "${routeName}".`);
     this.name = 'MobileUnsupportedNotificationRouteError';
     this.routeName = routeName;
   }

@@ -128,7 +128,7 @@ export interface MobileServerSocialFeedListParams {
   minimum_notional?: number;
   /** Page size, 1–50; defaults to 20. */
   limit?: number;
-  /** Fixed 15-minute reading session; required with cursor. */
+  /** Original reading session; required with cursor. Legitimate requests renew its idle expiration. */
   session_id?: string;
   /** Opaque pagination cursor, distinct from update_cursor and watermark. */
   cursor?: string;
@@ -273,6 +273,8 @@ export interface MobileServerPublicQueryRequestByType {
   feed_item: MobileServerSocialFeedReadParams & {
     /** Target item UUID. */
     item_id: string;
+    /** Detail-visit event; omit for prefetch. Does not increment the count alone. */
+    view_event_id?: string;
     /** Preview size, 0-3. */
     comment_preview_limit?: number;
     /** Omit to create a new reading session. */
@@ -354,14 +356,16 @@ export interface MobileServerPublicExecuteRequestByType {
     settings: MobileServerNotificationSettings;
   };
 
-  /** Explicit exposure report using the original browsing credential. */
+  /** Explicit detail-visit report using the original browsing credential. */
   record_feed_views: {
     /** Original reading session. */
     session_id: string;
-    /** Fully delivered interactive items. */
-    item_ids: string[];
     /** Original credential. */
     viewer_token: string;
+    /** Detail-visit event previously registered on feed_item. */
+    view_event_id: string;
+    /** Exactly one fully delivered detail-target item. */
+    item_ids: string[];
   };
   /** Per-page visitor lease; no wallet signature. */
   position_presence: {
@@ -411,9 +415,13 @@ export type MobileServerSignedQueryRequestType =
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
  * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
  * writes (e.g. `execute_set_username`), or `query_*` for signed reads. Unlike the EIP-712 method,
- * these values never carry the `mobile:` prefix.
+ * these values never carry the `mobile:` prefix. Protected image reads use `feed_image` or
+ * `feed_comment_image` without a route prefix; malformed multipart uploads use `execute_image_upload`.
  */
 export type MobileServerRequestType =
+  | 'feed_image'
+  | 'feed_comment_image'
+  | 'execute_image_upload'
   | `query_${MobileServerSignedQueryRequestType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
