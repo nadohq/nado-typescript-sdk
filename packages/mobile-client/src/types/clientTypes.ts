@@ -6,7 +6,11 @@ import {
   MobileFeedTradePosition,
   MobileFeedTradePositionDirection,
   MobileNotificationCategory,
+  MobileNotificationMinTradeSizeUsd,
   MobileNotificationPlatform,
+  MobileNotificationPositionThreshold,
+  MobileNotificationRouteName,
+  MobileNotificationTypeId,
   MobileSocialFeedAction,
   MobileSocialFeedActionPriceBasis,
   MobileSocialFeedActionResolution,
@@ -300,6 +304,212 @@ export interface MobileRegisteredWallet {
   lastSeenAt: number;
 }
 
+/** Device capabilities declared when registering a v2 device. */
+export interface MobileNotificationCapabilities {
+  /** Registration accepts only the v2 protocol. */
+  payloadVersions: [2];
+  /** Notification types the device can handle. */
+  typeIds: MobileNotificationTypeId[];
+  /** Supported named navigation destinations. */
+  routes: MobileNotificationRouteName[];
+}
+
+/** Latest device generation and saved capabilities, including legacy registrations. */
+export interface MobileNotificationRegistrationV2 {
+  /** Opaque generation string; do not convert to a JavaScript number. */
+  registrationGeneration: string;
+  /** Legacy registrations have empty type and route lists. */
+  capabilities: {
+    /** The single saved protocol version. */
+    payloadVersions: [1] | [2];
+    /** Supported notification types. */
+    typeIds: MobileNotificationTypeId[];
+    /** Supported navigation destinations. */
+    routes: MobileNotificationRouteName[];
+  };
+}
+
+/** Complete wallet-level notification settings; every field is required on replacement. */
+export interface MobileNotificationSettings {
+  /** Own position milestones and the initial weekly digest. */
+  myPositions: boolean;
+  /** Unique milestone thresholds; the minimum selects the starting tier. */
+  positionThresholds: MobileNotificationPositionThreshold[];
+  /** Combined order fill/update switch; does not control liquidation notifications. */
+  myOrders: boolean;
+  /** Ordinary followed-trader notifications; enabled bells override this switch. */
+  followingTrades: boolean;
+  /** Notifications about posts by followed traders. */
+  followingPosts: boolean;
+  /** Minimum trade size for trade notifications, in whole USD. */
+  minTradeSizeUsd: MobileNotificationMinTradeSizeUsd;
+  /** New followers and follow-backs. */
+  newFollowers: boolean;
+  /** Maps to the legacy announcement preference. */
+  announcements: boolean;
+  /** Opt-in trader streak and account drama discovery notifications. */
+  discovery: boolean;
+}
+
+/** Versioned settings document returned by v2 reads and writes. */
+export interface MobileNotificationSettingsV2 {
+  /** Settings schema version. */
+  schemaVersion: 2;
+  /** Settings revision, independent of subscription revisions. */
+  revision: number;
+  /** Full saved settings. */
+  settings: MobileNotificationSettings;
+}
+
+/** Wallet market subscriptions and the signing Identity's enabled trader bells. */
+export interface MobileNotificationSubscriptions {
+  /** Wallet-level subscription revision; refresh after every mutation. */
+  revision: number;
+  /** Whether the one-time local favorites import has completed. */
+  favoritesImported: boolean;
+  /** Subscribed market IDs in ascending order. */
+  marketIds: number[];
+  /** Followed subaccounts with enabled bells, encoded as bytes32. */
+  traderBells: Hex[];
+}
+
+/** Exactly one revision-guarded subscription operation; the SDK fills unused wire fields with null. */
+export type MobileNotificationSubscriptionsUpdate = {
+  /** Latest subscription revision, not the settings revision. */
+  expectedRevision: number;
+} & (
+  | {
+      /** Set a bell; enabling requires an existing follow relationship. */
+      traderBell: {
+        /** Target non-isolated subaccount belonging to another wallet. */
+        subaccount: Subaccount;
+        /** Desired bell state. */
+        enabled: boolean;
+      };
+      /** Cannot be combined with a trader bell operation. */
+      market?: never;
+      /** Cannot be combined with a trader bell operation. */
+      importMarkets?: never;
+    }
+  | {
+      /** Subscribe or unsubscribe one known market. */
+      market: {
+        /** Positive product ID. */
+        productId: number;
+        /** Desired subscription state. */
+        subscribed: boolean;
+      };
+      /** Cannot be combined with a market operation. */
+      traderBell?: never;
+      /** Cannot be combined with a market operation. */
+      importMarkets?: never;
+    }
+  | {
+      /** One-time merge of up to 500 local market IDs. */
+      importMarkets: number[];
+      /** Cannot be combined with an import operation. */
+      traderBell?: never;
+      /** Cannot be combined with an import operation. */
+      market?: never;
+    }
+);
+
+/** Allowlisted notification destination; never interpret it as an arbitrary URL. */
+export type MobileNotificationRoute =
+  | {
+      /** Public profile destination. */
+      name: 'profile';
+      /** Profile subaccount as bytes32. */
+      subaccount: Hex;
+    }
+  | {
+      /** Market destination. */
+      name: 'market';
+      /** Positive product ID. */
+      productId: number;
+    }
+  | {
+      /** Own portfolio destination. */
+      name: 'portfolio';
+    };
+
+/** V2 push/inbox navigation data, not a complete historical trade or notification body. */
+export interface MobileNotificationPayloadV2 {
+  /** Payload protocol version. */
+  payloadVersion: 2;
+  /** Logical notification UUID for click deduplication. */
+  notificationId: string;
+  /** Intended wallet; private navigation must wait for this wallet to connect. */
+  recipientWallet: Hex;
+  /** Registered notification type. */
+  typeId: MobileNotificationTypeId;
+  /** Supported template version. */
+  templateVersion: 1;
+  /** Named destination and its parameters. */
+  route: MobileNotificationRoute;
+}
+
+/** Accepted logical notification; does not prove device delivery or read status. */
+export interface MobileNotificationInboxItem {
+  /** Logical notification UUID. */
+  notificationId: string;
+  /** Registered notification type. */
+  typeId: MobileNotificationTypeId;
+  /** Navigation data, without title, body, or read state. */
+  data: MobileNotificationPayloadV2;
+  /** Intent acceptance time in milliseconds. */
+  createdAt: number;
+  /** Backend-computed trade attribution. */
+  tradeWithin24h: boolean;
+}
+
+/** Private notification page, ordered newest first. */
+export interface MobileNotificationInboxV2 {
+  /** Accepted intents owned by the signing wallet. */
+  notifications: MobileNotificationInboxItem[];
+  /** Pass unchanged to the next request, or null when pagination is complete. */
+  nextCursor: string | null;
+}
+
+/** Analytics event with the fields required by its interaction; unused wire fields are filled with null. */
+export type MobileProductEvent = {
+  /** Stable event UUID; reuse across retries. */
+  clientEventId: string;
+  /** Actual event time in milliseconds, within the past 7 days or next 5 minutes. */
+  occurredAt: number;
+} & (
+  | {
+      /** Notification open; not a read-state mutation. */
+      eventName: 'notif_opened';
+      /** Notification owned by the signing wallet. */
+      notificationId: string;
+      /** Not used for notification opens. */
+      productId?: never;
+      /** Not used for notification opens. */
+      query?: never;
+    }
+  | {
+      /** Market or chart interaction. */
+      eventName: 'market_viewed' | 'chart_opened';
+      /** Positive product ID. */
+      productId: number;
+      /** Not used for market/chart interactions. */
+      notificationId?: never;
+      /** Not used for market/chart interactions. */
+      query?: never;
+    }
+  | {
+      /** Search interaction. */
+      eventName: 'search';
+      /** Nonblank search query, at most 80 Unicode characters. */
+      query: string;
+      /** Not used for searches. */
+      notificationId?: never;
+      /** Not used for searches. */
+      productId?: never;
+    }
+);
+
 /**
  * Common params for signed requests that authenticate as a given subaccount.
  */
@@ -504,11 +714,8 @@ export type GetMobileFollowingParams = GetMobileFollowListParams;
 /**
  * Params for {@link MobileClient.registerExpoToken}.
  */
-export interface MobileRegisterExpoTokenParams extends MobileSignedRequestParams {
-  /**
-   * Expo push token, e.g. `ExponentPushToken[...]`.
-   */
-  expoToken: string;
+export interface MobileRegisterExpoTokenParams
+  extends MobileSignedRequestParams, MobileWithExpoTokenParams {
   platform: MobileNotificationPlatform;
   /**
    * BCP-47 locale tag, max 35 chars.
@@ -541,6 +748,67 @@ export type GetMobileNotificationPreferencesParams = MobileWithExpoTokenParams;
  * Params for {@link MobileClient.getRegisteredWallet}.
  */
 export type GetMobileRegisteredWalletParams = MobileWithExpoTokenParams;
+
+/**
+ * Params for {@link MobileClient.registerExpoTokenV2}.
+ */
+export interface MobileRegisterExpoTokenV2Params extends MobileRegisterExpoTokenParams {
+  /** Actual notification types and routes supported by this device. */
+  capabilities: MobileNotificationCapabilities;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationRegistrationV2}.
+ */
+export type GetMobileNotificationRegistrationV2Params =
+  MobileWithExpoTokenParams;
+
+/**
+ * Params for {@link MobileClient.getNotificationSettingsV2}.
+ */
+export type GetMobileNotificationSettingsV2Params = MobileWithExpoTokenParams;
+
+/**
+ * Params for {@link MobileClient.updateNotificationSettingsV2}.
+ */
+export interface MobileUpdateNotificationSettingsV2Params extends MobileWithExpoTokenParams {
+  /** Latest settings revision; stale values fail with 6203. */
+  expectedRevision: number;
+  /** Full replacement, not a partial patch. */
+  settings: MobileNotificationSettings;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationSubscriptions}; no Expo token is needed.
+ */
+export type GetMobileNotificationSubscriptionsParams =
+  MobileSignedRequestParams;
+
+/**
+ * Params for {@link MobileClient.updateNotificationSubscriptions}.
+ */
+export interface MobileUpdateNotificationSubscriptionsParams extends MobileSignedRequestParams {
+  /** Exactly one operation, with the latest subscription revision. */
+  update: MobileNotificationSubscriptionsUpdate;
+}
+
+/**
+ * Params for {@link MobileClient.getNotificationInboxV2}; no Expo token is needed.
+ */
+export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestParams {
+  /** Previous nextCursor; omit or pass null for the first page. */
+  cursor?: string | null;
+  /** Page size from 1 to 50; omission/null uses the server default of 20. */
+  limit?: number | null;
+}
+
+/**
+ * Params for {@link MobileClient.recordProductEvents}.
+ */
+export interface MobileRecordProductEventsParams extends MobileSignedRequestParams {
+  /** One to fifty events, validated and committed atomically. */
+  events: MobileProductEvent[];
+}
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileSocialFeedTraderBadge {

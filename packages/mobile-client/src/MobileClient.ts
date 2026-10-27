@@ -14,8 +14,16 @@ import {
   mapMobileFollowListPage,
   mapMobileFollowListParamsToServer,
   mapMobileFollowMutationResult,
+  mapMobileNotificationCapabilitiesToServer,
+  mapMobileNotificationInboxV2,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
+  mapMobileNotificationRegistrationV2,
+  mapMobileNotificationSettingsToServer,
+  mapMobileNotificationSettingsV2,
+  mapMobileNotificationSubscriptions,
+  mapMobileNotificationSubscriptionsUpdateToServer,
+  mapMobileProductEventToServer,
   mapMobileProfileSearchPage,
   mapMobileProfileSearchParamsToServer,
   mapMobileProfilesIncludeToServer,
@@ -62,7 +70,11 @@ import {
   GetMobileForYouFeedParams,
   GetMobileFriendsFeedParams,
   GetMobileMarketFeedParams,
+  GetMobileNotificationInboxV2Params,
   GetMobileNotificationPreferencesParams,
+  GetMobileNotificationRegistrationV2Params,
+  GetMobileNotificationSettingsV2Params,
+  GetMobileNotificationSubscriptionsParams,
   GetMobilePositionChartParams,
   GetMobilePositionFeedParams,
   GetMobilePositionHistoryParams,
@@ -83,13 +95,19 @@ import {
   MobileFollowBatchResultItem,
   MobileFollowListPage,
   MobileFollowMutationResult,
+  MobileNotificationInboxV2,
   MobileNotificationPreferences,
+  MobileNotificationRegistrationV2,
+  MobileNotificationSettingsV2,
+  MobileNotificationSubscriptions,
   MobilePositionPresenceParams,
   MobileProfileSearchPage,
   MobilePublicProfile,
   MobileRecordFeedViewsParams,
+  MobileRecordProductEventsParams,
   MobileRegisteredWallet,
   MobileRegisterExpoTokenParams,
+  MobileRegisterExpoTokenV2Params,
   MobileSetAvatarParams,
   MobileSetBioParams,
   MobileSetFeedLikeParams,
@@ -119,6 +137,8 @@ import {
   MobileSocialFeedWatchers,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
+  MobileUpdateNotificationSettingsV2Params,
+  MobileUpdateNotificationSubscriptionsParams,
   MobileUsernameAvailability,
   ResolveMobileFeedActionParams,
   ResolveMobileFeedPositionParams,
@@ -135,6 +155,7 @@ import {
 import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
+  MobileServerSignedQuerySuccessResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
@@ -142,6 +163,7 @@ import {
   MobileServerPublicExecuteRequestType,
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
 import {
   isMobileServerFailureResponse,
@@ -534,6 +556,7 @@ export class MobileClient {
    *
    * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is malformed, or is
    * not currently registered to a wallet.
+   * @deprecated Use {@link getNotificationSettingsV2} instead.
    */
   async getNotificationPreferences(
     params: GetMobileNotificationPreferencesParams,
@@ -743,6 +766,85 @@ export class MobileClient {
     return mapMobileSocialFeedWatchers(await this.publicQuery(body));
   }
 
+  /**
+   * Reads the token's latest registration generation and saved capabilities, including legacy v1 registrations.
+   * @param params - Active Expo token credential; no wallet signature is needed.
+   * @returns Saved generation as an opaque string and the complete capability declaration.
+   * @throws {MobileServerFailureError} If the token is invalid or inactive (`INVALID_EXPO_TOKEN`).
+   */
+  async getNotificationRegistrationV2(
+    params: GetMobileNotificationRegistrationV2Params,
+  ): Promise<MobileNotificationRegistrationV2> {
+    return mapMobileNotificationRegistrationV2(
+      await this.publicQuery({
+        type: 'notification_registration_v2',
+        expo_token: params.expoToken,
+      }),
+    );
+  }
+
+  /**
+   * Reads the wallet's full v2 settings document, including legacy preference mappings.
+   * @param params - Active Expo token credential. Before displaying settings, compare the wallet returned by
+   *   {@link MobileClient.getRegisteredWallet} with the connected wallet (case-insensitively).
+   * @returns CamelCase settings with the current settings revision.
+   * @throws {MobileServerFailureError} If the token is invalid or inactive (`INVALID_EXPO_TOKEN`).
+   */
+  async getNotificationSettingsV2(
+    params: GetMobileNotificationSettingsV2Params,
+  ): Promise<MobileNotificationSettingsV2> {
+    return mapMobileNotificationSettingsV2(
+      await this.publicQuery({
+        type: 'notification_settings_v2',
+        expo_token: params.expoToken,
+      }),
+    );
+  }
+
+  /*
+  Signed queries
+   */
+
+  /**
+   * Reads wallet market subscriptions and the signing Identity's enabled trader bells.
+   * @param params - Wallet authentication context; no Expo token is needed.
+   * @returns Subscriptions, import state, and the independent subscription revision.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} If authentication or the query fails.
+   */
+  async getNotificationSubscriptions(
+    params: GetMobileNotificationSubscriptionsParams,
+  ): Promise<MobileNotificationSubscriptions> {
+    const request = await this.getSignedRequest(
+      'notification_subscriptions',
+      params,
+      {},
+    );
+    return mapMobileNotificationSubscriptions(await this.query(request));
+  }
+
+  /**
+   * Reads private accepted notification intents, not delivery receipts or read states.
+   * @param params - Wallet authentication and optional cursor/page size (1-50, default 20).
+   * @returns A camelCase page; discard cached pages and cursors when switching wallets.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} If authentication or pagination validation fails.
+   * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route name.
+   */
+  async getNotificationInboxV2(
+    params: GetMobileNotificationInboxV2Params,
+  ): Promise<MobileNotificationInboxV2> {
+    const request = await this.getSignedRequest(
+      'notification_inbox_v2',
+      params,
+      {
+        cursor: params.cursor ?? null,
+        limit: params.limit ?? null,
+      },
+    );
+    return mapMobileNotificationInboxV2(await this.query(request));
+  }
+
   /*
   Public executes
    */
@@ -778,6 +880,7 @@ export class MobileClient {
    *
    * @throws {MobileServerFailureError} With error code `INVALID_PREFERENCES` if those rules are violated, or
    * `INVALID_EXPO_TOKEN` if the token is malformed or is not currently registered to a wallet.
+   * @deprecated Use {@link updateNotificationSettingsV2} instead.
    */
   async updateNotificationPreferences(
     params: MobileUpdateNotificationPreferencesParams,
@@ -788,6 +891,26 @@ export class MobileClient {
       preferences: mapMobileNotificationPreferencesToServer(params.preferences),
     };
     return this.publicExecute(body);
+  }
+
+  /**
+   * Replaces all v2 settings fields using optimistic concurrency; legacy overlapping preferences are synced.
+   * @param params - Active Expo token, latest settings revision, and complete replacement settings.
+   * @returns The saved settings document with its incremented revision.
+   * @throws {MobileServerFailureError} On invalid token/settings or revision conflict (`NOTIFICATION_REVISION_CONFLICT`). Re-read and
+   * merge only the user's current change before retrying; never blindly replay a stale document.
+   */
+  async updateNotificationSettingsV2(
+    params: MobileUpdateNotificationSettingsV2Params,
+  ): Promise<MobileNotificationSettingsV2> {
+    return mapMobileNotificationSettingsV2(
+      await this.publicExecute({
+        type: 'update_notification_settings_v2',
+        expo_token: params.expoToken,
+        expected_revision: params.expectedRevision,
+        settings: mapMobileNotificationSettingsToServer(params.settings),
+      }),
+    );
   }
 
   /**
@@ -942,11 +1065,13 @@ export class MobileClient {
 
   /**
    * Registers an Expo push token for the wallet, transferring active ownership of the token if another
-   * wallet had registered it. Idempotent per `(wallet, token)`.
+   * wallet had registered it. Each registration advances its generation and cancels old pending deliveries.
+   * This legacy method replaces capabilities with v1; use registerExpoTokenV2 consistently after upgrading.
    *
    * @throws {MobileServerFailureError} With error code `INVALID_EXPO_TOKEN` if the token is not a valid Expo
    * push token, or `INVALID_DEVICE_METADATA` if `locale` (max 35 chars) or `appVersion` (max 64 chars) is
    * too long.
+   * @deprecated Use {@link registerExpoTokenV2} instead.
    */
   async registerExpoToken(
     params: MobileRegisterExpoTokenParams,
@@ -962,6 +1087,70 @@ export class MobileClient {
       },
     );
     return this.execute(signedRequest);
+  }
+
+  /**
+   * Registers a device with its actual v2 capabilities; do not use repeated registration as a heartbeat.
+   * @param params - Wallet authentication, Expo token, metadata, and supported notification types/routes.
+   * @returns Success only; query registration separately for its new generation.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On `INVALID_EXPO_TOKEN`, `INVALID_DEVICE_METADATA`,
+   * `NOTIFICATION_DEVICE_LIMIT` when the wallet already has 32 active devices, or authentication errors.
+   */
+  async registerExpoTokenV2(
+    params: MobileRegisterExpoTokenV2Params,
+  ): Promise<MobileServerSuccessResponse> {
+    const request = await this.getSignedRequest(
+      'register_expo_token_v2',
+      params,
+      {
+        expo_token: params.expoToken,
+        platform: params.platform,
+        locale: params.locale ?? null,
+        app_version: params.appVersion ?? null,
+        capabilities: mapMobileNotificationCapabilitiesToServer(
+          params.capabilities,
+        ),
+      },
+    );
+    return this.execute(request);
+  }
+
+  /**
+   * Applies exactly one bell, market, or one-time favorites-import operation.
+   * @param params - Wallet authentication and subscription update with the latest subscription revision.
+   * @returns Success only; re-query subscriptions for the new revision even after a repeated ON/OFF.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On `NOTIFICATION_REVISION_CONFLICT`, `INVALID_NOTIFICATION_REQUEST`, or
+   * `INVALID_IDENTITY_TARGET`.
+   */
+  async updateNotificationSubscriptions(
+    params: MobileUpdateNotificationSubscriptionsParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const request = await this.getSignedRequest(
+      'update_notification_subscriptions',
+      params,
+      mapMobileNotificationSubscriptionsUpdateToServer(params.update),
+    );
+    return this.execute(request);
+  }
+
+  /**
+   * Atomically records 1-50 analytics events after the user has consented to analytics.
+   * @param params - Wallet authentication and events with stable UUIDs and actual millisecond timestamps.
+   * @returns Success only; reuse event IDs on retries. Notification clicks do not mark an inbox item as read.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} If any event, timestamp, batch size, or notification ownership is invalid.
+   */
+  async recordProductEvents(
+    params: MobileRecordProductEventsParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const request = await this.getSignedRequest(
+      'record_product_events',
+      params,
+      { events: params.events.map(mapMobileProductEventToServer) },
+    );
+    return this.execute(request);
   }
 
   /**
@@ -1201,6 +1390,24 @@ export class MobileClient {
 
     // checkServerStatus catches the failure result and throws the error, so the cast to the success response is acceptable here
     return response.data as MobileServerPublicExecuteSuccessResponse<T>;
+  }
+
+  /**
+   * Sends an authenticated read through the signed query route.
+   * @param body - Canonical inner payload with its signature, sender, and nonce.
+   * @returns The successful query envelope and its type-specific payload.
+   * @throws {MobileServerFailureError} For a structured service failure, including non-2xx responses.
+   */
+  protected async query<T extends MobileServerSignedQueryRequestType>(
+    body: MobileSignedRequest & { type: T },
+  ): Promise<MobileServerSignedQuerySuccessResponse<T>> {
+    const response = await this.axiosInstance.post<unknown>(
+      `${this.opts.url}/query`,
+      body,
+    );
+    this.checkResponseStatus(response);
+    this.checkServerStatus(response);
+    return response.data as MobileServerSignedQuerySuccessResponse<T>;
   }
 
   // `T` is inferred from the body's `type` rather than declared by the caller, for the same reason

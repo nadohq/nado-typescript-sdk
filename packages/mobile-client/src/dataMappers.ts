@@ -11,8 +11,18 @@ import {
   MobileFollowMutationResult,
   MobileFollowSummary,
   MobileIdentitySummary,
+  MobileNotificationCapabilities,
+  MobileNotificationInboxV2,
+  MobileNotificationPayloadV2,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
+  MobileNotificationRegistrationV2,
+  MobileNotificationRoute,
+  MobileNotificationSettings,
+  MobileNotificationSettingsV2,
+  MobileNotificationSubscriptions,
+  MobileNotificationSubscriptionsUpdate,
+  MobileProductEvent,
   MobileProfileSearchPage,
   MobileProfilesInclude,
   MobilePublicProfile,
@@ -70,6 +80,7 @@ import {
   SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
+import { MobileUnsupportedNotificationRouteError } from './types/MobileUnsupportedNotificationRouteError';
 import {
   MobileServerAvatarUploadResponse,
   MobileServerFollowBatchResponse,
@@ -86,8 +97,12 @@ import {
   MobileServerFeedTrade,
   MobileServerFollowSummary,
   MobileServerIdentitySummary,
+  MobileServerNotificationPayloadV2,
   MobileServerNotificationPreferenceScope,
   MobileServerNotificationPreferences,
+  MobileServerNotificationRoute,
+  MobileServerNotificationSettings,
+  MobileServerProductEvent,
   MobileServerProfile,
   MobileServerSocialFeedActionCandidate,
   MobileServerSocialFeedActionMarker,
@@ -123,6 +138,10 @@ import {
 import {
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
+  MobileServerNotificationInboxV2Response,
+  MobileServerNotificationRegistrationV2Response,
+  MobileServerNotificationSettingsV2Response,
+  MobileServerNotificationSubscriptionsResponse,
   MobileServerRegisteredWalletResponse,
   MobileServerSearchProfilesResponse,
   MobileServerSocialFeedActionResolutionResponse,
@@ -141,7 +160,9 @@ import {
 } from './types/serverQueryTypes';
 import {
   MobileServerFollowListRequest,
+  MobileServerNotificationSubscriptionsUpdate,
   MobileServerProfilesInclude,
+  MobileServerRegisterExpoTokenV2Params,
   MobileServerSearchProfilesRequest,
   MobileServerSocialFeedListParams,
   MobileServerSocialFeedReadParams,
@@ -167,6 +188,209 @@ export function mapMobileAvatarUpload(
     uploadUrl: server.upload_url,
     headers: server.headers,
     expiresInSeconds: server.expires_in_seconds,
+  };
+}
+
+/** Maps a saved notification registration to the client model without the response envelope.
+ * @param server - Registration payload.
+ * @returns Saved generation and capabilities.
+ */
+export function mapMobileNotificationRegistrationV2(
+  server: MobileServerNotificationRegistrationV2Response,
+): MobileNotificationRegistrationV2 {
+  return {
+    registrationGeneration: server.registration_generation,
+    capabilities: {
+      payloadVersions: server.capabilities.payload_versions,
+      typeIds: server.capabilities.type_ids,
+      routes: server.capabilities.routes,
+    },
+  };
+}
+
+/** Maps a v2 capability declaration to the registration wire format.
+ * @param capabilities - Device-supported features.
+ * @returns V2-only registration capabilities.
+ */
+export function mapMobileNotificationCapabilitiesToServer(
+  capabilities: MobileNotificationCapabilities,
+): MobileServerRegisterExpoTokenV2Params['capabilities'] {
+  return {
+    payload_versions: capabilities.payloadVersions,
+    type_ids: capabilities.typeIds,
+    routes: capabilities.routes,
+  };
+}
+
+/** Maps complete notification settings to the client model.
+ * @param server - Saved settings.
+ * @returns CamelCase settings.
+ */
+export function mapMobileNotificationSettings(
+  server: MobileServerNotificationSettings,
+): MobileNotificationSettings {
+  return {
+    myPositions: server.my_positions,
+    positionThresholds: server.position_thresholds,
+    myOrders: server.my_orders,
+    followingTrades: server.following_trades,
+    followingPosts: server.following_posts,
+    minTradeSizeUsd: server.min_trade_size_usd,
+    newFollowers: server.new_followers,
+    announcements: server.announcements,
+    discovery: server.discovery,
+  };
+}
+
+/** Maps a complete replacement settings document to wire format.
+ * @param settings - Complete client settings.
+ * @returns Settings accepted by the service.
+ */
+export function mapMobileNotificationSettingsToServer(
+  settings: MobileNotificationSettings,
+): MobileServerNotificationSettings {
+  return {
+    my_positions: settings.myPositions,
+    position_thresholds: settings.positionThresholds,
+    my_orders: settings.myOrders,
+    following_trades: settings.followingTrades,
+    following_posts: settings.followingPosts,
+    min_trade_size_usd: settings.minTradeSizeUsd,
+    new_followers: settings.newFollowers,
+    announcements: settings.announcements,
+    discovery: settings.discovery,
+  };
+}
+
+/** Maps a revisioned settings response without the response envelope.
+ * @param server - Versioned settings payload.
+ * @returns Client settings and their revision.
+ */
+export function mapMobileNotificationSettingsV2(
+  server: MobileServerNotificationSettingsV2Response,
+): MobileNotificationSettingsV2 {
+  return {
+    schemaVersion: server.schema_version,
+    revision: server.revision,
+    settings: mapMobileNotificationSettings(server.settings),
+  };
+}
+
+/** Maps wallet market subscriptions and Identity bells.
+ * @param server - Subscription payload.
+ * @returns Client subscription state without the response envelope.
+ */
+export function mapMobileNotificationSubscriptions(
+  server: MobileServerNotificationSubscriptionsResponse,
+): MobileNotificationSubscriptions {
+  return {
+    revision: server.revision,
+    favoritesImported: server.favorites_imported,
+    marketIds: server.market_ids,
+    traderBells: server.trader_bells,
+  };
+}
+
+/** Maps one subscription operation, explicitly nulling unused wire operations.
+ * @param update - Exactly one revision-guarded operation.
+ * @returns The complete signed inner operation fields.
+ */
+export function mapMobileNotificationSubscriptionsUpdateToServer(
+  update: MobileNotificationSubscriptionsUpdate,
+): MobileServerNotificationSubscriptionsUpdate {
+  return {
+    expected_revision: update.expectedRevision,
+    trader_bell:
+      update.traderBell == null
+        ? null
+        : {
+            subaccount: subaccountToHex(update.traderBell.subaccount),
+            enabled: update.traderBell.enabled,
+          },
+    market:
+      update.market == null
+        ? null
+        : {
+            product_id: update.market.productId,
+            subscribed: update.market.subscribed,
+          },
+    import_markets: update.importMarkets ?? null,
+  };
+}
+
+/** Maps an allowlisted notification destination.
+ * @param server - Named backend destination.
+ * @returns Client navigation data, never an arbitrary URL.
+ * @throws {MobileUnsupportedNotificationRouteError} If the service returns an unsupported route name.
+ */
+export function mapMobileNotificationRoute(
+  server: MobileServerNotificationRoute,
+): MobileNotificationRoute {
+  const name = server.name;
+  switch (name) {
+    case 'market':
+      return { name: server.name, productId: server.product_id };
+    case 'profile':
+      return { name: server.name, subaccount: server.subaccount };
+    case 'portfolio':
+      return { name: server.name };
+    default:
+      throw new MobileUnsupportedNotificationRouteError(name satisfies never);
+  }
+}
+
+/** Maps v2 push or inbox navigation data.
+ * @param server - Wire-format notification payload.
+ * @returns Client notification data.
+ * @throws {MobileUnsupportedNotificationRouteError} If the service returns an unsupported route name.
+ */
+export function mapMobileNotificationPayloadV2(
+  server: MobileServerNotificationPayloadV2,
+): MobileNotificationPayloadV2 {
+  return {
+    payloadVersion: server.payload_version,
+    notificationId: server.notification_id,
+    recipientWallet: server.recipient_wallet,
+    typeId: server.type_id,
+    templateVersion: server.template_version,
+    route: mapMobileNotificationRoute(server.route),
+  };
+}
+
+/** Maps a private notification page without the response envelope.
+ * @param server - Newest-first inbox payload.
+ * @returns Client items, attribution flags, and the next cursor.
+ * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route name.
+ */
+export function mapMobileNotificationInboxV2(
+  server: MobileServerNotificationInboxV2Response,
+): MobileNotificationInboxV2 {
+  return {
+    notifications: server.notifications.map((item) => ({
+      notificationId: item.notification_id,
+      typeId: item.type_id,
+      data: mapMobileNotificationPayloadV2(item.data),
+      createdAt: item.created_at,
+      tradeWithin24h: item.trade_within_24h,
+    })),
+    nextCursor: server.next_cursor,
+  };
+}
+
+/** Maps a typed analytics interaction, nulling unused wire fields.
+ * @param event - Event-specific client data.
+ * @returns Complete signed wire event.
+ */
+export function mapMobileProductEventToServer(
+  event: MobileProductEvent,
+): MobileServerProductEvent {
+  return {
+    client_event_id: event.clientEventId,
+    event_name: event.eventName,
+    notification_id: event.notificationId ?? null,
+    occurred_at: event.occurredAt,
+    product_id: event.productId ?? null,
+    query: event.query ?? null,
   };
 }
 

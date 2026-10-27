@@ -633,7 +633,7 @@ describe('[mobile-client]: social content signing', () => {
         signature: signed.signature,
       });
       expect(recovered.toLowerCase()).toBe(account.address.toLowerCase());
-      expect(signed).toMatchObject(canonical);
+      expect(signed).toMatchObject({ ...canonical });
       expect(signed).not.toHaveProperty('payload');
     },
   );
