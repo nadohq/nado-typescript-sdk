@@ -80,6 +80,7 @@ import {
   SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
+import { MobileUnsupportedNotificationRouteError } from './types/MobileUnsupportedNotificationRouteError';
 import {
   MobileServerAvatarUploadResponse,
   MobileServerFollowBatchResponse,
@@ -303,7 +304,7 @@ export function mapMobileNotificationSubscriptionsUpdateToServer(
       update.traderBell == null
         ? null
         : {
-            subaccount: update.traderBell.subaccount,
+            subaccount: subaccountToHex(update.traderBell.subaccount),
             enabled: update.traderBell.enabled,
           },
     market:
@@ -320,23 +321,28 @@ export function mapMobileNotificationSubscriptionsUpdateToServer(
 /** Maps an allowlisted notification destination.
  * @param server - Named backend destination.
  * @returns Client navigation data, never an arbitrary URL.
+ * @throws {MobileUnsupportedNotificationRouteError} If the service returns an unsupported route name.
  */
 export function mapMobileNotificationRoute(
   server: MobileServerNotificationRoute,
 ): MobileNotificationRoute {
-  switch (server.name) {
+  const name = server.name;
+  switch (name) {
     case 'market':
       return { name: server.name, productId: server.product_id };
     case 'profile':
       return { name: server.name, subaccount: server.subaccount };
     case 'portfolio':
       return { name: server.name };
+    default:
+      throw new MobileUnsupportedNotificationRouteError(name satisfies never);
   }
 }
 
 /** Maps v2 push or inbox navigation data.
  * @param server - Wire-format notification payload.
  * @returns Client notification data.
+ * @throws {MobileUnsupportedNotificationRouteError} If the service returns an unsupported route name.
  */
 export function mapMobileNotificationPayloadV2(
   server: MobileServerNotificationPayloadV2,
@@ -354,6 +360,7 @@ export function mapMobileNotificationPayloadV2(
 /** Maps a private notification page without the response envelope.
  * @param server - Newest-first inbox payload.
  * @returns Client items, attribution flags, and the next cursor.
+ * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route name.
  */
 export function mapMobileNotificationInboxV2(
   server: MobileServerNotificationInboxV2Response,

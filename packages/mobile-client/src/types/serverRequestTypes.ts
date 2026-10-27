@@ -12,6 +12,7 @@ import {
   MobileSocialFeedPresenceState,
   MobileSocialFeedType,
 } from './serverModelTypes';
+import type { MobileServerSignedQueryResponseByType } from './serverQueryTypes';
 
 /**
  * Common wire-format credential for token-authenticated notification requests.
@@ -404,8 +405,7 @@ export type MobileServerExecuteRequestType = Exclude<
  * Discriminant `type` values for signed `query` requests, distinct from unsigned `public_query` requests.
  */
 export type MobileServerSignedQueryRequestType =
-  | 'notification_subscriptions'
-  | 'notification_inbox_v2';
+  keyof MobileServerSignedQueryResponseByType;
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:

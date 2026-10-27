@@ -339,9 +339,9 @@ export interface MobileNotificationSettings {
   myOrders: boolean;
   /** Ordinary followed-trader notifications; enabled bells override this switch. */
   followingTrades: boolean;
-  /** Reserved; no post notification producer currently exists. */
+  /** Notifications about posts by followed traders. */
   followingPosts: boolean;
-  /** Reserved minimum trade size in whole USD. */
+  /** Minimum trade size for trade notifications, in whole USD. */
   minTradeSizeUsd: MobileNotificationMinTradeSizeUsd;
   /** New followers and follow-backs. */
   newFollowers: boolean;
@@ -381,8 +381,8 @@ export type MobileNotificationSubscriptionsUpdate = {
   | {
       /** Set a bell; enabling requires an existing follow relationship. */
       traderBell: {
-        /** Target non-isolated subaccount as lowercase bytes32, for example from subaccountToHex. */
-        subaccount: Hex;
+        /** Target non-isolated subaccount belonging to another wallet. */
+        subaccount: Subaccount;
         /** Desired bell state. */
         enabled: boolean;
       };

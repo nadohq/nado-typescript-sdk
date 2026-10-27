@@ -304,9 +304,9 @@ export interface MobileServerNotificationSettings {
   my_orders: boolean;
   /** Ordinary followed-trader notifications; enabled bells override this switch. */
   following_trades: boolean;
-  /** Reserved; no post notification producer currently exists. */
+  /** Notifications about posts by followed traders. */
   following_posts: boolean;
-  /** Reserved; currently not applied as a delivery filter. */
+  /** Minimum trade size for trade notifications, in whole USD. */
   min_trade_size_usd: MobileNotificationMinTradeSizeUsd;
   /** New followers and follow-backs. */
   new_followers: boolean;

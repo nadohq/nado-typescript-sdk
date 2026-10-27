@@ -3,6 +3,7 @@ import {
   getNadoEIP712Domain,
   getNadoEIP712PrimaryType,
   getNadoEIP712Types,
+  Subaccount,
   subaccountToHex,
   WalletNotProvidedError,
 } from '@nadohq/shared';
@@ -10,6 +11,7 @@ import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import { MobileClient } from './MobileClient';
+import { mapMobileNotificationRoute } from './dataMappers';
 import {
   canonicalizeMobileInner,
   getMobilePayloadHash,
@@ -36,6 +38,7 @@ import {
   MobileServerRegisterExpoTokenParams,
   MobileServerWithExpoTokenParams,
   MobileSignedRequestParams,
+  MobileUnsupportedNotificationRouteError,
 } from './types';
 
 /** Whether a fixture shape is assignable to a public contract, checked by TypeScript rather than a cast. */
@@ -63,6 +66,10 @@ const notificationId = '11111111-1111-4111-8111-111111111111';
 const eventId = '22222222-2222-4222-8222-222222222222';
 const target =
   '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd64656661756c740000000000' as const;
+const targetSubaccount: Subaccount = {
+  subaccountOwner: '0xAbCdEfAbCdEfAbCdEfAbCdEfAbCdEfAbCdEfAbCd',
+  subaccountName: 'default',
+};
 const capabilities: MobileNotificationCapabilities = {
   routes: ['portfolio', 'profile'],
   typeIds: ['order_fill', 'new_follower'],
@@ -186,7 +193,7 @@ const signedCases: {
         update: {
           traderBell: {
             enabled: true,
-            subaccount: target,
+            subaccount: targetSubaccount,
           },
           expectedRevision: 3,
         },
@@ -394,6 +401,23 @@ describe('[mobile-client]: notification v2 signing and transport', () => {
 });
 
 describe('[mobile-client]: notification v2 responses and failures', () => {
+  it.each<{
+    server: MobileServerNotificationRoute;
+    client: MobileNotificationRoute;
+  }>([
+    {
+      server: { name: 'market', product_id: 2 },
+      client: { name: 'market', productId: 2 },
+    },
+    {
+      server: { name: 'profile', subaccount: target },
+      client: { name: 'profile', subaccount: target },
+    },
+    { server: { name: 'portfolio' }, client: { name: 'portfolio' } },
+  ])('maps the supported $server.name route', ({ server, client }) => {
+    expect(mapMobileNotificationRoute(server)).toEqual(client);
+  });
+
   it('keeps v2 registration and legacy query capability versions distinct', () => {
     const registrationVersions: [
       IsAssignable<[1], MobileNotificationCapabilities['payloadVersions']>,
@@ -621,6 +645,37 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
     },
   );
 
+  it('rejects an inbox containing an unsupported notification route', async () => {
+    const { client } = mockClient({
+      status: 'success',
+      notifications: [
+        {
+          notification_id: notificationId,
+          type_id: 'new_follower',
+          created_at: 1792886400000,
+          trade_within_24h: false,
+          data: {
+            payload_version: 2,
+            notification_id: notificationId,
+            recipient_wallet: owner.address,
+            type_id: 'new_follower',
+            template_version: 1,
+            route: { name: 'future_destination' },
+          },
+        },
+      ],
+      next_cursor: null,
+    });
+    const result = client.getNotificationInboxV2(auth);
+    await expect(result).rejects.toBeInstanceOf(
+      MobileUnsupportedNotificationRouteError,
+    );
+    await expect(result).rejects.toMatchObject({
+      name: 'MobileUnsupportedNotificationRouteError',
+      routeName: 'future_destination',
+    });
+  });
+
   it('preserves empty inbox pages', async () => {
     const response = {
       status: 'success',
@@ -790,7 +845,7 @@ describe('[mobile-client]: notification v2 contracts', () => {
     const acceptsAllOperations: IsAssignable<
       {
         expectedRevision: number;
-        traderBell: { subaccount: typeof target; enabled: boolean };
+        traderBell: { subaccount: Subaccount; enabled: boolean };
         market: { productId: number; subscribed: boolean };
         importMarkets: number[];
       },

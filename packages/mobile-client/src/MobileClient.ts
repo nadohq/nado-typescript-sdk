@@ -785,7 +785,8 @@ export class MobileClient {
 
   /**
    * Reads the wallet's full v2 settings document, including legacy preference mappings.
-   * @param params - Active Expo token credential; verify its wallet ownership before reading.
+   * @param params - Active Expo token credential. Before displaying settings, compare the wallet returned by
+   *   {@link MobileClient.getRegisteredWallet} with the connected wallet (case-insensitively).
    * @returns CamelCase settings with the current settings revision.
    * @throws {MobileServerFailureError} If the token is invalid or inactive (`INVALID_EXPO_TOKEN`).
    */
@@ -808,7 +809,7 @@ export class MobileClient {
    * Reads wallet market subscriptions and the signing Identity's enabled trader bells.
    * @param params - Wallet authentication context; no Expo token is needed.
    * @returns Subscriptions, import state, and the independent subscription revision.
-   * @throws {WalletNotProvidedError} If no owner or linked signer is configured.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication or the query fails.
    */
   async getNotificationSubscriptions(
@@ -826,8 +827,9 @@ export class MobileClient {
    * Reads private accepted notification intents, not delivery receipts or read states.
    * @param params - Wallet authentication and optional cursor/page size (1-50, default 20).
    * @returns A camelCase page; discard cached pages and cursors when switching wallets.
-   * @throws {WalletNotProvidedError} If no owner or linked signer is configured.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication or pagination validation fails.
+   * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route name.
    */
   async getNotificationInboxV2(
     params: GetMobileNotificationInboxV2Params,
@@ -1091,7 +1093,7 @@ export class MobileClient {
    * Registers a device with its actual v2 capabilities; do not use repeated registration as a heartbeat.
    * @param params - Wallet authentication, Expo token, metadata, and supported notification types/routes.
    * @returns Success only; query registration separately for its new generation.
-   * @throws {WalletNotProvidedError} If no owner or linked signer is configured.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} On `INVALID_EXPO_TOKEN`, `INVALID_DEVICE_METADATA`,
    * `NOTIFICATION_DEVICE_LIMIT` when the wallet already has 32 active devices, or authentication errors.
    */
@@ -1118,7 +1120,7 @@ export class MobileClient {
    * Applies exactly one bell, market, or one-time favorites-import operation.
    * @param params - Wallet authentication and subscription update with the latest subscription revision.
    * @returns Success only; re-query subscriptions for the new revision even after a repeated ON/OFF.
-   * @throws {WalletNotProvidedError} If no owner or linked signer is configured.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} On `NOTIFICATION_REVISION_CONFLICT`, `INVALID_NOTIFICATION_REQUEST`, or
    * `INVALID_IDENTITY_TARGET`.
    */
@@ -1137,7 +1139,7 @@ export class MobileClient {
    * Atomically records 1-50 analytics events after the user has consented to analytics.
    * @param params - Wallet authentication and events with stable UUIDs and actual millisecond timestamps.
    * @returns Success only; reuse event IDs on retries. Notification clicks do not mark an inbox item as read.
-   * @throws {WalletNotProvidedError} If no owner or linked signer is configured.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If any event, timestamp, batch size, or notification ownership is invalid.
    */
   async recordProductEvents(

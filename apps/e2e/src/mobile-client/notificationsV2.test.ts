@@ -10,7 +10,6 @@ import {
   MobileRegisterExpoTokenV2Params,
   MobileSignedRequestParams,
 } from '@nadohq/mobile-client';
-import { subaccountToHex } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, beforeEach, describe, test } from 'node:test';
@@ -226,7 +225,7 @@ void describe(
             ...auth,
             update: {
               expectedRevision: current.revision,
-              traderBell: { subaccount: subaccountToHex(auth), enabled: true },
+              traderBell: { subaccount: auth, enabled: true },
             },
           }),
         MOBILE_ERROR_CODES.INVALID_IDENTITY_TARGET,

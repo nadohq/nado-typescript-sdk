@@ -1,5 +1,4 @@
 import { Hex } from 'viem';
-import { MobileSignedInnerByType, MobileSignedRequest } from '../signing/types';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
   MobileServerAvatarPreset,
@@ -41,14 +40,6 @@ import {
   MobileServerPublicQueryRequestType,
   MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
-
-/**
- * Signed `query` request body, including its flattened authentication envelope.
- */
-export type MobileServerSignedQueryRequest<
-  T extends MobileServerSignedQueryRequestType =
-    MobileServerSignedQueryRequestType,
-> = MobileSignedRequest<MobileSignedInnerByType<T>>;
 
 /**
  * Success payloads for each signed `query`, keyed by request `type`.

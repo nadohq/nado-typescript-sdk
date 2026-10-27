@@ -53,7 +53,8 @@ await mobile.setUsername({
 `getPositionHistory`, `getPositionChart`, `getPositionWatchers`.
 
 `getNotificationRegistrationV2` and `getNotificationSettingsV2` use an active Expo token as their credential,
-not a wallet signature. Verify the token's owner with `getRegisteredWallet` before accessing wallet settings.
+not a wallet signature. Before displaying wallet settings, compare the wallet returned by `getRegisteredWallet`
+with the connected wallet (case-insensitively).
 
 `getProfiles` is the only profile route: it batches up to 25 subaccounts, returns them in the requested order,
 and carries follower totals (`include.followCounts`) and a follow summary (`include.followSummary.viewAs`) as
@@ -159,8 +160,10 @@ const inbox = await mobile.getNotificationInboxV2({ ...auth, limit: 20 });
   updates return only status, so re-query even after repeated ON/OFF. Favorites import merges once, never replaces.
 - Enabling a bell requires following the target. Unfollowing clears its bell without advancing the subscription
   revision; refresh subscriptions after follow mutations. Bells are Identity-scoped; markets are wallet-scoped.
+  Pass `traderBell.subaccount` as a `Subaccount` (`subaccountOwner` and `subaccountName`); the SDK encodes it for signing.
 - Inbox pages are accepted intents, not delivery/read receipts. There is no title/body, unread count, mark-read,
   or delete operation. Do not use the unimplemented legacy `notification_history` route.
+  An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`; update the SDK to support that route.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,
   actual millisecond timestamps, and stable `clientEventId` UUIDs across retries. The SDK fills unused wire fields with `null`. Supported
   names are `notif_opened`, `market_viewed`, `chart_opened`, and `search`; obtain analytics consent first.
