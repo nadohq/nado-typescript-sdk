@@ -10,6 +10,7 @@ import {
   MobileServerSocialFeedItem,
   MobileServerSocialFeedReply,
 } from './serverModelTypes';
+import { MobileServerNotificationSettingsV2Response } from './serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
   MobileServerPublicExecuteRequestByType,
@@ -92,6 +93,12 @@ export interface MobileServerSocialFeedImageUploadResponse {
  * envelope alone or authoritative post-commit state; avatar upload creation returns a temporary grant.
  */
 export interface MobileServerExecuteResponseByType {
+  /** Capability-aware device registration returns only status. */
+  register_expo_token_v2: MobileServerEmptyExecuteResponse;
+  /** Re-query subscriptions after success to obtain the new revision. */
+  update_notification_subscriptions: MobileServerEmptyExecuteResponse;
+  /** Atomic event recording returns only status. */
+  record_product_events: MobileServerEmptyExecuteResponse;
   /** Published or idempotently recovered item. */
   create_feed_post: MobileServerSocialFeedPostResponse;
   /** Atomically published reply and updated count. */
@@ -192,6 +199,8 @@ export interface MobileServerSocialFeedPresenceResponse {
 
 /** Response payloads for unsigned writes. */
 export interface MobileServerPublicExecuteResponseByType {
+  /** Saved document, including the advanced settings revision. */
+  update_notification_settings_v2: MobileServerNotificationSettingsV2Response;
   /** Token removal returns only the success envelope. */
   unregister_expo_token: MobileServerEmptyExecuteResponse;
   /** Preference updates return only the success envelope. */

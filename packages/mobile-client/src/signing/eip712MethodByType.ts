@@ -7,6 +7,12 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   MobileSignedInner['type'],
   string
 > = {
+  register_expo_token_v2: 'mobile:execute_register_expo_token_v2',
+  notification_subscriptions: 'mobile:query_notification_subscriptions',
+  update_notification_subscriptions:
+    'mobile:execute_update_notification_subscriptions',
+  notification_inbox_v2: 'mobile:query_notification_inbox_v2',
+  record_product_events: 'mobile:execute_record_product_events',
   create_feed_post: 'mobile:execute_create_feed_post',
   create_feed_comment: 'mobile:execute_create_feed_comment',
   create_feed_post_image_uploads:

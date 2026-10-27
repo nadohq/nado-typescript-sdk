@@ -1,13 +1,73 @@
 import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
+  MobileNotificationRouteName,
+  MobileNotificationTypeId,
+  MobileServerNotificationDeviceMetadata,
   MobileServerNotificationPreferences,
+  MobileServerNotificationSettings,
   MobileServerSocialFeedChartRange,
   MobileSocialFeedChartInterval,
   MobileSocialFeedMarketCategory,
   MobileSocialFeedPresenceState,
   MobileSocialFeedType,
 } from './serverModelTypes';
+import type { MobileServerSignedQueryResponseByType } from './serverQueryTypes';
+
+/**
+ * Common wire-format credential for token-authenticated notification requests.
+ * Unregistration also accepts an inactive or unknown well-formed token.
+ */
+export interface MobileServerWithExpoTokenParams {
+  /** Expo push token; never expose it to another user. */
+  expo_token: string;
+}
+
+/**
+ * Registration fields shared by v1 and v2 signed inner payloads.
+ * Nullable metadata keys remain present when signing so the MessagePack hash matches the backend.
+ */
+export interface MobileServerRegisterExpoTokenParams
+  extends
+    MobileServerWithExpoTokenParams,
+    MobileServerNotificationDeviceMetadata {}
+
+/** Registration request with a v2-only capability declaration. */
+export interface MobileServerRegisterExpoTokenV2Params extends MobileServerRegisterExpoTokenParams {
+  /** Actual notification features supported by the device. */
+  capabilities: {
+    /** Registration accepts only the v2 protocol. */
+    payload_versions: [2];
+    /** Supported notification types. */
+    type_ids: MobileNotificationTypeId[];
+    /** Supported navigation destinations. */
+    routes: MobileNotificationRouteName[];
+  };
+}
+
+/**
+ * One subscription operation; exactly one operation is non-null and unused operations must be null.
+ */
+export interface MobileServerNotificationSubscriptionsUpdate {
+  /** Latest subscription revision, not the settings revision. */
+  expected_revision: number;
+  /** Set one bell; enabling requires an existing follow relationship. */
+  trader_bell: {
+    /** Target non-isolated subaccount belonging to another wallet. */
+    subaccount: Hex;
+    /** Desired bell state. */
+    enabled: boolean;
+  } | null;
+  /** Subscribe or unsubscribe one known market. */
+  market: {
+    /** Positive market product ID. */
+    product_id: number;
+    /** Desired subscription state. */
+    subscribed: boolean;
+  } | null;
+  /** One-time merge of up to 500 local market IDs; mutually exclusive with the other operations. */
+  import_markets: number[] | null;
+}
 
 /**
  * Opt-in extras for a `profiles` query. Each one costs extra rate-limit weight per profile and adds fields
@@ -265,8 +325,12 @@ export interface MobileServerPublicQueryRequestByType {
      */
     cursor?: string;
   };
-  notification_preferences: { expo_token: string };
-  registered_wallet: { expo_token: string };
+  notification_preferences: MobileServerWithExpoTokenParams;
+  /** Persisted device generation and capabilities. */
+  notification_registration_v2: MobileServerWithExpoTokenParams;
+  /** Versioned notification settings. */
+  notification_settings_v2: MobileServerWithExpoTokenParams;
+  registered_wallet: MobileServerWithExpoTokenParams;
 }
 
 /**
@@ -284,6 +348,14 @@ export type MobileServerPublicQueryRequestType =
  * notification writes use the backend's last-write-wins commit order, so callers must serialize them.
  */
 export interface MobileServerPublicExecuteRequestByType {
+  /** Full settings replacement with optimistic concurrency control. */
+  update_notification_settings_v2: MobileServerWithExpoTokenParams & {
+    /** Latest settings revision. */
+    expected_revision: number;
+    /** Complete settings document. */
+    settings: MobileServerNotificationSettings;
+  };
+
   /** Explicit detail-visit report using the original browsing credential. */
   record_feed_views: {
     /** Original reading session. */
@@ -324,24 +396,33 @@ export type MobileServerPublicExecuteRequestType =
   keyof MobileServerPublicExecuteRequestByType;
 
 /**
- * Discriminant `type` values for signed `execute` requests. Every signed route the SDK calls is a write, so
- * this is the full set of {@link MobileSignedInner} tags. Unlike the public queries these carry no separate
- * params map — a signed request body *is* its inner payload flattened with the envelope, so
+ * Discriminant `type` values for signed `execute` requests, excluding signed queries. Unlike the public
+ * queries these carry no separate params map — a signed request body is its inner payload flattened with the envelope, so
  * {@link MobileSignedInner} is the single source of truth for both the fields and their significant order.
  */
-export type MobileServerExecuteRequestType = MobileSignedInner['type'];
+export type MobileServerExecuteRequestType = Exclude<
+  MobileSignedInner['type'],
+  MobileServerSignedQueryRequestType
+>;
+
+/**
+ * Discriminant `type` values for signed `query` requests, distinct from unsigned `public_query` requests.
+ */
+export type MobileServerSignedQueryRequestType =
+  keyof MobileServerSignedQueryResponseByType;
 
 /**
  * Wire `request_type` the backend echoes on failure envelopes, prefixed by the route that produced it:
  * `public_query_*` for unsigned queries, `public_execute_*` for unsigned writes, and `execute_*` for signed
- * writes (e.g. `execute_set_username`). The prefix names the route, so it never carries the `mobile:` prefix
- * that the EIP-712 method does. Protected image reads use `feed_image` or `feed_comment_image` without
- * a route prefix; malformed multipart uploads use `execute_image_upload`.
+ * writes (e.g. `execute_set_username`), or `query_*` for signed reads. Unlike the EIP-712 method,
+ * these values never carry the `mobile:` prefix. Protected image reads use `feed_image` or
+ * `feed_comment_image` without a route prefix; malformed multipart uploads use `execute_image_upload`.
  */
 export type MobileServerRequestType =
   | 'feed_image'
   | 'feed_comment_image'
   | 'execute_image_upload'
+  | `query_${MobileServerSignedQueryRequestType}`
   | `public_query_${MobileServerPublicQueryRequestType}`
   | `public_execute_${MobileServerPublicExecuteRequestType}`
   | `execute_${MobileServerExecuteRequestType}`;

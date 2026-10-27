@@ -44,6 +44,12 @@ export const MOBILE_ERROR_CODES = {
   INVALID_EXPO_TOKEN: 6200,
   INVALID_DEVICE_METADATA: 6201,
   INVALID_PREFERENCES: 6202,
+  /** Settings or subscription revision is stale. Read the resource again before retrying. */
+  NOTIFICATION_REVISION_CONFLICT: 6203,
+  /** Invalid subscription operation, inbox parameters, event batch, timestamp, or notification ownership. */
+  INVALID_NOTIFICATION_REQUEST: 6204,
+  /** Wallet already has the maximum number of active device registrations. */
+  NOTIFICATION_DEVICE_LIMIT: 6205,
   /** Feed `minimumNotional` or `limit` is outside its allowed domain. Fix the request; do not retry unchanged. */
   INVALID_FEED_FILTER: 6300,
   /** Feed cursor is malformed or bound to a different filter. Discard it and restart from the first page. */

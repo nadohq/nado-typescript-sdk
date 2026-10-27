@@ -34,6 +34,51 @@ export interface MobileServerAvatarPreset {
 export type MobileNotificationPlatform = 'ios' | 'android';
 
 /**
+ * Notification types supported by the v2 payload protocol.
+ */
+export type MobileNotificationTypeId =
+  | 'new_follower'
+  | 'followed_you_back'
+  | 'order_fill'
+  | 'order_update'
+  | 'liquidation'
+  | 'trader_opened'
+  | 'trader_closed'
+  | 'position_milestone'
+  | 'market_movement'
+  | 'trader_streak'
+  | 'account_drama'
+  | 'weekly_digest';
+
+/**
+ * Named navigation destinations supported by notification payloads.
+ */
+export type MobileNotificationRouteName = MobileServerNotificationRoute['name'];
+
+/** Position milestone options supported by notification settings. */
+export const MOBILE_NOTIFICATION_POSITION_THRESHOLDS = [10, 25, 50] as const;
+
+/** Minimum trade-size options, in whole USD, supported by notification settings. */
+export const MOBILE_NOTIFICATION_MIN_TRADE_SIZES_USD = [
+  0, 100, 1000, 10000,
+] as const;
+
+/** Supported notification position milestone threshold. */
+export type MobileNotificationPositionThreshold =
+  (typeof MOBILE_NOTIFICATION_POSITION_THRESHOLDS)[number];
+
+/** Supported notification minimum trade size, in whole USD. */
+export type MobileNotificationMinTradeSizeUsd =
+  (typeof MOBILE_NOTIFICATION_MIN_TRADE_SIZES_USD)[number];
+
+/** Supported product analytics interaction. */
+export type MobileProductEventName =
+  | 'notif_opened'
+  | 'market_viewed'
+  | 'chart_opened'
+  | 'search';
+
+/**
  * Category of push notification.
  */
 export type MobileNotificationCategory =
@@ -221,6 +266,127 @@ export interface MobileServerNotificationPreferences {
   /** Only `1` is accepted by the backend for the MVP. */
   schema_version: 1;
   categories: MobileServerNotificationCategoryPreference[];
+}
+
+/**
+ * Stored push-device metadata shared by registration requests and token ownership responses.
+ */
+export interface MobileServerNotificationDeviceMetadata {
+  /** Device operating system. */
+  platform: MobileNotificationPlatform;
+  /** Locale tag, or null when absent; at most 35 UTF-8 bytes. */
+  locale: string | null;
+  /** App version, or null when absent; at most 64 UTF-8 bytes. */
+  app_version: string | null;
+}
+
+/**
+ * Device capabilities shared by v2 registration and v1/v2 registration queries.
+ */
+export interface MobileServerNotificationCapabilities {
+  /** Exactly one supported payload version. */
+  payload_versions: [1] | [2];
+  /** Supported subset of the registered notification types. */
+  type_ids: MobileNotificationTypeId[];
+  /** Supported subset of the named destinations. */
+  routes: MobileNotificationRouteName[];
+}
+
+/**
+ * Server-side wallet settings; all fields are required on replacement.
+ */
+export interface MobileServerNotificationSettings {
+  /** Own position milestones and the initial weekly digest. */
+  my_positions: boolean;
+  /** One to three unique values; the minimum selects the starting milestone tier. */
+  position_thresholds: MobileNotificationPositionThreshold[];
+  /** Combined order fill/update switch; does not control liquidation notifications. */
+  my_orders: boolean;
+  /** Ordinary followed-trader notifications; enabled bells override this switch. */
+  following_trades: boolean;
+  /** Notifications about posts by followed traders. */
+  following_posts: boolean;
+  /** Minimum trade size for trade notifications, in whole USD. */
+  min_trade_size_usd: MobileNotificationMinTradeSizeUsd;
+  /** New followers and follow-backs. */
+  new_followers: boolean;
+  /** Maps to the legacy announcement preference. */
+  announcements: boolean;
+  /** Opt-in trader streak and account drama discovery notifications. */
+  discovery: boolean;
+}
+
+/**
+ * Server-side allowlisted destination; notification data must never be interpreted as an arbitrary URL.
+ */
+export type MobileServerNotificationRoute =
+  | {
+      /** Public profile destination. */
+      name: 'profile';
+      /** Profile subaccount as bytes32. */
+      subaccount: Hex;
+    }
+  | {
+      /** Market destination. */
+      name: 'market';
+      /** Positive product ID. */
+      product_id: number;
+    }
+  | {
+      /** Own portfolio destination. */
+      name: 'portfolio';
+    };
+
+/**
+ * Server-side v2 push/inbox navigation data, not a complete historical trade or notification body.
+ */
+export interface MobileServerNotificationPayloadV2 {
+  /** Payload protocol version. */
+  payload_version: 2;
+  /** Logical notification UUID, used for click deduplication. */
+  notification_id: string;
+  /** Intended wallet; private navigation must wait for this wallet to connect. */
+  recipient_wallet: Hex;
+  /** Registered notification type. */
+  type_id: MobileNotificationTypeId;
+  /** Supported template version. */
+  template_version: 1;
+  /** Named destination and its parameters. */
+  route: MobileServerNotificationRoute;
+}
+
+/**
+ * Server-side accepted logical notification; does not prove device delivery or read status.
+ */
+export interface MobileServerNotificationInboxItem {
+  /** Logical notification UUID. */
+  notification_id: string;
+  /** Registered notification type. */
+  type_id: MobileNotificationTypeId;
+  /** Navigation data, without title, body, or read state. */
+  data: MobileServerNotificationPayloadV2;
+  /** Intent acceptance time in milliseconds. */
+  created_at: number;
+  /** Backend-computed trade attribution. */
+  trade_within_24h: boolean;
+}
+
+/**
+ * Server-side product analytics event; unused nullable fields must be explicitly null.
+ */
+export interface MobileServerProductEvent {
+  /** Stable event UUID; reuse across retries. */
+  client_event_id: string;
+  /** Supported interaction; notif_opened is not a read-state mutation. */
+  event_name: MobileProductEventName;
+  /** Required for notif_opened and owned by the signing wallet; otherwise null. */
+  notification_id: string | null;
+  /** Actual event time in milliseconds, within the past 7 days or next 5 minutes. */
+  occurred_at: number;
+  /** Required for market_viewed/chart_opened; otherwise null. */
+  product_id: number | null;
+  /** Required for search, nonblank and at most 80 Unicode characters; otherwise null. */
+  query: string | null;
 }
 
 /** Content filters accepted by the six social feed lists. Empty or omitted means all. */

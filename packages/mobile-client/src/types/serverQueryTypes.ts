@@ -1,11 +1,14 @@
 import { Hex } from 'viem';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
-  MobileNotificationPlatform,
   MobileServerAvatarPreset,
   MobileServerFeedTrade,
   MobileServerFollowListAccount,
+  MobileServerNotificationCapabilities,
+  MobileServerNotificationDeviceMetadata,
+  MobileServerNotificationInboxItem,
   MobileServerNotificationPreferences,
+  MobileServerNotificationSettings,
   MobileServerProfile,
   MobileServerSocialFeedActionCandidate,
   MobileServerSocialFeedActionMarker,
@@ -35,7 +38,26 @@ import {
 import {
   MobileServerPublicQueryRequestByType,
   MobileServerPublicQueryRequestType,
+  MobileServerSignedQueryRequestType,
 } from './serverRequestTypes';
+
+/**
+ * Success payloads for each signed `query`, keyed by request `type`.
+ */
+export interface MobileServerSignedQueryResponseByType {
+  /** Wallet subscriptions and the signing Identity's bells. */
+  notification_subscriptions: MobileServerNotificationSubscriptionsResponse;
+  /** Private notification page. */
+  notification_inbox_v2: MobileServerNotificationInboxV2Response;
+}
+
+/**
+ * Full success response for a signed `query`, with its payload inlined alongside `status`.
+ */
+export type MobileServerSignedQuerySuccessResponse<
+  T extends MobileServerSignedQueryRequestType =
+    MobileServerSignedQueryRequestType,
+> = MobileServerSuccessResponse & MobileServerSignedQueryResponseByType[T];
 
 /**
  * Unsigned `public_query` request body: a `type` discriminant flattened with its params.
@@ -166,14 +188,57 @@ export interface MobileServerNotificationPreferencesResponse {
 }
 
 /**
+ * Payload of the `notification_registration_v2` public query, including legacy registrations.
+ */
+export interface MobileServerNotificationRegistrationV2Response {
+  /** Opaque decimal string; do not convert to a JavaScript number. */
+  registration_generation: string;
+  /** Persisted capabilities of the most recent registration; legacy type/route arrays are empty. */
+  capabilities: MobileServerNotificationCapabilities;
+}
+
+/**
+ * Full settings document returned by both `notification_settings_v2` and `update_notification_settings_v2`.
+ */
+export interface MobileServerNotificationSettingsV2Response {
+  /** Settings schema version. */
+  schema_version: 2;
+  /** Settings revision, independent of the subscription revision. */
+  revision: number;
+  /** Full saved settings. */
+  settings: MobileServerNotificationSettings;
+}
+
+/**
+ * Payload of the `notification_subscriptions` signed query.
+ */
+export interface MobileServerNotificationSubscriptionsResponse {
+  /** Wallet-level subscription revision; read again after every mutation. */
+  revision: number;
+  /** Whether the one-time local favorites import has completed. */
+  favorites_imported: boolean;
+  /** Subscribed market IDs in ascending order. */
+  market_ids: number[];
+  /** Followed subaccounts with bells enabled for the signing Identity. */
+  trader_bells: Hex[];
+}
+
+/**
+ * Payload of the `notification_inbox_v2` signed query, ordered newest first.
+ */
+export interface MobileServerNotificationInboxV2Response {
+  /** Accepted intents owned by the signing wallet. */
+  notifications: MobileServerNotificationInboxItem[];
+  /** Pass unchanged to the next request, or null when pagination is complete. */
+  next_cursor: string | null;
+}
+
+/**
  * Payload of the `registered_wallet` public query success response. Inlined into the envelope rather than
  * nested under a key, matching the backend's `RegisteredWalletResponse`.
  */
-export interface MobileServerRegisteredWalletResponse {
+export interface MobileServerRegisteredWalletResponse extends MobileServerNotificationDeviceMetadata {
   wallet: Hex;
-  platform: MobileNotificationPlatform;
-  locale: string | null;
-  app_version: string | null;
   token_fingerprint_prefix: string;
   last_seen_at: number;
 }
@@ -185,6 +250,10 @@ export interface MobileServerRegisteredWalletResponse {
  * by {@link MobileServerPublicQuerySuccessResponse}.
  */
 export interface MobileServerPublicQueryResponseByType {
+  /** Latest saved device generation and v1/v2 capabilities. */
+  notification_registration_v2: MobileServerNotificationRegistrationV2Response;
+  /** Full settings document with its revision. */
+  notification_settings_v2: MobileServerNotificationSettingsV2Response;
   /** Open position candidates. */
   self_feed_positions: MobileServerSocialFeedPositionsResponse;
   /** Position command resolution. */

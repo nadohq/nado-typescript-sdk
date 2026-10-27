@@ -12,6 +12,60 @@ export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
+    case 'register_expo_token_v2':
+      return {
+        type: inner.type,
+        expo_token: inner.expo_token,
+        platform: inner.platform,
+        locale: inner.locale,
+        app_version: inner.app_version,
+        capabilities: {
+          payload_versions: [...inner.capabilities.payload_versions],
+          type_ids: [...inner.capabilities.type_ids],
+          routes: [...inner.capabilities.routes],
+        },
+      };
+    case 'notification_subscriptions':
+      return { type: inner.type };
+    case 'update_notification_subscriptions':
+      return {
+        type: inner.type,
+        expected_revision: inner.expected_revision,
+        trader_bell:
+          inner.trader_bell == null
+            ? null
+            : {
+                subaccount: inner.trader_bell.subaccount,
+                enabled: inner.trader_bell.enabled,
+              },
+        market:
+          inner.market == null
+            ? null
+            : {
+                product_id: inner.market.product_id,
+                subscribed: inner.market.subscribed,
+              },
+        import_markets:
+          inner.import_markets == null ? null : [...inner.import_markets],
+      };
+    case 'notification_inbox_v2':
+      return {
+        type: inner.type,
+        cursor: inner.cursor,
+        limit: inner.limit,
+      };
+    case 'record_product_events':
+      return {
+        type: inner.type,
+        events: inner.events.map((event) => ({
+          client_event_id: event.client_event_id,
+          event_name: event.event_name,
+          notification_id: event.notification_id,
+          occurred_at: event.occurred_at,
+          product_id: event.product_id,
+          query: event.query,
+        })),
+      };
     case 'create_feed_post':
       return {
         type: inner.type,
