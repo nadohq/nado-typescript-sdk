@@ -11,6 +11,7 @@ export function buildMobileFeedImageMultipart(
   payloadJson: string,
   fileBytes: Uint8Array,
 ): { body: Uint8Array; contentType: string } {
+  // Fixed-length boundaries keep multipart overhead identical for the pre-signing size check and upload.
   const boundary = `----nadoFeedImage${Date.now().toString(16).padStart(14, '0')}${Math.floor(
     Math.random() * 1e6,
   )

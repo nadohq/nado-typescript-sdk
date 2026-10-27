@@ -5,7 +5,7 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { bytesToString, keccak256 } from 'viem';
+import { bytesToString, keccak256, zeroHash } from 'viem';
 import {
   mapMobileAvatarPreset,
   mapMobileAvatarSelectionToServer,
@@ -1357,9 +1357,10 @@ export class MobileClient {
     params: MobileCreateFeedImageUploadParams,
   ): Promise<MobileSocialFeedImage> {
     const nonce = params.nonce ?? getMobileNonce();
+    // Match the signed body's field lengths so oversized requests fail before prompting the wallet.
     const sizePayload = {
       type,
-      content_hash: `0x${'00'.repeat(32)}`,
+      content_hash: zeroHash,
       signature: `0x${'00'.repeat(65)}`,
       sender: subaccountToHex(params),
       nonce: nonce.toString(),
