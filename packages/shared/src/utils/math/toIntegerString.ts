@@ -1,7 +1,8 @@
 import { BigNumberish, toBigNumber } from './bigNumber';
 
 /**
- * Converts a BigNumberish value to string
+ * Converts a BigNumberish value to an integer string, rounding any fractional
+ * part to the nearest integer (bignumber.js `.toFixed(0)` default rounding mode).
  *
  * @param val
  */
