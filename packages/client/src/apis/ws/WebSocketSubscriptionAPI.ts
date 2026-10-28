@@ -12,9 +12,15 @@ import { BaseNadoAPI } from '../base';
  * Builds subscription messages as expected by the server to send over Websocket.
  *
  * @example
- * const tradeSubscriptionParams = nadoClient.ws.subscription.buildSubscriptionParams('trade', ...);
- * const tradeSubscriptionMessage = nadoClient.ws.subscription.buildSubscriptionMessage(
- *    'subscribe', tradeSubscriptionParams);
+ * const tradeSubscriptionParams = nadoClient.ws.subscription.buildSubscriptionParams('trade', {
+ *   product_id: 1,
+ * });
+ * const tradeSubscriptionMessage =
+ *   nadoClient.ws.subscription.buildSubscriptionMessage(
+ *     1,
+ *     'subscribe',
+ *     tradeSubscriptionParams,
+ *   );
  */
 export class WebSocketSubscriptionAPI extends BaseNadoAPI {
   /**
