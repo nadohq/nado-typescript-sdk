@@ -5,6 +5,23 @@ for interacting with the Nado API and contracts.
 
 [SDK Docs](https://nadohq.github.io/nado-typescript-sdk/index.html)
 
+## Setup and validation
+
+This repository uses Bun `1.3.14` as its package manager. Install dependencies before running workspace commands:
+
+```bash
+bun install
+```
+
+Useful checks include:
+
+```bash
+bun run build
+bun run test:unit
+bun run typecheck
+bun run depcruise:all
+```
+
 ## Packages
 
 ### `@nadohq/client`
