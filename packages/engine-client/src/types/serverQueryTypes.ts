@@ -296,6 +296,8 @@ export type EngineServerPriceTickLiquidity = [
 export interface EngineServerMarketLiquidityResponse {
   bids: EngineServerPriceTickLiquidity[];
   asks: EngineServerPriceTickLiquidity[];
+  product_id: number;
+  timestamp: string;
 }
 
 export interface EngineServerSubaccountOrders {
