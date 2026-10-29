@@ -1,5 +1,6 @@
 import {
   getMobileNonce,
+  isMobileSocialFeedUploadedImage,
   MOBILE_ERROR_CODES,
   MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES,
   MobileClient,
@@ -145,14 +146,6 @@ void describe(
       await assertRejectsWithMobileErrorCode(
         () => mobile.getPositionHistoryAll({ positionId }),
         MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
-      );
-      await assertRejectsWithMobileErrorCode(
-        () =>
-          mobile.getPositionHistoryAll({
-            positionId,
-            takesOnly: true,
-          } as unknown as Parameters<MobileClient['getPositionHistoryAll']>[0]),
-        MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
       );
     });
 
@@ -592,7 +585,7 @@ void describe(
       );
       assert.deepEqual(
         post.images
-          .filter((image) => 'imageId' in image)
+          .filter(isMobileSocialFeedUploadedImage)
           .map((image) => image.imageId),
         params.imageIds,
       );
@@ -660,7 +653,7 @@ void describe(
       );
       assert.deepEqual(
         comment.comment.images
-          .filter((image) => 'imageId' in image)
+          .filter(isMobileSocialFeedUploadedImage)
           .map((image) => image.imageId),
         commentParams.imageIds,
       );
@@ -694,7 +687,7 @@ void describe(
       });
       const session = getSessionParams(detail.readSession);
       assert.ok(detail.item.kind === 'post');
-      assert.ok('thumbnail' in detail.item.images[0]);
+      assert.ok(isMobileSocialFeedUploadedImage(detail.item.images[0]));
       const imageRequest = mobile.getFeedImageRequest({
         ...session,
         path: detail.item.images[0].url,
@@ -706,7 +699,7 @@ void describe(
       assert.deepEqual(new Uint8Array(imageResponse.data), fileBytes);
       assert.deepEqual(
         detail.item.images
-          .filter((image) => 'imageId' in image)
+          .filter(isMobileSocialFeedUploadedImage)
           .map((image) => image.imageId),
         params.imageIds,
       );
@@ -730,7 +723,7 @@ void describe(
         viewAs,
       });
       assert.ok(commentDetail.item.kind === 'reply');
-      assert.ok('thumbnail' in commentDetail.item.images[0]);
+      assert.ok(isMobileSocialFeedUploadedImage(commentDetail.item.images[0]));
       const commentSession = getSessionParams(commentDetail.readSession);
       assert.deepEqual(
         await mobile.getFeedImageBytes({

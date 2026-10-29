@@ -94,16 +94,15 @@ registering presence. Watching account previews are self-reported, not proof of 
 ### Position history and thoughts
 
 `getPositionHistory` and `getPositionHistoryAll` return `owner`, the current position owner's full profile,
-even for an empty timeline on the updated service. For compatibility, the SDK returns `owner: null` when
-an older backend omits it. Handle that case without inferring ownership from a take or the viewing account.
+even for an empty timeline. Do not infer ownership from a take or the viewing account.
 Position patches do not refresh owner information; query history or profiles again.
 
 `getPositionHistoryAll` returns only the most recent 500 actions, ordered by last event time and action UUID
 descending. It excludes authored content: `relatedTake` is null and `summary.takeCount` is zero, even when
 thoughts exist. `summary.actionCount` counts this response's scope. `nextCursor: null` means this endpoint
 does not paginate, not that all history was returned. Use `getPositionHistory` with a fresh first request
-for complete history. Each call creates a new session; only `viewerToken` may be reused. `takesOnly` may
-be omitted or false; limit, cursor, and sessionId are not accepted.
+for complete history. Each call creates a new session; only `viewerToken` may be reused.
+Limit, cursor, and sessionId are not accepted.
 
 `getPositionThoughts` returns only published posts/trade cards with both nonblank text and a saved drawing.
 Uploaded/external images do not qualify. It returns full parsed drawing data and keeps descending first
@@ -148,7 +147,9 @@ For React Native `Image` or expo-image, use `getFeedImageRequest` to pass the au
 URL and headers directly without converting bytes to base64:
 
 ```ts
-const source = 'imageId' in image
+import { isMobileSocialFeedUploadedImage } from '@nadohq/mobile-client';
+
+const source = isMobileSocialFeedUploadedImage(image)
   ? (() => {
       const { url, headers } = mobile.getFeedImageRequest({
         path: image.url,
@@ -182,10 +183,10 @@ Keep original URL strings, array order, and field presence unchanged on retries:
 differently. Coordinate this request change with the service version; old `image_url` retries are incompatible.
 
 Responses keep one `images` array: upload metadata first, then URL-only objects in submitted order.
-`MobileSocialFeedImage` is now a union; narrow with `'imageId' in image` before accessing upload metadata.
+`MobileSocialFeedImage` represents uploaded images or external URLs; narrow with
+`isMobileSocialFeedUploadedImage` before accessing upload metadata.
 Direct upload methods return `MobileSocialFeedUploadedImage` with all metadata. Load external URLs directly
-without Mobile session headers; protected image helpers accept only root-relative uploaded-image paths
-and reject absolute URLs before creating headers or sending a request.
+without Mobile session headers.
 
 ### Signed Queries
 

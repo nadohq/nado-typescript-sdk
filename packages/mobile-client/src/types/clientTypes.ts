@@ -1748,8 +1748,6 @@ export interface GetMobilePositionHistoryParams extends MobileSocialFeedReadPara
 export interface GetMobilePositionHistoryAllParams extends MobileSocialFeedReadParams {
   /** Lifecycle UUID. */
   positionId: string;
-  /** Compatibility flag; true is rejected by the service. */
-  takesOnly?: false;
 }
 
 /** Parameters for published position thoughts containing both nonblank text and a saved drawing. */
@@ -1928,8 +1926,8 @@ export interface MobileSocialFeedViewsResult {
 
 /** Full position history and viewing-account trading hints. */
 export interface MobileSocialFeedPositionHistory {
-  /** Current position owner, or null when an older service omits it; never inferred from the viewer. */
-  owner: MobileSocialFeedAuthor | null;
+  /** Current position owner; never inferred from the viewer. */
+  owner: MobileSocialFeedAuthor;
   /** Position and additional history metrics. */
   position: MobileSocialFeedPositionHistoryCard;
   /** Whole-history counts. */
@@ -2008,26 +2006,5 @@ export interface MobileSocialFeedPositionThoughtsPage {
   /** Null only at the directory end; an empty page can still have a cursor. */
   nextCursor: string | null;
   /** Independent position session; newly published content requires a refresh. */
-  readSession: MobileSocialFeedReadSession & {
-    /** Position-scoped reading. */
-    mode: 'position';
-  };
-}
-
-/** Most recent 500 actions, with no authored content and no pagination. */
-export interface MobileSocialFeedPositionHistoryAll extends MobileSocialFeedPositionHistory {
-  /** Counts within this response; zero takes does not imply the position has no thoughts. */
-  summary: MobileSocialFeedHistorySummary & {
-    /** This endpoint never includes takes. */
-    takeCount: 0;
-  };
-  /** Actions in descending last-event time and action UUID order. */
-  timeline: Array<
-    Extract<MobileSocialFeedTimelineEntry, { kind: 'action' }> & {
-      /** Authored content is never embedded; fetch associated item details separately. */
-      relatedTake: null;
-    }
-  >;
-  /** No pagination; null does not mean the complete lifecycle was returned. */
-  nextCursor: null;
+  readSession: MobileSocialFeedReadSession;
 }

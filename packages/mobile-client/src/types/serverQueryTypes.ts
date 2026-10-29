@@ -268,7 +268,7 @@ export interface MobileServerPublicQueryResponseByType {
   /** Full lifecycle history. */
   position_history: MobileServerSocialFeedPositionHistoryResponse;
   /** Most recent 500 actions, without pagination or authored content. */
-  position_history_all: MobileServerSocialFeedPositionHistoryAllResponse;
+  position_history_all: MobileServerSocialFeedPositionHistoryResponse;
   /** Published nonblank text with complete drawings. */
   position_thoughts: MobileServerSocialFeedPositionThoughtsResponse;
   /** Candle page and markers. */
@@ -375,8 +375,8 @@ export interface MobileServerSocialFeedCommentsResponse {
 
 /** Full position history with additional metrics and trusted trading hints. */
 export interface MobileServerSocialFeedPositionHistoryResponse {
-  /** Current position owner; older service deployments may omit this field. */
-  owner?: MobileServerSocialFeedAuthor;
+  /** Current position owner. */
+  owner: MobileServerSocialFeedAuthor;
   /** Current or frozen position and history metrics. */
   position: MobileServerSocialFeedPositionHistoryCard;
   /** Counts across the authorized history. */
@@ -435,26 +435,5 @@ export interface MobileServerSocialFeedPositionThoughtsResponse {
   /** Null only at the directory end; an empty page can still have a cursor. */
   next_cursor: string | null;
   /** Independent position session; newly published content requires a refresh. */
-  read_session: MobileServerSocialFeedReadSession & {
-    /** Position-scoped reading. */
-    mode: 'position';
-  };
-}
-
-/** Most recent 500 actions, with no authored content and no pagination. */
-export interface MobileServerSocialFeedPositionHistoryAllResponse extends MobileServerSocialFeedPositionHistoryResponse {
-  /** Counts within this response; zero takes does not imply the position has no thoughts. */
-  summary: MobileServerSocialFeedHistorySummary & {
-    /** This endpoint never includes takes. */
-    take_count: 0;
-  };
-  /** Actions in descending last-event time and action UUID order. */
-  timeline: Array<
-    Extract<MobileServerSocialFeedTimelineEntry, { kind: 'action' }> & {
-      /** Authored content is never embedded; fetch associated item details separately. */
-      related_take: null;
-    }
-  >;
-  /** No pagination; null does not mean the complete lifecycle was returned. */
-  next_cursor: null;
+  read_session: MobileServerSocialFeedReadSession;
 }

@@ -57,9 +57,9 @@ import {
   MobileSocialFeedPositionCard,
   MobileSocialFeedPositionChart,
   MobileSocialFeedPositionHistory,
-  MobileSocialFeedPositionHistoryAll,
   MobileSocialFeedPositionPatch,
   MobileSocialFeedPositionResolutionResult,
+  MobileSocialFeedPositionThought,
   MobileSocialFeedPositionThoughtsPage,
   MobileSocialFeedPositionsPage,
   MobileSocialFeedPost,
@@ -155,9 +155,9 @@ import {
   MobileServerSocialFeedDrawingResponse,
   MobileServerSocialFeedItemResponse,
   MobileServerSocialFeedPositionChartResponse,
-  MobileServerSocialFeedPositionHistoryAllResponse,
   MobileServerSocialFeedPositionHistoryResponse,
   MobileServerSocialFeedPositionResolutionResponse,
+  MobileServerSocialFeedPositionThought,
   MobileServerSocialFeedPositionThoughtsResponse,
   MobileServerSocialFeedPositionsResponse,
   MobileServerSocialFeedRankedResponse,
@@ -805,17 +805,9 @@ export function mapMobileSocialFeedInteraction(
  * @param server - The service response.
  * @returns The mapped feed image.
  */
-export function mapMobileSocialFeedImage(
+export function mapMobileSocialFeedUploadedImage(
   server: MobileServerSocialFeedUploadedImage,
-): MobileSocialFeedUploadedImage;
-/** Maps either protected upload metadata or an external URL without inventing metadata. */
-export function mapMobileSocialFeedImage(
-  server: MobileServerSocialFeedImage,
-): MobileSocialFeedImage;
-export function mapMobileSocialFeedImage(
-  server: MobileServerSocialFeedImage,
-): MobileSocialFeedImage {
-  if (!('image_id' in server)) return { url: server.url };
+): MobileSocialFeedUploadedImage {
   return {
     imageId: server.image_id,
     url: server.url,
@@ -829,6 +821,20 @@ export function mapMobileSocialFeedImage(
       height: server.thumbnail.height,
     },
   };
+}
+
+/**
+ * Maps either protected upload metadata or an external URL without inventing metadata.
+ * @param server - The service response.
+ * @returns The mapped uploaded image or external URL.
+ */
+export function mapMobileSocialFeedImage(
+  server: MobileServerSocialFeedImage,
+): MobileSocialFeedImage {
+  if ('image_id' in server) {
+    return mapMobileSocialFeedUploadedImage(server);
+  }
+  return { url: server.url };
 }
 
 /**
@@ -1682,8 +1688,7 @@ export function mapMobileSocialFeedPositionHistory(
   server: MobileServerSocialFeedPositionHistoryResponse,
 ): MobileSocialFeedPositionHistory {
   return {
-    owner:
-      server.owner == null ? null : mapMobileSocialFeedAuthor(server.owner),
+    owner: mapMobileSocialFeedAuthor(server.owner),
     position: {
       ...mapMobileSocialFeedPositionCard(server.position),
       ...mapMobileSocialFeedHistoryMetrics(server.position),
@@ -1756,62 +1761,33 @@ export function mapMobileSocialFeedPresence(
 }
 
 /**
- * Maps recent actions while preserving the endpoint's limited scope and null pagination cursor.
- * @throws {MobileUnsupportedFeedItemError} If a timeline entry is not an action.
- * @throws {Error} If an action contains an embedded take contrary to the endpoint contract.
+ * Maps a published thought, keeping its guaranteed analysis flag and drawing.
+ * @param server - Service payload with its original wire fields.
+ * @returns The mapped post or trade card with a non-null drawing.
+ * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported take kind.
  */
-export function mapMobileSocialFeedPositionHistoryAll(
-  server: MobileServerSocialFeedPositionHistoryAllResponse,
-): MobileSocialFeedPositionHistoryAll {
-  const mapped = mapMobileSocialFeedPositionHistory(server);
+export function mapMobileSocialFeedPositionThought(
+  server: MobileServerSocialFeedPositionThought,
+): MobileSocialFeedPositionThought {
   return {
-    ...mapped,
-    summary: {
-      actionCount: mapped.summary.actionCount,
-      takeCount: server.summary.take_count,
-    },
-    timeline: mapped.timeline.map((entry) => {
-      if (entry.kind !== 'action') {
-        throw new MobileUnsupportedFeedItemError(entry.kind);
-      }
-      if (entry.relatedTake !== null) {
-        throw new Error(
-          'Invalid recent position action: embedded takes are not supported',
-        );
-      }
-      return { ...entry, relatedTake: entry.relatedTake };
-    }),
-    nextCursor: server.next_cursor,
+    ...mapMobileSocialFeedHistoryTake(server),
+    hasAnalysis: server.has_analysis,
+    drawing: mapMobileSocialFeedDrawing(server.drawing),
   };
 }
 
 /**
- * Maps complete thoughts and drawings in server order, preserving empty pages with continuation cursors.
+ * Maps a thoughts page in server order, preserving empty pages with continuation cursors.
+ * @param server - Service payload with its original wire fields.
+ * @returns Thoughts, the next cursor, and the position reading session.
  * @throws {MobileUnsupportedFeedItemError} If an item is not a post or trade card.
- * @throws {Error} If the service violates the nonblank-text and saved-drawing invariant.
  */
 export function mapMobileSocialFeedPositionThoughts(
   server: MobileServerSocialFeedPositionThoughtsResponse,
 ): MobileSocialFeedPositionThoughtsPage {
   return {
-    items: server.items.map((item) => {
-      const mapped = mapMobileSocialFeedHistoryTake(item);
-      // Rust str::trim uses Unicode White_Space, which keeps U+FEFF and removes U+0085.
-      if (
-        !mapped.hasAnalysis ||
-        mapped.drawing == null ||
-        !/[^\p{White_Space}]/u.test(mapped.text)
-      ) {
-        throw new Error(
-          'Invalid position thought: nonblank text and a saved drawing are required',
-        );
-      }
-      return { ...mapped, hasAnalysis: true, drawing: mapped.drawing };
-    }),
+    items: server.items.map(mapMobileSocialFeedPositionThought),
     nextCursor: server.next_cursor,
-    readSession: {
-      ...mapMobileSocialFeedReadSession(server.read_session),
-      mode: server.read_session.mode,
-    },
+    readSession: mapMobileSocialFeedReadSession(server.read_session),
   };
 }

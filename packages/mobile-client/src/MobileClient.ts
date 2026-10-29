@@ -35,7 +35,6 @@ import {
   mapMobileSocialFeedCommentsPage,
   mapMobileSocialFeedDrawingMutationResult,
   mapMobileSocialFeedDrawingResult,
-  mapMobileSocialFeedImage,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedLikeResult,
@@ -44,7 +43,6 @@ import {
   mapMobileSocialFeedPage,
   mapMobileSocialFeedPositionChart,
   mapMobileSocialFeedPositionHistory,
-  mapMobileSocialFeedPositionHistoryAll,
   mapMobileSocialFeedPositionResolutionResult,
   mapMobileSocialFeedPositionsPage,
   mapMobileSocialFeedPositionThoughts,
@@ -53,6 +51,7 @@ import {
   mapMobileSocialFeedReadParamsToServer,
   mapMobileSocialFeedTopTradersPage,
   mapMobileSocialFeedUpdates,
+  mapMobileSocialFeedUploadedImage,
   mapMobileSocialFeedViewsResult,
   mapMobileSocialFeedWatchers,
 } from './dataMappers';
@@ -138,7 +137,6 @@ import {
   MobileSocialFeedPage,
   MobileSocialFeedPositionChart,
   MobileSocialFeedPositionHistory,
-  MobileSocialFeedPositionHistoryAll,
   MobileSocialFeedPositionResolutionResult,
   MobileSocialFeedPositionsPage,
   MobileSocialFeedPositionThoughtsPage,
@@ -695,14 +693,8 @@ export class MobileClient {
    * Resolves a backend feed image path against this client's mobile gateway URL.
    * @param path - Backend path from image metadata, rooted at /v1/mobile or the mobile service root.
    * @returns An absolute URL suitable for authenticated fetches.
-   * @throws {Error} If path is not root-relative; external image URLs must be loaded directly.
    */
   resolveFeedImageUrl(path: string): string {
-    if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) {
-      throw new Error(
-        'Expected a root-relative uploaded image path; load external image URLs directly without Mobile session headers',
-      );
-    }
     return `${this.opts.url}${path.replace(/^\/v1\/mobile(?=\/)/, '')}`;
   }
 
@@ -711,7 +703,6 @@ export class MobileClient {
    * Does not count as a detail visit or recorded view.
    * @param params - Image path from metadata plus the original session credentials.
    * @returns Absolute URL and headers; pass them as the image source's URI and headers.
-   * @throws {Error} If path is not a root-relative uploaded image path.
    */
   getFeedImageRequest(
     params: GetMobileFeedImageRequestParams,
@@ -730,7 +721,6 @@ export class MobileClient {
    * Does not count as a detail visit or recorded view.
    * @param params - Image path from metadata plus the original session credentials.
    * @returns Raw image bytes.
-   * @throws {Error} If path is not a root-relative uploaded image path.
    * @throws {MobileServerFailureError} On session, permission, or availability errors.
    */
   async getFeedImageBytes(
@@ -771,7 +761,8 @@ export class MobileClient {
    * the original position session and viewer token, not a feed session.
    * @returns Position metrics, ordered action/take history, summary, trading hints, cursor, and reading session.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
-   * or unavailable source data. Restart with a new position session after expiry.
+   * unavailable source data, or SOCIAL_FEED_HISTORY_TOO_LARGE when the initial directory exceeds capacity.
+   * Restart with a new position session after expiry.
    * @throws {MobileUnsupportedFeedItemError} If a timeline entry or take has an unsupported kind.
    */
   async getPositionHistory(
@@ -793,20 +784,21 @@ export class MobileClient {
    * Reads the most recent 500 lifecycle actions, without authored text, drawings, or images.
    * Creates a new position session on every call. A null nextCursor means no pagination, not complete
    * history; use getPositionHistory with a fresh session for the full lifecycle. takeCount is always zero.
-   * @throws {MobileServerFailureError} On invalid parameters, inaccessible content, or unavailable data.
-   * @throws {MobileUnsupportedFeedItemError} If a timeline entry is not an action.
-   * @throws {Error} If an action contains an embedded take contrary to the endpoint contract.
+   * @param params - Position and read perspective; an existing viewer token may be reused.
+   * @returns Position metrics, owner, recent actions, response-scope counts, trading hints, and a new session.
+   * @throws {MobileServerFailureError} On invalid parameters, inaccessible content, unavailable data,
+   * or SOCIAL_FEED_HISTORY_TOO_LARGE when the initial directory exceeds capacity.
+   * @throws {MobileUnsupportedFeedItemError} If a timeline entry or take has an unsupported kind.
    */
   async getPositionHistoryAll(
     params: GetMobilePositionHistoryAllParams,
-  ): Promise<MobileSocialFeedPositionHistoryAll> {
+  ): Promise<MobileSocialFeedPositionHistory> {
     const body: MobileServerPublicQueryRequest<'position_history_all'> = {
       type: 'position_history_all',
       position_id: params.positionId,
-      takes_only: params.takesOnly,
       ...mapMobileSocialFeedReadParamsToServer(params),
     };
-    return mapMobileSocialFeedPositionHistoryAll(await this.publicQuery(body));
+    return mapMobileSocialFeedPositionHistory(await this.publicQuery(body));
   }
 
   /**
@@ -815,10 +807,11 @@ export class MobileClient {
    * Continue until nextCursor is null, even after an empty page. There is no 500-item total cap.
    * Keep positionId, limit, sessionId, and viewerToken unchanged when paging; omitted viewAs inherits
    * the session. History/feed sessions cannot be substituted. Refresh to include newly eligible content.
-   * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, capacity limits,
-   * inaccessible content, or unavailable source data.
+   * @param params - Position, page size, read perspective, and original thoughts-session credentials for paging.
+   * @returns Complete thoughts and drawings in server order, a continuation cursor, and the reading session.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, inaccessible content,
+   * unavailable source data, or SOCIAL_FEED_HISTORY_TOO_LARGE when the initial directory exceeds capacity.
    * @throws {MobileUnsupportedFeedItemError} If an item is not a post or trade card.
-   * @throws {Error} If a returned thought lacks nonblank text or a saved drawing.
    */
   async getPositionThoughts(
     params: GetMobilePositionThoughtsParams,
@@ -1647,7 +1640,7 @@ export class MobileClient {
       },
     );
     const data = await this.execute(request, params.fileBytes);
-    return mapMobileSocialFeedImage(data.image);
+    return mapMobileSocialFeedUploadedImage(data.image);
   }
 
   private checkFeedImageRequestSize(byteLength: number): void {

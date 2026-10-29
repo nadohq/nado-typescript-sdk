@@ -1,3 +1,16 @@
+import { MobileSocialFeedImage, MobileSocialFeedUploadedImage } from '../types';
+
+/**
+ * Narrows a feed image to protected upload metadata rather than an external URL.
+ * @param image - An image returned with feed content.
+ * @returns Whether the image has upload metadata and requires Mobile session headers.
+ */
+export function isMobileSocialFeedUploadedImage(
+  image: MobileSocialFeedImage,
+): image is MobileSocialFeedUploadedImage {
+  return 'imageId' in image;
+}
+
 /**
  * Maximum feed page size the backend accepts; also the default when `limit` is omitted. Requests above this
  * fail with `INVALID_FEED_FILTER`.

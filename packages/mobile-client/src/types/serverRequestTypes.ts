@@ -219,8 +219,6 @@ export interface MobileServerPublicQueryRequestByType {
   position_history_all: MobileServerSocialFeedReadParams & {
     /** Lifecycle UUID. */
     position_id: string;
-    /** Compatibility flag; true is rejected. */
-    takes_only?: false;
   };
   /** Published nonblank text with a saved drawing, newest first by drawing creation time. */
   position_thoughts: MobileServerSocialFeedReadParams & {
