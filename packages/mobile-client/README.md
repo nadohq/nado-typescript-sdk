@@ -147,7 +147,6 @@ await mobile.recordFeedViews({ itemIds: [postId, commentId, replyId] });
 This operation is **not idempotent**: retrying after an uncertain network failure may count twice.
 The SDK does not automatically retry. Read current counts from `interaction.viewCount` in details,
 comment groups and their `replies`, previews, or session updates; the report returns no per-item counts.
-The detail request no longer accepts `viewEventId`, and reading sessions no longer return `viewTracking`.
 
 `setPositionPresence` still requires reading-session credentials and a page-scoped `viewSessionId`.
 Pagination, updates, and protected image reads also keep their existing session rules. Fetch uploaded

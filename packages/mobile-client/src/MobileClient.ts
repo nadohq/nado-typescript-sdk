@@ -1024,7 +1024,7 @@ export class MobileClient {
    * count, not their parents. Missing, deleted, unpublished, excluded, or unsupported targets are skipped.
    * A successful response does not identify skipped items. Read interaction.viewCount for current counts.
    * This operation is not idempotent: retrying an uncertain result may count twice. No automatic retry is made.
-   * @param params - An array of 1–50 canonical lowercase item UUIDs, including any same-request duplicates.
+   * @param params - itemIds: 1–50 canonical lowercase item UUIDs, including any same-request duplicates.
    * @returns Only the success status, even when every target was skipped.
    * @throws {MobileServerFailureError} On invalid parameters, disabled writes, rate limiting, or unavailable data.
    */
