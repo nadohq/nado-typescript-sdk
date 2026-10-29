@@ -50,7 +50,7 @@ await mobile.setUsername({
 `getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
 `getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`,
 `getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
-`getPositionHistory`, `getPositionChart`, `getPositionWatchers`.
+`getPositionHistory`, `getPositionHistoryAll`, `getPositionThoughts`, `getPositionChart`, `getPositionWatchers`.
 
 `getNotificationRegistrationV2` and `getNotificationSettingsV2` use an active Expo token as their credential,
 not a wallet signature. Before displaying wallet settings, compare the wallet returned by `getRegisteredWallet`
@@ -91,6 +91,44 @@ and a position-mode session for navigation and updates. `getPositionChart` retur
 keeping execution and liquidation Oracle prices separate. `getPositionWatchers` reads visitor counts without
 registering presence. Watching account previews are self-reported, not proof of account ownership.
 
+### Position history and thoughts
+
+`getPositionHistory` and `getPositionHistoryAll` always return `owner`, the current position owner's full
+profile, even for an empty timeline. Display this owner instead of inferring ownership from a take or the
+viewing account. Position patches do not refresh owner information; query history or profiles again.
+
+`getPositionHistoryAll` returns only the most recent 500 actions, ordered by last event time and action UUID
+descending. It excludes authored content: `relatedTake` is null and `summary.takeCount` is zero, even when
+thoughts exist. `summary.actionCount` counts this response's scope. `nextCursor: null` means this endpoint
+does not paginate, not that all history was returned. Use `getPositionHistory` with a fresh first request
+for complete history. Each call creates a new session; only `viewerToken` may be reused. `takesOnly` may
+be omitted or false; limit, cursor, and sessionId are not accepted.
+
+`getPositionThoughts` returns only published posts/trade cards with both nonblank text and a saved drawing.
+Uploaded/external images do not qualify. It returns full parsed drawing data and keeps descending first
+drawing creation time / item UUID order. Do not sort by displayAtMs or updatedAtMs. Changing an existing
+drawing does not move it; saved data need not contain visible strokes.
+
+```ts
+const first = await mobile.getPositionThoughts({ positionId, limit: 20 });
+if (first.nextCursor !== null) {
+  const next = await mobile.getPositionThoughts({
+    positionId,
+    limit: 20,
+    sessionId: first.readSession.sessionId,
+    viewerToken: first.readSession.viewerToken,
+    cursor: first.nextCursor,
+  });
+}
+```
+
+There is no 500-item total cap for thoughts. Continue until nextCursor is null, even when a page is empty.
+Keep positionId, limit, and credentials unchanged; omitted viewAs inherits the original perspective.
+Thoughts sessions cannot be exchanged with history/feed sessions. New eligible content requires refreshing.
+Fully delivered items support existing detail, drawing, image, and update APIs with the returned session.
+A 6328 error means the initial directory exceeded capacity; do not automatically retry the same query.
+A 6312 error requires a fresh session. Neither condition represents a successfully truncated result.
+
 ### Public Executes
 
 `unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`. These are authenticated by possession of an active Expo
@@ -109,12 +147,16 @@ For React Native `Image` or expo-image, use `getFeedImageRequest` to pass the au
 URL and headers directly without converting bytes to base64:
 
 ```ts
-const { url, headers } = mobile.getFeedImageRequest({
-  path: image.url,
-  sessionId: readSession.sessionId,
-  viewerToken: readSession.viewerToken,
-});
-const source = { uri: url, headers };
+const source = 'imageId' in image
+  ? (() => {
+      const { url, headers } = mobile.getFeedImageRequest({
+        path: image.url,
+        sessionId: readSession.sessionId,
+        viewerToken: readSession.viewerToken,
+      });
+      return { uri: url, headers };
+    })()
+  : { uri: image.url }; // External URL: never attach Mobile session headers.
 ```
 
 ### Signed Executes
@@ -131,6 +173,17 @@ Unconfigured image storage returns `SOCIAL_FEED_DATA_UNAVAILABLE` (6320, HTTP 50
 Posts still require nonblank text or a drawing; comments
 still require nonblank text. See method and parameter JSDoc for publication, retries, mention offsets, drawing
 data, and mutation ordering.
+
+Posts and comments also accept `imageUrls`, up to ten HTTP/HTTPS URLs independent of the nine uploaded
+images. URLs must include a hostname and contain no whitespace/control characters. Omit the field or pass
+`[]`; null and the old wire field `image_url` are rejected. The SDK signs `image_urls` after `image_ids`.
+Keep original URL strings, array order, and field presence unchanged on retries: omission and `[]` hash
+differently. Coordinate this request change with the service version; old `image_url` retries are incompatible.
+
+Responses keep one `images` array: upload metadata first, then URL-only objects in submitted order.
+`MobileSocialFeedImage` is now a union; narrow with `'imageId' in image` before accessing upload metadata.
+Direct upload methods return `MobileSocialFeedUploadedImage` with all metadata. Load external URLs directly
+without Mobile session headers; protected image helpers accept only uploaded-image paths.
 
 ### Signed Queries
 

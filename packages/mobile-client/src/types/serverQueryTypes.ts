@@ -18,6 +18,7 @@ import {
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedEstimatedLiquidationLine,
   MobileServerSocialFeedHistorySummary,
+  MobileServerSocialFeedHistoryTake,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemPatch,
   MobileServerSocialFeedMarket,
@@ -266,6 +267,10 @@ export interface MobileServerPublicQueryResponseByType {
   feed_comments: MobileServerSocialFeedCommentsResponse;
   /** Full lifecycle history. */
   position_history: MobileServerSocialFeedPositionHistoryResponse;
+  /** Most recent 500 actions, without pagination or authored content. */
+  position_history_all: MobileServerSocialFeedPositionHistoryAllResponse;
+  /** Published nonblank text with complete drawings. */
+  position_thoughts: MobileServerSocialFeedPositionThoughtsResponse;
   /** Candle page and markers. */
   position_chart: MobileServerSocialFeedPositionChartResponse;
   /** Read-only watcher observation. */
@@ -370,6 +375,8 @@ export interface MobileServerSocialFeedCommentsResponse {
 
 /** Full position history with additional metrics and trusted trading hints. */
 export interface MobileServerSocialFeedPositionHistoryResponse {
+  /** Current position owner, including when the timeline is empty; never the viewer. */
+  owner: MobileServerSocialFeedAuthor;
   /** Current or frozen position and history metrics. */
   position: MobileServerSocialFeedPositionHistoryCard;
   /** Counts across the authorized history. */
@@ -410,4 +417,44 @@ export interface MobileServerSocialFeedWatchersResponse {
   watcher_preview: MobileServerSocialFeedAuthor[];
   /** Observation time. */
   as_of_ms: number;
+}
+
+/** Published position thought with nonblank text and a complete saved drawing. */
+export type MobileServerSocialFeedPositionThought =
+  MobileServerSocialFeedHistoryTake & {
+    /** Always true for this endpoint; uploaded or external images alone do not qualify. */
+    has_analysis: true;
+    /** Parsed current drawing; saved data does not necessarily contain visible strokes. */
+    drawing: MobileServerSocialFeedDrawing;
+  };
+
+/** Thoughts in descending drawing creation time and item UUID order; no 500-item total cap. */
+export interface MobileServerSocialFeedPositionThoughtsResponse {
+  /** Complete content in server order; never reorder by display time. */
+  items: MobileServerSocialFeedPositionThought[];
+  /** Null only at the directory end; an empty page can still have a cursor. */
+  next_cursor: string | null;
+  /** Independent position session; newly published content requires a refresh. */
+  read_session: MobileServerSocialFeedReadSession & {
+    /** Position-scoped reading. */
+    mode: 'position';
+  };
+}
+
+/** Most recent 500 actions, with no authored content and no pagination. */
+export interface MobileServerSocialFeedPositionHistoryAllResponse extends MobileServerSocialFeedPositionHistoryResponse {
+  /** Counts within this response; zero takes does not imply the position has no thoughts. */
+  summary: MobileServerSocialFeedHistorySummary & {
+    /** This endpoint never includes takes. */
+    take_count: 0;
+  };
+  /** Actions in descending last-event time and action UUID order. */
+  timeline: Array<
+    Extract<MobileServerSocialFeedTimelineEntry, { kind: 'action' }> & {
+      /** Authored content is never embedded; fetch associated item details separately. */
+      related_take: null;
+    }
+  >;
+  /** No pagination; null does not mean the complete lifecycle was returned. */
+  next_cursor: null;
 }

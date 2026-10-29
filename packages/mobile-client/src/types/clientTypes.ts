@@ -952,7 +952,7 @@ export interface MobileSocialFeedViewTracking {
 }
 
 /** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
-export interface MobileSocialFeedImage {
+export interface MobileSocialFeedUploadedImage {
   /** Image UUID. */
   imageId: string;
   /** Backend path for the original image bytes. */
@@ -968,6 +968,17 @@ export interface MobileSocialFeedImage {
   /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
   thumbnail: MobileSocialFeedImageThumbnail;
 }
+
+/** External image loaded directly from its URL without Mobile session headers. */
+export interface MobileSocialFeedExternalImage {
+  /** Original HTTP/HTTPS URL; no upload metadata or thumbnail is provided. */
+  url: string;
+}
+
+/** Uploaded image metadata or an external URL; uploaded images precede external images. */
+export type MobileSocialFeedImage =
+  | MobileSocialFeedUploadedImage
+  | MobileSocialFeedExternalImage;
 
 /** Thumbnail metadata for an uploaded feed image. */
 export interface MobileSocialFeedImageThumbnail {
@@ -1598,6 +1609,12 @@ export interface MobileCreateFeedPostParams extends MobileSignedRequestParams {
    * Images alone are not enough — nonblank text or a valid drawing is still required.
    */
   imageIds?: string[];
+  /**
+   * Up to ten original HTTP/HTTPS URLs in display order, independent of the nine upload slots.
+   * No whitespace or control characters. Omit or pass []; null is invalid. Preserve URL spelling,
+   * order, and field presence for retries: omission and [] produce different signing hashes.
+   */
+  imageUrls?: string[];
 }
 
 /**
@@ -1611,7 +1628,7 @@ export interface MobileCreateFeedImageUploadParams extends MobileSignedRequestPa
 
 /** Parameters for preparing a protected feed image request with a reading session. */
 export interface GetMobileFeedImageRequestParams {
-  /** Backend path from {@link MobileSocialFeedImage.url} or thumbnail.url. */
+  /** Uploaded image path from {@link MobileSocialFeedUploadedImage.url} or thumbnail.url; load external URLs directly without session headers. */
   path: string;
   /** Reading session that fully delivered the parent item. */
   sessionId: string;
@@ -1679,6 +1696,12 @@ export interface MobileCreateFeedCommentParams extends MobileSignedRequestParams
    * Omit or pass `[]` when none; images cannot replace the required nonblank text.
    */
   imageIds?: string[];
+  /**
+   * Up to ten original HTTP/HTTPS URLs in display order, independent of the nine upload slots.
+   * No whitespace or control characters. Omit or pass []; null is invalid. Preserve URL spelling,
+   * order, and field presence for retries: omission and [] produce different signing hashes.
+   */
+  imageUrls?: string[];
 }
 
 /** Parameters for setting or cancelling a signed user's like. */
@@ -1719,6 +1742,26 @@ export interface GetMobilePositionHistoryParams extends MobileSocialFeedReadPara
   limit?: number;
   /** History session; do not substitute a feed session. */
   sessionId?: string;
+}
+
+/** Parameters for the most recent 500 actions, without pagination or authored content. */
+export interface GetMobilePositionHistoryAllParams extends MobileSocialFeedReadParams {
+  /** Lifecycle UUID. */
+  positionId: string;
+  /** Compatibility flag; true is rejected by the service. */
+  takesOnly?: false;
+}
+
+/** Parameters for published position thoughts containing both nonblank text and a saved drawing. */
+export interface GetMobilePositionThoughtsParams extends MobileSocialFeedReadParams {
+  /** Lifecycle UUID; reopening a position creates a different lifecycle. */
+  positionId: string;
+  /** Page size, 1-50; defaults to 20 and must remain unchanged across pages. */
+  limit?: number;
+  /** Original thoughts session; cannot be reused from history or feed queries. */
+  sessionId?: string;
+  /** Previous nextCursor; requires the original session and viewerToken. */
+  cursor?: string;
 }
 
 /** Counts across the authorized position history. */
@@ -1885,6 +1928,8 @@ export interface MobileSocialFeedViewsResult {
 
 /** Full position history and viewing-account trading hints. */
 export interface MobileSocialFeedPositionHistory {
+  /** Current position owner, including when the timeline is empty; never the viewer. */
+  owner: MobileSocialFeedAuthor;
   /** Position and additional history metrics. */
   position: MobileSocialFeedPositionHistoryCard;
   /** Whole-history counts. */
@@ -1946,4 +1991,43 @@ export interface MobileSocialFeedMentionParams extends Omit<
 > {
   /** Mentioned identity; serialized to bytes32 for signing. */
   subaccount: Subaccount;
+}
+
+/** Published position thought with nonblank text and a complete saved drawing. */
+export type MobileSocialFeedPositionThought = MobileSocialFeedHistoryTake & {
+  /** Always true for this endpoint; uploaded or external images alone do not qualify. */
+  hasAnalysis: true;
+  /** Parsed current drawing; saved data does not necessarily contain visible strokes. */
+  drawing: MobileSocialFeedDrawing;
+};
+
+/** Thoughts in descending drawing creation time and item UUID order; no 500-item total cap. */
+export interface MobileSocialFeedPositionThoughtsPage {
+  /** Complete content in server order; never reorder by display time. */
+  items: MobileSocialFeedPositionThought[];
+  /** Null only at the directory end; an empty page can still have a cursor. */
+  nextCursor: string | null;
+  /** Independent position session; newly published content requires a refresh. */
+  readSession: MobileSocialFeedReadSession & {
+    /** Position-scoped reading. */
+    mode: 'position';
+  };
+}
+
+/** Most recent 500 actions, with no authored content and no pagination. */
+export interface MobileSocialFeedPositionHistoryAll extends MobileSocialFeedPositionHistory {
+  /** Counts within this response; zero takes does not imply the position has no thoughts. */
+  summary: MobileSocialFeedHistorySummary & {
+    /** This endpoint never includes takes. */
+    takeCount: 0;
+  };
+  /** Actions in descending last-event time and action UUID order. */
+  timeline: Array<
+    Extract<MobileSocialFeedTimelineEntry, { kind: 'action' }> & {
+      /** Authored content is never embedded; fetch associated item details separately. */
+      relatedTake: null;
+    }
+  >;
+  /** No pagination; null does not mean the complete lifecycle was returned. */
+  nextCursor: null;
 }

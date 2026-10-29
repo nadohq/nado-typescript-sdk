@@ -653,3 +653,54 @@ describe('[mobile-client]: social content signing', () => {
     },
   );
 });
+
+describe('[mobile-client]: external image signing', () => {
+  it.each(['create_feed_post', 'create_feed_comment'] as const)(
+    'signs ordered original URL arrays after image_ids for %s',
+    (type) => {
+      const base = {
+        client_request_id: '11111111-1111-4111-8111-111111111111',
+        text: 'image test',
+        mentions: [],
+      };
+      const inner: MobileSignedInner =
+        type === 'create_feed_post'
+          ? {
+              type,
+              ...base,
+              position_id: '22222222-2222-4222-8222-222222222222',
+            }
+          : {
+              type,
+              ...base,
+              root_item_id: '22222222-2222-4222-8222-222222222222',
+            };
+      const urls = [
+        'https://example.com/A.png?x=%2f',
+        'https://example.com/b.png',
+      ];
+      const result = canonicalizeMobileInner({
+        image_urls: urls,
+        image_ids: [],
+        ...inner,
+      });
+      expect(Object.keys(result).slice(-2)).toEqual([
+        'image_ids',
+        'image_urls',
+      ]);
+      if (result.type !== type) throw new Error('Unexpected signing type');
+      expect(result.image_urls).toEqual(urls);
+      expect(result.image_urls).not.toBe(urls);
+      const hash = (imageUrls?: string[]) =>
+        getMobilePayloadHash(
+          canonicalizeMobileInner({ ...inner, image_urls: imageUrls }),
+        );
+      expect(hash()).not.toBe(hash([]));
+      expect(hash(urls)).not.toBe(hash([...urls].reverse()));
+      expect(hash(urls)).not.toBe(
+        hash([urls[0].replace('%2f', '%2F'), urls[1]]),
+      );
+      expect(hash(urls)).toBe(hash([...urls]));
+    },
+  );
+});

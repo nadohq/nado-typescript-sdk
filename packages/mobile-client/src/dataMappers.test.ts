@@ -1,4 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
+import { createWalletClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { ink } from 'viem/chains';
 import {
   mapMobileSocialFeedActionCandidate,
   mapMobileSocialFeedCommentsPage,
@@ -12,17 +15,23 @@ import {
   mapMobileSocialFeedPositionAction,
   mapMobileSocialFeedPositionChart,
   mapMobileSocialFeedPositionHistory,
+  mapMobileSocialFeedPositionHistoryAll,
   mapMobileSocialFeedPositionPatch,
+  mapMobileSocialFeedPositionThoughts,
   mapMobileSocialFeedPresence,
   mapMobileSocialFeedTradeCard,
 } from './dataMappers';
+import { MobileClient } from './MobileClient';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
 import {
   MobileServerSocialFeedItem,
   MobileServerSocialFeedPost,
   MobileServerSocialFeedReply,
 } from './types/serverModelTypes';
-import { MobileServerSocialFeedPositionHistoryResponse } from './types/serverQueryTypes';
+import {
+  MobileServerSocialFeedPositionHistoryResponse,
+  MobileServerSocialFeedPositionThoughtsResponse,
+} from './types/serverQueryTypes';
 
 const post: MobileServerSocialFeedPost = {
   id: '88888888-8888-4888-8888-888888888888',
@@ -182,6 +191,7 @@ const reply: MobileServerSocialFeedReply = {
   drawing: null,
 };
 const history: MobileServerSocialFeedPositionHistoryResponse = {
+  owner: post.author,
   position: {
     position_id: '22222222-2222-4222-8222-222222222222',
     product_id: 2,
@@ -845,4 +855,279 @@ describe('[mobile-client]: content mapping', () => {
     expect(result).toMatchObject({ start: 2, end: 8, label: '@Alice' });
     expect(result.subaccount).toMatch(/^0x[0-9a-f]{64}$/);
   });
+});
+
+describe('[mobile-client]: position feed changes', () => {
+  it('keeps an unnamed owner even when no timeline content is available', () => {
+    const mapped = mapMobileSocialFeedPositionHistory({
+      ...history,
+      owner: {
+        ...post.author,
+        username: null,
+        display_name: null,
+        avatar_url: null,
+        is_following: null,
+      },
+      timeline: [],
+      summary: { action_count: 0, take_count: 0 },
+    });
+    expect(mapped.owner).toEqual({
+      subaccount: post.author.subaccount,
+      username: null,
+      displayName: null,
+      avatarUrl: null,
+      isFollowing: null,
+      traderBadge: null,
+      traderDataStatus: 'unavailable',
+    });
+    expect(mapped.timeline).toEqual([]);
+    expect(mapped.summary).toEqual({ actionCount: 0, takeCount: 0 });
+  });
+
+  it('maps recent actions without manufacturing related takes or complete-history counts', () => {
+    const entry = history.timeline[0];
+    if (entry.kind !== 'action') throw new Error('Expected action fixture');
+    const mapped = mapMobileSocialFeedPositionHistoryAll({
+      ...history,
+      timeline: [{ ...entry, related_take: null }],
+      next_cursor: null,
+      summary: { action_count: 1, take_count: 0 },
+    });
+    expect(mapped.timeline[0].relatedTake).toBeNull();
+    expect(mapped.timeline[0].relatedItemId).toBe(entry.related_item_id);
+    expect(mapped.timeline[0].action.executedQuantity.toFixed()).toBe(
+      entry.action.executed_quantity_x18,
+    );
+    expect(mapped.owner.subaccount).toBe(history.owner.subaccount);
+    expect(mapped.summary).toEqual({ actionCount: 1, takeCount: 0 });
+    expect(mapped.nextCursor).toBeNull();
+  });
+
+  function thoughtsPage(): MobileServerSocialFeedPositionThoughtsResponse {
+    return {
+      items: [
+        {
+          ...post,
+          has_analysis: true,
+          drawing: { data: false, created_at_ms: 20, updated_at_ms: 40 },
+        },
+        {
+          ...post,
+          id: '77777777-7777-4777-8777-777777777777',
+          kind: 'trade_card',
+          action: 'opened',
+          display_at_ms: post.display_at_ms + 100,
+          has_analysis: true,
+          drawing: {
+            data: { lines: [] },
+            created_at_ms: 10,
+            updated_at_ms: 50,
+          },
+        },
+      ],
+      next_cursor: 'Continue',
+      read_session: { ...history.read_session, mode: 'position' },
+    };
+  }
+
+  it('preserves thoughts order and complete parsed drawings independently of display/update time', () => {
+    const server = thoughtsPage();
+    const mapped = mapMobileSocialFeedPositionThoughts(server);
+    expect(mapped.items.map((item) => item.id)).toEqual(
+      server.items.map((item) => item.id),
+    );
+    expect(mapped.items[0].drawing).toEqual({
+      data: false,
+      createdAtMs: 20,
+      updatedAtMs: 40,
+    });
+    expect(mapped.items[1].drawing.data).toEqual({ lines: [] });
+    expect(mapped.items[1].kind).toBe('trade_card');
+    expect(mapped.items[1].position.quantity.toFixed()).toBe(
+      post.position.quantity_x18,
+    );
+    expect(mapped.nextCursor).toBe('Continue');
+    expect(mapped.readSession.mode).toBe('position');
+  });
+
+  it.each([null, 'Continue'])(
+    'preserves empty thought pages with cursor %s',
+    (cursor) => {
+      const mapped = mapMobileSocialFeedPositionThoughts({
+        ...thoughtsPage(),
+        items: [],
+        next_cursor: cursor,
+      });
+      expect(mapped.items).toEqual([]);
+      expect(mapped.nextCursor).toBe(cursor);
+    },
+  );
+
+  it.each([
+    { drawing: null },
+    { has_analysis: false },
+    { text: ' \t\n' },
+    { kind: 'reply' },
+  ])('rejects an invalid thought instead of dropping it: %j', (override) => {
+    const page = thoughtsPage();
+    const invalid = {
+      ...page,
+      items: [{ ...page.items[0], ...override }],
+    } as unknown as MobileServerSocialFeedPositionThoughtsResponse;
+    expect(() => mapMobileSocialFeedPositionThoughts(invalid)).toThrow();
+  });
+
+  it('maps mixed uploaded/external images in posts and replies without inventing metadata', () => {
+    const images = [
+      {
+        image_id: '66666666-6666-4666-8666-666666666666',
+        url: '/v1/mobile/feed/images/test/standard',
+        width: 1024,
+        height: 512,
+        content_type: 'image/png' as const,
+        byte_size: 100,
+        thumbnail: {
+          url: '/v1/mobile/feed/images/test/thumbnail',
+          width: 512,
+          height: 256,
+        },
+      },
+      { url: 'https://example.com/first.png' },
+      { url: 'https://example.com/second.png' },
+    ];
+    for (const item of [post, reply]) {
+      const mapped = mapMobileSocialFeedItem({ ...item, images });
+      if (mapped.kind === 'trade_row')
+        throw new Error('Expected authored content');
+      expect(mapped.images[0]).toMatchObject({
+        imageId: images[0].image_id,
+        thumbnail: { width: 512 },
+      });
+      expect(mapped.images.slice(1)).toEqual(images.slice(1));
+    }
+  });
+});
+
+describe('[mobile-client]: position and image transport', () => {
+  function clientWithResponse(data: Record<string, unknown>) {
+    const client = new MobileClient({
+      url: 'https://mobile.example/v1/mobile',
+    });
+    const requests: Record<string, unknown>[] = [];
+    client.axiosInstance.defaults.adapter = (config) => {
+      requests.push(JSON.parse(String(config.data)) as Record<string, unknown>);
+      expect(config.url).toBe(
+        `https://mobile.example/v1/mobile/${client.opts.walletClient ? 'execute' : 'public_query'}`,
+      );
+      return Promise.resolve({
+        data: { status: 'success', ...data },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      });
+    };
+    return { client, requests };
+  }
+
+  it('routes thoughts publicly, preserving continuation credentials after an empty page', async () => {
+    const { client, requests } = clientWithResponse({
+      items: [],
+      next_cursor: 'Next',
+      read_session: history.read_session,
+    });
+    const first = await client.getPositionThoughts({
+      positionId: post.position.position_id,
+      limit: 2,
+    });
+    await client.getPositionThoughts({
+      positionId: post.position.position_id,
+      limit: 2,
+      sessionId: first.readSession.sessionId,
+      viewerToken: first.readSession.viewerToken,
+      cursor: first.nextCursor ?? undefined,
+    });
+    expect(requests).toEqual([
+      {
+        type: 'position_thoughts',
+        position_id: post.position.position_id,
+        limit: 2,
+      },
+      {
+        type: 'position_thoughts',
+        position_id: post.position.position_id,
+        limit: 2,
+        session_id: history.read_session.session_id,
+        viewer_token: history.read_session.viewer_token,
+        cursor: 'Next',
+      },
+    ]);
+  });
+
+  it('routes recent actions publicly without pagination fields and maps the owner', async () => {
+    const { client, requests } = clientWithResponse({
+      ...history,
+      timeline: [],
+      summary: { action_count: 0, take_count: 0 },
+      next_cursor: null,
+    });
+    const result = await client.getPositionHistoryAll({
+      positionId: post.position.position_id,
+      takesOnly: false,
+      viewerToken: 'ExistingViewer',
+    });
+    expect(requests).toEqual([
+      {
+        type: 'position_history_all',
+        position_id: post.position.position_id,
+        takes_only: false,
+        viewer_token: 'ExistingViewer',
+      },
+    ]);
+    expect(result.owner.subaccount).toBe(history.owner.subaccount);
+    expect(result.timeline).toEqual([]);
+  });
+
+  it.each(['post', 'comment'] as const)(
+    'passes image URL arrays through signed %s publication',
+    async (kind) => {
+      const { client, requests } = clientWithResponse(
+        kind === 'post'
+          ? { item: post }
+          : { comment: reply, root_comment_count: 1 },
+      );
+      const account = privateKeyToAccount(
+        '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b786907',
+      );
+      client.opts.walletClient = createWalletClient({
+        account,
+        chain: ink,
+        transport: http(),
+      });
+      const params = {
+        subaccountOwner: account.address,
+        subaccountName: 'default',
+        chainId: ink.id,
+        verifyingAddr: '0x0000000000000000000000000000000000000001' as const,
+        clientRequestId: '11111111-1111-4111-8111-111111111111',
+        text: 'external images',
+        mentions: [],
+        imageIds: [],
+        imageUrls: ['https://example.com/A.png', 'https://example.com/B.png'],
+      };
+      if (kind === 'post')
+        await client.createFeedPost({
+          ...params,
+          positionId: post.position.position_id,
+        });
+      else await client.createFeedComment({ ...params, rootItemId: post.id });
+      expect(requests[0]).toMatchObject({
+        type: `create_feed_${kind}`,
+        image_ids: [],
+        image_urls: params.imageUrls,
+        signature: expect.stringMatching(/^0x[0-9a-f]+$/),
+      });
+      expect(requests[0]).not.toHaveProperty('image_url');
+    },
+  );
 });

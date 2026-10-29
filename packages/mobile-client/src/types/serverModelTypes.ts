@@ -606,7 +606,7 @@ export interface MobileServerSocialFeedViewTracking {
 }
 
 /** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
-export interface MobileServerSocialFeedImage {
+export interface MobileServerSocialFeedUploadedImage {
   /** Image UUID. */
   image_id: string;
   /** Backend path for the original image bytes. */
@@ -622,6 +622,17 @@ export interface MobileServerSocialFeedImage {
   /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
   thumbnail: MobileServerSocialFeedImageThumbnail;
 }
+
+/** External image loaded directly from its URL without Mobile session headers. */
+export interface MobileServerSocialFeedExternalImage {
+  /** Original HTTP/HTTPS URL; no upload metadata or thumbnail is provided. */
+  url: string;
+}
+
+/** Uploaded image metadata or an external URL; uploaded images precede external images. */
+export type MobileServerSocialFeedImage =
+  | MobileServerSocialFeedUploadedImage
+  | MobileServerSocialFeedExternalImage;
 
 /** Thumbnail metadata for an uploaded feed image. */
 export interface MobileServerSocialFeedImageThumbnail {

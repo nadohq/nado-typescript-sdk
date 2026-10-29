@@ -44,8 +44,10 @@ import {
   mapMobileSocialFeedPage,
   mapMobileSocialFeedPositionChart,
   mapMobileSocialFeedPositionHistory,
+  mapMobileSocialFeedPositionHistoryAll,
   mapMobileSocialFeedPositionResolutionResult,
   mapMobileSocialFeedPositionsPage,
+  mapMobileSocialFeedPositionThoughts,
   mapMobileSocialFeedPresence,
   mapMobileSocialFeedRankedPage,
   mapMobileSocialFeedReadParamsToServer,
@@ -82,7 +84,9 @@ import {
   GetMobileNotificationSubscriptionsParams,
   GetMobilePositionChartParams,
   GetMobilePositionFeedParams,
+  GetMobilePositionHistoryAllParams,
   GetMobilePositionHistoryParams,
+  GetMobilePositionThoughtsParams,
   GetMobilePositionWatchersParams,
   GetMobileProfileFeedParams,
   GetMobileProfilesParams,
@@ -128,19 +132,21 @@ import {
   MobileSocialFeedCommentsPage,
   MobileSocialFeedDrawingMutationResult,
   MobileSocialFeedDrawingResult,
-  MobileSocialFeedImage,
   MobileSocialFeedItem,
   MobileSocialFeedItemResponse,
   MobileSocialFeedLikeResult,
   MobileSocialFeedPage,
   MobileSocialFeedPositionChart,
   MobileSocialFeedPositionHistory,
+  MobileSocialFeedPositionHistoryAll,
   MobileSocialFeedPositionResolutionResult,
   MobileSocialFeedPositionsPage,
+  MobileSocialFeedPositionThoughtsPage,
   MobileSocialFeedPresence,
   MobileSocialFeedRankedPage,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedUpdates,
+  MobileSocialFeedUploadedImage,
   MobileSocialFeedViewsResult,
   MobileSocialFeedWatchers,
   MobileUnregisterExpoTokenParams,
@@ -776,6 +782,50 @@ export class MobileClient {
   }
 
   /**
+   * Reads the most recent 500 lifecycle actions, without authored text, drawings, or images.
+   * Creates a new position session on every call. A null nextCursor means no pagination, not complete
+   * history; use getPositionHistory with a fresh session for the full lifecycle. takeCount is always zero.
+   * @throws {MobileServerFailureError} On invalid parameters, inaccessible content, or unavailable data.
+   * @throws {MobileUnsupportedFeedItemError} If a timeline entry has an unsupported kind.
+   */
+  async getPositionHistoryAll(
+    params: GetMobilePositionHistoryAllParams,
+  ): Promise<MobileSocialFeedPositionHistoryAll> {
+    const body: MobileServerPublicQueryRequest<'position_history_all'> = {
+      type: 'position_history_all',
+      position_id: params.positionId,
+      takes_only: params.takesOnly,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedPositionHistoryAll(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads published position thoughts with both nonblank text and a saved drawing, without signing.
+   * Keeps descending drawing creation time / item UUID order; editing a drawing does not move the item.
+   * Continue until nextCursor is null, even after an empty page. There is no 500-item total cap.
+   * Keep positionId, limit, sessionId, and viewerToken unchanged when paging; omitted viewAs inherits
+   * the session. History/feed sessions cannot be substituted. Refresh to include newly eligible content.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, capacity limits,
+   * inaccessible content, or unavailable source data.
+   * @throws {MobileUnsupportedFeedItemError} If an item is not a post or trade card.
+   * @throws {Error} If a returned thought lacks nonblank text or a saved drawing.
+   */
+  async getPositionThoughts(
+    params: GetMobilePositionThoughtsParams,
+  ): Promise<MobileSocialFeedPositionThoughtsPage> {
+    const body: MobileServerPublicQueryRequest<'position_thoughts'> = {
+      type: 'position_thoughts',
+      position_id: params.positionId,
+      limit: params.limit,
+      session_id: params.sessionId,
+      cursor: params.cursor,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedPositionThoughts(await this.publicQuery(body));
+  }
+
+  /**
    * Reads candles and action markers without creating a reading session.
    * Preserve the original range, interval, and read perspective when paging with nextBeforeMs.
    * @param params - Position, candle interval, half-open time range, pagination, and optional original session
@@ -1292,6 +1342,7 @@ export class MobileClient {
       mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
       drawing_data_json: params.drawingDataJson,
       image_ids: params.imageIds,
+      image_urls: params.imageUrls,
     });
     return mapMobileSocialFeedItem((await this.execute(request)).item);
   }
@@ -1310,7 +1361,7 @@ export class MobileClient {
    */
   async createFeedPostImageUpload(
     params: MobileCreateFeedImageUploadParams,
-  ): Promise<MobileSocialFeedImage> {
+  ): Promise<MobileSocialFeedUploadedImage> {
     return this.createFeedImageUpload('create_feed_post_image_uploads', params);
   }
 
@@ -1327,7 +1378,7 @@ export class MobileClient {
    */
   async createFeedCommentImageUpload(
     params: MobileCreateFeedImageUploadParams,
-  ): Promise<MobileSocialFeedImage> {
+  ): Promise<MobileSocialFeedUploadedImage> {
     return this.createFeedImageUpload(
       'create_feed_comment_image_uploads',
       params,
@@ -1406,6 +1457,7 @@ export class MobileClient {
       mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
       attached_position_id: params.attachedPositionId,
       image_ids: params.imageIds,
+      image_urls: params.imageUrls,
     });
     return mapMobileSocialFeedCommentResult(await this.execute(request));
   }
@@ -1562,7 +1614,7 @@ export class MobileClient {
       | 'create_feed_post_image_uploads'
       | 'create_feed_comment_image_uploads',
     params: MobileCreateFeedImageUploadParams,
-  ): Promise<MobileSocialFeedImage> {
+  ): Promise<MobileSocialFeedUploadedImage> {
     const nonce = params.nonce ?? getMobileNonce();
     // Match the signed body's field lengths so oversized requests fail before prompting the wallet.
     const sizePayload = {

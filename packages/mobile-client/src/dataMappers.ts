@@ -57,8 +57,10 @@ import {
   MobileSocialFeedPositionCard,
   MobileSocialFeedPositionChart,
   MobileSocialFeedPositionHistory,
+  MobileSocialFeedPositionHistoryAll,
   MobileSocialFeedPositionPatch,
   MobileSocialFeedPositionResolutionResult,
+  MobileSocialFeedPositionThoughtsPage,
   MobileSocialFeedPositionsPage,
   MobileSocialFeedPost,
   MobileSocialFeedPresence,
@@ -76,6 +78,7 @@ import {
   MobileSocialFeedTradingContext,
   MobileSocialFeedTradingTarget,
   MobileSocialFeedUpdates,
+  MobileSocialFeedUploadedImage,
   MobileSocialFeedViewsResult,
   MobileSocialFeedWatchers,
   SearchMobileProfilesParams,
@@ -135,6 +138,7 @@ import {
   MobileServerSocialFeedTraderBadge,
   MobileServerSocialFeedTradingContext,
   MobileServerSocialFeedTradingTarget,
+  MobileServerSocialFeedUploadedImage,
   MobileSocialFeedMention,
 } from './types/serverModelTypes';
 import {
@@ -151,8 +155,10 @@ import {
   MobileServerSocialFeedDrawingResponse,
   MobileServerSocialFeedItemResponse,
   MobileServerSocialFeedPositionChartResponse,
+  MobileServerSocialFeedPositionHistoryAllResponse,
   MobileServerSocialFeedPositionHistoryResponse,
   MobileServerSocialFeedPositionResolutionResponse,
+  MobileServerSocialFeedPositionThoughtsResponse,
   MobileServerSocialFeedPositionsResponse,
   MobileServerSocialFeedRankedResponse,
   MobileServerSocialFeedResponse,
@@ -800,8 +806,16 @@ export function mapMobileSocialFeedInteraction(
  * @returns The mapped feed image.
  */
 export function mapMobileSocialFeedImage(
+  server: MobileServerSocialFeedUploadedImage,
+): MobileSocialFeedUploadedImage;
+/** Maps either protected upload metadata or an external URL without inventing metadata. */
+export function mapMobileSocialFeedImage(
+  server: MobileServerSocialFeedImage,
+): MobileSocialFeedImage;
+export function mapMobileSocialFeedImage(
   server: MobileServerSocialFeedImage,
 ): MobileSocialFeedImage {
+  if (!('image_id' in server)) return { url: server.url };
   return {
     imageId: server.image_id,
     url: server.url,
@@ -1668,6 +1682,7 @@ export function mapMobileSocialFeedPositionHistory(
   server: MobileServerSocialFeedPositionHistoryResponse,
 ): MobileSocialFeedPositionHistory {
   return {
+    owner: mapMobileSocialFeedAuthor(server.owner),
     position: {
       ...mapMobileSocialFeedPositionCard(server.position),
       ...mapMobileSocialFeedHistoryMetrics(server.position),
@@ -1736,5 +1751,58 @@ export function mapMobileSocialFeedPresence(
     watcherPreview: server.watcher_preview.map(mapMobileSocialFeedAuthor),
     heartbeatIntervalSeconds: server.heartbeat_interval_seconds,
     expiresInSeconds: server.expires_in_seconds,
+  };
+}
+
+/**
+ * Maps recent actions while preserving the endpoint's limited scope and null pagination cursor.
+ * @throws {MobileUnsupportedFeedItemError} If a timeline entry has an unsupported kind.
+ */
+export function mapMobileSocialFeedPositionHistoryAll(
+  server: MobileServerSocialFeedPositionHistoryAllResponse,
+): MobileSocialFeedPositionHistoryAll {
+  return {
+    ...mapMobileSocialFeedPositionHistory(server),
+    summary: {
+      actionCount: server.summary.action_count,
+      takeCount: server.summary.take_count,
+    },
+    timeline: server.timeline.map((entry) => ({
+      kind: entry.kind,
+      action: mapMobileSocialFeedPositionAction(entry.action),
+      relatedItemId: entry.related_item_id,
+      relatedTake: entry.related_take,
+    })),
+    nextCursor: server.next_cursor,
+  };
+}
+
+/**
+ * Maps complete thoughts and drawings in server order, preserving empty pages with continuation cursors.
+ * @throws {MobileUnsupportedFeedItemError} If an item is not a post or trade card.
+ * @throws {Error} If the service violates the nonblank-text and saved-drawing invariant.
+ */
+export function mapMobileSocialFeedPositionThoughts(
+  server: MobileServerSocialFeedPositionThoughtsResponse,
+): MobileSocialFeedPositionThoughtsPage {
+  return {
+    items: server.items.map((item) => {
+      const mapped = mapMobileSocialFeedHistoryTake(item);
+      if (
+        !mapped.hasAnalysis ||
+        mapped.drawing == null ||
+        !mapped.text?.trim()
+      ) {
+        throw new Error(
+          'Invalid position thought: nonblank text and a saved drawing are required',
+        );
+      }
+      return { ...mapped, hasAnalysis: true, drawing: mapped.drawing };
+    }),
+    nextCursor: server.next_cursor,
+    readSession: {
+      ...mapMobileSocialFeedReadSession(server.read_session),
+      mode: server.read_session.mode,
+    },
   };
 }

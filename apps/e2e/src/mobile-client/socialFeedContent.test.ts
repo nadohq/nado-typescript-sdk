@@ -132,6 +132,30 @@ void describe(
       );
     });
 
+    void test('rejects invalid new position queries without a wallet', async () => {
+      const positionId = randomUUID();
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionThoughts({ positionId, limit: 51 }),
+        MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+      );
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionThoughts({ positionId }),
+        MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+      );
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionHistoryAll({ positionId }),
+        MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+      );
+      await assertRejectsWithMobileErrorCode(
+        () =>
+          mobile.getPositionHistoryAll({
+            positionId,
+            takesOnly: true,
+          } as unknown as Parameters<MobileClient['getPositionHistoryAll']>[0]),
+        MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+      );
+    });
+
     void test('reads comment threads, anchors, pagination, and drawings using an existing item session', async (context) => {
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
       const item = page.items.find(
@@ -244,6 +268,56 @@ void describe(
         tradingContext: history.tradingContext,
       });
       assert.equal(history.readSession.mode, 'position');
+      assertNonEmptyString(
+        history.owner.subaccount,
+        'history.owner.subaccount',
+      );
+      const recent = await mobile.getPositionHistoryAll({ positionId, viewAs });
+      assert.equal(recent.owner.subaccount, history.owner.subaccount);
+      assert.equal(recent.readSession.mode, 'position');
+      assert.equal(recent.nextCursor, null);
+      assert.ok(recent.timeline.length <= 500);
+      assert.equal(recent.summary.actionCount, recent.timeline.length);
+      assert.equal(recent.summary.takeCount, 0);
+      for (const entry of recent.timeline) {
+        assert.equal(entry.kind, 'action');
+        assert.equal(entry.relatedTake, null);
+      }
+      const thoughts = await mobile.getPositionThoughts({
+        positionId,
+        viewAs,
+        limit: 2,
+      });
+      assert.equal(thoughts.readSession.mode, 'position');
+      assert.ok(thoughts.items.length <= 2);
+      for (const thought of thoughts.items) {
+        assert.ok(thought.kind === 'post' || thought.kind === 'trade_card');
+        assert.equal(thought.position.positionId, positionId);
+        assert.ok(thought.text.trim().length > 0);
+        assert.equal(thought.hasAnalysis, true);
+        assert.ok(thought.drawing !== null);
+        assert.ok(Object.hasOwn(thought.drawing, 'data'));
+      }
+      if (thoughts.nextCursor !== null) {
+        const next = await mobile.getPositionThoughts({
+          positionId,
+          limit: 2,
+          ...getSessionParams(thoughts.readSession),
+          cursor: thoughts.nextCursor,
+        });
+        assert.equal(
+          next.readSession.sessionId,
+          thoughts.readSession.sessionId,
+        );
+        assert.equal(
+          next.readSession.viewerToken,
+          thoughts.readSession.viewerToken,
+        );
+      }
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionThoughts({ positionId, limit: 2, ...session }),
+        MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_MISMATCH,
+      );
       assertPosition(history.position);
       assertNonNegativeInteger(
         history.summary.actionCount,
@@ -497,11 +571,21 @@ void describe(
         text: 'SDK integration verification',
         mentions: [],
         imageIds: [postImage.imageId],
+        imageUrls: [
+          'https://example.com/sdk-post-1.png',
+          'https://example.com/sdk-post-2.png',
+        ],
       };
       const post = await tc.mobile.createFeedPost(params);
       assert.ok(post.kind === 'post');
       assert.deepEqual(
-        post.images.map((image) => image.imageId),
+        post.images.slice(1),
+        params.imageUrls.map((url) => ({ url })),
+      );
+      assert.deepEqual(
+        post.images
+          .filter((image) => 'imageId' in image)
+          .map((image) => image.imageId),
         params.imageIds,
       );
       assert.equal((await tc.mobile.createFeedPost(params)).id, post.id);
@@ -531,6 +615,17 @@ void describe(
         dataJson: '0',
       });
       assert.equal(updated.drawing.data, 0);
+      const thoughts = await mobile.getPositionThoughts({
+        positionId: params.positionId,
+        viewAs,
+      });
+      const savedThought = thoughts.items.find((item) => item.id === post.id);
+      assert.ok(savedThought);
+      assert.equal(savedThought.drawing.data, 0);
+      assert.equal(
+        savedThought.drawing.createdAtMs,
+        created.drawing.createdAtMs,
+      );
       assert.equal(
         (await mobile.getFeedChartDrawing({ itemId: post.id, viewAs })).drawing
           ?.data,
@@ -547,11 +642,18 @@ void describe(
         text: 'SDK comment verification',
         mentions: [],
         imageIds: [commentImage.imageId],
+        imageUrls: ['https://example.com/sdk-comment.png'],
       };
       const comment = await tc.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
       assert.deepEqual(
-        comment.comment.images.map((image) => image.imageId),
+        comment.comment.images.slice(1),
+        commentParams.imageUrls.map((url) => ({ url })),
+      );
+      assert.deepEqual(
+        comment.comment.images
+          .filter((image) => 'imageId' in image)
+          .map((image) => image.imageId),
         commentParams.imageIds,
       );
       assert.equal(
@@ -584,6 +686,7 @@ void describe(
       });
       const session = getSessionParams(detail.readSession);
       assert.ok(detail.item.kind === 'post');
+      assert.ok('thumbnail' in detail.item.images[0]);
       const imageRequest = mobile.getFeedImageRequest({
         ...session,
         path: detail.item.images[0].url,
@@ -594,7 +697,9 @@ void describe(
       });
       assert.deepEqual(new Uint8Array(imageResponse.data), fileBytes);
       assert.deepEqual(
-        detail.item.images.map((image) => image.imageId),
+        detail.item.images
+          .filter((image) => 'imageId' in image)
+          .map((image) => image.imageId),
         params.imageIds,
       );
       assert.deepEqual(
@@ -617,6 +722,7 @@ void describe(
         viewAs,
       });
       assert.ok(commentDetail.item.kind === 'reply');
+      assert.ok('thumbnail' in commentDetail.item.images[0]);
       const commentSession = getSessionParams(commentDetail.readSession);
       assert.deepEqual(
         await mobile.getFeedImageBytes({

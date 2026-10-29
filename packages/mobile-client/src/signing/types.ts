@@ -70,6 +70,8 @@ export type MobileSignedInner =
       drawing_data_json?: string;
       /** Ordered ready image UUIDs; omitted when absent. */
       image_ids?: string[];
+      /** Up to ten original HTTP/HTTPS URLs in order; omission differs from an empty array. */
+      image_urls?: string[];
     }
   | {
       /** Atomic comment publication. */
@@ -88,6 +90,8 @@ export type MobileSignedInner =
       attached_position_id?: string;
       /** Ordered ready image UUIDs; omitted when absent. */
       image_ids?: string[];
+      /** Up to ten original HTTP/HTTPS URLs in order; omission differs from an empty array. */
+      image_urls?: string[];
     }
   | {
       /** Direct multipart post-image upload; content_hash is Keccak256 of the raw file bytes. */

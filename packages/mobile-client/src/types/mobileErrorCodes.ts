@@ -98,6 +98,8 @@ export const MOBILE_ERROR_CODES = {
   INVALID_SOCIAL_FEED_IMAGE: 6326,
   /** An existing detail-visit event was reused with a different item or browsing credential. */
   SOCIAL_FEED_VIEW_EVENT_REBOUND: 6327,
+  /** Initial history/thoughts directory exceeds 4 MiB; do not automatically retry the same query. */
+  SOCIAL_FEED_HISTORY_TOO_LARGE: 6328,
 } as const;
 
 /**

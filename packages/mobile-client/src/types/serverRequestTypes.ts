@@ -215,6 +215,24 @@ export interface MobileServerPublicQueryRequestByType {
     /** Original position-mode session. */
     session_id?: string;
   };
+  /** Recent actions only, capped at 500; creates a new session and does not paginate. */
+  position_history_all: MobileServerSocialFeedReadParams & {
+    /** Lifecycle UUID. */
+    position_id: string;
+    /** Compatibility flag; true is rejected. */
+    takes_only?: false;
+  };
+  /** Published nonblank text with a saved drawing, newest first by drawing creation time. */
+  position_thoughts: MobileServerSocialFeedReadParams & {
+    /** Lifecycle UUID. */
+    position_id: string;
+    /** Page size, 1-50; defaults to 20 and must remain unchanged across pages. */
+    limit?: number;
+    /** Original thoughts session; cannot be reused from history or feed queries. */
+    session_id?: string;
+    /** Previous next_cursor; requires the original session and viewer_token. */
+    cursor?: string;
+  };
   /** Market candles and independently priced action markers. */
   position_chart: MobileServerSocialFeedReadParams & {
     /** Lifecycle UUID. */

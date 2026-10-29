@@ -6,9 +6,9 @@ import {
 import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedDrawing,
-  MobileServerSocialFeedImage,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedReply,
+  MobileServerSocialFeedUploadedImage,
 } from './serverModelTypes';
 import { MobileServerNotificationSettingsV2Response } from './serverQueryTypes';
 import {
@@ -85,7 +85,7 @@ export interface MobileServerAvatarUploadResponse {
 /** Ready image returned by a direct multipart upload. */
 export interface MobileServerSocialFeedImageUploadResponse {
   /** Ready image metadata, including original and thumbnail paths. */
-  image: MobileServerSocialFeedImage;
+  image: MobileServerSocialFeedUploadedImage;
 }
 
 /**

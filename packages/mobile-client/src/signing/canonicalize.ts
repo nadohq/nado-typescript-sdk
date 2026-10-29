@@ -82,6 +82,9 @@ export function canonicalizeMobileInner(
         ...(inner.image_ids === undefined
           ? {}
           : { image_ids: [...inner.image_ids] }),
+        ...(inner.image_urls === undefined
+          ? {}
+          : { image_urls: [...inner.image_urls] }),
       };
     case 'create_feed_comment':
       return {
@@ -99,6 +102,9 @@ export function canonicalizeMobileInner(
         ...(inner.image_ids === undefined
           ? {}
           : { image_ids: [...inner.image_ids] }),
+        ...(inner.image_urls === undefined
+          ? {}
+          : { image_urls: [...inner.image_urls] }),
       };
     case 'create_feed_post_image_uploads':
     case 'create_feed_comment_image_uploads':
