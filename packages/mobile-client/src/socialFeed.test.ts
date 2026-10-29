@@ -82,7 +82,7 @@ const readSession: MobileServerSocialFeedReadSession = {
   session_id: 'OpaqueSession',
   mode: 'feed',
   expires_at_ms: 42,
-  view_tracking: { mode: 'detail_visit' },
+
   update_cursor: null,
   viewer_token: 'OpaqueViewer',
 };
@@ -180,7 +180,6 @@ describe('[mobile-client]: social feed transport', () => {
       });
       await client.getFeedItem({
         itemId: itemId.toUpperCase(),
-        viewEventId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
         commentPreviewLimit: 0,
         viewAs,
       });
@@ -223,9 +222,7 @@ describe('[mobile-client]: social feed transport', () => {
       expect(requests[3].body.subaccount).not.toBe(requests[3].body.view_as);
       expect(requests[5].body.position_id).toBe(positionId.toUpperCase());
       expect(requests[6].body.item_id).toBe(itemId.toUpperCase());
-      expect(requests[6].body.view_event_id).toBe(
-        'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-      );
+      expect(requests[6].body).not.toHaveProperty('view_event_id');
       expect(requests[6].body.comment_preview_limit).toBe(0);
       expect(requests[7].body).toEqual({
         type: 'feed_updates',
@@ -239,35 +236,63 @@ describe('[mobile-client]: social feed transport', () => {
     },
   );
 
-  it('reports detail visits with the registered view event over public_execute', async () => {
-    const { client, requests } = mockClient({
-      status: 'success',
-      accepted_item_ids: [itemId],
-      duplicate_item_ids: [],
-    });
+  it('reports multiple IDs and same-request duplicates without session fields or a signature', async () => {
+    const { client, requests } = mockClient({ status: 'success' });
     client.opts.walletClient = undefined;
-    const result = await client.recordFeedViews({
-      sessionId: 'OpaqueSession',
-      viewerToken: 'OpaqueViewer',
-      viewEventId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-      itemId,
-    });
-    expect(result).toEqual({
-      acceptedItemIds: [itemId],
-      duplicateItemIds: [],
+    const itemIds = [itemId, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', itemId];
+    expect(await client.recordFeedViews({ itemIds })).toEqual({
+      status: 'success',
     });
     expect(requests).toEqual([
       {
         url: 'https://mobile.example/v1/mobile/public_execute',
-        body: {
-          type: 'record_feed_views',
-          session_id: 'OpaqueSession',
-          viewer_token: 'OpaqueViewer',
-          view_event_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
-          item_ids: [itemId],
-        },
+        body: { type: 'record_feed_views', item_ids: itemIds },
       },
     ]);
+    // A caller-initiated repeat remains a new report, not a cached or locally deduplicated result.
+    await client.recordFeedViews({ itemIds });
+    expect(requests).toHaveLength(2);
+    expect(requests[1].body).toEqual(requests[0].body);
+  });
+
+  it.each([
+    [400, 6310],
+    [503, 1006],
+    [503, 6320],
+  ])(
+    'preserves batch view failures (%i/%i) without retrying',
+    async (httpStatus, errorCode) => {
+      const { client, requests } = mockClient(
+        {
+          status: 'failure',
+          error: 'Batch rejected',
+          error_code: errorCode,
+          request_type: 'public_execute_record_feed_views',
+        },
+        httpStatus,
+      );
+      await expect(
+        client.recordFeedViews({ itemIds: [itemId] }),
+      ).rejects.toMatchObject({
+        name: 'MobileServerFailureError',
+        errorCode,
+        httpStatus,
+      });
+      expect(requests).toHaveLength(1);
+    },
+  );
+
+  it('does not retry a view report when the response may have been lost', async () => {
+    const { client } = mockClient();
+    let attempts = 0;
+    client.axiosInstance.defaults.adapter = () => {
+      attempts++;
+      return Promise.reject(new Error('Connection closed after sending'));
+    };
+    await expect(client.recordFeedViews({ itemIds: [itemId] })).rejects.toThrow(
+      'Connection closed',
+    );
+    expect(attempts).toBe(1);
   });
 
   it('preserves update IDs, session credentials, and cursors unchanged', async () => {
@@ -344,7 +369,7 @@ describe('[mobile-client]: social feed transport', () => {
         session_id: 'Session',
         mode: 'feed',
         expires_at_ms: 42,
-        view_tracking: { mode: 'detail_visit' },
+
         update_cursor: null,
         viewer_token: 'Viewer',
       },

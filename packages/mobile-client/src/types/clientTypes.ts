@@ -938,21 +938,12 @@ export interface MobileSocialFeedCommentPreview {
   items: MobileSocialFeedReply[];
   /** Comment count. */
   totalCount: number;
-  /** Comment cursor, if available. */
+  /** Opens the first complete group page in the same snapshot; do not prepend preview items. */
   nextCursor: string | null;
 }
 
-/** Exposure requirements associated with a reading session. */
-export interface MobileSocialFeedViewTracking {
-  /**
-   * Detail-visit exposure: report the primary detail target after it is shown in the foreground.
-   * List visible-ratio / dwell thresholds are no longer used.
-   */
-  mode: 'detail_visit';
-}
-
 /** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
-export interface MobileSocialFeedImage {
+export interface MobileSocialFeedUploadedImage {
   /** Image UUID. */
   imageId: string;
   /** Backend path for the original image bytes. */
@@ -968,6 +959,17 @@ export interface MobileSocialFeedImage {
   /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
   thumbnail: MobileSocialFeedImageThumbnail;
 }
+
+/** External image loaded directly from its URL without Mobile session headers. */
+export interface MobileSocialFeedExternalImage {
+  /** Original HTTP/HTTPS URL; no upload metadata or thumbnail is provided. */
+  url: string;
+}
+
+/** Uploaded image metadata or an external URL; uploaded images precede external images. */
+export type MobileSocialFeedImage =
+  | MobileSocialFeedUploadedImage
+  | MobileSocialFeedExternalImage;
 
 /** Thumbnail metadata for an uploaded feed image. */
 export interface MobileSocialFeedImageThumbnail {
@@ -1109,8 +1111,6 @@ export interface MobileSocialFeedReadSession {
   mode: MobileSocialFeedReadSessionMode;
   /** Current idle expiration in Unix milliseconds; legitimate session requests renew it. */
   expiresAtMs: number;
-  /** Visibility requirements for explicit exposure reporting. */
-  viewTracking: MobileSocialFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   updateCursor: string | null;
   /** Credential for this reading session. Do not log or cache publicly. */
@@ -1275,12 +1275,6 @@ export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
 export type GetMobileFeedItemParams = MobileSocialFeedReadParams & {
   /** Target item UUID. */
   itemId: string;
-  /**
-   * Detail-visit event UUID generated once per real navigation into this item.
-   * Reuse the same value on retries for the same visit; omit for prefetch.
-   * Registering the event does not increment the view count by itself.
-   */
-  viewEventId?: string;
   /** Preview size, 0–3. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
@@ -1598,6 +1592,12 @@ export interface MobileCreateFeedPostParams extends MobileSignedRequestParams {
    * Images alone are not enough — nonblank text or a valid drawing is still required.
    */
   imageIds?: string[];
+  /**
+   * Up to ten original HTTP/HTTPS URLs in display order, independent of the nine upload slots.
+   * No whitespace or control characters. Omit or pass []; null is invalid. Preserve URL spelling,
+   * order, and field presence for retries: omission and [] produce different signing hashes.
+   */
+  imageUrls?: string[];
 }
 
 /**
@@ -1611,7 +1611,7 @@ export interface MobileCreateFeedImageUploadParams extends MobileSignedRequestPa
 
 /** Parameters for preparing a protected feed image request with a reading session. */
 export interface GetMobileFeedImageRequestParams {
-  /** Backend path from {@link MobileSocialFeedImage.url} or thumbnail.url. */
+  /** Uploaded image path from {@link MobileSocialFeedUploadedImage.url} or thumbnail.url; load external URLs directly without session headers. */
   path: string;
   /** Reading session that fully delivered the parent item. */
   sessionId: string;
@@ -1652,9 +1652,9 @@ export interface GetMobileFeedCommentsParams extends MobileSocialFeedReadParams 
   rootItemId: string;
   /** Forward or backward opaque cursor from the same session. */
   cursor?: string;
-  /** Page size, 1-50; defaults to 20. */
+  /** Top-level group count, 1-50; defaults to 20. Descendants do not consume the limit. */
   limit?: number;
-  /** First-page reply anchor; cannot be combined with cursor. */
+  /** First-page anchor at any depth; returns its top-level group. Cannot be combined with cursor. */
   anchorReplyId?: string;
   /** Reuse the original session and viewerToken when navigating or paging. */
   sessionId?: string;
@@ -1679,6 +1679,12 @@ export interface MobileCreateFeedCommentParams extends MobileSignedRequestParams
    * Omit or pass `[]` when none; images cannot replace the required nonblank text.
    */
   imageIds?: string[];
+  /**
+   * Up to ten original HTTP/HTTPS URLs in display order, independent of the nine upload slots.
+   * No whitespace or control characters. Omit or pass []; null is invalid. Preserve URL spelling,
+   * order, and field presence for retries: omission and [] produce different signing hashes.
+   */
+  imageUrls?: string[];
 }
 
 /** Parameters for setting or cancelling a signed user's like. */
@@ -1689,22 +1695,13 @@ export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
   isLiked: boolean;
 }
 
-/**
- * Unsigned detail-visit report. Call after the primary detail target is shown in the foreground,
- * using the same {@link GetMobileFeedItemParams.viewEventId} previously sent to `getFeedItem`.
- */
+/** Unsigned batch view report, independent of reading sessions and prior detail reads. */
 export interface MobileRecordFeedViewsParams {
-  /** Original reading session returned by the detail read. */
-  sessionId: string;
-  /** Original opaque browsing credential from that read session. */
-  viewerToken: string;
   /**
-   * Detail-visit event UUID registered on the preceding feed_item call.
-   * Reuse across retries for the same visit; generate a new UUID only after leaving and re-entering.
+   * 1–50 canonical lowercase item UUIDs before deduplication. Posts, trade cards, comments, and replies
+   * may be mixed. Same-request duplicates count once; repeating the request counts again.
    */
-  viewEventId: string;
-  /** Exactly one fully delivered, readable detail-target item UUID. */
-  itemId: string;
+  itemIds: string[];
 }
 
 /** Parameters for full position history, not just published feed items. */
@@ -1719,6 +1716,24 @@ export interface GetMobilePositionHistoryParams extends MobileSocialFeedReadPara
   limit?: number;
   /** History session; do not substitute a feed session. */
   sessionId?: string;
+}
+
+/** Parameters for the most recent 500 actions, without pagination or authored content. */
+export interface GetMobilePositionHistoryAllParams extends MobileSocialFeedReadParams {
+  /** Lifecycle UUID. */
+  positionId: string;
+}
+
+/** Parameters for published position thoughts containing both nonblank text and a saved drawing. */
+export interface GetMobilePositionThoughtsParams extends MobileSocialFeedReadParams {
+  /** Lifecycle UUID; reopening a position creates a different lifecycle. */
+  positionId: string;
+  /** Page size, 1-50; defaults to 20 and must remain unchanged across pages. */
+  limit?: number;
+  /** Original thoughts session; cannot be reused from history or feed queries. */
+  sessionId?: string;
+  /** Previous nextCursor; requires the original session and viewerToken. */
+  cursor?: string;
 }
 
 /** Counts across the authorized position history. */
@@ -1839,14 +1854,22 @@ export interface MobileSocialFeedDrawingMutationResult {
   drawing: MobileSocialFeedDrawing;
 }
 
-/** Comment thread page, including both directions around an anchor. */
+/** Top-level comment and all readable descendants from the thread snapshot, without recursive groups. */
+export interface MobileSocialFeedCommentGroup extends MobileSocialFeedReply {
+  /** Flat descendants in server order: creation time ascending, then depth and UUID. Empty when none. */
+  replies: MobileSocialFeedReply[];
+}
+
+/** Comment-group page, including both directions around an anchor at any depth. */
 export interface MobileSocialFeedCommentsPage {
   /** Requested anchor, or null when reading without one. */
   anchorReplyId: string | null;
-  /** Readable replies in service order. */
-  comments: MobileSocialFeedReply[];
-  /** Total readable comment count. */
+  /** Top-level comments, newest first, each with its complete readable descendants; never split a group. */
+  comments: MobileSocialFeedCommentGroup[];
+  /** All readable replies in the thread snapshot, including descendants; not just this page. */
   totalCount: number;
+  /** All readable top-level comments in the thread snapshot; not just this page. */
+  topLevelCount: number;
   /** Forward cursor, or null. */
   nextCursor: string | null;
   /** Backward cursor, or null. */
@@ -1875,16 +1898,10 @@ export interface MobileSocialFeedLikeResult {
   version: string;
 }
 
-/** Exposure deduplication result for the current UTC day. */
-export interface MobileSocialFeedViewsResult {
-  /** Newly counted item UUIDs. */
-  acceptedItemIds: string[];
-  /** Already counted item UUIDs. */
-  duplicateItemIds: string[];
-}
-
 /** Full position history and viewing-account trading hints. */
 export interface MobileSocialFeedPositionHistory {
+  /** Current position owner; never inferred from the viewer. */
+  owner: MobileSocialFeedAuthor;
   /** Position and additional history metrics. */
   position: MobileSocialFeedPositionHistoryCard;
   /** Whole-history counts. */
@@ -1946,4 +1963,22 @@ export interface MobileSocialFeedMentionParams extends Omit<
 > {
   /** Mentioned identity; serialized to bytes32 for signing. */
   subaccount: Subaccount;
+}
+
+/** Published position thought with nonblank text and a complete saved drawing. */
+export type MobileSocialFeedPositionThought = MobileSocialFeedHistoryTake & {
+  /** Always true for this endpoint; uploaded or external images alone do not qualify. */
+  hasAnalysis: true;
+  /** Parsed current drawing; saved data does not necessarily contain visible strokes. */
+  drawing: MobileSocialFeedDrawing;
+};
+
+/** Thoughts in descending drawing creation time and item UUID order; no 500-item total cap. */
+export interface MobileSocialFeedPositionThoughtsPage {
+  /** Complete content in server order; never reorder by display time. */
+  items: MobileSocialFeedPositionThought[];
+  /** Null only at the directory end; an empty page can still have a cursor. */
+  nextCursor: string | null;
+  /** Independent position session; newly published content requires a refresh. */
+  readSession: MobileSocialFeedReadSession;
 }

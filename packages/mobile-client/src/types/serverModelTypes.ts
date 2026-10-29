@@ -592,21 +592,12 @@ export interface MobileServerSocialFeedCommentPreview {
   items: MobileServerSocialFeedReply[];
   /** Comment count. */
   total_count: number;
-  /** Comment cursor, if available. */
+  /** Opens the first complete group page in the same snapshot; do not prepend preview items. */
   next_cursor: string | null;
 }
 
-/** Exposure requirements associated with a reading session. */
-export interface MobileServerSocialFeedViewTracking {
-  /**
-   * Detail-visit exposure: report the primary detail target after it is shown in the foreground.
-   * List visible-ratio / dwell thresholds are no longer used.
-   */
-  mode: 'detail_visit';
-}
-
 /** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
-export interface MobileServerSocialFeedImage {
+export interface MobileServerSocialFeedUploadedImage {
   /** Image UUID. */
   image_id: string;
   /** Backend path for the original image bytes. */
@@ -622,6 +613,17 @@ export interface MobileServerSocialFeedImage {
   /** Always-present thumbnail (longest edge ≤ 512, never upscaled). */
   thumbnail: MobileServerSocialFeedImageThumbnail;
 }
+
+/** External image loaded directly from its URL without Mobile session headers. */
+export interface MobileServerSocialFeedExternalImage {
+  /** Original HTTP/HTTPS URL; no upload metadata or thumbnail is provided. */
+  url: string;
+}
+
+/** Uploaded image metadata or an external URL; uploaded images precede external images. */
+export type MobileServerSocialFeedImage =
+  | MobileServerSocialFeedUploadedImage
+  | MobileServerSocialFeedExternalImage;
 
 /** Thumbnail metadata for an uploaded feed image. */
 export interface MobileServerSocialFeedImageThumbnail {
@@ -764,8 +766,6 @@ export interface MobileServerSocialFeedReadSession {
   mode: MobileSocialFeedReadSessionMode;
   /** Current idle expiration in Unix milliseconds; legitimate session requests renew it. */
   expires_at_ms: number;
-  /** Visibility requirements for explicit exposure reporting. */
-  view_tracking: MobileServerSocialFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   update_cursor: string | null;
   /** Credential for this reading session. Do not log or cache publicly. */
@@ -954,6 +954,12 @@ export interface MobileServerSocialFeedReply extends MobileServerSocialFeedItemB
   original: MobileServerSocialFeedCompactCard;
   /** Reply interaction state. */
   interaction: MobileServerSocialFeedInteraction;
+}
+
+/** Top-level comment and all readable descendants from the same thread snapshot. */
+export interface MobileServerSocialFeedCommentGroup extends MobileServerSocialFeedReply {
+  /** Flat descendants in creation-time, depth, then UUID order; empty when none. */
+  replies: MobileServerSocialFeedReply[];
 }
 
 /** Current eligibility hints; actual writes still recheck the signed author. */

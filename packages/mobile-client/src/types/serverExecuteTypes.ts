@@ -6,9 +6,9 @@ import {
 import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedDrawing,
-  MobileServerSocialFeedImage,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedReply,
+  MobileServerSocialFeedUploadedImage,
 } from './serverModelTypes';
 import { MobileServerNotificationSettingsV2Response } from './serverQueryTypes';
 import {
@@ -85,7 +85,7 @@ export interface MobileServerAvatarUploadResponse {
 /** Ready image returned by a direct multipart upload. */
 export interface MobileServerSocialFeedImageUploadResponse {
   /** Ready image metadata, including original and thumbnail paths. */
-  image: MobileServerSocialFeedImage;
+  image: MobileServerSocialFeedUploadedImage;
 }
 
 /**
@@ -177,14 +177,6 @@ export interface MobileServerSocialFeedLikeResponse {
   version: string;
 }
 
-/** Exposure counts deduplicated by browsing credential, item, and UTC day. */
-export interface MobileServerSocialFeedViewsResponse {
-  /** Newly counted items. */
-  accepted_item_ids: string[];
-  /** Already counted items. */
-  duplicate_item_ids: string[];
-}
-
 /** Page lease result; this response does not carry as_of_ms. */
 export interface MobileServerSocialFeedPresenceResponse {
   /** Active visitor count. */
@@ -205,8 +197,8 @@ export interface MobileServerPublicExecuteResponseByType {
   unregister_expo_token: MobileServerEmptyExecuteResponse;
   /** Preference updates return only the success envelope. */
   update_preferences: MobileServerEmptyExecuteResponse;
-  /** Exposure deduplication result. */
-  record_feed_views: MobileServerSocialFeedViewsResponse;
+  /** Batch views return only status; no per-target result or count. */
+  record_feed_views: MobileServerEmptyExecuteResponse;
   /** Page lease result. */
   position_presence: MobileServerSocialFeedPresenceResponse;
 }

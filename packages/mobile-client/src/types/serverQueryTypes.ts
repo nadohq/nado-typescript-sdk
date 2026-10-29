@@ -15,9 +15,11 @@ import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCohort,
+  MobileServerSocialFeedCommentGroup,
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedEstimatedLiquidationLine,
   MobileServerSocialFeedHistorySummary,
+  MobileServerSocialFeedHistoryTake,
   MobileServerSocialFeedItem,
   MobileServerSocialFeedItemPatch,
   MobileServerSocialFeedMarket,
@@ -25,7 +27,6 @@ import {
   MobileServerSocialFeedPositionPatch,
   MobileServerSocialFeedPublishablePosition,
   MobileServerSocialFeedReadSession,
-  MobileServerSocialFeedReply,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
   MobileSocialFeedActionResolution,
@@ -266,6 +267,10 @@ export interface MobileServerPublicQueryResponseByType {
   feed_comments: MobileServerSocialFeedCommentsResponse;
   /** Full lifecycle history. */
   position_history: MobileServerSocialFeedPositionHistoryResponse;
+  /** Most recent 500 actions, without pagination or authored content. */
+  position_history_all: MobileServerSocialFeedPositionHistoryResponse;
+  /** Published nonblank text with complete drawings. */
+  position_thoughts: MobileServerSocialFeedPositionThoughtsResponse;
   /** Candle page and markers. */
   position_chart: MobileServerSocialFeedPositionChartResponse;
   /** Read-only watcher observation. */
@@ -354,10 +359,12 @@ export interface MobileServerSocialFeedDrawingResponse {
 
 /** Comment thread, including bidirectional pagination around an optional anchor. */
 export interface MobileServerSocialFeedCommentsResponse {
-  /** Readable comments. */
-  comments: MobileServerSocialFeedReply[];
-  /** Total readable count. */
+  /** Top-level comments, newest first, each with all readable descendants in the snapshot. */
+  comments: MobileServerSocialFeedCommentGroup[];
+  /** All readable replies across the thread snapshot, including descendants. */
   total_count: number;
+  /** All readable top-level comments across the thread snapshot. */
+  top_level_count: number;
   /** Forward cursor. */
   next_cursor: string | null;
   /** Backward cursor. */
@@ -370,6 +377,8 @@ export interface MobileServerSocialFeedCommentsResponse {
 
 /** Full position history with additional metrics and trusted trading hints. */
 export interface MobileServerSocialFeedPositionHistoryResponse {
+  /** Current position owner. */
+  owner: MobileServerSocialFeedAuthor;
   /** Current or frozen position and history metrics. */
   position: MobileServerSocialFeedPositionHistoryCard;
   /** Counts across the authorized history. */
@@ -410,4 +419,23 @@ export interface MobileServerSocialFeedWatchersResponse {
   watcher_preview: MobileServerSocialFeedAuthor[];
   /** Observation time. */
   as_of_ms: number;
+}
+
+/** Published position thought with nonblank text and a complete saved drawing. */
+export type MobileServerSocialFeedPositionThought =
+  MobileServerSocialFeedHistoryTake & {
+    /** Always true for this endpoint; uploaded or external images alone do not qualify. */
+    has_analysis: true;
+    /** Parsed current drawing; saved data does not necessarily contain visible strokes. */
+    drawing: MobileServerSocialFeedDrawing;
+  };
+
+/** Thoughts in descending drawing creation time and item UUID order; no 500-item total cap. */
+export interface MobileServerSocialFeedPositionThoughtsResponse {
+  /** Complete content in server order; never reorder by display time. */
+  items: MobileServerSocialFeedPositionThought[];
+  /** Null only at the directory end; an empty page can still have a cursor. */
+  next_cursor: string | null;
+  /** Independent position session; newly published content requires a refresh. */
+  read_session: MobileServerSocialFeedReadSession;
 }

@@ -35,7 +35,6 @@ import {
   mapMobileSocialFeedCommentsPage,
   mapMobileSocialFeedDrawingMutationResult,
   mapMobileSocialFeedDrawingResult,
-  mapMobileSocialFeedImage,
   mapMobileSocialFeedItem,
   mapMobileSocialFeedItemResponse,
   mapMobileSocialFeedLikeResult,
@@ -46,12 +45,13 @@ import {
   mapMobileSocialFeedPositionHistory,
   mapMobileSocialFeedPositionResolutionResult,
   mapMobileSocialFeedPositionsPage,
+  mapMobileSocialFeedPositionThoughts,
   mapMobileSocialFeedPresence,
   mapMobileSocialFeedRankedPage,
   mapMobileSocialFeedReadParamsToServer,
   mapMobileSocialFeedTopTradersPage,
   mapMobileSocialFeedUpdates,
-  mapMobileSocialFeedViewsResult,
+  mapMobileSocialFeedUploadedImage,
   mapMobileSocialFeedWatchers,
 } from './dataMappers';
 import {
@@ -82,7 +82,9 @@ import {
   GetMobileNotificationSubscriptionsParams,
   GetMobilePositionChartParams,
   GetMobilePositionFeedParams,
+  GetMobilePositionHistoryAllParams,
   GetMobilePositionHistoryParams,
+  GetMobilePositionThoughtsParams,
   GetMobilePositionWatchersParams,
   GetMobileProfileFeedParams,
   GetMobileProfilesParams,
@@ -128,7 +130,6 @@ import {
   MobileSocialFeedCommentsPage,
   MobileSocialFeedDrawingMutationResult,
   MobileSocialFeedDrawingResult,
-  MobileSocialFeedImage,
   MobileSocialFeedItem,
   MobileSocialFeedItemResponse,
   MobileSocialFeedLikeResult,
@@ -137,11 +138,12 @@ import {
   MobileSocialFeedPositionHistory,
   MobileSocialFeedPositionResolutionResult,
   MobileSocialFeedPositionsPage,
+  MobileSocialFeedPositionThoughtsPage,
   MobileSocialFeedPresence,
   MobileSocialFeedRankedPage,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedUpdates,
-  MobileSocialFeedViewsResult,
+  MobileSocialFeedUploadedImage,
   MobileSocialFeedWatchers,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
@@ -512,9 +514,8 @@ export class MobileClient {
   /**
    * Reads one item visible to viewAs, including that account's own hidden content.
    * Creates an item session directly when sessionId is omitted.
-   * Pass {@link GetMobileFeedItemParams.viewEventId} when the user navigates into the detail so the
-   * subsequent {@link recordFeedViews} call can count that visit; omit it for prefetch.
-   * @param params - Item UUID, optional detail-visit event, preview limit, and optional existing session/read identity.
+   * Reading does not increment views; use {@link recordFeedViews} independently when reporting views.
+   * @param params - Item UUID, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
    * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
    * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
@@ -525,7 +526,6 @@ export class MobileClient {
     const body: MobileServerPublicQueryRequest<'feed_item'> = {
       type: 'feed_item',
       item_id: params.itemId,
-      view_event_id: params.viewEventId,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
       ...mapMobileSocialFeedReadParamsToServer(params),
@@ -696,7 +696,7 @@ export class MobileClient {
 
   /**
    * Prepares a protected image request for native image components without downloading or encoding bytes.
-   * Does not count as a detail visit or recorded view.
+   * Does not increment view counts.
    * @param params - Image path from metadata plus the original session credentials.
    * @returns Absolute URL and headers; pass them as the image source's URI and headers.
    */
@@ -714,7 +714,7 @@ export class MobileClient {
 
   /**
    * Fetches protected feed image bytes using the reading session that fully delivered the parent item.
-   * Does not count as a detail visit or recorded view.
+   * Does not increment view counts.
    * @param params - Image path from metadata plus the original session credentials.
    * @returns Raw image bytes.
    * @throws {MobileServerFailureError} On session, permission, or availability errors.
@@ -727,11 +727,14 @@ export class MobileClient {
   }
 
   /**
-   * Reads a comment thread with an optional anchor and bidirectional pagination.
+   * Reads top-level comment groups with all readable descendants and bidirectional pagination.
+   * The limit counts groups, not descendants. Groups are newest first; their flat replies are oldest first,
+   * with depth then UUID breaking timestamp ties. An anchor at any depth selects its top-level group.
+   * Preview cursors open the first complete group page in the same snapshot; do not prepend preview items.
    * Independent reads create a public-only session; reused sessions retain their original scope.
-   * @param params - Root item, optional anchor or cursor (mutually exclusive), page size, and read perspective.
+   * @param params - Root item, optional anchor or cursor (mutually exclusive), group limit, and read perspective.
    * Paging requires the original session and viewer token.
-   * @returns Replies, total count, forward and backward cursors, the anchor, and the actual reading session.
+   * @returns Complete comment groups, whole-thread reply and top-level counts, cursors, anchor, and session.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or unavailable data. Restart pagination with a new session after expiry; do not reuse the old cursor.
    */
@@ -757,7 +760,8 @@ export class MobileClient {
    * the original position session and viewer token, not a feed session.
    * @returns Position metrics, ordered action/take history, summary, trading hints, cursor, and reading session.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
-   * or unavailable source data. Restart with a new position session after expiry.
+   * unavailable source data, or SOCIAL_FEED_HISTORY_TOO_LARGE when the initial directory exceeds capacity.
+   * Restart with a new position session after expiry.
    * @throws {MobileUnsupportedFeedItemError} If a timeline entry or take has an unsupported kind.
    */
   async getPositionHistory(
@@ -773,6 +777,53 @@ export class MobileClient {
       ...mapMobileSocialFeedReadParamsToServer(params),
     };
     return mapMobileSocialFeedPositionHistory(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads the most recent 500 lifecycle actions, without authored text, drawings, or images.
+   * Creates a new position session on every call. A null nextCursor means no pagination, not complete
+   * history; use getPositionHistory with a fresh session for the full lifecycle. takeCount is always zero.
+   * @param params - Position and read perspective; an existing viewer token may be reused.
+   * @returns Position metrics, owner, recent actions, response-scope counts, trading hints, and a new session.
+   * @throws {MobileServerFailureError} On invalid parameters, inaccessible content, unavailable data,
+   * or SOCIAL_FEED_HISTORY_TOO_LARGE when the initial directory exceeds capacity.
+   * @throws {MobileUnsupportedFeedItemError} If a timeline entry or take has an unsupported kind.
+   */
+  async getPositionHistoryAll(
+    params: GetMobilePositionHistoryAllParams,
+  ): Promise<MobileSocialFeedPositionHistory> {
+    const body: MobileServerPublicQueryRequest<'position_history_all'> = {
+      type: 'position_history_all',
+      position_id: params.positionId,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedPositionHistory(await this.publicQuery(body));
+  }
+
+  /**
+   * Reads published position thoughts with both nonblank text and a saved drawing, without signing.
+   * Keeps descending drawing creation time / item UUID order; editing a drawing does not move the item.
+   * Continue until nextCursor is null, even after an empty page. There is no 500-item total cap.
+   * Keep positionId, limit, sessionId, and viewerToken unchanged when paging; omitted viewAs inherits
+   * the session. History/feed sessions cannot be substituted. Refresh to include newly eligible content.
+   * @param params - Position, page size, read perspective, and original thoughts-session credentials for paging.
+   * @returns Complete thoughts and drawings in server order, a continuation cursor, and the reading session.
+   * @throws {MobileServerFailureError} On invalid parameters, session mismatch/expiry, inaccessible content,
+   * unavailable source data, or SOCIAL_FEED_HISTORY_TOO_LARGE when the initial directory exceeds capacity.
+   * @throws {MobileUnsupportedFeedItemError} If an item is not a post or trade card.
+   */
+  async getPositionThoughts(
+    params: GetMobilePositionThoughtsParams,
+  ): Promise<MobileSocialFeedPositionThoughtsPage> {
+    const body: MobileServerPublicQueryRequest<'position_thoughts'> = {
+      type: 'position_thoughts',
+      position_id: params.positionId,
+      limit: params.limit,
+      session_id: params.sessionId,
+      cursor: params.cursor,
+      ...mapMobileSocialFeedReadParamsToServer(params),
+    };
+    return mapMobileSocialFeedPositionThoughts(await this.publicQuery(body));
   }
 
   /**
@@ -968,28 +1019,23 @@ export class MobileClient {
   }
 
   /**
-   * Reports a detail visit without signing. Feed-list card impressions and previews do not count.
-   * After the primary detail target is shown in the foreground, send the same viewEventId previously
-   * registered through {@link getFeedItem}, together with that response's sessionId and viewerToken.
-   * Reuse the event ID on retries for the same visit; generate a new one only after leaving and re-entering.
-   * @param params - Original reading session and viewer token, the registered detail-visit event, and exactly
-   * one fully delivered, readable detail-target item ID.
-   * @returns Separate lists of newly accepted and already-counted item IDs for that event.
-   * @throws {MobileServerFailureError} On invalid parameters, an unregistered or rebound event
-   * (`SOCIAL_FEED_VIEW_EVENT_REBOUND`), session mismatch or expiry, or an ineligible item.
-   * Acquire a new session after expiry, re-register the same event via getFeedItem, then retry.
+   * Reports views for posts, trade cards, comments, and replies without signing or a reading session.
+   * Duplicate IDs count once within a request; another request increments them again. Only supplied IDs
+   * count, not their parents. Missing, deleted, unpublished, excluded, or unsupported targets are skipped.
+   * A successful response does not identify skipped items. Read interaction.viewCount for current counts.
+   * This operation is not idempotent: retrying an uncertain result may count twice. No automatic retry is made.
+   * @param params - itemIds: 1–50 canonical lowercase item UUIDs, including any same-request duplicates.
+   * @returns Only the success status, even when every target was skipped.
+   * @throws {MobileServerFailureError} On invalid parameters, disabled writes, rate limiting, or unavailable data.
    */
   async recordFeedViews(
     params: MobileRecordFeedViewsParams,
-  ): Promise<MobileSocialFeedViewsResult> {
+  ): Promise<MobileServerSuccessResponse> {
     const body: MobileServerPublicExecuteRequest<'record_feed_views'> = {
       type: 'record_feed_views',
-      session_id: params.sessionId,
-      viewer_token: params.viewerToken,
-      view_event_id: params.viewEventId,
-      item_ids: [params.itemId],
+      item_ids: params.itemIds,
     };
-    return mapMobileSocialFeedViewsResult(await this.publicExecute(body));
+    return this.publicExecute(body);
   }
 
   /**
@@ -1292,6 +1338,7 @@ export class MobileClient {
       mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
       drawing_data_json: params.drawingDataJson,
       image_ids: params.imageIds,
+      image_urls: params.imageUrls,
     });
     return mapMobileSocialFeedItem((await this.execute(request)).item);
   }
@@ -1310,7 +1357,7 @@ export class MobileClient {
    */
   async createFeedPostImageUpload(
     params: MobileCreateFeedImageUploadParams,
-  ): Promise<MobileSocialFeedImage> {
+  ): Promise<MobileSocialFeedUploadedImage> {
     return this.createFeedImageUpload('create_feed_post_image_uploads', params);
   }
 
@@ -1327,7 +1374,7 @@ export class MobileClient {
    */
   async createFeedCommentImageUpload(
     params: MobileCreateFeedImageUploadParams,
-  ): Promise<MobileSocialFeedImage> {
+  ): Promise<MobileSocialFeedUploadedImage> {
     return this.createFeedImageUpload(
       'create_feed_comment_image_uploads',
       params,
@@ -1406,6 +1453,7 @@ export class MobileClient {
       mentions: params.mentions.map(mapMobileSocialFeedMentionToServer),
       attached_position_id: params.attachedPositionId,
       image_ids: params.imageIds,
+      image_urls: params.imageUrls,
     });
     return mapMobileSocialFeedCommentResult(await this.execute(request));
   }
@@ -1562,7 +1610,7 @@ export class MobileClient {
       | 'create_feed_post_image_uploads'
       | 'create_feed_comment_image_uploads',
     params: MobileCreateFeedImageUploadParams,
-  ): Promise<MobileSocialFeedImage> {
+  ): Promise<MobileSocialFeedUploadedImage> {
     const nonce = params.nonce ?? getMobileNonce();
     // Match the signed body's field lengths so oversized requests fail before prompting the wallet.
     const sizePayload = {
@@ -1586,7 +1634,7 @@ export class MobileClient {
       },
     );
     const data = await this.execute(request, params.fileBytes);
-    return mapMobileSocialFeedImage(data.image);
+    return mapMobileSocialFeedUploadedImage(data.image);
   }
 
   private checkFeedImageRequestSize(byteLength: number): void {

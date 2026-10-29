@@ -1,5 +1,6 @@
 import {
   getMobileNonce,
+  isMobileSocialFeedUploadedImage,
   MOBILE_ERROR_CODES,
   MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES,
   MobileClient,
@@ -132,6 +133,48 @@ void describe(
       );
     });
 
+    void test('rejects invalid new position queries without a wallet', async () => {
+      const positionId = randomUUID();
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionThoughts({ positionId, limit: 51 }),
+        MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+      );
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionThoughts({ positionId }),
+        MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+      );
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionHistoryAll({ positionId }),
+        MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE,
+      );
+    });
+
+    void test('reports an unsigned batch without a session and rejects invalid batch sizes', async () => {
+      const missingId = randomUUID();
+      assert.deepEqual(
+        await mobile.recordFeedViews({
+          itemIds: [missingId, missingId, randomUUID()],
+        }),
+        { status: 'success' },
+      );
+      assert.deepEqual(
+        await mobile.recordFeedViews({
+          itemIds: Array.from({ length: 50 }, () => randomUUID()),
+        }),
+        { status: 'success' },
+      );
+      for (const itemIds of [
+        [],
+        Array.from({ length: 51 }, () => missingId),
+        ['invalid-uuid'],
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () => mobile.recordFeedViews({ itemIds }),
+          MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+        );
+      }
+    });
+
     void test('reads comment threads, anchors, pagination, and drawings using an existing item session', async (context) => {
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
       const item = page.items.find(
@@ -160,9 +203,27 @@ void describe(
       assert.equal(comments.readSession.viewerToken, session.viewerToken);
       assert.equal(comments.anchorReplyId, null);
       assertNonNegativeInteger(comments.totalCount, 'comments.totalCount');
+      assertNonNegativeInteger(
+        comments.topLevelCount,
+        'comments.topLevelCount',
+      );
+      assert.ok(comments.comments.length <= 1);
+      assert.ok(comments.totalCount >= comments.topLevelCount);
       for (const comment of comments.comments) {
         assert.equal(comment.kind, 'reply');
         assert.equal(comment.rootItemId, rootItemId);
+        assert.equal(comment.replyToItemId, undefined);
+        assert.equal(comment.replyToAuthor, null);
+        assert.ok(Array.isArray(comment.replies));
+        const ancestors = new Set([comment.id]);
+        for (const descendant of comment.replies) {
+          assert.equal(descendant.rootItemId, rootItemId);
+          assert.ok(
+            descendant.replyToItemId && ancestors.has(descendant.replyToItemId),
+          );
+          assert.ok(!Object.hasOwn(descendant, 'replies'));
+          ancestors.add(descendant.id);
+        }
         assertEnumMember(
           comment.attachmentStatus,
           ['none', 'visible', 'unavailable'],
@@ -211,7 +272,12 @@ void describe(
         assert.ok(Object.hasOwn(drawing.drawing, 'data'));
       const updates = await mobile.getFeedUpdates({
         ...session,
-        visibleItemIds: comments.comments.map((comment) => comment.id),
+        visibleItemIds: comments.comments
+          .flatMap((group) => [
+            group.id,
+            ...group.replies.map((reply) => reply.id),
+          ])
+          .slice(0, 50),
         visiblePositionIds: [],
         viewportRevision: 0,
         requestSeq: 1,
@@ -244,6 +310,64 @@ void describe(
         tradingContext: history.tradingContext,
       });
       assert.equal(history.readSession.mode, 'position');
+      assert.ok(
+        history.owner,
+        'Updated history contract must include the owner',
+      );
+      assertNonEmptyString(
+        history.owner.subaccount,
+        'history.owner.subaccount',
+      );
+      const recent = await mobile.getPositionHistoryAll({ positionId, viewAs });
+      assert.ok(
+        recent.owner,
+        'Updated recent-actions contract must include the owner',
+      );
+      assert.equal(recent.owner.subaccount, history.owner.subaccount);
+      assert.equal(recent.readSession.mode, 'position');
+      assert.equal(recent.nextCursor, null);
+      assert.ok(recent.timeline.length <= 500);
+      assert.equal(recent.summary.actionCount, recent.timeline.length);
+      assert.equal(recent.summary.takeCount, 0);
+      for (const entry of recent.timeline) {
+        assert.equal(entry.kind, 'action');
+        assert.equal(entry.relatedTake, null);
+      }
+      const thoughts = await mobile.getPositionThoughts({
+        positionId,
+        viewAs,
+        limit: 2,
+      });
+      assert.equal(thoughts.readSession.mode, 'position');
+      assert.ok(thoughts.items.length <= 2);
+      for (const thought of thoughts.items) {
+        assert.ok(thought.kind === 'post' || thought.kind === 'trade_card');
+        assert.equal(thought.position.positionId, positionId);
+        assert.match(thought.text, /[^\p{White_Space}]/u);
+        assert.equal(thought.hasAnalysis, true);
+        assert.ok(thought.drawing !== null);
+        assert.ok(Object.hasOwn(thought.drawing, 'data'));
+      }
+      if (thoughts.nextCursor !== null) {
+        const next = await mobile.getPositionThoughts({
+          positionId,
+          limit: 2,
+          ...getSessionParams(thoughts.readSession),
+          cursor: thoughts.nextCursor,
+        });
+        assert.equal(
+          next.readSession.sessionId,
+          thoughts.readSession.sessionId,
+        );
+        assert.equal(
+          next.readSession.viewerToken,
+          thoughts.readSession.viewerToken,
+        );
+      }
+      await assertRejectsWithMobileErrorCode(
+        () => mobile.getPositionThoughts({ positionId, limit: 2, ...session }),
+        MOBILE_ERROR_CODES.SOCIAL_FEED_SESSION_MISMATCH,
+      );
       assertPosition(history.position);
       assertNonNegativeInteger(
         history.summary.actionCount,
@@ -497,11 +621,21 @@ void describe(
         text: 'SDK integration verification',
         mentions: [],
         imageIds: [postImage.imageId],
+        imageUrls: [
+          'https://example.com/sdk-post-1.png',
+          'https://example.com/sdk-post-2.png',
+        ],
       };
       const post = await tc.mobile.createFeedPost(params);
       assert.ok(post.kind === 'post');
       assert.deepEqual(
-        post.images.map((image) => image.imageId),
+        post.images.slice(1),
+        params.imageUrls.map((url) => ({ url })),
+      );
+      assert.deepEqual(
+        post.images
+          .filter(isMobileSocialFeedUploadedImage)
+          .map((image) => image.imageId),
         params.imageIds,
       );
       assert.equal((await tc.mobile.createFeedPost(params)).id, post.id);
@@ -531,6 +665,17 @@ void describe(
         dataJson: '0',
       });
       assert.equal(updated.drawing.data, 0);
+      const thoughts = await mobile.getPositionThoughts({
+        positionId: params.positionId,
+        viewAs,
+      });
+      const savedThought = thoughts.items.find((item) => item.id === post.id);
+      assert.ok(savedThought);
+      assert.equal(savedThought.drawing.data, 0);
+      assert.equal(
+        savedThought.drawing.createdAtMs,
+        created.drawing.createdAtMs,
+      );
       assert.equal(
         (await mobile.getFeedChartDrawing({ itemId: post.id, viewAs })).drawing
           ?.data,
@@ -547,11 +692,18 @@ void describe(
         text: 'SDK comment verification',
         mentions: [],
         imageIds: [commentImage.imageId],
+        imageUrls: ['https://example.com/sdk-comment.png'],
       };
       const comment = await tc.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
       assert.deepEqual(
-        comment.comment.images.map((image) => image.imageId),
+        comment.comment.images.slice(1),
+        commentParams.imageUrls.map((url) => ({ url })),
+      );
+      assert.deepEqual(
+        comment.comment.images
+          .filter(isMobileSocialFeedUploadedImage)
+          .map((image) => image.imageId),
         commentParams.imageIds,
       );
       assert.equal(
@@ -576,14 +728,13 @@ void describe(
         isLiked: false,
       });
       assert.equal(unliked.isLiked, false);
-      const viewEventId = randomUUID();
       const detail = await mobile.getFeedItem({
         itemId: post.id,
-        viewEventId,
         viewAs,
       });
       const session = getSessionParams(detail.readSession);
       assert.ok(detail.item.kind === 'post');
+      assert.ok(isMobileSocialFeedUploadedImage(detail.item.images[0]));
       const imageRequest = mobile.getFeedImageRequest({
         ...session,
         path: detail.item.images[0].url,
@@ -594,7 +745,9 @@ void describe(
       });
       assert.deepEqual(new Uint8Array(imageResponse.data), fileBytes);
       assert.deepEqual(
-        detail.item.images.map((image) => image.imageId),
+        detail.item.images
+          .filter(isMobileSocialFeedUploadedImage)
+          .map((image) => image.imageId),
         params.imageIds,
       );
       assert.deepEqual(
@@ -617,6 +770,7 @@ void describe(
         viewAs,
       });
       assert.ok(commentDetail.item.kind === 'reply');
+      assert.ok(isMobileSocialFeedUploadedImage(commentDetail.item.images[0]));
       const commentSession = getSessionParams(commentDetail.readSession);
       assert.deepEqual(
         await mobile.getFeedImageBytes({
@@ -633,22 +787,75 @@ void describe(
           })
         ).byteLength > 0,
       );
-      assert.equal(detail.readSession.viewTracking.mode, 'detail_visit');
-      const recorded = await mobile.recordFeedViews({
-        ...session,
-        viewEventId,
-        itemId: post.id,
+      const child = await tc.mobile.createFeedComment({
+        ...signed,
+        clientRequestId: randomUUID(),
+        rootItemId: post.id,
+        replyToItemId: comment.comment.id,
+        text: 'SDK child reply',
+        mentions: [],
       });
-      assert.ok(
-        recorded.acceptedItemIds.includes(post.id) ||
-          recorded.duplicateItemIds.includes(post.id),
+      const grandchild = await tc.mobile.createFeedComment({
+        ...signed,
+        clientRequestId: randomUUID(),
+        rootItemId: post.id,
+        replyToItemId: child.comment.id,
+        text: 'SDK grandchild reply',
+        mentions: [],
+      });
+      const grouped = await mobile.getFeedComments({
+        rootItemId: post.id,
+        ...session,
+        limit: 1,
+        anchorReplyId: grandchild.comment.id,
+      });
+      assert.equal(grouped.anchorReplyId, grandchild.comment.id);
+      assert.equal(grouped.comments.length, 1);
+      assert.equal(grouped.comments[0].id, comment.comment.id);
+      assert.deepEqual(
+        grouped.comments[0].replies.map((reply) => reply.id),
+        [child.comment.id, grandchild.comment.id],
       );
-      const duplicate = await mobile.recordFeedViews({
-        ...session,
-        viewEventId,
-        itemId: post.id,
-      });
-      assert.ok(duplicate.duplicateItemIds.includes(post.id));
+      assert.deepEqual(
+        grouped.comments[0].replies.map((reply) => reply.replyToItemId),
+        [comment.comment.id, child.comment.id],
+      );
+      assert.ok(grouped.topLevelCount >= 1);
+      assert.ok(grouped.totalCount >= 3);
+
+      const reportedIds = [
+        post.id,
+        comment.comment.id,
+        child.comment.id,
+        child.comment.id,
+        grandchild.comment.id,
+      ];
+      const initialPostViews = detail.item.interaction.viewCount;
+      for (let increment = 1; increment <= 2; increment++) {
+        const recorded = await mobile.recordFeedViews({ itemIds: reportedIds });
+        assert.deepEqual(recorded, { status: 'success' });
+        const refreshedPost = await mobile.getFeedItem({
+          itemId: post.id,
+          ...session,
+        });
+        assert.ok(refreshedPost.item.kind === 'post');
+        assert.ok(
+          refreshedPost.item.interaction.viewCount >=
+            initialPostViews + increment,
+        );
+        const refreshedGroup = await mobile.getFeedComments({
+          rootItemId: post.id,
+          ...session,
+          limit: 1,
+          anchorReplyId: grandchild.comment.id,
+        });
+        for (const reply of [
+          refreshedGroup.comments[0],
+          ...refreshedGroup.comments[0].replies,
+        ]) {
+          assert.ok(reply.interaction.viewCount >= increment);
+        }
+      }
       debugPrint('Published content verification', {
         postId: post.id,
         commentId: comment.comment.id,
