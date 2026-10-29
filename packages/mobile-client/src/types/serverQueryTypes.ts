@@ -15,6 +15,7 @@ import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCohort,
+  MobileServerSocialFeedCommentGroup,
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedEstimatedLiquidationLine,
   MobileServerSocialFeedHistorySummary,
@@ -26,7 +27,6 @@ import {
   MobileServerSocialFeedPositionPatch,
   MobileServerSocialFeedPublishablePosition,
   MobileServerSocialFeedReadSession,
-  MobileServerSocialFeedReply,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
   MobileSocialFeedActionResolution,
@@ -359,10 +359,12 @@ export interface MobileServerSocialFeedDrawingResponse {
 
 /** Comment thread, including bidirectional pagination around an optional anchor. */
 export interface MobileServerSocialFeedCommentsResponse {
-  /** Readable comments. */
-  comments: MobileServerSocialFeedReply[];
-  /** Total readable count. */
+  /** Top-level comments, newest first, each with all readable descendants in the snapshot. */
+  comments: MobileServerSocialFeedCommentGroup[];
+  /** All readable replies across the thread snapshot, including descendants. */
   total_count: number;
+  /** All readable top-level comments across the thread snapshot. */
+  top_level_count: number;
   /** Forward cursor. */
   next_cursor: string | null;
   /** Backward cursor. */

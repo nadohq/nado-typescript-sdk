@@ -938,17 +938,8 @@ export interface MobileSocialFeedCommentPreview {
   items: MobileSocialFeedReply[];
   /** Comment count. */
   totalCount: number;
-  /** Comment cursor, if available. */
+  /** Opens the first complete group page in the same snapshot; do not prepend preview items. */
   nextCursor: string | null;
-}
-
-/** Exposure requirements associated with a reading session. */
-export interface MobileSocialFeedViewTracking {
-  /**
-   * Detail-visit exposure: report the primary detail target after it is shown in the foreground.
-   * List visible-ratio / dwell thresholds are no longer used.
-   */
-  mode: 'detail_visit';
 }
 
 /** Uploaded feed image metadata; bytes are fetched separately with the reading session. */
@@ -1120,8 +1111,6 @@ export interface MobileSocialFeedReadSession {
   mode: MobileSocialFeedReadSessionMode;
   /** Current idle expiration in Unix milliseconds; legitimate session requests renew it. */
   expiresAtMs: number;
-  /** Visibility requirements for explicit exposure reporting. */
-  viewTracking: MobileSocialFeedViewTracking;
   /** Initial update baseline, distinct from the page cursor. */
   updateCursor: string | null;
   /** Credential for this reading session. Do not log or cache publicly. */
@@ -1286,12 +1275,6 @@ export type GetMobilePositionFeedParams = MobileSocialFeedListParams &
 export type GetMobileFeedItemParams = MobileSocialFeedReadParams & {
   /** Target item UUID. */
   itemId: string;
-  /**
-   * Detail-visit event UUID generated once per real navigation into this item.
-   * Reuse the same value on retries for the same visit; omit for prefetch.
-   * Registering the event does not increment the view count by itself.
-   */
-  viewEventId?: string;
   /** Preview size, 0–3. */
   commentPreviewLimit?: number;
   /** Existing session authorized for the item. */
@@ -1669,9 +1652,9 @@ export interface GetMobileFeedCommentsParams extends MobileSocialFeedReadParams 
   rootItemId: string;
   /** Forward or backward opaque cursor from the same session. */
   cursor?: string;
-  /** Page size, 1-50; defaults to 20. */
+  /** Top-level group count, 1-50; defaults to 20. Descendants do not consume the limit. */
   limit?: number;
-  /** First-page reply anchor; cannot be combined with cursor. */
+  /** First-page anchor at any depth; returns its top-level group. Cannot be combined with cursor. */
   anchorReplyId?: string;
   /** Reuse the original session and viewerToken when navigating or paging. */
   sessionId?: string;
@@ -1712,22 +1695,13 @@ export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
   isLiked: boolean;
 }
 
-/**
- * Unsigned detail-visit report. Call after the primary detail target is shown in the foreground,
- * using the same {@link GetMobileFeedItemParams.viewEventId} previously sent to `getFeedItem`.
- */
+/** Unsigned batch view report, independent of reading sessions and prior detail reads. */
 export interface MobileRecordFeedViewsParams {
-  /** Original reading session returned by the detail read. */
-  sessionId: string;
-  /** Original opaque browsing credential from that read session. */
-  viewerToken: string;
   /**
-   * Detail-visit event UUID registered on the preceding feed_item call.
-   * Reuse across retries for the same visit; generate a new UUID only after leaving and re-entering.
+   * 1–50 canonical lowercase item UUIDs before deduplication. Posts, trade cards, comments, and replies
+   * may be mixed. Same-request duplicates count once; repeating the request counts again.
    */
-  viewEventId: string;
-  /** Exactly one fully delivered, readable detail-target item UUID. */
-  itemId: string;
+  itemIds: string[];
 }
 
 /** Parameters for full position history, not just published feed items. */
@@ -1880,14 +1854,22 @@ export interface MobileSocialFeedDrawingMutationResult {
   drawing: MobileSocialFeedDrawing;
 }
 
-/** Comment thread page, including both directions around an anchor. */
+/** Top-level comment and all readable descendants from the thread snapshot, without recursive groups. */
+export interface MobileSocialFeedCommentGroup extends MobileSocialFeedReply {
+  /** Flat descendants in server order: creation time ascending, then depth and UUID. Empty when none. */
+  replies: MobileSocialFeedReply[];
+}
+
+/** Comment-group page, including both directions around an anchor at any depth. */
 export interface MobileSocialFeedCommentsPage {
   /** Requested anchor, or null when reading without one. */
   anchorReplyId: string | null;
-  /** Readable replies in service order. */
-  comments: MobileSocialFeedReply[];
-  /** Total readable comment count. */
+  /** Top-level comments, newest first, each with its complete readable descendants; never split a group. */
+  comments: MobileSocialFeedCommentGroup[];
+  /** All readable replies in the thread snapshot, including descendants; not just this page. */
   totalCount: number;
+  /** All readable top-level comments in the thread snapshot; not just this page. */
+  topLevelCount: number;
   /** Forward cursor, or null. */
   nextCursor: string | null;
   /** Backward cursor, or null. */
@@ -1914,14 +1896,6 @@ export interface MobileSocialFeedLikeResult {
   likeCount: number;
   /** Item display version. */
   version: string;
-}
-
-/** Exposure deduplication result for the current UTC day. */
-export interface MobileSocialFeedViewsResult {
-  /** Newly counted item UUIDs. */
-  acceptedItemIds: string[];
-  /** Already counted item UUIDs. */
-  duplicateItemIds: string[];
 }
 
 /** Full position history and viewing-account trading hints. */

@@ -195,9 +195,9 @@ export interface MobileServerPublicQueryRequestByType {
     root_item_id: string;
     /** Thread cursor. */
     cursor?: string;
-    /** Page size, 1-50. */
+    /** Top-level group count, 1-50; descendants do not consume the limit. */
     limit?: number;
-    /** First-page anchor, mutually exclusive with cursor. */
+    /** Anchor at any depth selecting its top-level group; mutually exclusive with cursor. */
     anchor_reply_id?: string;
     /** Original reading session. */
     session_id?: string;
@@ -289,8 +289,6 @@ export interface MobileServerPublicQueryRequestByType {
   feed_item: MobileServerSocialFeedReadParams & {
     /** Target item UUID. */
     item_id: string;
-    /** Detail-visit event; omit for prefetch. Does not increment the count alone. */
-    view_event_id?: string;
     /** Preview size, 0-3. */
     comment_preview_limit?: number;
     /** Omit to create a new reading session. */
@@ -372,15 +370,9 @@ export interface MobileServerPublicExecuteRequestByType {
     settings: MobileServerNotificationSettings;
   };
 
-  /** Explicit detail-visit report using the original browsing credential. */
+  /** Independent unsigned batch view report; repeat requests increment again. */
   record_feed_views: {
-    /** Original reading session. */
-    session_id: string;
-    /** Original credential. */
-    viewer_token: string;
-    /** Detail-visit event previously registered on feed_item. */
-    view_event_id: string;
-    /** Exactly one fully delivered detail-target item. */
+    /** 1–50 canonical lowercase item UUIDs before deduplication; duplicates count once in this request. */
     item_ids: string[];
   };
   /** Per-page visitor lease; no wallet signature. */

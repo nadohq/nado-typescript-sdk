@@ -149,6 +149,32 @@ void describe(
       );
     });
 
+    void test('reports an unsigned batch without a session and rejects invalid batch sizes', async () => {
+      const missingId = randomUUID();
+      assert.deepEqual(
+        await mobile.recordFeedViews({
+          itemIds: [missingId, missingId, randomUUID()],
+        }),
+        { status: 'success' },
+      );
+      assert.deepEqual(
+        await mobile.recordFeedViews({
+          itemIds: Array.from({ length: 50 }, () => randomUUID()),
+        }),
+        { status: 'success' },
+      );
+      for (const itemIds of [
+        [],
+        Array.from({ length: 51 }, () => missingId),
+        ['invalid-uuid'],
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () => mobile.recordFeedViews({ itemIds }),
+          MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+        );
+      }
+    });
+
     void test('reads comment threads, anchors, pagination, and drawings using an existing item session', async (context) => {
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
       const item = page.items.find(
@@ -177,9 +203,27 @@ void describe(
       assert.equal(comments.readSession.viewerToken, session.viewerToken);
       assert.equal(comments.anchorReplyId, null);
       assertNonNegativeInteger(comments.totalCount, 'comments.totalCount');
+      assertNonNegativeInteger(
+        comments.topLevelCount,
+        'comments.topLevelCount',
+      );
+      assert.ok(comments.comments.length <= 1);
+      assert.ok(comments.totalCount >= comments.topLevelCount);
       for (const comment of comments.comments) {
         assert.equal(comment.kind, 'reply');
         assert.equal(comment.rootItemId, rootItemId);
+        assert.equal(comment.replyToItemId, undefined);
+        assert.equal(comment.replyToAuthor, null);
+        assert.ok(Array.isArray(comment.replies));
+        const ancestors = new Set([comment.id]);
+        for (const descendant of comment.replies) {
+          assert.equal(descendant.rootItemId, rootItemId);
+          assert.ok(
+            descendant.replyToItemId && ancestors.has(descendant.replyToItemId),
+          );
+          assert.ok(!Object.hasOwn(descendant, 'replies'));
+          ancestors.add(descendant.id);
+        }
         assertEnumMember(
           comment.attachmentStatus,
           ['none', 'visible', 'unavailable'],
@@ -228,7 +272,12 @@ void describe(
         assert.ok(Object.hasOwn(drawing.drawing, 'data'));
       const updates = await mobile.getFeedUpdates({
         ...session,
-        visibleItemIds: comments.comments.map((comment) => comment.id),
+        visibleItemIds: comments.comments
+          .flatMap((group) => [
+            group.id,
+            ...group.replies.map((reply) => reply.id),
+          ])
+          .slice(0, 50),
         visiblePositionIds: [],
         viewportRevision: 0,
         requestSeq: 1,
@@ -679,10 +728,8 @@ void describe(
         isLiked: false,
       });
       assert.equal(unliked.isLiked, false);
-      const viewEventId = randomUUID();
       const detail = await mobile.getFeedItem({
         itemId: post.id,
-        viewEventId,
         viewAs,
       });
       const session = getSessionParams(detail.readSession);
@@ -740,22 +787,75 @@ void describe(
           })
         ).byteLength > 0,
       );
-      assert.equal(detail.readSession.viewTracking.mode, 'detail_visit');
-      const recorded = await mobile.recordFeedViews({
-        ...session,
-        viewEventId,
-        itemId: post.id,
+      const child = await tc.mobile.createFeedComment({
+        ...signed,
+        clientRequestId: randomUUID(),
+        rootItemId: post.id,
+        replyToItemId: comment.comment.id,
+        text: 'SDK child reply',
+        mentions: [],
       });
-      assert.ok(
-        recorded.acceptedItemIds.includes(post.id) ||
-          recorded.duplicateItemIds.includes(post.id),
+      const grandchild = await tc.mobile.createFeedComment({
+        ...signed,
+        clientRequestId: randomUUID(),
+        rootItemId: post.id,
+        replyToItemId: child.comment.id,
+        text: 'SDK grandchild reply',
+        mentions: [],
+      });
+      const grouped = await mobile.getFeedComments({
+        rootItemId: post.id,
+        ...session,
+        limit: 1,
+        anchorReplyId: grandchild.comment.id,
+      });
+      assert.equal(grouped.anchorReplyId, grandchild.comment.id);
+      assert.equal(grouped.comments.length, 1);
+      assert.equal(grouped.comments[0].id, comment.comment.id);
+      assert.deepEqual(
+        grouped.comments[0].replies.map((reply) => reply.id),
+        [child.comment.id, grandchild.comment.id],
       );
-      const duplicate = await mobile.recordFeedViews({
-        ...session,
-        viewEventId,
-        itemId: post.id,
-      });
-      assert.ok(duplicate.duplicateItemIds.includes(post.id));
+      assert.deepEqual(
+        grouped.comments[0].replies.map((reply) => reply.replyToItemId),
+        [comment.comment.id, child.comment.id],
+      );
+      assert.ok(grouped.topLevelCount >= 1);
+      assert.ok(grouped.totalCount >= 3);
+
+      const reportedIds = [
+        post.id,
+        comment.comment.id,
+        child.comment.id,
+        child.comment.id,
+        grandchild.comment.id,
+      ];
+      const initialPostViews = detail.item.interaction.viewCount;
+      for (let increment = 1; increment <= 2; increment++) {
+        const recorded = await mobile.recordFeedViews({ itemIds: reportedIds });
+        assert.deepEqual(recorded, { status: 'success' });
+        const refreshedPost = await mobile.getFeedItem({
+          itemId: post.id,
+          ...session,
+        });
+        assert.ok(refreshedPost.item.kind === 'post');
+        assert.ok(
+          refreshedPost.item.interaction.viewCount >=
+            initialPostViews + increment,
+        );
+        const refreshedGroup = await mobile.getFeedComments({
+          rootItemId: post.id,
+          ...session,
+          limit: 1,
+          anchorReplyId: grandchild.comment.id,
+        });
+        for (const reply of [
+          refreshedGroup.comments[0],
+          ...refreshedGroup.comments[0].replies,
+        ]) {
+          assert.ok(reply.interaction.viewCount >= increment);
+        }
+      }
       debugPrint('Published content verification', {
         postId: post.id,
         commentId: comment.comment.id,

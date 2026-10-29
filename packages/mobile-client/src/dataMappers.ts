@@ -32,6 +32,7 @@ import {
   MobileSocialFeedActionResolutionResult,
   MobileSocialFeedAuthor,
   MobileSocialFeedCandle,
+  MobileSocialFeedCommentGroup,
   MobileSocialFeedCommentResult,
   MobileSocialFeedCommentsPage,
   MobileSocialFeedCompactCard,
@@ -79,7 +80,6 @@ import {
   MobileSocialFeedTradingTarget,
   MobileSocialFeedUpdates,
   MobileSocialFeedUploadedImage,
-  MobileSocialFeedViewsResult,
   MobileSocialFeedWatchers,
   SearchMobileProfilesParams,
 } from './types/clientTypes';
@@ -93,7 +93,6 @@ import {
   MobileServerSocialFeedDrawingMutationResponse,
   MobileServerSocialFeedLikeResponse,
   MobileServerSocialFeedPresenceResponse,
-  MobileServerSocialFeedViewsResponse,
 } from './types/serverExecuteTypes';
 import {
   MobileServerAvatarPreset,
@@ -112,6 +111,7 @@ import {
   MobileServerSocialFeedActionMarker,
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
+  MobileServerSocialFeedCommentGroup,
   MobileServerSocialFeedCompactCard,
   MobileServerSocialFeedContentBase,
   MobileServerSocialFeedDrawing,
@@ -996,7 +996,6 @@ export function mapMobileSocialFeedReadSession(
     sessionId: server.session_id,
     mode: server.mode,
     expiresAtMs: server.expires_at_ms,
-    viewTracking: { mode: server.view_tracking.mode },
     updateCursor: server.update_cursor,
     viewerToken: server.viewer_token,
   };
@@ -1566,16 +1565,31 @@ export function mapMobileSocialFeedDrawingMutationResult(
 }
 
 /**
- * Maps bidirectional comments and the actual returned session.
+ * Maps a top-level comment and its complete flat descendants without sorting or dropping content.
+ * @param server - A comment group from the service thread snapshot.
+ * @returns The mapped top-level comment with each descendant's original parent relationship.
+ */
+export function mapMobileSocialFeedCommentGroup(
+  server: MobileServerSocialFeedCommentGroup,
+): MobileSocialFeedCommentGroup {
+  return {
+    ...mapMobileSocialFeedReply(server),
+    replies: server.replies.map(mapMobileSocialFeedReply),
+  };
+}
+
+/**
+ * Maps complete comment groups in server order and the actual returned session.
  * @param server - Service payload with its original wire fields.
- * @returns Mapped replies, total count, bidirectional cursors, nullable anchor, and the actual reading session.
+ * @returns Mapped groups, whole-thread counts, bidirectional cursors, nullable anchor, and reading session.
  */
 export function mapMobileSocialFeedCommentsPage(
   server: MobileServerSocialFeedCommentsResponse,
 ): MobileSocialFeedCommentsPage {
   return {
-    comments: server.comments.map(mapMobileSocialFeedReply),
+    comments: server.comments.map(mapMobileSocialFeedCommentGroup),
     totalCount: server.total_count,
+    topLevelCount: server.top_level_count,
     nextCursor: server.next_cursor,
     previousCursor: server.previous_cursor,
     anchorReplyId: server.anchor_reply_id,
@@ -1610,20 +1624,6 @@ export function mapMobileSocialFeedLikeResult(
     isLiked: server.is_liked,
     likeCount: server.like_count,
     version: server.version,
-  };
-}
-
-/**
- * Maps exposure deduplication results without adding timestamps.
- * @param server - Service payload with its original wire fields.
- * @returns Newly accepted and duplicate item ID lists without inventing an observation timestamp.
- */
-export function mapMobileSocialFeedViewsResult(
-  server: MobileServerSocialFeedViewsResponse,
-): MobileSocialFeedViewsResult {
-  return {
-    acceptedItemIds: server.accepted_item_ids,
-    duplicateItemIds: server.duplicate_item_ids,
   };
 }
 

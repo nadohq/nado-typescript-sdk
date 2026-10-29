@@ -74,8 +74,7 @@ page is ordered by the listed relationship alone and `isFollowing` is absent rat
 
 `getFeed` returns the global trade feed. Session-based feeds include `getForYouFeed`, `getTopTradersFeed`,
 and `getFriendsFeed` (requires `viewAs`), plus `getProfileFeed`, `getMarketFeed`, and `getPositionFeed`.
-`getFeedItem` reads one item; pass `viewEventId` when the user navigates into the detail so a later
-`recordFeedViews` can count that visit, and omit it for prefetch. `getFeedUpdates` polls session patches
+`getFeedItem` reads one item without counting a view. Report views independently with `recordFeedViews`. `getFeedUpdates` polls session patches
 using the returned `viewerToken`. All are unsigned. Profile, position, and item reads include the `viewAs`
 account's own hidden content under `account_view`; the viewing account is not proof of wallet ownership.
 Prices are decimal `BigNumber` values; quantities, notionals, and PnL retain x18 units. See method and
@@ -134,14 +133,53 @@ A 6312 error requires a fresh session. Neither condition represents a successful
 `unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
-`recordFeedViews` and `setPositionPresence` use reading-session credentials rather than wallet signatures.
-Exposure follows `readSession.viewTracking.mode === 'detail_visit'`: after the primary detail target is shown
-in the foreground, call `recordFeedViews` with the same `viewEventId` previously sent to `getFeedItem`, plus
-that response's `sessionId` / `viewerToken` and exactly one detail-target `itemId`. Reuse the event on retries
-for the same visit; generate a new UUID only after leaving and re-entering. Fetch image bytes with
-`getFeedImageBytes` using the same session credentials and paths from `images` / `thumbnail.url`. Legitimate
-session reads renew the idle expiration; use the latest `expiresAtMs` rather than treating the first value as
-fixed.
+`recordFeedViews` accepts `itemIds`, an array of 1–50 canonical lowercase UUIDs. Posts, trade cards,
+comments, and replies can be mixed; only the supplied IDs increment, without incrementing their parents.
+It sends only `type` and `item_ids` to `/public_execute`, without a wallet signature or reading session,
+and returns `{ status: 'success' }`. Same-request duplicates count once, but another request increments
+again. Missing, deleted, unpublished, excluded, and unsupported targets are skipped; even an entirely
+skipped batch returns success. Invalid fields, UUIDs, or array sizes reject the entire batch.
+
+```ts
+await mobile.recordFeedViews({ itemIds: [postId, commentId, replyId] });
+```
+
+This operation is **not idempotent**: retrying after an uncertain network failure may count twice.
+The SDK does not automatically retry. Read current counts from `interaction.viewCount` in details,
+comment groups and their `replies`, previews, or session updates; the report returns no per-item counts.
+The detail request no longer accepts `viewEventId`, and reading sessions no longer return `viewTracking`.
+
+`setPositionPresence` still requires reading-session credentials and a page-scoped `viewSessionId`.
+Pagination, updates, and protected image reads also keep their existing session rules. Fetch uploaded
+image bytes with `getFeedImageBytes` using the original credentials and paths from image metadata.
+Legitimate session reads renew the idle expiration; use the latest `expiresAtMs`. View reports neither
+require nor renew a reading session.
+
+### Comment groups
+
+`getFeedComments` returns top-level `comments`, each with a complete flat `replies` array containing all
+readable descendants in the thread snapshot. The `limit` (default 20, range 1–50) counts top-level groups;
+descendants do not consume the limit and do not have separate cursors or nested `replies` arrays.
+Top-level comments are newest first; descendants are oldest first with depth then UUID breaking timestamp
+ties. Original parent relationships remain in `replyToItemId` and `replyToAuthor`.
+
+`totalCount` counts all readable replies in the thread snapshot; `topLevelCount` counts only top-level
+comments. Neither is limited to the returned page. An `anchorReplyId` at any depth returns its top-level
+group and is echoed in the response. Forward/backward cursors never split a group. An unreadable ancestor
+also makes its descendants unreadable. New replies at any depth require refreshing; updates only modify
+already delivered content.
+
+```ts
+const page = await mobile.getFeedComments({ rootItemId, limit: 20 });
+for (const group of page.comments) {
+  // Render the top-level comment, followed by group.replies in the returned order.
+}
+```
+
+Comment previews remain individual replies. A preview's `nextCursor` opens the first complete group page
+in the same snapshot; replace the preview with that page instead of prepending preview items.
+
+### Feed image reads
 
 For React Native `Image` or expo-image, use `getFeedImageRequest` to pass the authenticated
 URL and headers directly without converting bytes to base64:
