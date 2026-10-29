@@ -93,9 +93,10 @@ registering presence. Watching account previews are self-reported, not proof of 
 
 ### Position history and thoughts
 
-`getPositionHistory` and `getPositionHistoryAll` always return `owner`, the current position owner's full
-profile, even for an empty timeline. Display this owner instead of inferring ownership from a take or the
-viewing account. Position patches do not refresh owner information; query history or profiles again.
+`getPositionHistory` and `getPositionHistoryAll` return `owner`, the current position owner's full profile,
+even for an empty timeline on the updated service. For compatibility, the SDK returns `owner: null` when
+an older backend omits it. Handle that case without inferring ownership from a take or the viewing account.
+Position patches do not refresh owner information; query history or profiles again.
 
 `getPositionHistoryAll` returns only the most recent 500 actions, ordered by last event time and action UUID
 descending. It excludes authored content: `relatedTake` is null and `summary.takeCount` is zero, even when
@@ -183,7 +184,8 @@ differently. Coordinate this request change with the service version; old `image
 Responses keep one `images` array: upload metadata first, then URL-only objects in submitted order.
 `MobileSocialFeedImage` is now a union; narrow with `'imageId' in image` before accessing upload metadata.
 Direct upload methods return `MobileSocialFeedUploadedImage` with all metadata. Load external URLs directly
-without Mobile session headers; protected image helpers accept only uploaded-image paths.
+without Mobile session headers; protected image helpers accept only root-relative uploaded-image paths
+and reject absolute URLs before creating headers or sending a request.
 
 ### Signed Queries
 

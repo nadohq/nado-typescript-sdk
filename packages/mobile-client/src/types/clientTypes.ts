@@ -1928,8 +1928,8 @@ export interface MobileSocialFeedViewsResult {
 
 /** Full position history and viewing-account trading hints. */
 export interface MobileSocialFeedPositionHistory {
-  /** Current position owner, including when the timeline is empty; never the viewer. */
-  owner: MobileSocialFeedAuthor;
+  /** Current position owner, or null when an older service omits it; never inferred from the viewer. */
+  owner: MobileSocialFeedAuthor | null;
   /** Position and additional history metrics. */
   position: MobileSocialFeedPositionHistoryCard;
   /** Whole-history counts. */

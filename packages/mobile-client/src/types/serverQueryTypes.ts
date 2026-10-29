@@ -375,8 +375,8 @@ export interface MobileServerSocialFeedCommentsResponse {
 
 /** Full position history with additional metrics and trusted trading hints. */
 export interface MobileServerSocialFeedPositionHistoryResponse {
-  /** Current position owner, including when the timeline is empty; never the viewer. */
-  owner: MobileServerSocialFeedAuthor;
+  /** Current position owner; older service deployments may omit this field. */
+  owner?: MobileServerSocialFeedAuthor;
   /** Current or frozen position and history metrics. */
   position: MobileServerSocialFeedPositionHistoryCard;
   /** Counts across the authorized history. */

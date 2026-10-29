@@ -60,6 +60,34 @@ describe('[mobile-client]: feed image reads', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
+  it.each([
+    'https://example.com/image.png',
+    'http://example.com/image.png',
+    '//example.com/image.png',
+    'data:image/png;base64,test',
+    'feed/images/test/standard',
+    '',
+    '/\\example.com/image.png',
+  ])(
+    'rejects non-path image input before attaching credentials or fetching: %s',
+    async (path) => {
+      const client = new MobileClient({
+        url: 'https://mobile.example/mobile/v1',
+      });
+      const get = jest.spyOn(client.axiosInstance, 'get');
+      expect(() => client.resolveFeedImageUrl(path)).toThrow(
+        'root-relative uploaded image path',
+      );
+      expect(() => client.getFeedImageRequest({ ...session, path })).toThrow(
+        'load external image URLs directly',
+      );
+      await expect(
+        client.getFeedImageBytes({ ...session, path }),
+      ).rejects.toThrow('without Mobile session headers');
+      expect(get).not.toHaveBeenCalled();
+    },
+  );
+
   it.each(['uint8array', 'arraybuffer'] as const)(
     'preserves successful image bytes from %s responses',
     async (format) => {

@@ -1682,7 +1682,8 @@ export function mapMobileSocialFeedPositionHistory(
   server: MobileServerSocialFeedPositionHistoryResponse,
 ): MobileSocialFeedPositionHistory {
   return {
-    owner: mapMobileSocialFeedAuthor(server.owner),
+    owner:
+      server.owner == null ? null : mapMobileSocialFeedAuthor(server.owner),
     position: {
       ...mapMobileSocialFeedPositionCard(server.position),
       ...mapMobileSocialFeedHistoryMetrics(server.position),
@@ -1756,23 +1757,30 @@ export function mapMobileSocialFeedPresence(
 
 /**
  * Maps recent actions while preserving the endpoint's limited scope and null pagination cursor.
- * @throws {MobileUnsupportedFeedItemError} If a timeline entry has an unsupported kind.
+ * @throws {MobileUnsupportedFeedItemError} If a timeline entry is not an action.
+ * @throws {Error} If an action contains an embedded take contrary to the endpoint contract.
  */
 export function mapMobileSocialFeedPositionHistoryAll(
   server: MobileServerSocialFeedPositionHistoryAllResponse,
 ): MobileSocialFeedPositionHistoryAll {
+  const mapped = mapMobileSocialFeedPositionHistory(server);
   return {
-    ...mapMobileSocialFeedPositionHistory(server),
+    ...mapped,
     summary: {
-      actionCount: server.summary.action_count,
+      actionCount: mapped.summary.actionCount,
       takeCount: server.summary.take_count,
     },
-    timeline: server.timeline.map((entry) => ({
-      kind: entry.kind,
-      action: mapMobileSocialFeedPositionAction(entry.action),
-      relatedItemId: entry.related_item_id,
-      relatedTake: entry.related_take,
-    })),
+    timeline: mapped.timeline.map((entry) => {
+      if (entry.kind !== 'action') {
+        throw new MobileUnsupportedFeedItemError(entry.kind);
+      }
+      if (entry.relatedTake !== null) {
+        throw new Error(
+          'Invalid recent position action: embedded takes are not supported',
+        );
+      }
+      return { ...entry, relatedTake: entry.relatedTake };
+    }),
     nextCursor: server.next_cursor,
   };
 }
@@ -1788,10 +1796,11 @@ export function mapMobileSocialFeedPositionThoughts(
   return {
     items: server.items.map((item) => {
       const mapped = mapMobileSocialFeedHistoryTake(item);
+      // Rust str::trim uses Unicode White_Space, which keeps U+FEFF and removes U+0085.
       if (
         !mapped.hasAnalysis ||
         mapped.drawing == null ||
-        !mapped.text?.trim()
+        !/[^\p{White_Space}]/u.test(mapped.text)
       ) {
         throw new Error(
           'Invalid position thought: nonblank text and a saved drawing are required',

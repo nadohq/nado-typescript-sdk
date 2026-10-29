@@ -268,11 +268,19 @@ void describe(
         tradingContext: history.tradingContext,
       });
       assert.equal(history.readSession.mode, 'position');
+      assert.ok(
+        history.owner,
+        'Updated history contract must include the owner',
+      );
       assertNonEmptyString(
         history.owner.subaccount,
         'history.owner.subaccount',
       );
       const recent = await mobile.getPositionHistoryAll({ positionId, viewAs });
+      assert.ok(
+        recent.owner,
+        'Updated recent-actions contract must include the owner',
+      );
       assert.equal(recent.owner.subaccount, history.owner.subaccount);
       assert.equal(recent.readSession.mode, 'position');
       assert.equal(recent.nextCursor, null);
@@ -293,7 +301,7 @@ void describe(
       for (const thought of thoughts.items) {
         assert.ok(thought.kind === 'post' || thought.kind === 'trade_card');
         assert.equal(thought.position.positionId, positionId);
-        assert.ok(thought.text.trim().length > 0);
+        assert.match(thought.text, /[^\p{White_Space}]/u);
         assert.equal(thought.hasAnalysis, true);
         assert.ok(thought.drawing !== null);
         assert.ok(Object.hasOwn(thought.drawing, 'data'));

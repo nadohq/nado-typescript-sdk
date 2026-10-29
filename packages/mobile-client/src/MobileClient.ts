@@ -695,8 +695,14 @@ export class MobileClient {
    * Resolves a backend feed image path against this client's mobile gateway URL.
    * @param path - Backend path from image metadata, rooted at /v1/mobile or the mobile service root.
    * @returns An absolute URL suitable for authenticated fetches.
+   * @throws {Error} If path is not root-relative; external image URLs must be loaded directly.
    */
   resolveFeedImageUrl(path: string): string {
+    if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) {
+      throw new Error(
+        'Expected a root-relative uploaded image path; load external image URLs directly without Mobile session headers',
+      );
+    }
     return `${this.opts.url}${path.replace(/^\/v1\/mobile(?=\/)/, '')}`;
   }
 
@@ -705,6 +711,7 @@ export class MobileClient {
    * Does not count as a detail visit or recorded view.
    * @param params - Image path from metadata plus the original session credentials.
    * @returns Absolute URL and headers; pass them as the image source's URI and headers.
+   * @throws {Error} If path is not a root-relative uploaded image path.
    */
   getFeedImageRequest(
     params: GetMobileFeedImageRequestParams,
@@ -723,6 +730,7 @@ export class MobileClient {
    * Does not count as a detail visit or recorded view.
    * @param params - Image path from metadata plus the original session credentials.
    * @returns Raw image bytes.
+   * @throws {Error} If path is not a root-relative uploaded image path.
    * @throws {MobileServerFailureError} On session, permission, or availability errors.
    */
   async getFeedImageBytes(
@@ -786,7 +794,8 @@ export class MobileClient {
    * Creates a new position session on every call. A null nextCursor means no pagination, not complete
    * history; use getPositionHistory with a fresh session for the full lifecycle. takeCount is always zero.
    * @throws {MobileServerFailureError} On invalid parameters, inaccessible content, or unavailable data.
-   * @throws {MobileUnsupportedFeedItemError} If a timeline entry has an unsupported kind.
+   * @throws {MobileUnsupportedFeedItemError} If a timeline entry is not an action.
+   * @throws {Error} If an action contains an embedded take contrary to the endpoint contract.
    */
   async getPositionHistoryAll(
     params: GetMobilePositionHistoryAllParams,

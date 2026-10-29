@@ -29,6 +29,7 @@ import {
   MobileServerSocialFeedReply,
 } from './types/serverModelTypes';
 import {
+  MobileServerSocialFeedPositionHistoryAllResponse,
   MobileServerSocialFeedPositionHistoryResponse,
   MobileServerSocialFeedPositionThoughtsResponse,
 } from './types/serverQueryTypes';
@@ -884,6 +885,47 @@ describe('[mobile-client]: position feed changes', () => {
     expect(mapped.summary).toEqual({ actionCount: 0, takeCount: 0 });
   });
 
+  it('maps a legacy history response with no owner without losing timeline, metrics, or pagination', () => {
+    const legacy = { ...history };
+    delete legacy.owner;
+    const mapped = mapMobileSocialFeedPositionHistory(legacy);
+    expect(mapped.owner).toBeNull();
+    expect(mapped).toEqual({
+      ...mapMobileSocialFeedPositionHistory(history),
+      owner: null,
+    });
+  });
+
+  it('rejects a take in the recent-actions timeline with the documented error', () => {
+    const invalid = {
+      ...history,
+      timeline: [{ kind: 'take', item: post }],
+      next_cursor: null,
+      summary: { action_count: 0, take_count: 0 },
+    } as unknown as MobileServerSocialFeedPositionHistoryAllResponse;
+    expect(() => mapMobileSocialFeedPositionHistoryAll(invalid)).toThrow(
+      MobileUnsupportedFeedItemError,
+    );
+    expect(() => mapMobileSocialFeedPositionHistoryAll(invalid)).toThrow(
+      '"take"',
+    );
+  });
+
+  it('rejects an embedded take instead of returning raw server data as null', () => {
+    const entry = history.timeline[0];
+    if (entry.kind !== 'action' || entry.related_take === null)
+      throw new Error('Expected fixture with an embedded take');
+    const invalid = {
+      ...history,
+      timeline: [entry],
+      next_cursor: null,
+      summary: { action_count: 1, take_count: 0 },
+    } as unknown as MobileServerSocialFeedPositionHistoryAllResponse;
+    expect(() => mapMobileSocialFeedPositionHistoryAll(invalid)).toThrow(
+      'embedded takes are not supported',
+    );
+  });
+
   it('maps recent actions without manufacturing related takes or complete-history counts', () => {
     const entry = history.timeline[0];
     if (entry.kind !== 'action') throw new Error('Expected action fixture');
@@ -898,7 +940,7 @@ describe('[mobile-client]: position feed changes', () => {
     expect(mapped.timeline[0].action.executedQuantity.toFixed()).toBe(
       entry.action.executed_quantity_x18,
     );
-    expect(mapped.owner.subaccount).toBe(history.owner.subaccount);
+    expect(mapped.owner?.subaccount).toBe(post.author.subaccount);
     expect(mapped.summary).toEqual({ actionCount: 1, takeCount: 0 });
     expect(mapped.nextCursor).toBeNull();
   });
@@ -949,6 +991,29 @@ describe('[mobile-client]: position feed changes', () => {
     expect(mapped.nextCursor).toBe('Continue');
     expect(mapped.readSession.mode).toBe('position');
   });
+
+  it.each(['\uFEFF', ' \uFEFF\n', '\u200B'])(
+    'preserves server-valid text %j and the rest of its page',
+    (text) => {
+      const page = thoughtsPage();
+      page.items[0].text = text;
+      const mapped = mapMobileSocialFeedPositionThoughts(page);
+      expect(mapped.items).toHaveLength(2);
+      expect(mapped.items[0].text).toBe(text);
+      expect(mapped.nextCursor).toBe('Continue');
+    },
+  );
+
+  it.each(['', '\u0085', '\u00A0\u2003\u2028\u3000'])(
+    'rejects text %j containing only Rust-compatible Unicode whitespace',
+    (text) => {
+      const page = thoughtsPage();
+      page.items[0].text = text;
+      expect(() => mapMobileSocialFeedPositionThoughts(page)).toThrow(
+        'nonblank text',
+      );
+    },
+  );
 
   it.each([null, 'Continue'])(
     'preserves empty thought pages with cursor %s',
@@ -1030,6 +1095,18 @@ describe('[mobile-client]: position and image transport', () => {
     return { client, requests };
   }
 
+  it('keeps getPositionHistory working when the service omits owner', async () => {
+    const legacy = { ...history };
+    delete legacy.owner;
+    const { client } = clientWithResponse(legacy);
+    const result = await client.getPositionHistory({
+      positionId: history.position.position_id,
+    });
+    expect(result.owner).toBeNull();
+    expect(result.timeline).toHaveLength(history.timeline.length);
+    expect(result.nextCursor).toBe(history.next_cursor);
+  });
+
   it('routes thoughts publicly, preserving continuation credentials after an empty page', async () => {
     const { client, requests } = clientWithResponse({
       items: [],
@@ -1084,7 +1161,7 @@ describe('[mobile-client]: position and image transport', () => {
         viewer_token: 'ExistingViewer',
       },
     ]);
-    expect(result.owner.subaccount).toBe(history.owner.subaccount);
+    expect(result.owner?.subaccount).toBe(post.author.subaccount);
     expect(result.timeline).toEqual([]);
   });
 
