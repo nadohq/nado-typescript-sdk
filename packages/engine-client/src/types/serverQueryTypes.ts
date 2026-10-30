@@ -258,6 +258,28 @@ export type EngineServerIsolatedPositionsResponse = {
   isolated_positions: EngineServerIsolatedPosition[];
 };
 
+/**
+ * Possible values of `trading_status` in the `symbols` query:
+ * - `live`: normal trading, all order types accepted
+ * - `post_only`: only post-only orders accepted (taker orders rejected)
+ * - `reduce_only`: only reduce-only orders accepted; used when a market is being delisted
+ * - `soft_reduce_only`: no new positions can be opened; only orders that reduce existing positions are accepted
+ * - `not_tradable`: no orders accepted
+ */
+export const ENGINE_SERVER_TRADING_STATUS_VALUES = [
+  'live',
+  'post_only',
+  'reduce_only',
+  'soft_reduce_only',
+  'not_tradable',
+] as const;
+
+/**
+ * Trading status of a market, see {@link ENGINE_SERVER_TRADING_STATUS_VALUES}.
+ */
+export type EngineServerTradingStatus =
+  (typeof ENGINE_SERVER_TRADING_STATUS_VALUES)[number];
+
 export interface EngineServerSymbol {
   type: EngineServerProductType;
   product_id: number;
@@ -271,6 +293,7 @@ export interface EngineServerSymbol {
   long_weight_maintenance_x18: string;
   // undefined when there is no max open interest limit (always undefined for spot products)
   max_open_interest_x18: string | undefined;
+  trading_status: EngineServerTradingStatus;
   isolated_only: boolean;
 }
 
