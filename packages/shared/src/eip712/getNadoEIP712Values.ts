@@ -234,8 +234,8 @@ function getLiquidateSubaccountValues(
       subaccountOwner: params.liquidateeOwner,
       subaccountName: params.liquidateeName,
     }),
-    mode: params.mode,
-    healthGroup: toIntegerString(params.healthGroup),
+    productId: params.productId,
+    isEncodedSpread: params.isEncodedSpread,
     amount: toIntegerString(params.amount),
     nonce: params.nonce,
   };
