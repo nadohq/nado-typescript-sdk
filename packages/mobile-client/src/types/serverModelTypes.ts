@@ -520,8 +520,47 @@ export interface MobileServerSocialFeedPnl {
   quality: MobileSocialFeedPnlQuality;
 }
 
+/** Accounting bases for the USDT0 ROI denominator. */
+export const MOBILE_SOCIAL_FEED_ROI_BASIS_TYPES = [
+  'cross_initial_margin',
+  'isolated_net_margin_transferred',
+  'lifecycle_cross_initial_margin',
+  'lifecycle_isolated_net_margin_transferred',
+  'unknown',
+] as const;
+
+/** Accounting basis of a position's ROI denominator. */
+export type MobileSocialFeedRoiBasisType =
+  (typeof MOBILE_SOCIAL_FEED_ROI_BASIS_TYPES)[number];
+
+/** Availability states of the ROI denominator. */
+export const MOBILE_SOCIAL_FEED_ROI_BASIS_QUALITIES = [
+  'ready',
+  'pending',
+  'unavailable',
+  'not_applicable',
+] as const;
+
+/** Quality of the ROI denominator, independent of PnL quality. */
+export type MobileSocialFeedRoiBasisQuality =
+  (typeof MOBILE_SOCIAL_FEED_ROI_BASIS_QUALITIES)[number];
+
+/** ROI denominator with its accounting basis and independent observation time. */
+export interface MobileServerSocialFeedRoiBasis {
+  /** USDT0 denominator in x18 units, not a percentage; null means unknown. */
+  amount_x18: string | null;
+  /** Margin accounting used to derive the denominator. */
+  basis: MobileSocialFeedRoiBasisType;
+  /** Source timestamp in Unix milliseconds, or null when unknown. */
+  as_of_ms: number | null;
+  /** Availability of the denominator. */
+  quality: MobileSocialFeedRoiBasisQuality;
+}
+
 /** Complete mutable position fields delivered together at one version. */
 export interface MobileServerSocialFeedPositionPatch {
+  /** Returned by position_history and feed_updates; omitted by other reads and writes. */
+  roi_basis?: MobileServerSocialFeedRoiBasis;
   /** Additional metrics for a position history session, when supplied. */
   current_position?: MobileServerSocialFeedHistoryMetrics;
   /** Position lifecycle UUID. */
@@ -990,6 +1029,17 @@ export interface MobileServerSocialFeedActionCandidate {
   unavailable_reason: MobileSocialFeedActionUnavailableReason | null;
 }
 
+/** Accounting bases for historical position funding. */
+export const MOBILE_SOCIAL_FEED_FUNDING_BASES = [
+  'remaining_position',
+  'lifecycle_cumulative',
+  'unknown',
+] as const;
+
+/** Funding covers the remaining open position or the closed lifecycle. */
+export type MobileSocialFeedFundingBasis =
+  (typeof MOBILE_SOCIAL_FEED_FUNDING_BASES)[number];
+
 /** Additional history metrics; unavailable values are not zero. */
 export interface MobileServerSocialFeedHistoryMetrics {
   /** Estimated liquidation price in x18, independent of event Oracle and execution prices. */
@@ -998,8 +1048,10 @@ export interface MobileServerSocialFeedHistoryMetrics {
   liquidation_price_quality: MobileSocialFeedLiquidationPriceQuality;
   /** Source time in milliseconds. */
   liquidation_price_as_of_ms: number | null;
-  /** Signed funding amount in x18. */
+  /** Signed funding in x18: remaining position while open, lifecycle cumulative when closed. */
   funding_pnl_x18: string | null;
+  /** Accounting scope of the funding amount. */
+  funding_basis: MobileSocialFeedFundingBasis;
   /** Funding availability. */
   funding_quality: MobileSocialFeedPnlQuality;
   /** Funding source time in milliseconds. */

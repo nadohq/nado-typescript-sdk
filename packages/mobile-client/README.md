@@ -300,6 +300,24 @@ The mobile client supports linked signers for delegated transaction signing:
 mobile.setLinkedSigner(linkedSignerWalletClient);
 ```
 
+### Position ROI and funding
+
+`getPositionHistory` and `getFeedUpdates` retain `roiBasis` on position cards and patches,
+including nested attachments. Other feed reads and writes, including `getPositionHistoryAll`,
+omit it. A session whose initial response omitted ROI can still receive it through updates.
+The SDK preserves this omission instead of creating a `null` or `undefined` property.
+
+`roiBasis.amount` and `pnl.amount` are `BigNumber` values in x18 units. Calculate the ROI
+percentage with `pnl.amount.div(roiBasis.amount).times(100)` only when both amounts are
+non-null, both qualities are `ready`, and the denominator is positive. Missing or unavailable
+ROI data must not be treated as zero.
+
+Both history methods and history updates through `currentPosition` expose `fundingBasis`:
+`remaining_position` for open positions, `lifecycle_cumulative` for closed positions, or
+`unknown` when the scope is unavailable. Funding amounts remain in x18 units. Estimated
+liquidation prices remain in decimal units; check their quality and clear an old displayed
+price when the new value is unavailable or null. Position chart behavior is unchanged.
+
 ## License
 
 ISC
