@@ -26,7 +26,7 @@ import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { before, describe, test } from 'node:test';
+import { before, beforeEach, describe, test } from 'node:test';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
   assertBigNumberFinite,
@@ -49,9 +49,11 @@ import {
 } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
+const MOBILE_RATE_LIMIT_WINDOW_MS = 10_000;
+
 void describe(
   '[mobile-client]: social content and position history',
-  { timeout: TEST_TIMEOUTS.LONG * 3 },
+  { timeout: TEST_TIMEOUTS.LONG * 5 },
   () => {
     let tc: RunContext;
     let mobile: MobileClient;
@@ -66,6 +68,8 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
     });
+
+    beforeEach(waitForRateLimitWindow);
 
     void test('reads selected-account positions and resolves commands without a wallet', async () => {
       const positions = await mobile.getSelfFeedPositions({ viewAs, limit: 2 });
@@ -558,7 +562,8 @@ void describe(
         });
         assertNonEmptyString(image.imageId, 'image.imageId');
         assert.equal(image.contentType, 'image/jpeg');
-        assert.equal(image.byteSize, fileBytes.byteLength);
+        // The service re-encodes pixels to drop uploaded metadata, so the stored size differs from the upload
+        assert.ok(image.byteSize > 0);
         assert.ok(image.width > 0 && image.height > 0);
         assert.ok(image.thumbnail.width > 0 && image.thumbnail.height > 0);
         assert.ok(
@@ -661,6 +666,7 @@ void describe(
         );
       });
       const candidate = await openPublishablePosition(tc, mobile, viewAs);
+      await waitForRateLimitWindow();
       const signed = getMobileSignedParams(tc);
       const fileBytes = new Uint8Array(
         await readFile(new URL('./fixtures/avatar.jpg', import.meta.url)),
@@ -670,7 +676,7 @@ void describe(
         fileBytes,
       });
       assert.equal(postImage.contentType, 'image/jpeg');
-      assert.equal(postImage.byteSize, fileBytes.byteLength);
+      assert.ok(postImage.byteSize > 0);
       const params = {
         ...signed,
         clientRequestId: randomUUID(),
@@ -785,6 +791,7 @@ void describe(
         isLiked: false,
       });
       assert.equal(unliked.isLiked, false);
+      await waitForRateLimitWindow();
       const detail = await mobile.getFeedItem({
         itemId: post.id,
         viewAs,
@@ -800,7 +807,8 @@ void describe(
         headers: imageRequest.headers,
         responseType: 'arraybuffer',
       });
-      assert.deepEqual(new Uint8Array(imageResponse.data), fileBytes);
+      const standardBytes = new Uint8Array(imageResponse.data);
+      assert.equal(standardBytes.byteLength, postImage.byteSize);
       assert.deepEqual(
         detail.item.images
           .filter(isMobileSocialFeedUploadedImage)
@@ -812,7 +820,7 @@ void describe(
           ...session,
           path: detail.item.images[0].url,
         }),
-        fileBytes,
+        standardBytes,
       );
       assert.ok(
         (
@@ -829,12 +837,14 @@ void describe(
       assert.ok(commentDetail.item.kind === 'reply');
       assert.ok(isMobileSocialFeedUploadedImage(commentDetail.item.images[0]));
       const commentSession = getSessionParams(commentDetail.readSession);
-      assert.deepEqual(
-        await mobile.getFeedImageBytes({
-          ...commentSession,
-          path: commentDetail.item.images[0].url,
-        }),
-        fileBytes,
+      assert.equal(
+        (
+          await mobile.getFeedImageBytes({
+            ...commentSession,
+            path: commentDetail.item.images[0].url,
+          })
+        ).byteLength,
+        commentImage.byteSize,
       );
       assert.ok(
         (
@@ -1001,6 +1011,18 @@ async function openPublishablePosition(
   }
   throw new Error(
     'The IOC order did not produce a new publishable position before the projection deadline',
+  );
+}
+
+/**
+ * Waits for the next window of the mobile service's per-IP rate limit, which budgets request weight over
+ * aligned 10-second windows. Each test here spends a large share of that budget, so they start on a fresh one.
+ */
+async function waitForRateLimitWindow(): Promise<void> {
+  await delay(
+    MOBILE_RATE_LIMIT_WINDOW_MS -
+      (Date.now() % MOBILE_RATE_LIMIT_WINDOW_MS) +
+      TEST_DELAYS.LONG,
   );
 }
 
