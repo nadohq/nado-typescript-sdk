@@ -26,7 +26,7 @@ import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { before, beforeEach, describe, test } from 'node:test';
+import { before, describe, test } from 'node:test';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
   assertBigNumberFinite,
@@ -60,7 +60,7 @@ void describe(
     let viewAs: Subaccount;
 
     before(async () => {
-      await delay(TEST_DELAYS.LONG);
+      await waitForRateLimitWindow();
       tc = createTestContext();
       mobile = new MobileClient({ url: tc.endpoints.mobile });
       viewAs = {
@@ -68,8 +68,6 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
     });
-
-    beforeEach(waitForRateLimitWindow);
 
     void test('reads selected-account positions and resolves commands without a wallet', async () => {
       const positions = await mobile.getSelfFeedPositions({ viewAs, limit: 2 });
@@ -142,6 +140,7 @@ void describe(
     });
 
     void test('rejects invalid new position queries without a wallet', async () => {
+      await waitForRateLimitWindow();
       const positionId = randomUUID();
       await assertRejectsWithMobileErrorCode(
         () => mobile.getPositionThoughts({ positionId, limit: 51 }),
@@ -184,6 +183,7 @@ void describe(
     });
 
     void test('reads comment threads, anchors, pagination, and drawings using an existing item session', async (context) => {
+      await waitForRateLimitWindow();
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
       const item = page.items.find(
         (candidate) => candidate.kind !== 'trade_row',
@@ -294,6 +294,7 @@ void describe(
     });
 
     void test('navigates full history, chart, updates, and per-page watcher leases', async (context) => {
+      await waitForRateLimitWindow();
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
       for (const item of page.items) {
         if (item.kind === 'post' || item.kind === 'trade_card') {
@@ -548,6 +549,7 @@ void describe(
     });
 
     void test('uploads ready images for posts and comments', async () => {
+      await waitForRateLimitWindow();
       const fileBytes = new Uint8Array(
         await readFile(new URL('./fixtures/avatar.jpg', import.meta.url)),
       );
@@ -665,6 +667,7 @@ void describe(
           },
         );
       });
+      await waitForRateLimitWindow();
       const candidate = await openPublishablePosition(tc, mobile, viewAs);
       await waitForRateLimitWindow();
       const signed = getMobileSignedParams(tc);
@@ -1016,7 +1019,8 @@ async function openPublishablePosition(
 
 /**
  * Waits for the next window of the mobile service's per-IP rate limit, which budgets request weight over
- * aligned 10-second windows. Each test here spends a large share of that budget, so they start on a fresh one.
+ * aligned 10-second windows. Tests that spend a large share of that budget, or follow one that did, start on a
+ * fresh window.
  */
 async function waitForRateLimitWindow(): Promise<void> {
   await delay(
