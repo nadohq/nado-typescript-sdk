@@ -70,6 +70,7 @@ import {
   MobileSocialFeedReadParams,
   MobileSocialFeedReadSession,
   MobileSocialFeedReply,
+  MobileSocialFeedRoiBasis,
   MobileSocialFeedTimelineEntry,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedTradeCard,
@@ -131,6 +132,7 @@ import {
   MobileServerSocialFeedPublishablePosition,
   MobileServerSocialFeedReadSession,
   MobileServerSocialFeedReply,
+  MobileServerSocialFeedRoiBasis,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradeCard,
   MobileServerSocialFeedTradeRow,
@@ -758,6 +760,9 @@ export function mapMobileSocialFeedPositionPatch(
     leverage: server.leverage,
     leverageAtMs: server.leverage_at_ms,
     pnl: mapMobileSocialFeedPnl(server.pnl),
+    ...(server.roi_basis === undefined
+      ? {}
+      : { roiBasis: mapMobileSocialFeedRoiBasis(server.roi_basis) }),
     ...(server.current_position === undefined
       ? {}
       : {
@@ -765,6 +770,22 @@ export function mapMobileSocialFeedPositionPatch(
             server.current_position,
           ),
         }),
+  };
+}
+
+/**
+ * Maps the ROI denominator without losing x18 precision, quality, or nullable source time.
+ * @param server - The service response.
+ * @returns The nullable x18 ROI denominator with its accounting basis and availability metadata.
+ */
+export function mapMobileSocialFeedRoiBasis(
+  server: MobileServerSocialFeedRoiBasis,
+): MobileSocialFeedRoiBasis {
+  return {
+    amount: server.amount_x18 === null ? null : toBigNumber(server.amount_x18),
+    basis: server.basis,
+    asOfMs: server.as_of_ms,
+    quality: server.quality,
   };
 }
 
@@ -1363,6 +1384,7 @@ export function mapMobileSocialFeedHistoryMetrics(
         ? null
         : toBigNumber(server.funding_pnl_x18),
     fundingQuality: server.funding_quality,
+    fundingBasis: server.funding_basis,
     fundingAsOfMs: server.funding_as_of_ms,
   };
 }

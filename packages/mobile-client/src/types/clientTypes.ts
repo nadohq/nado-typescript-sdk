@@ -19,6 +19,7 @@ import {
   MobileSocialFeedChartDataQuality,
   MobileSocialFeedChartInterval,
   MobileSocialFeedCohortStatus,
+  MobileSocialFeedFundingBasis,
   MobileSocialFeedHistoryQuality,
   MobileSocialFeedLeverage,
   MobileSocialFeedLiquidationPriceQuality,
@@ -33,6 +34,8 @@ import {
   MobileSocialFeedPositionState,
   MobileSocialFeedPresenceState,
   MobileSocialFeedReadSessionMode,
+  MobileSocialFeedRoiBasisQuality,
+  MobileSocialFeedRoiBasisType,
   MobileSocialFeedSourceCategory,
   MobileSocialFeedTradeCardAction,
   MobileSocialFeedTradeSizeChangeAction,
@@ -866,8 +869,28 @@ export interface MobileSocialFeedPnl {
   quality: MobileSocialFeedPnlQuality;
 }
 
+/**
+ * ROI denominator in the same x18 units as PnL. Calculate pnl.amount / amount * 100 only when
+ * both qualities are ready, both amounts are non-null, and the denominator is positive.
+ */
+export interface MobileSocialFeedRoiBasis {
+  /** USDT0 denominator in x18 units, not a percentage; null means unknown. */
+  amount: BigNumber | null;
+  /** Margin accounting used to derive the denominator. */
+  basis: MobileSocialFeedRoiBasisType;
+  /** Source timestamp in Unix milliseconds, or null when unknown. */
+  asOfMs: number | null;
+  /** Availability of the denominator, independent of PnL quality. */
+  quality: MobileSocialFeedRoiBasisQuality;
+}
+
 /** Complete mutable position fields delivered together at one version. */
 export interface MobileSocialFeedPositionPatch {
+  /**
+   * Returned by getPositionHistory and getFeedUpdates; omitted by other reads and writes.
+   * Updates can supply this even when the initial response omitted it.
+   */
+  roiBasis?: MobileSocialFeedRoiBasis;
   /** Additional metrics for a position history session, when supplied. */
   currentPosition?: MobileSocialFeedHistoryMetrics;
   /** Position lifecycle UUID. */
@@ -1396,8 +1419,10 @@ export interface MobileSocialFeedHistoryMetrics {
   liquidationPriceQuality: MobileSocialFeedLiquidationPriceQuality;
   /** Source time in milliseconds. */
   liquidationPriceAsOfMs: number | null;
-  /** Signed funding amount in x18. */
+  /** Signed funding in x18: remaining position while open, lifecycle cumulative when closed. */
   fundingPnl: BigNumber | null;
+  /** Accounting scope of the funding amount. */
+  fundingBasis: MobileSocialFeedFundingBasis;
   /** Funding availability. */
   fundingQuality: MobileSocialFeedPnlQuality;
   /** Funding source time in milliseconds. */

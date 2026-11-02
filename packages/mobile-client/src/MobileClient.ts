@@ -536,6 +536,7 @@ export class MobileClient {
 
   /**
    * Polls authorized visible items and positions without inserting or reordering list members.
+   * Includes ROI bases even for sessions whose initial response omitted them.
    * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
    * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
    * Updates currently always return reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
@@ -755,6 +756,7 @@ export class MobileClient {
 
   /**
    * Reads the full position lifecycle and creates or reuses a position session.
+   * Retains ROI bases on the top-level position and nested position cards.
    * Unlike getPositionFeed, this includes lifecycle actions as well as published takes.
    * @param params - Position, optional takes-only filter, pagination, and read perspective. Paging requires
    * the original position session and viewer token, not a feed session.
@@ -781,6 +783,7 @@ export class MobileClient {
 
   /**
    * Reads the most recent 500 lifecycle actions, without authored text, drawings, or images.
+   * ROI bases are omitted; funding basis and estimated liquidation metrics remain available.
    * Creates a new position session on every call. A null nextCursor means no pagination, not complete
    * history; use getPositionHistory with a fresh session for the full lifecycle. takeCount is always zero.
    * @param params - Position and read perspective; an existing viewer token may be reused.

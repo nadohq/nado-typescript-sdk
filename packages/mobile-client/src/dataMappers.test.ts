@@ -18,7 +18,9 @@ import {
   mapMobileSocialFeedPositionPatch,
   mapMobileSocialFeedPositionThoughts,
   mapMobileSocialFeedPresence,
+  mapMobileSocialFeedRoiBasis,
   mapMobileSocialFeedTradeCard,
+  mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import { MobileClient } from './MobileClient';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
@@ -26,6 +28,7 @@ import {
   MobileServerSocialFeedItem,
   MobileServerSocialFeedPost,
   MobileServerSocialFeedReply,
+  MobileServerSocialFeedRoiBasis,
 } from './types/serverModelTypes';
 import {
   MobileServerSocialFeedPositionHistoryResponse,
@@ -227,6 +230,7 @@ const history: MobileServerSocialFeedPositionHistoryResponse = {
     history_quality: 'complete',
     estimated_liquidation_price_x18: null,
     funding_pnl_x18: '0',
+    funding_basis: 'remaining_position',
     liquidation_price_quality: 'unavailable',
     liquidation_price_as_of_ms: null,
     funding_quality: 'ready',
@@ -376,6 +380,13 @@ const history: MobileServerSocialFeedPositionHistoryResponse = {
     update_cursor: null,
     viewer_token: 'viewer_example_opaque',
   },
+};
+
+const roiBasis: MobileServerSocialFeedRoiBasis = {
+  amount_x18: '9007199254740993123456789',
+  basis: 'cross_initial_margin',
+  as_of_ms: 1791072060000,
+  quality: 'ready',
 };
 
 describe('[mobile-client]: content mapping', () => {
@@ -733,6 +744,7 @@ describe('[mobile-client]: content mapping', () => {
     expect(mapped.position.fundingPnl?.toFixed() ?? null).toBe(
       history.position.funding_pnl_x18,
     );
+    expect(mapped.position.fundingBasis).toBe(history.position.funding_basis);
     const patch = mapMobileSocialFeedPositionPatch({
       ...post.position,
       current_position: {
@@ -740,6 +752,7 @@ describe('[mobile-client]: content mapping', () => {
         liquidation_price_quality: 'ready',
         liquidation_price_as_of_ms: 42,
         funding_pnl_x18: '-9007199254740993000001',
+        funding_basis: 'remaining_position',
         funding_quality: 'ready',
         funding_as_of_ms: 42,
       },
@@ -747,12 +760,143 @@ describe('[mobile-client]: content mapping', () => {
     expect(patch.currentPosition?.estimatedLiquidationPrice?.toFixed()).toBe(
       '2500.123456789012345678',
     );
+    expect(patch.currentPosition?.fundingBasis).toBe('remaining_position');
     expect(patch.currentPosition?.fundingPnl?.toFixed()).toBe(
       '-9007199254740993000001',
     );
     expect(mapMobileSocialFeedPositionPatch(post.position)).not.toHaveProperty(
       'currentPosition',
     );
+  });
+
+  it('preserves ROI in history positions, takes, trade cards, and comment attachments', () => {
+    const position = { ...post.position, roi_basis: roiBasis };
+    const take: MobileServerSocialFeedPost = {
+      ...post,
+      position,
+      comment_preview: {
+        ...post.comment_preview,
+        items: [
+          {
+            ...reply,
+            attached_position: position,
+            attachment_status: 'visible',
+          },
+        ],
+      },
+    };
+    const action = history.timeline[0];
+    if (action.kind !== 'action') throw new Error('Expected action fixture');
+    const mapped = mapMobileSocialFeedPositionHistory({
+      ...history,
+      position: { ...history.position, roi_basis: roiBasis },
+      timeline: [
+        { kind: 'take', item: take },
+        {
+          ...action,
+          related_take: { ...take, kind: 'trade_card', action: 'opened' },
+        },
+      ],
+    });
+    expect(mapped.position.roiBasis?.amount?.toFixed()).toBe(
+      roiBasis.amount_x18,
+    );
+    expect(mapped.position.roiBasis).toMatchObject({
+      basis: roiBasis.basis,
+      asOfMs: roiBasis.as_of_ms,
+      quality: 'ready',
+    });
+    for (const entry of mapped.timeline) {
+      const item = entry.kind === 'take' ? entry.item : entry.relatedTake;
+      expect(item?.position.roiBasis).toEqual(mapped.position.roiBasis);
+      expect(item?.commentPreview.items[0].attachedPosition?.roiBasis).toEqual(
+        mapped.position.roiBasis,
+      );
+    }
+  });
+
+  it('omits ROI when the position response omits its basis', () => {
+    expect(mapMobileSocialFeedPositionPatch(post.position)).not.toHaveProperty(
+      'roiBasis',
+    );
+  });
+
+  it('maps ROI in position and attachment update patches', () => {
+    const updates = mapMobileSocialFeedUpdates({
+      position_patches: [{ ...post.position, roi_basis: roiBasis }],
+      item_patches: [
+        {
+          item_id: reply.id,
+          version: '2',
+          display_at_ms: 42,
+          author: reply.author,
+          attached_position: { ...post.position, roi_basis: roiBasis },
+        },
+      ],
+      unavailable_targets: [],
+      new_items_count: 0,
+      update_cursor: 'Next',
+      reset: true,
+      viewport_revision: 0,
+      request_seq: 1,
+    });
+    expect(updates.positionPatches[0].roiBasis?.amount?.toFixed()).toBe(
+      roiBasis.amount_x18,
+    );
+    expect(updates.itemPatches[0].attachedPosition?.roiBasis).toEqual(
+      updates.positionPatches[0].roiBasis,
+    );
+  });
+
+  it('preserves a null ROI amount and source time', () => {
+    expect(
+      mapMobileSocialFeedRoiBasis({
+        amount_x18: null,
+        basis: 'unknown',
+        as_of_ms: null,
+        quality: 'unavailable',
+      }),
+    ).toEqual({
+      amount: null,
+      basis: 'unknown',
+      asOfMs: null,
+      quality: 'unavailable',
+    });
+  });
+
+  it.each(['0', '-1'])(
+    'preserves ROI amount %s without inventing a percentage',
+    (amount) => {
+      expect(
+        mapMobileSocialFeedRoiBasis({
+          ...roiBasis,
+          amount_x18: amount,
+        }).amount?.toFixed(),
+      ).toBe(amount);
+    },
+  );
+
+  it('preserves null funding and unavailable liquidation metrics in updates', () => {
+    const patch = mapMobileSocialFeedPositionPatch({
+      ...post.position,
+      current_position: {
+        ...history.position,
+        funding_pnl_x18: null,
+        funding_quality: 'unavailable',
+        funding_as_of_ms: null,
+        estimated_liquidation_price_x18: null,
+        liquidation_price_quality: 'unavailable',
+        liquidation_price_as_of_ms: null,
+      },
+    });
+    expect(patch.currentPosition).toMatchObject({
+      fundingPnl: null,
+      fundingQuality: 'unavailable',
+      fundingAsOfMs: null,
+      estimatedLiquidationPrice: null,
+      liquidationPriceQuality: 'unavailable',
+      liquidationPriceAsOfMs: null,
+    });
   });
 
   it('keeps execution, Oracle, and realized PnL independently nullable and precise', () => {
