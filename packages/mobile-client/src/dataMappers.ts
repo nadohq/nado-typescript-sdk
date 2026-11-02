@@ -773,7 +773,11 @@ export function mapMobileSocialFeedPositionPatch(
   };
 }
 
-/** Maps the ROI denominator without losing x18 precision, quality, or nullable source time. */
+/**
+ * Maps the ROI denominator without losing x18 precision, quality, or nullable source time.
+ * @param server - The service response.
+ * @returns The nullable x18 ROI denominator with its accounting basis and availability metadata.
+ */
 export function mapMobileSocialFeedRoiBasis(
   server: MobileServerSocialFeedRoiBasis,
 ): MobileSocialFeedRoiBasis {

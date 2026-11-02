@@ -3,6 +3,9 @@ import {
   isMobileSocialFeedUploadedImage,
   MOBILE_ERROR_CODES,
   MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES,
+  MOBILE_SOCIAL_FEED_FUNDING_BASES,
+  MOBILE_SOCIAL_FEED_ROI_BASIS_QUALITIES,
+  MOBILE_SOCIAL_FEED_ROI_BASIS_TYPES,
   MobileClient,
   MobileServerFailureError,
   MobileServerFailureResponse,
@@ -10,6 +13,7 @@ import {
   MobileSocialFeedPositionCard,
   MobileSocialFeedPublishablePosition,
   MobileSocialFeedReadSession,
+  MobileSocialFeedRoiBasis,
 } from '@nadohq/mobile-client';
 import {
   getOrderNonce,
@@ -287,6 +291,18 @@ void describe(
 
     void test('navigates full history, chart, updates, and per-page watcher leases', async (context) => {
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
+      for (const item of page.items) {
+        if (item.kind === 'post' || item.kind === 'trade_card') {
+          assertNoRoi(item.position);
+          for (const comment of item.commentPreview.items) {
+            if (comment.attachedPosition) {
+              assertNoRoi(comment.attachedPosition);
+            }
+          }
+        } else if (item.kind === 'reply' && item.attachedPosition) {
+          assertNoRoi(item.attachedPosition);
+        }
+      }
       const item = page.items.find(
         (candidate) => getPositionId(candidate) !== undefined,
       );
@@ -303,6 +319,7 @@ void describe(
         limit: 2,
       });
       const session = getSessionParams(history.readSession);
+      assertRoi(history.position.roiBasis);
       debugPrint('Position history', {
         position: history.position,
         summary: history.summary,
@@ -319,6 +336,17 @@ void describe(
         'history.owner.subaccount',
       );
       const recent = await mobile.getPositionHistoryAll({ positionId, viewAs });
+      assertNoRoi(recent.position);
+      for (const result of [history, recent]) {
+        assertEnumMember(
+          result.position.fundingBasis,
+          MOBILE_SOCIAL_FEED_FUNDING_BASES,
+          'fundingBasis',
+        );
+        if (result.position.fundingPnl !== null) {
+          assertBigNumberFinite(result.position.fundingPnl, 'fundingPnl');
+        }
+      }
       assert.ok(
         recent.owner,
         'Updated recent-actions contract must include the owner',
@@ -375,6 +403,15 @@ void describe(
       );
       assertNonNegativeInteger(history.summary.takeCount, 'summary.takeCount');
       for (const entry of history.timeline) {
+        const take = entry.kind === 'take' ? entry.item : entry.relatedTake;
+        if (take) {
+          assertRoi(take.position.roiBasis);
+          for (const comment of take.commentPreview.items) {
+            if (comment.attachedPosition) {
+              assertRoi(comment.attachedPosition.roiBasis);
+            }
+          }
+        }
         if (entry.kind === 'action') {
           assertBigNumberFinite(
             entry.action.executedQuantity,
@@ -468,14 +505,34 @@ void describe(
         debugPrint('Position watchers', watchers);
         assert.ok(watchers.watcherCount >= 1);
         assertNonNegativeInteger(watchers.asOfMs, 'watchers.asOfMs');
-        const updates = await mobile.getFeedUpdates({
-          ...session,
-          visibleItemIds: [],
-          visiblePositionIds: [positionId],
-          viewportRevision: 0,
-          requestSeq: 1,
-        });
-        assert.equal(updates.newItemsCount, 0);
+        for (const result of [page, history, recent]) {
+          const updates = await mobile.getFeedUpdates({
+            ...getSessionParams(result.readSession),
+            visibleItemIds: result === page && item ? [item.id] : [],
+            visiblePositionIds: [positionId],
+            viewportRevision: 0,
+            requestSeq: 1,
+          });
+          const patch = updates.positionPatches.find(
+            (candidate) => candidate.positionId === positionId,
+          );
+          assert.ok(patch, 'Reset must include the visible position');
+          assertRoi(patch.roiBasis);
+          if (result !== page) {
+            assert.equal(updates.newItemsCount, 0);
+            assert.ok(patch.currentPosition);
+            assertEnumMember(
+              patch.currentPosition.fundingBasis,
+              MOBILE_SOCIAL_FEED_FUNDING_BASES,
+              'currentPosition.fundingBasis',
+            );
+          }
+          for (const itemPatch of updates.itemPatches) {
+            if (itemPatch.attachedPosition) {
+              assertRoi(itemPatch.attachedPosition.roiBasis);
+            }
+          }
+        }
       } finally {
         await mobile.setPositionPresence({
           positionId,
@@ -979,4 +1036,27 @@ function assertPosition(position: MobileSocialFeedPositionCard) {
     assertBigNumberFinite(position.entryPrice, 'position.entryPrice');
   if (position.pnl.amount !== null)
     assertBigNumberFinite(position.pnl.amount, 'position.pnl.amount');
+}
+
+function assertNoRoi(position: MobileSocialFeedPositionCard) {
+  assert.equal(Object.hasOwn(position, 'roiBasis'), false);
+}
+
+function assertRoi(roi: MobileSocialFeedRoiBasis | undefined) {
+  assert.ok(roi, 'ROI basis must be retained by history and updates');
+  assertEnumMember(
+    roi.basis,
+    MOBILE_SOCIAL_FEED_ROI_BASIS_TYPES,
+    'roiBasis.basis',
+  );
+  assertEnumMember(
+    roi.quality,
+    MOBILE_SOCIAL_FEED_ROI_BASIS_QUALITIES,
+    'roiBasis.quality',
+  );
+  assert.ok(roi.asOfMs === null || Number.isSafeInteger(roi.asOfMs));
+  if (roi.amount !== null) {
+    assertBigNumberFinite(roi.amount, 'roiBasis.amount');
+    assert.ok(roi.amount.isInteger());
+  }
 }
