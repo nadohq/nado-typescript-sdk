@@ -967,6 +967,19 @@ export interface ListIndexerSocialAccountsResponse {
   accounts: IndexerSocialAccountInfo[];
 }
 
+export interface ListIndexerSocialAccountsBatchParams {
+  /** Wallet addresses to look up, in any casing. Max 100 per request */
+  addresses: Address[];
+}
+
+export interface ListIndexerSocialAccountsBatchResponse {
+  /**
+   * Linked social accounts keyed by **lowercase** address; every requested
+   * address is present (`[]` if none linked).
+   */
+  accounts: Record<string, IndexerSocialAccountInfo[]>;
+}
+
 export type RevokeSocialAccountParams = ConnectSocialAccountParams;
 export type RevokeSocialAccountResponse = ListIndexerSocialAccountsResponse;
 

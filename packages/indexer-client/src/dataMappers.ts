@@ -59,11 +59,13 @@ import {
   IndexerServerProduct,
   IndexerServerProductPayment,
   IndexerServerSnapshotsInterval,
+  IndexerServerSocialAccount,
   IndexerServerTx,
   IndexerServerV2MarketHours,
   IndexerServerV2Symbol,
   IndexerServerV2TickerResponse,
   IndexerSnapshotsIntervalParams,
+  IndexerSocialAccountInfo,
   IndexerSpotBalance,
   IndexerV2MarketHours,
   IndexerV2Symbol,
@@ -390,6 +392,17 @@ export function mapIndexerLeaderboardPosition(
       displayName: account.display_name,
       profileImageUrl: account.profile_image_url,
     })),
+  };
+}
+
+export function mapIndexerSocialAccount(
+  account: IndexerServerSocialAccount,
+): IndexerSocialAccountInfo {
+  return {
+    provider: account.provider,
+    username: account.username,
+    displayName: account.display_name,
+    profileImageUrl: account.profile_image_url,
   };
 }
 
