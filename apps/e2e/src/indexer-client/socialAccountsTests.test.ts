@@ -11,7 +11,6 @@ import {
   assertArrayElements,
   assertNonEmptyString,
   assertRecord,
-  assertString,
 } from '../utils/assertions';
 import { debugPrint } from '../utils/debugPrint';
 import { delay } from '../utils/delay';
@@ -28,8 +27,12 @@ function assertSocialAccountShape(
 ) {
   assert.equal(account.provider, 'twitter', `${label}.provider`);
   assertNonEmptyString(account.username, `${label}.username`);
-  assertString(account.displayName, `${label}.displayName`);
-  assertString(account.profileImageUrl, `${label}.profileImageUrl`);
+  assert.equal(typeof account.displayName, 'string', `${label}.displayName`);
+  assert.equal(
+    typeof account.profileImageUrl,
+    'string',
+    `${label}.profileImageUrl`,
+  );
 }
 
 void describe(
