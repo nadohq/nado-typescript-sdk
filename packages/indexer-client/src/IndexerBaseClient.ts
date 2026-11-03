@@ -43,6 +43,7 @@ import {
   mapIndexerPosition,
   mapIndexerProductPayment,
   mapIndexerServerProduct,
+  mapIndexerSocialAccount,
   mapIndexerV2Symbols,
   mapIndexerV2Ticker,
   mapSnapshotsIntervalToServerParams,
@@ -137,6 +138,8 @@ import {
   IndexerSnapshotBalance,
   IndexerSubaccountSnapshot,
   isIndexerServerFailureResponse,
+  ListIndexerSocialAccountsBatchParams,
+  ListIndexerSocialAccountsBatchResponse,
   ListIndexerSocialAccountsParams,
   ListIndexerSocialAccountsResponse,
   ListIndexerSubaccountsParams,
@@ -1204,6 +1207,28 @@ export class IndexerBaseClient {
         displayName: a.display_name,
         profileImageUrl: a.profile_image_url,
       })),
+    };
+  }
+
+  /**
+   * Lists linked social accounts for multiple addresses in a single request.
+   *
+   * Results are keyed by lowercase address (`accounts[address.toLowerCase()]`);
+   * addresses with no linked account map to `[]`. Max 100 addresses per request.
+   *
+   * @param params - Query parameters including the wallet addresses.
+   */
+  async listSocialAccountsBatch(
+    params: ListIndexerSocialAccountsBatchParams,
+  ): Promise<ListIndexerSocialAccountsBatchResponse> {
+    const baseResponse = await this.rewardsQuery('list_social_accounts_batch', {
+      addresses: params.addresses,
+    });
+
+    return {
+      accounts: mapValues(baseResponse.accounts, (accounts) =>
+        accounts.map(mapIndexerSocialAccount),
+      ),
     };
   }
 

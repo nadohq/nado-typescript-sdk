@@ -246,6 +246,11 @@ export interface IndexerServerListSocialAccountsParams {
   address: string;
 }
 
+export interface IndexerServerListSocialAccountsBatchParams {
+  // Max 100 addresses per request
+  addresses: string[];
+}
+
 export type IndexerServerRevokeSocialAccountParams =
   IndexerServerSocialConnectParams;
 
@@ -322,6 +327,7 @@ export interface IndexerServerQueryRequestByType {
   cash_incentives: IndexerServerCashIncentivesParams;
   social_connect: IndexerServerSocialConnectParams;
   list_social_accounts: IndexerServerListSocialAccountsParams;
+  list_social_accounts_batch: IndexerServerListSocialAccountsBatchParams;
   revoke_social_account: IndexerServerRevokeSocialAccountParams;
 }
 
@@ -731,6 +737,11 @@ export interface IndexerServerSocialAccountsResponse {
   accounts: IndexerServerSocialAccount[];
 }
 
+export interface IndexerServerSocialAccountsBatchResponse {
+  // Keyed by lowercase address. Every requested address is present, with `[]` when nothing is linked.
+  accounts: Record<string, IndexerServerSocialAccount[]>;
+}
+
 // Response
 export interface IndexerServerQueryResponseByType {
   account_snapshots: IndexerServerMultiSubaccountSnapshotsResponse;
@@ -773,6 +784,7 @@ export interface IndexerServerQueryResponseByType {
   cash_incentives: IndexerServerCashIncentivesResponse;
   social_connect: IndexerServerSocialConnectResponse;
   list_social_accounts: IndexerServerSocialAccountsResponse;
+  list_social_accounts_batch: IndexerServerSocialAccountsBatchResponse;
   revoke_social_account: IndexerServerSocialAccountsResponse;
 }
 
