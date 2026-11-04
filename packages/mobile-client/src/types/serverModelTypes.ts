@@ -859,6 +859,22 @@ export interface MobileSocialFeedUnavailableTarget {
   reason: 'unavailable';
 }
 
+/** Outcome of one order digest in an `attribute_orders` request. */
+export type MobileOrderAttributionStatus =
+  | 'accepted'
+  | 'duplicate'
+  | 'rejected';
+
+/**
+ * Why an order digest was rejected. `conflict` means the order is already attributed to a different item; the
+ * first attribution stays. A market mismatch is not a reason here: the backend finds it later from the fills.
+ */
+export type MobileOrderAttributionRejectReason =
+  | 'unknown_item'
+  | 'not_attributable'
+  | 'own_content'
+  | 'conflict';
+
 /** Readable state of a reply's position attachment. */
 export type MobileSocialFeedAttachmentStatus =
   | 'none'
