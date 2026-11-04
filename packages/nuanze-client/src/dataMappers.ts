@@ -415,6 +415,7 @@ export function mapNuanzeFollowedLeaderboardItem(
     productIds: server.productIds,
     productCount: server.productCount,
     globalRank: server.globalRank,
+    filteredRank: server.filteredRank,
     volume: mapNuanzeDecimal(server.volume),
     pointsTier: server.pointsTier,
   };
@@ -439,6 +440,7 @@ export function mapNuanzeSubaccountLeaderboardItem(
     productIds: server.productIds,
     productCount: server.productCount,
     globalRank: server.globalRank,
+    filteredRank: server.filteredRank,
     volume: mapNuanzeDecimal(server.volume),
     pointsTier: server.pointsTier,
   };

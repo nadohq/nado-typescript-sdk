@@ -708,6 +708,14 @@ export interface NuanzeFollowedLeaderboardItem {
    */
   globalRank: number | null;
   /**
+   * Position among the follower's followed subaccounts that pass the request's
+   * `includeUntraded`, `includePrivate`, and `includeUnclaimed` filters, in collection order
+   * (`1` = highest), counted across cursor pages rather than within one. Set on every
+   * collection row; on a `viewer` or position item it equals the enclosing `filteredRank`, so it
+   * is null when the filters exclude that subaccount.
+   */
+  filteredRank: number | null;
+  /**
    * Perp plus spot volume in the timeframe, from the same account snapshots and window bounds as
    * `pnl`, or null when the subaccount has no account snapshot at the window's grain.
    */
@@ -800,6 +808,13 @@ export interface NuanzeSubaccountLeaderboardItem {
    * subaccount has no PnL in the window.
    */
   globalRank: number | null;
+  /**
+   * Position among the subaccounts that pass the request's `includePrivate`, `includeUntraded`,
+   * and `includeUnclaimed` filters, in collection order (`1` = highest), counted across cursor
+   * pages rather than within one. Set on every collection row; on a `viewer` or position item it
+   * equals the enclosing `filteredRank`, so it is null when the filters exclude that subaccount.
+   */
+  filteredRank: number | null;
   /**
    * Perp plus spot volume in the timeframe, from the same account snapshots and window bounds as
    * `pnl` (and as `windowVolume` on `GET /subaccounts/{subaccountHex}`), or null when the

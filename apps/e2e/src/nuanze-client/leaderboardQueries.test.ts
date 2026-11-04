@@ -167,6 +167,12 @@ void describe(
         [...first.items, ...second.items],
         'cursor items',
       );
+      const pagedItems = [...first.items, ...second.items];
+      assert.deepEqual(
+        pagedItems.map((item) => item.filteredRank),
+        pagedItems.map((_item, index) => index + 1),
+        'filteredRank should count across cursor pages',
+      );
     });
 
     void test('rejects a subaccount cursor reused with changed filters', async () => {
@@ -242,6 +248,11 @@ void describe(
           'items',
         );
         assertNullablePnlDescending(response.items, 'items');
+        assert.deepEqual(
+          response.items.map((item) => item.filteredRank),
+          response.items.map((_item, index) => index + 1),
+          'filteredRank should be the position under the active filters',
+        );
       }
 
       assert.ok(
@@ -400,6 +411,7 @@ void describe(
       );
       assert.equal(response.viewer.item.subaccountHex, expected.subaccountHex);
       assert.equal(response.viewer.item.globalRank, expected.globalRank);
+      assert.equal(response.viewer.item.filteredRank, 1);
     });
 
     void test('keeps a full unclaimed viewer item when its filtered rank is excluded', async (context) => {
@@ -437,6 +449,7 @@ void describe(
       );
       assert.equal(response.viewer.item.subaccountHex, expected.subaccountHex);
       assert.equal(response.viewer.item.globalRank, expected.globalRank);
+      assert.equal(response.viewer.item.filteredRank, null);
     });
 
     void test('returns a null viewer for absent public identifiers', async () => {
@@ -554,6 +567,7 @@ void describe(
       assert.notEqual(response.item.pnl, null, 'traded item should have PnL');
       assert.equal(response.item.subaccountHex, expected.subaccountHex);
       assert.equal(response.item.globalRank, expected.globalRank);
+      assert.equal(response.item.filteredRank, 1);
     });
 
     void test('keeps a full subaccount position item when its filtered rank is excluded', async (context) => {
@@ -587,6 +601,7 @@ void describe(
       assert.notEqual(response.item.pnl, null, 'traded item should have PnL');
       assert.equal(response.item.subaccountHex, expected.subaccountHex);
       assert.equal(response.item.globalRank, expected.globalRank);
+      assert.equal(response.item.filteredRank, null);
     });
 
     void test('returns null position items for absent public identifiers', async () => {
@@ -767,13 +782,16 @@ void describe(
       );
       assert.ok(viewAsResponse.viewer, 'viewer should remain available');
       assert.equal(viewAsResponse.viewer.filteredRank, null);
-      assert.deepEqual(viewAsResponse.viewer.item, expected);
+      assert.deepEqual(viewAsResponse.viewer.item, {
+        ...expected,
+        filteredRank: null,
+      });
 
       assert.equal(position.filteredRank, null);
       assert.ok(position.item, 'source item should remain available');
       assertFollowedLeaderboardItemShape(position.item, 'item');
       assert.equal(position.item.username, null);
-      assert.deepEqual(position.item, expected);
+      assert.deepEqual(position.item, { ...expected, filteredRank: null });
     });
 
     void test('returns null followed viewer and position for an unfollowed subaccount', async () => {
@@ -970,6 +988,10 @@ function assertSubaccountStatsShape(
   if (item.globalRank !== null) {
     assertNumber(item.globalRank, `${label}.globalRank`);
     assert.ok(item.globalRank >= 1, `${label}.globalRank should be >= 1`);
+  }
+  if (item.filteredRank !== null) {
+    assertNumber(item.filteredRank, `${label}.filteredRank`);
+    assert.ok(item.filteredRank >= 1, `${label}.filteredRank should be >= 1`);
   }
   if (item.volume !== null) {
     assertBigNumberNonNegative(item.volume, `${label}.volume`);
