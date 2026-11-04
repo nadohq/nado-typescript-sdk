@@ -12,6 +12,7 @@ import {
 } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { TriggerCriteria, TriggerOrderStatus } from './clientModelTypes';
+import { TriggerServerRoutingMode } from './serverExecuteTypes';
 import {
   TriggerServerOrder,
   TriggerServerStatusTypeFilter,
@@ -33,6 +34,8 @@ export interface TriggerPlaceOrderParams extends SignatureParams {
   spotLeverage?: boolean;
   // For isolated orders, this specifies whether margin can be borrowed (i.e. whether the cross account can have a negative USDT balance)
   borrowMargin?: boolean;
+  // Where the fired trigger executes. If not given, the trigger service defaults to `clob_only`
+  routingMode?: TriggerServerRoutingMode;
   digest?: string;
   nonce?: string;
 }

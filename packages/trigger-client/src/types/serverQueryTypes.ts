@@ -26,6 +26,12 @@ export type TriggerServerOrderStatus =
         executed: number;
         total: number;
       };
+    }
+  | {
+      /** A fired Prime trigger whose deal is still being resolved. Not proof of a fill. */
+      otc_pending_resolution: {
+        deal_id: string;
+      };
     };
 
 /**
@@ -42,7 +48,8 @@ export type TriggerServerStatusTypeFilter =
   | 'waiting_price'
   | 'waiting_dependency'
   | 'twap_executing'
-  | 'twap_completed';
+  | 'twap_completed'
+  | 'otc_pending_resolution';
 
 export interface TriggerServerListTriggerOrdersParams extends SignedTx<EIP712ListTriggerOrdersValues> {
   // If not given, defaults to all products

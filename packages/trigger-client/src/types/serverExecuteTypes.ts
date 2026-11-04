@@ -6,6 +6,16 @@ import {
 import { EIP712OrderValues } from '@nadohq/shared';
 import { TriggerServerTriggerCriteria } from './serverModelTypes';
 
+/**
+ * Where a fired trigger executes. `clob_only` fills on the order book, `otc_only` on Prime and
+ * cancels if no Prime plan is available at fire time, `smart_router` lets the service pick the
+ * cheaper venue at fire time.
+ */
+export type TriggerServerRoutingMode =
+  | 'clob_only'
+  | 'otc_only'
+  | 'smart_router';
+
 export interface TriggerServerPlaceOrderParams {
   id: number | null;
   product_id: number;
@@ -16,6 +26,8 @@ export interface TriggerServerPlaceOrderParams {
   // Trigger service defaults this to true
   spot_leverage: boolean | null;
   borrow_margin: boolean | null;
+  // Trigger service defaults this to `clob_only`; omitted rather than sent as null
+  routing_mode?: TriggerServerRoutingMode;
 }
 
 export type TriggerServerCancelOrdersParams =
