@@ -7,6 +7,7 @@ import {
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { bytesToString, keccak256, zeroHash } from 'viem';
 import {
+  mapMobileAttributeOrdersResult,
   mapMobileAvatarPreset,
   mapMobileAvatarSelectionToServer,
   mapMobileAvatarUpload,
@@ -92,6 +93,8 @@ import {
   GetMobileSelfFeedPositionsParams,
   GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
+  MobileAttributeOrdersParams,
+  MobileAttributeOrdersResult,
   MobileAvatarPreset,
   MobileAvatarUpload,
   MobileCreateAvatarUploadParams,
@@ -1481,6 +1484,28 @@ export class MobileClient {
       is_liked: params.isLiked,
     });
     return mapMobileSocialFeedLikeResult(await this.execute(request));
+  }
+
+  /**
+   * Links the orders of one `place_orders` call to the post or trade card they were placed from, so the
+   * item's Creator earns a share of their taker fees. Send it alongside `place_orders`, never before it in the
+   * order path, and compute each digest with `getOrderDigest` before placing. The backend checks only that the
+   * item exists and can earn, and that its author is not the trader's wallet; the app owns every timing rule.
+   * Replaying the same digests for the same item is safe and returns `duplicate`.
+   *
+   * @param params - Trading subaccount and signing options, the item UUID, and 1 to 50 order digests.
+   * @returns One outcome per digest, in request order, and whether the program is switched on.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On authentication errors or a malformed digest list.
+   */
+  async attributeOrders(
+    params: MobileAttributeOrdersParams,
+  ): Promise<MobileAttributeOrdersResult> {
+    const request = await this.getSignedRequest('attribute_orders', params, {
+      item_id: params.itemId,
+      order_digests: params.orderDigests,
+    });
+    return mapMobileAttributeOrdersResult(await this.execute(request));
   }
 
   /*
