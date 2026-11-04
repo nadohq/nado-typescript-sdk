@@ -427,6 +427,10 @@ void describe('[trigger-client]: placement', () => {
     assertArrayElements(
       result.data,
       (entry, label) => {
+        assert.ok(
+          typeof entry === 'object' && entry !== null && 'digest' in entry,
+          label,
+        );
         assertHexString(entry.digest, `${label}.digest`);
       },
       'batchResult.data',
