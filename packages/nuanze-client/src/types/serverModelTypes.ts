@@ -184,6 +184,7 @@ export interface NuanzeServerFollowedLeaderboardItem {
   productIds: number[];
   productCount: number;
   globalRank: number | null;
+  filteredRank: number | null;
   volume: string | null;
   pointsTier: NuanzePointsTier | null;
 }
@@ -204,6 +205,7 @@ export interface NuanzeServerSubaccountLeaderboardItem {
   productIds: number[];
   productCount: number;
   globalRank: number | null;
+  filteredRank: number | null;
   volume: string | null;
   pointsTier: NuanzePointsTier | null;
 }

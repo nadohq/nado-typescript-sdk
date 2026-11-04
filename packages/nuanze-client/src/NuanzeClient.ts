@@ -263,7 +263,8 @@ export class NuanzeClient {
    * Gets the global public leaderboard of subaccounts. Results are sorted by equity-basis account
    * PnL descending with nulls last. Username, display name, and avatar URL are null when
    * unavailable.
-   * `globalRank` is independent of the active privacy and trading filters. Pagination uses a
+   * `globalRank` is independent of the active privacy and trading filters, while each item's
+   * `filteredRank` is its position under them, counted across pages. Pagination uses a
    * filter-bound opaque cursor. Pass `viewAs` with a bytes32 subaccount hex to also receive that
    * subaccount's `filteredRank` plus full item as `viewer` without altering pagination: `viewer`
    * is null when `viewAs` is omitted or has no source row, and a filter-excluded row keeps its
@@ -373,7 +374,8 @@ export class NuanzeClient {
    * follows, sorted by PnL descending with nulls last. The follower does not need a claimed
    * username. Subaccounts with no PnL in the window are included by default with null PnL/rank,
    * zero counts, and no products. Private subaccounts are excluded unless `includePrivate=true`.
-   * Pass `viewAs` with a bytes32 subaccount hex to also receive that followed subaccount's
+   * Each item's `filteredRank` is its position among the follower's filter-passing followed
+   * subaccounts, counted across pages; `globalRank` stays global. Pass `viewAs` with a bytes32 subaccount hex to also receive that followed subaccount's
    * `filteredRank` (counted among the follower's filter-passing followed subaccounts) plus full
    * item as `viewer` without altering pagination: `viewer` is null when `viewAs` is omitted or
    * the follower does not actively follow that subaccount, and a filter-excluded followed row

@@ -91,6 +91,9 @@ omitted or has no source row (for the followed leaderboard: when the follower do
 For subaccounts, privacy, trading, and username-claim filters define the filtered-rank population without removing
 an existing full item or its `globalRank`; exclusion sets only `filteredRank` to null. On the followed leaderboard
 `filteredRank` counts only the follower's filter-passing followed subaccounts, while `globalRank` stays global.
+Every subaccount and followed leaderboard item also carries its own `filteredRank` next to `globalRank`: on collection
+rows it is the position under the active filters, counted across cursor pages rather than within one page, and on a
+`viewer` or position `item` it equals the enclosing `filteredRank`.
 
 The dedicated point reads coexist with `viewAs`: `getWalletLeaderboardPosition({ address })` GETs
 `/leaderboard/wallets/{address}`, `getSubaccountLeaderboardPosition({ subaccountHex })` GETs
