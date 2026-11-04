@@ -159,6 +159,11 @@ function mapTriggerServerOrderStatus(
       executed: status.twap_completed.executed,
       total: status.twap_completed.total,
     };
+  } else if ('otc_pending_resolution' in status) {
+    return {
+      type: 'otc_pending_resolution',
+      dealId: status.otc_pending_resolution.deal_id,
+    };
   }
   throw Error(`Unknown trigger order status: ${JSON.stringify(status)}`);
 }

@@ -92,4 +92,12 @@ export type TriggerOrderStatus =
       type: 'twap_completed';
       executed: number;
       total: number;
+    }
+  | {
+      /**
+       * A fired Prime trigger whose deal is still being resolved. Not proof of a fill: check the
+       * archive by the order digest before treating it as executed.
+       */
+      type: 'otc_pending_resolution';
+      dealId: string;
     };

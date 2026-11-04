@@ -281,6 +281,8 @@ export class TriggerClient {
       spot_leverage: params.spotLeverage ?? null,
       digest: params.digest ?? null,
       borrow_margin: params.borrowMargin ?? null,
+      // The service rejects an explicit null here, so the key is left out entirely
+      ...(params.routingMode ? { routing_mode: params.routingMode } : {}),
     };
   }
 

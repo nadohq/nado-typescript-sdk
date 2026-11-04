@@ -140,6 +140,48 @@ void describe('[trigger-client]: placement', () => {
     assertHexString(result.data.digest, 'longStopResult.data.digest');
   });
 
+  void test('places a stop order with an explicit routing mode', async () => {
+    const nonce = getOrderNonce();
+    const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC);
+
+    const order: EngineOrderParams = {
+      amount: addDecimals(0.01),
+      expiration: getExpiration(),
+      price: 60000,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      subaccountOwner: tc.walletClientAddress,
+      appendix: packOrderAppendix({
+        orderExecutionType: 'ioc',
+        triggerType: 'price',
+      }),
+    };
+
+    const params: TriggerPlaceOrderParams = {
+      chainId: tc.chainId,
+      order,
+      productId: TEST_PRODUCT_IDS.PERP_BTC,
+      triggerCriteria: {
+        type: 'price',
+        criteria: {
+          type: 'oracle_price_below',
+          triggerPrice: midPrice.multipliedBy(0.9).dp(0),
+        },
+      },
+      // The service default, so it is accepted wherever the field is
+      routingMode: 'clob_only',
+      verifyingAddr,
+      nonce,
+    };
+
+    const result = await tc.trigger.placeTriggerOrder(params);
+    debugPrint('Routed stop order result', result);
+
+    assertDefined(result, 'routedStopResult');
+    assert.equal(result.status, 'success', 'should return success status');
+    assertDefined(result.data, 'routedStopResult.data');
+    assertHexString(result.data.digest, 'routedStopResult.data.digest');
+  });
+
   void test('places a short stop mid-book order via mid price above', async () => {
     const nonce = getOrderNonce();
     const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);

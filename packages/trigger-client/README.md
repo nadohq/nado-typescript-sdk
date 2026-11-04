@@ -26,6 +26,9 @@ const trigger = new TriggerClient({
 // Place a stop-loss trigger order
 await trigger.placeTriggerOrder({ ... });
 
+// Let the service fill it on Prime (OTC) or the order book, whichever is cheaper at fire time
+await trigger.placeTriggerOrder({ ..., routingMode: 'smart_router' });
+
 // List active trigger orders
 const orders = await trigger.listOrders({ ... });
 
@@ -42,6 +45,8 @@ await trigger.cancelTriggerOrders({ ... });
 ### Queries
 
 `listOrders`, `listTwapExecutions`.
+
+A fired Prime trigger reports `otc_pending_resolution` with its deal ID while the deal settles. That is not proof of a fill: check the archive by the order digest before treating it as executed.
 
 ### Linked Signers
 
