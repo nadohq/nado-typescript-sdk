@@ -1729,8 +1729,8 @@ export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
 export interface MobileAttributeOrdersParams extends MobileSignedRequestParams {
   /** UUID of the post or trade card the orders were placed from. */
   itemId: string;
-  /** Lowercase digests of the orders from one `place_orders` call, as `getOrderDigest` returns them: 1 to 50 distinct values. */
-  orderDigests: Hex[];
+  /** Lowercase hex digests of the orders from one `place_orders` call, as it returns them: 1 to 50 distinct values. */
+  orderDigests: string[];
 }
 
 /** Unsigned batch view report, independent of reading sessions and prior detail reads. */

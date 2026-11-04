@@ -135,7 +135,7 @@ export type MobileSignedInner =
       /** Post or trade card UUID. */
       item_id: string;
       /** 1–50 distinct lowercase order digests. */
-      order_digests: Hex[];
+      order_digests: string[];
     }
   | { type: 'set_bio'; bio: string }
   | { type: 'create_avatar_upload'; content_length: number }
