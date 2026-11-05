@@ -11,6 +11,8 @@ import {
   MobileNotificationPositionThreshold,
   MobileNotificationRouteName,
   MobileNotificationTypeId,
+  MobileOrderAttributionRejectReason,
+  MobileOrderAttributionStatus,
   MobileSocialFeedAction,
   MobileSocialFeedActionPriceBasis,
   MobileSocialFeedActionResolution,
@@ -1720,6 +1722,17 @@ export interface MobileSetFeedLikeParams extends MobileSignedRequestParams {
   isLiked: boolean;
 }
 
+/**
+ * Params for {@link MobileClient.attributeOrders}. The subaccount carried by {@link MobileSignedRequestParams}
+ * is the trading subaccount that placed the orders.
+ */
+export interface MobileAttributeOrdersParams extends MobileSignedRequestParams {
+  /** UUID of the post or trade card the orders were placed from. */
+  itemId: string;
+  /** Lowercase hex digests of the orders from one `place_orders` call, as it returns them: 1 to 50 distinct values. */
+  orderDigests: string[];
+}
+
 /** Unsigned batch view report, independent of reading sessions and prior detail reads. */
 export interface MobileRecordFeedViewsParams {
   /**
@@ -1921,6 +1934,23 @@ export interface MobileSocialFeedLikeResult {
   likeCount: number;
   /** Item display version. */
   version: string;
+}
+
+/** One order digest's attribution outcome. */
+export interface MobileOrderAttributionResult {
+  /** The requested digest, as lowercase hex. */
+  orderDigest: Hex;
+  status: MobileOrderAttributionStatus;
+  /** Set only when `status` is `rejected`. For logging, never shown to the trader. */
+  reason: MobileOrderAttributionRejectReason | null;
+}
+
+/** Attribution outcome of one `attribute_orders` request. */
+export interface MobileAttributeOrdersResult {
+  /** False when the attribution program is switched off; nothing is stored then. */
+  isAccepted: boolean;
+  /** One result per requested digest, in request order. */
+  results: MobileOrderAttributionResult[];
 }
 
 /** Full position history and viewing-account trading hints. */
