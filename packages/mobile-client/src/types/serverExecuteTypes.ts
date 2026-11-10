@@ -186,8 +186,8 @@ export interface MobileServerOrderAttributionResult {
   /** The requested digest, as lowercase hex. */
   order_digest: Hex;
   status: MobileOrderAttributionStatus;
-  /** Set only when `status` is `rejected`. */
-  reason: MobileOrderAttributionRejectReason | null;
+  /** Omitted unless `status` is `rejected`. */
+  reason?: MobileOrderAttributionRejectReason;
 }
 
 /** `accepted` is false when the attribution program is switched off; nothing is stored then. */

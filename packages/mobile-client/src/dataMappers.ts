@@ -1662,7 +1662,7 @@ export function mapMobileAttributeOrdersResult(
     results: server.results.map((result) => ({
       orderDigest: result.order_digest,
       status: result.status,
-      reason: result.reason,
+      reason: result.reason ?? null,
     })),
   };
 }
