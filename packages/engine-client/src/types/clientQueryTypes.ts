@@ -17,6 +17,7 @@ import BigNumber from 'bignumber.js';
 import {
   EngineServerNoncesParams,
   EngineServerTimeResponse,
+  EngineServerTradingStatus,
 } from './serverQueryTypes';
 
 export interface GetEngineSubaccountSummaryResponse extends SubaccountSummaryState {
@@ -93,6 +94,10 @@ export interface EngineSymbol {
   longWeightMaintenance: BigNumber;
   // undefined when there is no max open interest limit (always undefined for spot products)
   maxOpenInterest: BigNumber | undefined;
+  /**
+   * Which orders the market currently accepts, e.g. `not_tradable` or `reduce_only`.
+   */
+  tradingStatus: EngineServerTradingStatus;
   isolatedOnly: boolean;
 }
 

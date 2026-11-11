@@ -305,6 +305,7 @@ export function mapEngineServerSymbol(
       engineServerSymbol.long_weight_maintenance_x18,
     ),
     maxOpenInterest: removeDecimals(engineServerSymbol.max_open_interest_x18),
+    tradingStatus: engineServerSymbol.trading_status,
     isolatedOnly: engineServerSymbol.isolated_only,
   };
 }

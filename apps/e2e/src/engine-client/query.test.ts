@@ -1,5 +1,6 @@
 import {
   ENGINE_SERVER_STATUS_VALUES,
+  ENGINE_SERVER_TRADING_STATUS_VALUES,
   GetEngineDynamicFeeQuoteResponse,
 } from '@nadohq/engine-client';
 import {
@@ -78,6 +79,11 @@ void describe(
           `symbols[${symbolName}].sizeIncrement`,
         );
         assertBigNumberFinite(symbol.minSize, `symbols[${symbolName}].minSize`);
+        assertEnumMember(
+          symbol.tradingStatus,
+          ENGINE_SERVER_TRADING_STATUS_VALUES,
+          `symbols[${symbolName}].tradingStatus`,
+        );
       }
     });
 
