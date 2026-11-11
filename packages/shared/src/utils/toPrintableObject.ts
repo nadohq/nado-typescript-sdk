@@ -20,15 +20,16 @@ export function toPrintableObject(obj: unknown, seen = new WeakSet()): unknown {
   if (obj instanceof BigNumber || typeof obj === 'bigint') {
     return obj.toString();
   }
-  if (Array.isArray(obj)) {
-    return obj.map((item) => toPrintableObject(item, seen));
-  }
   if (typeof obj === 'object') {
     // Detect cyclic references
     if (seen.has(obj)) {
       return '[Circular]';
     }
     seen.add(obj);
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => toPrintableObject(item, seen));
+    }
 
     try {
       return Object.fromEntries(
