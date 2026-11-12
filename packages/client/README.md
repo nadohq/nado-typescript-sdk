@@ -52,14 +52,14 @@ await client.market.placeOrder({
 });
 
 // Get subaccount summary
-const summary = await client.subaccount.getSummary({
+const summary = await client.subaccount.getSubaccountSummary({
   /* subaccount params */
 });
 ```
 
 ## API Overview
 
-The `NadoClient` exposes five domain APIs:
+The `NadoClient` exposes six domain APIs:
 
 | API | Description |
 | --- | --- |
@@ -67,6 +67,7 @@ The `NadoClient` exposes five domain APIs:
 | `client.subaccount` | Subaccount summaries, isolated positions, fee rates, linked signers, referrals, liquidation |
 | `client.spot` | Deposits, withdrawals, token allowances, quote transfers, NLP mint/burn |
 | `client.perp` | Perp-specific price queries |
+| `client.rewards` | Cash incentives queries and claims, airdrop claim state |
 | `client.ws` | WebSocket query, execute, and subscription message builders |
 
 ## Re-exports
@@ -77,6 +78,8 @@ This package re-exports everything from the underlying packages, so most apps on
 - `@nadohq/indexer-client`
 - `@nadohq/trigger-client`
 - `@nadohq/mobile-client`
+- `@nadohq/nuanze-client`
+- `@nadohq/otc-client`
 - `@nadohq/shared`
 
 ## Advanced: Custom Endpoints
@@ -93,6 +96,7 @@ const client = createNadoClient(
     triggerEndpoint: 'https://...',
     mobileEndpoint: 'https://...',
     nuanzeEndpoint: 'https://...',
+    otcEndpoint: 'https://...',
   },
   { publicClient, walletClient },
 );

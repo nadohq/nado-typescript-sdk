@@ -68,7 +68,7 @@
 
 ```typescript
 // calculates position notional value
-export function calculateNotional(size: BigDecimal, price: BigDecimal) {
+export function calculateNotional(size: BigNumber, price: BigNumber) {
   // Should be converted to JSDoc format
 }
 ```
@@ -78,15 +78,15 @@ export function calculateNotional(size: BigDecimal, price: BigDecimal) {
 ```typescript
 /**
  * Calculates the notional value of a position
- * @param size - Position size in base units (BigDecimal)
- * @param price - Current price per unit (BigDecimal, precision 18)
+ * @param size - Position size in base units (BigNumber)
+ * @param price - Current price per unit (BigNumber, precision 18)
  * @returns Notional value in quote currency (USDT), rounded to 6 decimal places
  * @throws {InvalidPositionError} When size is zero or negative
  */
 export function calculateNotional(
-  size: BigDecimal,
-  price: BigDecimal,
-): BigDecimal {
+  size: BigNumber,
+  price: BigNumber,
+): BigNumber {
   // Implementation
 }
 ```
@@ -168,15 +168,15 @@ try {
 
 ```typescript
 /**
- * Common BigDecimal constants used throughout the SDK
+ * Common BigNumber constants used throughout the SDK
  */
-export const BigDecimals = Object.freeze({
+export const BigNumbers = Object.freeze({
   // Freeze object to prevent mutation
   // Use semantic names for commonly used values
-  ZERO: toBigDecimal(0),
-  ONE: toBigDecimal(1),
-  INF: toBigDecimal(Infinity),
-  MAX_I128: toBigDecimal('170141183460469231731687303715884105727'),
+  ZERO: toBigNumber(0),
+  ONE: toBigNumber(1),
+  INF: toBigNumber(Infinity),
+  MAX_I128: toBigNumber('170141183460469231731687303715884105727'),
 });
 
 /**
@@ -196,22 +196,22 @@ export const QUOTE_PRODUCT_ID = 0;
 
 ```typescript
 /**
- * BigDecimal is a renamed `BigNumber` type from `bignumber.js`.
- * Includes valid values & instances for BigDecimal.
+ * BigNumber is the type from `bignumber.js`.
+ * Includes valid values & instances for BigNumber.
  * @see https://mikemcl.github.io/bignumber.js/
  */
-export type BigDecimalish = BigDecimal | BigDecimal.Value | bigint;
+export type BigNumberish = BigNumber | BigNumber.Value | bigint;
 
 /**
- * Converts a value to an instance of BigDecimal
- * @param val - The value to convert to BigDecimal  
- * @returns A new BigDecimal instance
+ * Converts a value to an instance of BigNumber
+ * @param val - The value to convert to BigNumber  
+ * @returns A new BigNumber instance
  */
-export function toBigDecimal(val: BigDecimalish): BigDecimal {
+export function toBigNumber(val: BigNumberish): BigNumber {
   // Handle different input types with type guards
   const bnConstructorVal = (() => {
-    if (val instanceof BigDecimal) {
-      return val; // Already BigDecimal, return as-is
+    if (val instanceof BigNumber) {
+      return val; // Already BigNumber, return as-is
     } else if (typeof val === 'string' || typeof val === 'number') {
       return val; // Native types supported by BigNumber constructor
     } else if (typeof val === 'bigint') {
@@ -220,7 +220,7 @@ export function toBigDecimal(val: BigDecimalish): BigDecimal {
     // Fallback for unexpected types (edge case handling)
     return JSON.stringify(val);
   })();
-  return new BigDecimal(bnConstructorVal);
+  return new BigNumber(bnConstructorVal);
 }
 ```
 
