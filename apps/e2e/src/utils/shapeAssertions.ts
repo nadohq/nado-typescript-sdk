@@ -358,11 +358,19 @@ export function assertPerpPricesShape(
  * Validates the shape of a funding rate entry.
  */
 export function assertFundingRateShape(
-  rate: { productId: number; fundingRate: unknown; updateTime: unknown },
+  rate: {
+    productId: number;
+    fundingRate: unknown;
+    premium?: unknown;
+    updateTime: unknown;
+  },
   label: string,
 ): void {
   assertNumber(rate.productId, `${label}.productId`);
   assertBigNumberFinite(rate.fundingRate, `${label}.fundingRate`);
+  if (rate.premium != null) {
+    assertBigNumberFinite(rate.premium, `${label}.premium`);
+  }
   assertBigNumberFinite(rate.updateTime, `${label}.updateTime`);
 }
 

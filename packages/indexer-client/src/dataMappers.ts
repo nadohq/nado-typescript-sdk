@@ -283,6 +283,7 @@ export function mapIndexerFundingRate(
 ): IndexerFundingRate {
   return {
     fundingRate: removeDecimals(fundingRate.funding_rate_x18),
+    premium: removeDecimals(fundingRate.premium_x18),
     updateTime: toBigNumber(fundingRate.update_time),
     productId: fundingRate.product_id,
   };
