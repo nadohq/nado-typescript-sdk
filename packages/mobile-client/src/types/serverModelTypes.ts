@@ -389,14 +389,18 @@ export interface MobileServerProductEvent {
   query: string | null;
 }
 
+/** Every {@link MobileSocialFeedType} for runtime validation, filters, and UI enumeration. */
+export const MOBILE_SOCIAL_FEED_TYPES = [
+  'open',
+  'close',
+  'size_change',
+  'thoughts',
+  'analysis',
+  'comments',
+] as const;
+
 /** Content filters accepted by the six social feed lists. Empty or omitted means all. */
-export type MobileSocialFeedType =
-  | 'open'
-  | 'close'
-  | 'size_change'
-  | 'thoughts'
-  | 'analysis'
-  | 'comments';
+export type MobileSocialFeedType = (typeof MOBILE_SOCIAL_FEED_TYPES)[number];
 
 /** Market category used by the social feed. */
 export type MobileSocialFeedMarketCategory = 'crypto' | 'finance';

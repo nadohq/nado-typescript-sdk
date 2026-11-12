@@ -1,5 +1,6 @@
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_SOCIAL_FEED_TYPES,
   MobileClient,
   MobileSocialFeedAuthor,
   MobileSocialFeedPage,
@@ -45,6 +46,16 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
       mobile = new MobileClient({ url: tc.endpoints.mobile });
+    });
+
+    void test('accepts every exported social feed type as a public filter', async () => {
+      for (const feedType of MOBILE_SOCIAL_FEED_TYPES) {
+        const page = await mobile.getForYouFeed({
+          feedTypes: [feedType],
+          limit: 1,
+        });
+        assertPage(page);
+      }
     });
 
     void test('reads a public filtered session and reuses its identity for pagination and updates', async () => {
