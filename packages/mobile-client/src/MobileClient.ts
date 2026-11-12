@@ -1488,10 +1488,10 @@ export class MobileClient {
 
   /**
    * Links the orders of one `place_orders` call to the post or trade card they were placed from, so the
-   * item's Creator earns a share of their taker fees. Send it alongside `place_orders`, never in its path. The
-   * response only checks the item and its author; whether an accepted order earns is settled later from its fills,
-   * and the post-open window and last-post-wins rules are the app's to enforce. Replaying the same digests for the
-   * same item is safe and returns `duplicate`.
+   * item's Creator earns a share of their taker fees. Send it after `place_orders` succeeds, never in the order path.
+   * The response only checks the item and its author. Whether an order earns is decided later from its fills, and
+   * only the app enforces the post-open window and last-post-wins. Replaying the same digests for the same item is
+   * safe and returns `duplicate`.
    *
    * @param params - Trading subaccount and signing options, the item UUID, and 1 to 50 order digests.
    * @returns One outcome per digest, in request order, and whether the program is switched on.

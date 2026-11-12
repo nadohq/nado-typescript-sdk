@@ -179,7 +179,8 @@ const FEED_SIGNING_FIXTURES = [
 
 /**
  * Attribution vectors from nado-mobile-be at e9d9a590bc3b711e705482baf646075c28574d8d:
- * mobile/tests/fixtures/creator-attribution-signing.json. The reversed vector pins that digest order is signed.
+ * mobile/tests/fixtures/creator-attribution-signing.json. The reversed vector checks that the signature covers
+ * digest order.
  */
 const CREATOR_ATTRIBUTION_SIGNING_FIXTURES = [
   {
