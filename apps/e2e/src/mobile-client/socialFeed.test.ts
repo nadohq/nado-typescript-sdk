@@ -1,5 +1,11 @@
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_SOCIAL_FEED_COHORT_STATUSES,
+  MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
+  MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
+  MOBILE_SOCIAL_FEED_TRADER_BADGE_CODES,
+  MOBILE_SOCIAL_FEED_TRADER_DATA_STATUSES,
+  MOBILE_SOCIAL_FEED_TYPES,
   MobileClient,
   MobileSocialFeedAuthor,
   MobileSocialFeedPage,
@@ -45,6 +51,29 @@ void describe(
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
       mobile = new MobileClient({ url: tc.endpoints.mobile });
+    });
+
+    void test('accepts every exported social feed type as a public filter', async () => {
+      for (const feedType of MOBILE_SOCIAL_FEED_TYPES) {
+        const page = await mobile.getForYouFeed({
+          feedTypes: [feedType],
+          limit: 1,
+        });
+        assertPage(page);
+      }
+    });
+
+    void test('accepts every exported market category as a public filter', async () => {
+      for (const marketCategory of MOBILE_SOCIAL_FEED_MARKET_CATEGORIES) {
+        const page = await mobile.getForYouFeed({
+          marketCategory,
+          limit: 1,
+        });
+        assertPage(page);
+        for (const item of page.items) {
+          assert.equal(item.market.category, marketCategory);
+        }
+      }
     });
 
     void test('reads a public filtered session and reuses its identity for pagination and updates', async () => {
@@ -146,7 +175,11 @@ void describe(
       assertPage(page);
       assert.equal(page.rankingVersion, 'chronological-v1');
       assert.equal(page.cohort.coverage.complete, true);
-      assert.ok(['ready', 'stale'].includes(page.cohort.status));
+      assertEnumMember(
+        page.cohort.status,
+        MOBILE_SOCIAL_FEED_COHORT_STATUSES,
+        'page.cohort.status',
+      );
       for (const item of page.items) {
         const badge = item.author.traderBadge;
         if (badge !== null) {
@@ -309,6 +342,20 @@ function assertPage(page: MobileSocialFeedPage) {
       'item.kind',
     );
     assertFeedAuthor(item.author);
+    if (item.market.category !== null) {
+      assertEnumMember(
+        item.market.category,
+        MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
+        'item.market.category',
+      );
+    }
+    for (const category of item.market.sourceCategories) {
+      assertEnumMember(
+        category,
+        MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
+        'item.market.sourceCategories',
+      );
+    }
     assert.ok(BigInt(item.version) > 0n);
     if (item.kind !== 'trade_row' && item.interaction.likedByMe !== null) {
       assertBoolean(item.interaction.likedByMe, 'item.interaction.likedByMe');
@@ -342,13 +389,13 @@ function assertFeedAuthor(author: MobileSocialFeedAuthor) {
     assertBoolean(author.isFollowing, 'author.isFollowing');
   assertEnumMember(
     author.traderDataStatus,
-    ['ready', 'stale', 'unavailable'],
+    MOBILE_SOCIAL_FEED_TRADER_DATA_STATUSES,
     'author.traderDataStatus',
   );
   if (author.traderBadge !== null) {
     assertEnumMember(
       author.traderBadge.code,
-      ['shark', 'whale'],
+      MOBILE_SOCIAL_FEED_TRADER_BADGE_CODES,
       'author.traderBadge.code',
     );
     assertBigNumberFinite(author.traderBadge.pnl, 'author.traderBadge.pnl');
