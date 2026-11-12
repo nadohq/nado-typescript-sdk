@@ -31,6 +31,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
       verifyingAddr: getOrderVerifyingAddress(params.productId),
       productId,
       spotLeverage: params.spotLeverage,
+      borrowMargin: params.borrowMargin,
       nonce,
     });
   }
@@ -44,7 +45,8 @@ export class MarketExecuteAPI extends BaseNadoAPI {
   ): Promise<EngineServerExecuteSuccessResult<'place_orders'>> {
     return this.context.engineClient.placeOrders({
       orders: params.orders.map((orderParams) => {
-        const { id, productId, order, nonce, spotLeverage } = orderParams;
+        const { id, productId, order, nonce, spotLeverage, borrowMargin } =
+          orderParams;
         return {
           id,
           order: {
@@ -55,6 +57,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
           verifyingAddr: getOrderVerifyingAddress(productId),
           productId,
           spotLeverage,
+          borrowMargin,
           nonce,
         };
       }),
@@ -80,7 +83,14 @@ export class MarketExecuteAPI extends BaseNadoAPI {
    * @param params
    */
   async cancelAndPlace(params: CancelAndPlaceOrderParams) {
-    const { productId, order, nonce, spotLeverage } = params.placeOrder;
+    const {
+      id: orderId,
+      productId,
+      order,
+      nonce,
+      spotLeverage,
+      borrowMargin,
+    } = params.placeOrder;
     const subaccountOwner = this.getSubaccountOwnerIfNeeded(
       params.cancelOrders,
     );
@@ -95,6 +105,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
         chainId,
       },
       placeOrder: {
+        id: orderId,
         order: {
           ...order,
           subaccountOwner,
@@ -103,6 +114,7 @@ export class MarketExecuteAPI extends BaseNadoAPI {
         chainId,
         productId,
         spotLeverage,
+        borrowMargin,
         nonce,
       },
       requiredUnfilledAmount: params.requiredUnfilledAmount,
