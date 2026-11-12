@@ -1941,7 +1941,7 @@ export interface MobileOrderAttributionResult {
   /** The requested digest, as lowercase hex. */
   orderDigest: Hex;
   status: MobileOrderAttributionStatus;
-  /** Set only when `status` is `rejected`. For logging, never shown to the trader. */
+  /** Set only when `status` is `rejected`. */
   reason: MobileOrderAttributionRejectReason | null;
 }
 
