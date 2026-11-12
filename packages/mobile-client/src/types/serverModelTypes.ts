@@ -402,63 +402,148 @@ export const MOBILE_SOCIAL_FEED_TYPES = [
 /** Content filters accepted by the six social feed lists. Empty or omitted means all. */
 export type MobileSocialFeedType = (typeof MOBILE_SOCIAL_FEED_TYPES)[number];
 
+/** Every {@link MobileSocialFeedMarketCategory} for feed filters and runtime validation. */
+export const MOBILE_SOCIAL_FEED_MARKET_CATEGORIES = [
+  'crypto',
+  'finance',
+] as const;
+
 /** Market category used by the social feed. */
-export type MobileSocialFeedMarketCategory = 'crypto' | 'finance';
+export type MobileSocialFeedMarketCategory =
+  (typeof MOBILE_SOCIAL_FEED_MARKET_CATEGORIES)[number];
+
+/** Every {@link MobileSocialFeedTraderBadgeCode} an author can receive. */
+export const MOBILE_SOCIAL_FEED_TRADER_BADGE_CODES = [
+  'shark',
+  'whale',
+] as const;
 
 /** Qualification tier for an account-level PnL badge. */
-export type MobileSocialFeedTraderBadgeCode = 'shark' | 'whale';
+export type MobileSocialFeedTraderBadgeCode =
+  (typeof MOBILE_SOCIAL_FEED_TRADER_BADGE_CODES)[number];
+
+/** Every {@link MobileSocialFeedCohortStatus} a qualification snapshot can report. */
+export const MOBILE_SOCIAL_FEED_COHORT_STATUSES = ['ready', 'stale'] as const;
 
 /** Availability of the current or last successful qualification snapshot. */
-export type MobileSocialFeedCohortStatus = 'ready' | 'stale';
+export type MobileSocialFeedCohortStatus =
+  (typeof MOBILE_SOCIAL_FEED_COHORT_STATUSES)[number];
+
+/** Every {@link MobileSocialFeedTraderDataStatus}, including unavailable qualification data. */
+export const MOBILE_SOCIAL_FEED_TRADER_DATA_STATUSES = [
+  ...MOBILE_SOCIAL_FEED_COHORT_STATUSES,
+  'unavailable',
+] as const;
 
 /** Availability of an author's qualification data. */
 export type MobileSocialFeedTraderDataStatus =
-  | MobileSocialFeedCohortStatus
-  | 'unavailable';
+  (typeof MOBILE_SOCIAL_FEED_TRADER_DATA_STATUSES)[number];
+
+/** Every {@link MobileSocialFeedSourceCategory} the authoritative market source can report. */
+export const MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES = [
+  'crypto',
+  'stocks',
+  'forex',
+  'commodities',
+] as const;
 
 /** Category from the authoritative market source. */
 export type MobileSocialFeedSourceCategory =
-  | 'crypto'
-  | 'stocks'
-  | 'forex'
-  | 'commodities';
+  (typeof MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES)[number];
+
+/** Every {@link MobileSocialFeedPnlBasis} used to account for position PnL. */
+export const MOBILE_SOCIAL_FEED_PNL_BASES = [
+  'unrealized_excl_fees_funding',
+  'realized_incl_fees_funding',
+] as const;
 
 /** Accounting basis used for position PnL. */
 export type MobileSocialFeedPnlBasis =
-  | 'unrealized_excl_fees_funding'
-  | 'realized_incl_fees_funding';
+  (typeof MOBILE_SOCIAL_FEED_PNL_BASES)[number];
+
+/** Every {@link MobileSocialFeedPnlMode} for current or closed position PnL. */
+export const MOBILE_SOCIAL_FEED_PNL_MODES = ['live', 'frozen'] as const;
 
 /** Whether position PnL is live or frozen at close. */
-export type MobileSocialFeedPnlMode = 'live' | 'frozen';
+export type MobileSocialFeedPnlMode =
+  (typeof MOBILE_SOCIAL_FEED_PNL_MODES)[number];
+
+/** Every {@link MobileSocialFeedPnlQuality} a position can report. */
+export const MOBILE_SOCIAL_FEED_PNL_QUALITIES = [
+  'ready',
+  'pending',
+  'unavailable',
+] as const;
 
 /** Completeness of position PnL accounting. */
-export type MobileSocialFeedPnlQuality = 'ready' | 'pending' | 'unavailable';
+export type MobileSocialFeedPnlQuality =
+  (typeof MOBILE_SOCIAL_FEED_PNL_QUALITIES)[number];
+
+/** Every {@link MobileSocialFeedPositionDisplayBasis} for position size and entry price. */
+export const MOBILE_SOCIAL_FEED_POSITION_DISPLAY_BASES = [
+  'current_position',
+  'closing_snapshot',
+] as const;
 
 /** Source of the displayed position size and entry price. */
 export type MobileSocialFeedPositionDisplayBasis =
-  | 'current_position'
-  | 'closing_snapshot';
+  (typeof MOBILE_SOCIAL_FEED_POSITION_DISPLAY_BASES)[number];
+
+/** Every {@link MobileSocialFeedPositionState} in a position lifecycle. */
+export const MOBILE_SOCIAL_FEED_POSITION_STATES = ['open', 'closed'] as const;
 
 /** Current state of a position lifecycle. */
-export type MobileSocialFeedPositionState = 'open' | 'closed';
+export type MobileSocialFeedPositionState =
+  (typeof MOBILE_SOCIAL_FEED_POSITION_STATES)[number];
+
+/** Every {@link MobileSocialFeedHistoryQuality} for the available position history. */
+export const MOBILE_SOCIAL_FEED_HISTORY_QUALITIES = [
+  'complete',
+  'partial',
+] as const;
 
 /** Completeness of the available position history. */
-export type MobileSocialFeedHistoryQuality = 'complete' | 'partial';
+export type MobileSocialFeedHistoryQuality =
+  (typeof MOBILE_SOCIAL_FEED_HISTORY_QUALITIES)[number];
+
+/** Every {@link MobileSocialFeedTradeSizeChangeAction} represented by a size-change row. */
+export const MOBILE_SOCIAL_FEED_TRADE_SIZE_CHANGE_ACTIONS = [
+  'increased',
+  'reduced',
+] as const;
 
 /** Trading action represented by an ordinary size-change row. */
-export type MobileSocialFeedTradeSizeChangeAction = 'increased' | 'reduced';
+export type MobileSocialFeedTradeSizeChangeAction =
+  (typeof MOBILE_SOCIAL_FEED_TRADE_SIZE_CHANGE_ACTIONS)[number];
+
+/** Every {@link MobileSocialFeedTradeCardAction} represented by an automatic trade card. */
+export const MOBILE_SOCIAL_FEED_TRADE_CARD_ACTIONS = [
+  'opened',
+  'closed',
+  ...MOBILE_SOCIAL_FEED_TRADE_SIZE_CHANGE_ACTIONS,
+] as const;
 
 /** Trading action represented by an automatic trade card. */
 export type MobileSocialFeedTradeCardAction =
-  | 'opened'
-  | 'closed'
-  | MobileSocialFeedTradeSizeChangeAction;
+  (typeof MOBILE_SOCIAL_FEED_TRADE_CARD_ACTIONS)[number];
+
+/** Every {@link MobileSocialFeedReadSessionMode} supported by public reading sessions. */
+export const MOBILE_SOCIAL_FEED_READ_SESSION_MODES = [
+  'feed',
+  'item',
+  'position',
+] as const;
 
 /** Whether a reading session was created for a list or a direct item. */
-export type MobileSocialFeedReadSessionMode = 'feed' | 'item' | 'position';
+export type MobileSocialFeedReadSessionMode =
+  (typeof MOBILE_SOCIAL_FEED_READ_SESSION_MODES)[number];
+
+/** Every {@link MobileSocialFeedTargetType} accepted by feed updates. */
+export const MOBILE_SOCIAL_FEED_TARGET_TYPES = ['item', 'position'] as const;
 
 /** Kind of feed update target. */
-export type MobileSocialFeedTargetType = 'item' | 'position';
+export type MobileSocialFeedTargetType =
+  (typeof MOBILE_SOCIAL_FEED_TARGET_TYPES)[number];
 
 /** Official account-level 30-day PnL badge, independent of position PnL. */
 export interface MobileServerSocialFeedTraderBadge {
@@ -863,70 +948,137 @@ export interface MobileSocialFeedUnavailableTarget {
   reason: 'unavailable';
 }
 
+/** Every {@link MobileSocialFeedAttachmentStatus} a reply can report. */
+export const MOBILE_SOCIAL_FEED_ATTACHMENT_STATUSES = [
+  'none',
+  'visible',
+  'unavailable',
+] as const;
+
 /** Readable state of a reply's position attachment. */
 export type MobileSocialFeedAttachmentStatus =
-  | 'none'
-  | 'visible'
-  | 'unavailable';
+  (typeof MOBILE_SOCIAL_FEED_ATTACHMENT_STATUSES)[number];
+
+/** Every {@link MobileSocialFeedChartInterval} accepted by social feed charts. */
+export const MOBILE_SOCIAL_FEED_CHART_INTERVALS = [
+  '1m',
+  '5m',
+  '15m',
+  '1h',
+  '4h',
+  '1d',
+] as const;
 
 /** Supported chart candle intervals. */
 export type MobileSocialFeedChartInterval =
-  | '1m'
-  | '5m'
-  | '15m'
-  | '1h'
-  | '4h'
-  | '1d';
+  (typeof MOBILE_SOCIAL_FEED_CHART_INTERVALS)[number];
+
+/** Every {@link MobileSocialFeedAction}, including liquidations without a trade card. */
+export const MOBILE_SOCIAL_FEED_ACTIONS = [
+  ...MOBILE_SOCIAL_FEED_TRADE_CARD_ACTIONS,
+  'liquidated',
+] as const;
 
 /** Position lifecycle action. */
 export type MobileSocialFeedAction =
-  | MobileSocialFeedTradeCardAction
-  | 'liquidated';
+  (typeof MOBILE_SOCIAL_FEED_ACTIONS)[number];
+
+/** Every {@link MobileSocialFeedPositionResolution} a position command can return. */
+export const MOBILE_SOCIAL_FEED_POSITION_RESOLUTIONS = [
+  'resolved',
+  'choose_position',
+  'no_open_position',
+  'unknown_market',
+] as const;
 
 /** Result of resolving a position command. */
 export type MobileSocialFeedPositionResolution =
-  | 'resolved'
-  | 'choose_position'
-  | 'no_open_position'
-  | 'unknown_market';
+  (typeof MOBILE_SOCIAL_FEED_POSITION_RESOLUTIONS)[number];
+
+/** Every {@link MobileSocialFeedTradingResolution} a viewing account can report. */
+export const MOBILE_SOCIAL_FEED_TRADING_RESOLUTIONS = [
+  'no_viewing_account',
+  'none',
+  'unique',
+  'choose_position',
+  'unavailable',
+] as const;
 
 /** Resolution of a viewing account's trading targets. */
 export type MobileSocialFeedTradingResolution =
-  | 'no_viewing_account'
-  | 'none'
-  | 'unique'
-  | 'choose_position'
-  | 'unavailable';
+  (typeof MOBILE_SOCIAL_FEED_TRADING_RESOLUTIONS)[number];
+
+/** Every {@link MobileSocialFeedActionPriceBasis} used by a historical action marker. */
+export const MOBILE_SOCIAL_FEED_ACTION_PRICE_BASES = [
+  'execution',
+  'liquidation_oracle',
+] as const;
 
 /** Price source for a historical action marker. */
 export type MobileSocialFeedActionPriceBasis =
-  | 'execution'
-  | 'liquidation_oracle';
+  (typeof MOBILE_SOCIAL_FEED_ACTION_PRICE_BASES)[number];
+
+/** Every {@link MobileSocialFeedChartDataQuality} a readable chart can report. */
+export const MOBILE_SOCIAL_FEED_CHART_DATA_QUALITIES = [
+  'ready',
+  'partial',
+] as const;
 
 /** Chart source completeness; wholly unavailable sources fail the request. */
-export type MobileSocialFeedChartDataQuality = 'ready' | 'partial';
+export type MobileSocialFeedChartDataQuality =
+  (typeof MOBILE_SOCIAL_FEED_CHART_DATA_QUALITIES)[number];
+
+/** Every {@link MobileSocialFeedActionResolution} for an order's action segments. */
+export const MOBILE_SOCIAL_FEED_ACTION_RESOLUTIONS = [
+  'ready',
+  'pending',
+] as const;
 
 /** Projection state of an order's authoritative action segments. */
-export type MobileSocialFeedActionResolution = 'ready' | 'pending';
+export type MobileSocialFeedActionResolution =
+  (typeof MOBILE_SOCIAL_FEED_ACTION_RESOLUTIONS)[number];
+
+/** Every {@link MobileSocialFeedPositionResolutionReason} for an empty command result. */
+export const MOBILE_SOCIAL_FEED_POSITION_RESOLUTION_REASONS = [
+  'no_open_position',
+  'unknown_market',
+] as const;
 
 /** Explanation for an empty position command result. */
 export type MobileSocialFeedPositionResolutionReason =
-  | 'no_open_position'
-  | 'unknown_market';
+  (typeof MOBILE_SOCIAL_FEED_POSITION_RESOLUTION_REASONS)[number];
+
+/** Every {@link MobileSocialFeedActionUnavailableReason} that prevents publication. */
+export const MOBILE_SOCIAL_FEED_ACTION_UNAVAILABLE_REASONS = [
+  'position_closed',
+  'already_published',
+  'unavailable',
+] as const;
 
 /** Reason an action cannot be published. */
 export type MobileSocialFeedActionUnavailableReason =
-  | 'position_closed'
-  | 'already_published'
-  | 'unavailable';
+  (typeof MOBILE_SOCIAL_FEED_ACTION_UNAVAILABLE_REASONS)[number];
+
+/** Every {@link MobileSocialFeedLiquidationPriceQuality}, including inapplicable estimates. */
+export const MOBILE_SOCIAL_FEED_LIQUIDATION_PRICE_QUALITIES = [
+  ...MOBILE_SOCIAL_FEED_PNL_QUALITIES,
+  'not_applicable',
+] as const;
 
 /** Availability of an estimated liquidation price. */
 export type MobileSocialFeedLiquidationPriceQuality =
-  | MobileSocialFeedPnlQuality
-  | 'not_applicable';
+  (typeof MOBILE_SOCIAL_FEED_LIQUIDATION_PRICE_QUALITIES)[number];
+
+/** Every {@link MobileSocialFeedPresenceState} an individual page can report. */
+export const MOBILE_SOCIAL_FEED_PRESENCE_STATES = [
+  'watching',
+  'heartbeat',
+  'left',
+] as const;
 
 /** Presence lifecycle reported by an individual page. */
-export type MobileSocialFeedPresenceState = 'watching' | 'heartbeat' | 'left';
+export type MobileSocialFeedPresenceState =
+  (typeof MOBILE_SOCIAL_FEED_PRESENCE_STATES)[number];
 
 /** Mention offsets refer to Unicode code points in the original text, not UTF-16 indices. */
 export interface MobileSocialFeedMention {

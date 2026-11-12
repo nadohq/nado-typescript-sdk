@@ -3,7 +3,18 @@ import {
   isMobileSocialFeedUploadedImage,
   MOBILE_ERROR_CODES,
   MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES,
+  MOBILE_SOCIAL_FEED_ACTION_PRICE_BASES,
+  MOBILE_SOCIAL_FEED_ACTIONS,
+  MOBILE_SOCIAL_FEED_ATTACHMENT_STATUSES,
+  MOBILE_SOCIAL_FEED_CHART_DATA_QUALITIES,
   MOBILE_SOCIAL_FEED_FUNDING_BASES,
+  MOBILE_SOCIAL_FEED_HISTORY_QUALITIES,
+  MOBILE_SOCIAL_FEED_LIQUIDATION_PRICE_QUALITIES,
+  MOBILE_SOCIAL_FEED_PNL_BASES,
+  MOBILE_SOCIAL_FEED_PNL_MODES,
+  MOBILE_SOCIAL_FEED_PNL_QUALITIES,
+  MOBILE_SOCIAL_FEED_POSITION_DISPLAY_BASES,
+  MOBILE_SOCIAL_FEED_POSITION_STATES,
   MOBILE_SOCIAL_FEED_ROI_BASIS_QUALITIES,
   MOBILE_SOCIAL_FEED_ROI_BASIS_TYPES,
   MobileClient,
@@ -234,7 +245,7 @@ void describe(
         }
         assertEnumMember(
           comment.attachmentStatus,
-          ['none', 'visible', 'unavailable'],
+          MOBILE_SOCIAL_FEED_ATTACHMENT_STATUSES,
           'comment.attachmentStatus',
         );
       }
@@ -344,9 +355,24 @@ void describe(
       assertNoRoi(recent.position);
       for (const result of [history, recent]) {
         assertEnumMember(
+          result.historyQuality,
+          MOBILE_SOCIAL_FEED_HISTORY_QUALITIES,
+          'historyQuality',
+        );
+        assertEnumMember(
           result.position.fundingBasis,
           MOBILE_SOCIAL_FEED_FUNDING_BASES,
           'fundingBasis',
+        );
+        assertEnumMember(
+          result.position.fundingQuality,
+          MOBILE_SOCIAL_FEED_PNL_QUALITIES,
+          'fundingQuality',
+        );
+        assertEnumMember(
+          result.position.liquidationPriceQuality,
+          MOBILE_SOCIAL_FEED_LIQUIDATION_PRICE_QUALITIES,
+          'liquidationPriceQuality',
         );
         if (result.position.fundingPnl !== null) {
           assertBigNumberFinite(result.position.fundingPnl, 'fundingPnl');
@@ -418,6 +444,11 @@ void describe(
           }
         }
         if (entry.kind === 'action') {
+          assertEnumMember(
+            entry.action.action,
+            MOBILE_SOCIAL_FEED_ACTIONS,
+            'action.action',
+          );
           assertBigNumberFinite(
             entry.action.executedQuantity,
             'action.executedQuantity',
@@ -456,9 +487,21 @@ void describe(
       debugPrint('Position chart', chart);
       assertEnumMember(
         chart.dataQuality,
-        ['ready', 'partial'],
+        MOBILE_SOCIAL_FEED_CHART_DATA_QUALITIES,
         'chart.dataQuality',
       );
+      for (const marker of chart.actionMarkers) {
+        assertEnumMember(
+          marker.action,
+          MOBILE_SOCIAL_FEED_ACTIONS,
+          'marker.action',
+        );
+        assertEnumMember(
+          marker.priceBasis,
+          MOBILE_SOCIAL_FEED_ACTION_PRICE_BASES,
+          'marker.priceBasis',
+        );
+      }
       for (const candle of chart.candles) {
         assertBigNumberFinite(candle.open, 'candle.open');
         assertBigNumberFinite(candle.volume, 'candle.volume');
@@ -1054,6 +1097,36 @@ function getSessionParams(session: MobileSocialFeedReadSession) {
 
 function assertPosition(position: MobileSocialFeedPositionCard) {
   assertNonEmptyString(position.positionId, 'position.positionId');
+  assertEnumMember(
+    position.state,
+    MOBILE_SOCIAL_FEED_POSITION_STATES,
+    'position.state',
+  );
+  assertEnumMember(
+    position.displayBasis,
+    MOBILE_SOCIAL_FEED_POSITION_DISPLAY_BASES,
+    'position.displayBasis',
+  );
+  assertEnumMember(
+    position.historyQuality,
+    MOBILE_SOCIAL_FEED_HISTORY_QUALITIES,
+    'position.historyQuality',
+  );
+  assertEnumMember(
+    position.pnl.basis,
+    MOBILE_SOCIAL_FEED_PNL_BASES,
+    'position.pnl.basis',
+  );
+  assertEnumMember(
+    position.pnl.mode,
+    MOBILE_SOCIAL_FEED_PNL_MODES,
+    'position.pnl.mode',
+  );
+  assertEnumMember(
+    position.pnl.quality,
+    MOBILE_SOCIAL_FEED_PNL_QUALITIES,
+    'position.pnl.quality',
+  );
   assertBigNumberFinite(position.quantity, 'position.quantity');
   assertBigNumberFinite(position.notional, 'position.notional');
   assert.ok(position.quantity.isInteger());
