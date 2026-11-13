@@ -1342,6 +1342,7 @@ export class MobileClient {
       drawing_data_json: params.drawingDataJson,
       image_ids: params.imageIds,
       image_urls: params.imageUrls,
+      external_image_dimensions: params.externalImageDimensions,
     });
     return mapMobileSocialFeedItem((await this.execute(request)).item);
   }
@@ -1436,7 +1437,8 @@ export class MobileClient {
 
   /**
    * Publishes a comment or reply atomically; an invalid position attachment rejects the entire request.
-   * For an idempotent retry, reuse clientRequestId and the unmodified text, mentions, and attachment.
+   * For an idempotent retry, reuse clientRequestId and the unmodified text, mentions, attachment, and
+   * image URLs and dimensions, including their order and whether optional fields were provided.
    * @param params - Author subaccount and signing options, request UUID, root item, original nonblank text
    * and mentions, plus an optional reply target in the same thread and currently owned position attachment.
    * @returns The created reply and authoritative root comment count; this write does not create a reading session.
@@ -1457,6 +1459,7 @@ export class MobileClient {
       attached_position_id: params.attachedPositionId,
       image_ids: params.imageIds,
       image_urls: params.imageUrls,
+      external_image_dimensions: params.externalImageDimensions,
     });
     return mapMobileSocialFeedCommentResult(await this.execute(request));
   }

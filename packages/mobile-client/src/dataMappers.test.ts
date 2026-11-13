@@ -1211,7 +1211,7 @@ describe('[mobile-client]: position feed changes', () => {
           height: 256,
         },
       },
-      { url: 'https://example.com/first.png' },
+      { url: 'https://example.com/first.png', width: 165, height: 231 },
       { url: 'https://example.com/second.png' },
     ];
     for (const item of [post, reply]) {
@@ -1222,13 +1222,90 @@ describe('[mobile-client]: position feed changes', () => {
         imageId: images[0].image_id,
         thumbnail: { width: 512 },
       });
-      expect(mapped.images.slice(1)).toEqual(images.slice(1));
+      expect(mapped.images.slice(1)).toStrictEqual(images.slice(1));
+      expect(mapped.images[2]).not.toHaveProperty('width');
+      expect(mapped.images[2]).not.toHaveProperty('height');
       expect(
         mapped.images
           .filter(isMobileSocialFeedUploadedImage)
           .map((image) => image.imageId),
       ).toEqual([images[0].image_id]);
     }
+  });
+
+  it('preserves external image dimensions in previews, comments, history, and thoughts', () => {
+    const images = [
+      { url: 'https://example.com/known.webp', width: 165, height: 231 },
+      { url: 'https://example.com/unknown.gif' },
+    ];
+    const serverReply = { ...reply, images };
+    const serverPost = {
+      ...post,
+      images,
+      comment_preview: { ...post.comment_preview, items: [serverReply] },
+    };
+    const expectedContent = {
+      images,
+      commentPreview: { items: [{ images }] },
+    };
+    expect(
+      mapMobileSocialFeedItemResponse({
+        item: serverPost,
+        read_session: history.read_session,
+      }).item,
+    ).toMatchObject(expectedContent);
+    expect(
+      mapMobileSocialFeedPage({
+        items: [serverPost],
+        next_cursor: null,
+        watermark: 'Watermark',
+        read_session: history.read_session,
+      }).items,
+    ).toMatchObject([expectedContent]);
+    expect(
+      mapMobileSocialFeedCommentsPage({
+        comments: [{ ...serverReply, replies: [serverReply] }],
+        total_count: 2,
+        top_level_count: 1,
+        next_cursor: null,
+        previous_cursor: null,
+        anchor_reply_id: null,
+        read_session: history.read_session,
+      }).comments,
+    ).toMatchObject([{ images, replies: [{ images }] }]);
+    const entry = history.timeline[0];
+    if (entry.kind !== 'action' || entry.related_take === null)
+      throw new Error('Expected action fixture with a related take');
+    expect(
+      mapMobileSocialFeedPositionHistory({
+        ...history,
+        timeline: [
+          { kind: 'take', item: serverPost },
+          {
+            ...entry,
+            related_take: {
+              ...entry.related_take,
+              ...serverPost,
+              kind: 'trade_card',
+            },
+          },
+        ],
+      }).timeline,
+    ).toMatchObject([
+      { kind: 'take', item: expectedContent },
+      { kind: 'action', relatedTake: expectedContent },
+    ]);
+    const thoughts = thoughtsPage();
+    expect(
+      mapMobileSocialFeedPositionThoughts({
+        ...thoughts,
+        items: thoughts.items.map((item) => ({
+          ...item,
+          images,
+          comment_preview: serverPost.comment_preview,
+        })),
+      }).items,
+    ).toMatchObject([expectedContent, expectedContent]);
   });
 });
 
@@ -1347,7 +1424,7 @@ describe('[mobile-client]: position and image transport', () => {
   });
 
   it.each(['post', 'comment'] as const)(
-    'passes image URL arrays through signed %s publication',
+    'preserves image URLs and optional dimensions through signed %s publication',
     async (kind) => {
       const { client, requests } = clientWithResponse(
         kind === 'post'
@@ -1372,6 +1449,7 @@ describe('[mobile-client]: position and image transport', () => {
         mentions: [],
         imageIds: [],
         imageUrls: ['https://example.com/A.png', 'https://example.com/B.png'],
+        externalImageDimensions: [{ width: 165, height: 231 }, null],
       };
       if (kind === 'post')
         await client.createFeedPost({
@@ -1383,9 +1461,35 @@ describe('[mobile-client]: position and image transport', () => {
         type: `create_feed_${kind}`,
         image_ids: [],
         image_urls: params.imageUrls,
+        external_image_dimensions: params.externalImageDimensions,
         signature: expect.stringMatching(/^0x[0-9a-f]+$/),
       });
       expect(requests[0]).not.toHaveProperty('image_url');
+      for (const externalImageDimensions of [undefined, []]) {
+        const publicationParams = {
+          ...params,
+          clientRequestId:
+            externalImageDimensions === undefined
+              ? '22222222-2222-4222-8222-222222222222'
+              : '33333333-3333-4333-8333-333333333333',
+          imageUrls: [],
+          externalImageDimensions,
+        };
+        if (kind === 'post')
+          await client.createFeedPost({
+            ...publicationParams,
+            positionId: post.position.position_id,
+          });
+        else
+          await client.createFeedComment({
+            ...publicationParams,
+            rootItemId: post.id,
+          });
+      }
+      expect(requests[1]).toHaveProperty('image_urls', []);
+      expect(requests[1]).not.toHaveProperty('external_image_dimensions');
+      expect(requests[2]).toHaveProperty('image_urls', []);
+      expect(requests[2]).toHaveProperty('external_image_dimensions', []);
     },
   );
 });

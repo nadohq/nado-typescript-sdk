@@ -256,9 +256,26 @@ images. URLs must include a hostname and contain no whitespace/control character
 Keep original URL strings, array order, and field presence unchanged on retries: omission and `[]` hash
 differently. Coordinate this request change with the service version; old `image_url` retries are incompatible.
 
-Responses keep one `images` array: upload metadata first, then URL-only objects in submitted order.
+Optionally pass `externalImageDimensions` in the same order and length as `imageUrls`, excluding uploads:
+
+```ts
+imageUrls: ['https://example.com/a.webp', 'https://example.com/b.gif'],
+externalImageDimensions: [{ width: 165, height: 231 }, null],
+```
+
+Each known entry contains only positive integer `width` and `height` in pixels, at most 4,294,967,295;
+use `null` for an unknown entry. The whole field may be omitted but cannot be `null`. The SDK signs
+`external_image_dimensions` after `image_urls`, with each object's `width` before `height`. Keep dimensions
+and field presence unchanged on retries; adding dimensions to an earlier request changes its idempotency
+hash. The service stores the supplied dimensions without fetching the URL or backfilling existing content.
+Enable this parameter only after the backend has deployed migration 042 and support for the new field.
+
+Responses keep one `images` array: upload metadata first, then external URL objects in submitted order.
+External images include optional `width` and `height` together when known; both are omitted otherwise,
+including in comment previews, replies, position history, and thoughts.
 `MobileSocialFeedImage` represents uploaded images or external URLs; narrow with
-`isMobileSocialFeedUploadedImage` before accessing upload metadata.
+`isMobileSocialFeedUploadedImage` (which checks `imageId`) before accessing upload metadata, since
+dimensions may also be present on external images.
 Direct upload methods return `MobileSocialFeedUploadedImage` with all metadata. Load external URLs directly
 without Mobile session headers.
 

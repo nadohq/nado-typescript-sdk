@@ -983,10 +983,22 @@ export interface MobileSocialFeedUploadedImage {
   thumbnail: MobileSocialFeedImageThumbnail;
 }
 
+/** Caller-provided dimensions of the exact external image URL being published. */
+export interface MobileSocialFeedExternalImageDimensions {
+  /** Width in pixels; an integer from 1 through 4,294,967,295. */
+  width: number;
+  /** Height in pixels; an integer from 1 through 4,294,967,295. */
+  height: number;
+}
+
 /** External image loaded directly from its URL without Mobile session headers. */
 export interface MobileSocialFeedExternalImage {
   /** Original HTTP/HTTPS URL; no upload metadata or thumbnail is provided. */
   url: string;
+  /** Caller-provided width in pixels; omitted with height when unknown. */
+  width?: number;
+  /** Caller-provided height in pixels; omitted with width when unknown. */
+  height?: number;
 }
 
 /** Uploaded image metadata or an external URL; uploaded images precede external images. */
@@ -1623,6 +1635,13 @@ export interface MobileCreateFeedPostParams extends MobileSignedRequestParams {
    * order, and field presence for retries: omission and [] produce different signing hashes.
    */
   imageUrls?: string[];
+  /**
+   * Dimensions in the same order and length as imageUrls, excluding uploaded images; use null for
+   * unknown entries. Each non-null entry contains only width and height. The field may be omitted,
+   * but cannot be null. Preserve values, order, and field presence on retries: omission and [] differ
+   * in the signature and idempotency hash, so an earlier request cannot be retried to add dimensions.
+   */
+  externalImageDimensions?: (MobileSocialFeedExternalImageDimensions | null)[];
 }
 
 /**
@@ -1710,6 +1729,13 @@ export interface MobileCreateFeedCommentParams extends MobileSignedRequestParams
    * order, and field presence for retries: omission and [] produce different signing hashes.
    */
   imageUrls?: string[];
+  /**
+   * Dimensions in the same order and length as imageUrls, excluding uploaded images; use null for
+   * unknown entries. Each non-null entry contains only width and height. The field may be omitted,
+   * but cannot be null. Preserve values, order, and field presence on retries: omission and [] differ
+   * in the signature and idempotency hash, so an earlier request cannot be retried to add dimensions.
+   */
+  externalImageDimensions?: (MobileSocialFeedExternalImageDimensions | null)[];
 }
 
 /** Parameters for setting or cancelling a signed user's like. */

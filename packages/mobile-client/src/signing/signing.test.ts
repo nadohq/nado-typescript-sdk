@@ -8,6 +8,7 @@ import {
 import { createWalletClient, http, recoverTypedDataAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
+import { MobileServerSocialFeedExternalImageDimensions } from '../types/serverModelTypes';
 import { buildSignedMobileRequest } from './buildSignedMobileRequest';
 import { canonicalizeMobileInner } from './canonicalize';
 import { MOBILE_EIP712_METHOD_BY_TYPE } from './eip712MethodByType';
@@ -655,6 +656,82 @@ describe('[mobile-client]: social content signing', () => {
 });
 
 describe('[mobile-client]: external image signing', () => {
+  it.each(['create_feed_post', 'create_feed_comment'] as const)(
+    'canonicalizes optional dimensions after URLs for %s',
+    (type) => {
+      const base = {
+        client_request_id: '11111111-1111-4111-8111-111111111111',
+        text: 'image dimensions test',
+        mentions: [],
+      };
+      const inner: MobileSignedInner =
+        type === 'create_feed_post'
+          ? {
+              type,
+              ...base,
+              position_id: '22222222-2222-4222-8222-222222222222',
+            }
+          : {
+              type,
+              ...base,
+              root_item_id: '22222222-2222-4222-8222-222222222222',
+            };
+      const urls = [
+        'https://example.com/A.webp?x=%2f',
+        'https://example.com/B.gif',
+      ];
+      const dimensions = [{ height: 231, width: 165 }, null];
+      const result = canonicalizeMobileInner({
+        external_image_dimensions: dimensions,
+        image_urls: urls,
+        image_ids: [],
+        ...inner,
+      });
+      expect(Object.keys(result).slice(-3)).toEqual([
+        'image_ids',
+        'image_urls',
+        'external_image_dimensions',
+      ]);
+      if (result.type !== type) throw new Error('Unexpected signing type');
+      expect(result.image_urls).toEqual(urls);
+      expect(result.external_image_dimensions).toEqual([
+        { width: 165, height: 231 },
+        null,
+      ]);
+      expect(Object.keys(result.external_image_dimensions?.[0] ?? {})).toEqual([
+        'width',
+        'height',
+      ]);
+      expect(result.external_image_dimensions).not.toBe(dimensions);
+      expect(result.external_image_dimensions?.[0]).not.toBe(dimensions[0]);
+      expect(Object.keys(dimensions[0] ?? {})).toEqual(['height', 'width']);
+      expect(canonicalizeMobileInner(inner)).not.toHaveProperty(
+        'external_image_dimensions',
+      );
+
+      const hash = (
+        externalImageDimensions?: (MobileServerSocialFeedExternalImageDimensions | null)[],
+      ) =>
+        getMobilePayloadHash(
+          canonicalizeMobileInner({
+            ...inner,
+            image_urls: urls,
+            external_image_dimensions: externalImageDimensions,
+          }),
+        );
+      expect(hash()).not.toBe(hash([]));
+      expect(hash(dimensions)).toBe(hash([{ width: 165, height: 231 }, null]));
+      expect(hash(dimensions)).not.toBe(hash([...dimensions].reverse()));
+      expect(hash(dimensions)).not.toBe(
+        hash([{ width: 166, height: 231 }, null]),
+      );
+      expect(hash(dimensions)).not.toBe(
+        hash([{ width: 165, height: 232 }, null]),
+      );
+      expect(hash(dimensions)).not.toBe(hash([null, null]));
+    },
+  );
+
   it.each(['create_feed_post', 'create_feed_comment'] as const)(
     'signs ordered original URL arrays after image_ids for %s',
     (type) => {
