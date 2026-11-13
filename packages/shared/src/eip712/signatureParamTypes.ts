@@ -29,10 +29,10 @@ export interface EIP712LiquidateSubaccountParams extends Subaccount {
   // Subaccount being liquidated
   liquidateeOwner: string;
   liquidateeName: string;
-  // 0 = spread, 1 = long, 2 = short
-  mode: number;
-  // Spot & perp pair
-  healthGroup: BigNumberish;
+  // Product to liquidate. For a spread, encodes both products as (perp_id << 16) | spot_id
+  productId: number;
+  // Must be true when productId encodes a spread
+  isEncodedSpread: boolean;
   amount: BigNumberish;
   nonce: string;
 }

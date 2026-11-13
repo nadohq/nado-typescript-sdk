@@ -71,8 +71,15 @@ const targetSubaccount: Subaccount = {
   subaccountName: 'default',
 };
 const capabilities: MobileNotificationCapabilities = {
-  routes: ['portfolio', 'profile'],
-  typeIds: ['order_fill', 'new_follower'],
+  routes: ['portfolio', 'profile', 'market'],
+  typeIds: [
+    'order_fill',
+    'new_follower',
+    'near_liquidation',
+    'market_daily_move',
+    'market_large_trade',
+    'notable_trader',
+  ],
   payloadVersions: [2],
 };
 const settings: MobileNotificationSettingsV2 = {
@@ -164,8 +171,15 @@ const signedCases: {
       app_version: null,
       capabilities: {
         payload_versions: [2],
-        type_ids: ['order_fill', 'new_follower'],
-        routes: ['portfolio', 'profile'],
+        type_ids: [
+          'order_fill',
+          'new_follower',
+          'near_liquidation',
+          'market_daily_move',
+          'market_large_trade',
+          'notable_trader',
+        ],
+        routes: ['portfolio', 'profile', 'market'],
       },
     },
   },

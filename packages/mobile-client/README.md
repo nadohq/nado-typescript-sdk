@@ -90,6 +90,25 @@ and a position-mode session for navigation and updates. `getPositionChart` retur
 keeping execution and liquidation Oracle prices separate. `getPositionWatchers` reads visitor counts without
 registering presence. Watching account previews are self-reported, not proof of account ownership.
 
+### Social feed values
+
+Each named social feed string union has a corresponding `MOBILE_SOCIAL_FEED_*` array for runtime
+validation and filter or UI options. The types are derived from these readonly tuples so the runtime
+values and TypeScript unions stay in sync. Import them from `@nadohq/mobile-client` or `@nadohq/client`:
+
+```ts
+import {
+  MOBILE_SOCIAL_FEED_TYPES,
+  MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
+  MOBILE_SOCIAL_FEED_TRADER_BADGE_CODES,
+  MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
+  MOBILE_SOCIAL_FEED_CHART_INTERVALS,
+} from '@nadohq/mobile-client';
+```
+
+The same pattern covers cohort and trader data statuses, PnL and funding bases and qualities,
+position and history states, actions, resolutions, reading sessions, attachments, and presence.
+
 ### Position history and thoughts
 
 `getPositionHistory` and `getPositionHistoryAll` return `owner`, the current position owner's full profile,
