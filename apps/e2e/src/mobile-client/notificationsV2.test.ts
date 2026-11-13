@@ -28,7 +28,15 @@ import {
 
 const capabilities: MobileNotificationCapabilities = {
   payloadVersions: [2],
-  typeIds: ['new_follower', 'order_fill', 'market_movement'],
+  typeIds: [
+    'new_follower',
+    'order_fill',
+    'market_movement',
+    'near_liquidation',
+    'market_daily_move',
+    'market_large_trade',
+    'notable_trader',
+  ],
   routes: ['profile', 'market', 'portfolio'],
 };
 
