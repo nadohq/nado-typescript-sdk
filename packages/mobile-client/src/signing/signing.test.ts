@@ -60,6 +60,12 @@ const PINNED_HASHES = {
     '0x0d86ef133ad5db8968911d102c48599691dcc40094ace985484c3f7e2cb3a87d',
   set_follow_batch_false:
     '0x02272ef5f6c7f9b315a892240af614f9cbbcb1edc69538db37ae1409549ff2fa',
+  attribute_orders:
+    '0xe39b474500468779b04acc9706f7607961300586d2a8ffb5d0931231c2839126',
+  attribute_orders_reversed:
+    '0x864c03623779713412a0b88522be4348ded195c771068b9fd33da0df20913376',
+  attribute_orders_single:
+    '0xe91cc5553ee111a2b0e75eb2ed5cfd361d1f87efdeddfbb75ddebad84f5e93f2',
 } as const;
 
 // Every follow fixture on the backend targets this subaccount.
@@ -171,9 +177,59 @@ const FEED_SIGNING_FIXTURES = [
   method: string;
 }[];
 
+/**
+ * Attribution vectors from nado-mobile-be at e9d9a590bc3b711e705482baf646075c28574d8d:
+ * mobile/tests/fixtures/creator-attribution-signing.json. The reversed vector checks that the signature covers
+ * digest order.
+ */
+const CREATOR_ATTRIBUTION_SIGNING_FIXTURES = [
+  {
+    name: 'attribute_orders',
+    inner: {
+      type: 'attribute_orders',
+      item_id: '11111111-1111-4111-8111-111111111111',
+      order_digests: [
+        '0x1111111111111111111111111111111111111111111111111111111111111111',
+        '0x2222222222222222222222222222222222222222222222222222222222222222',
+      ],
+    },
+    method: 'mobile:execute_attribute_orders',
+  },
+  {
+    name: 'attribute_orders_reversed',
+    inner: {
+      type: 'attribute_orders',
+      item_id: '11111111-1111-4111-8111-111111111111',
+      order_digests: [
+        '0x2222222222222222222222222222222222222222222222222222222222222222',
+        '0x1111111111111111111111111111111111111111111111111111111111111111',
+      ],
+    },
+    method: 'mobile:execute_attribute_orders',
+  },
+  {
+    name: 'attribute_orders_single',
+    inner: {
+      type: 'attribute_orders',
+      item_id: '22222222-2222-4222-8222-222222222222',
+      order_digests: [
+        '0x1111111111111111111111111111111111111111111111111111111111111111',
+      ],
+    },
+    method: 'mobile:execute_attribute_orders',
+  },
+] satisfies {
+  name: keyof typeof PINNED_HASHES;
+  inner: MobileSignedInner;
+  method: string;
+}[];
+
 describe('[mobile-client]: signing (offline)', () => {
   describe('pinned payload hashes', () => {
-    it.each(FEED_SIGNING_FIXTURES)(
+    it.each([
+      ...FEED_SIGNING_FIXTURES,
+      ...CREATOR_ATTRIBUTION_SIGNING_FIXTURES,
+    ])(
       '$name matches the backend signing vector',
       ({ name, inner, method }) => {
         const reordered = Object.fromEntries(

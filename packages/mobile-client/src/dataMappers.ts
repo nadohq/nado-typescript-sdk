@@ -1,6 +1,7 @@
 import { removeDecimals, subaccountToHex, toBigNumber } from '@nadohq/shared';
 import {
   GetMobileFollowListParams,
+  MobileAttributeOrdersResult,
   MobileAvatarPreset,
   MobileAvatarSelection,
   MobileAvatarUpload,
@@ -87,6 +88,7 @@ import {
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
 import { MobileUnsupportedNotificationRouteError } from './types/MobileUnsupportedNotificationRouteError';
 import {
+  MobileServerAttributeOrdersResponse,
   MobileServerAvatarUploadResponse,
   MobileServerFollowBatchResponse,
   MobileServerFollowMutationResponse,
@@ -1646,6 +1648,22 @@ export function mapMobileSocialFeedLikeResult(
     isLiked: server.is_liked,
     likeCount: server.like_count,
     version: server.version,
+  };
+}
+
+/**
+ * Maps a server-side order attribution response to its client-side representation.
+ */
+export function mapMobileAttributeOrdersResult(
+  server: MobileServerAttributeOrdersResponse,
+): MobileAttributeOrdersResult {
+  return {
+    isAccepted: server.accepted,
+    results: server.results.map((result) => ({
+      orderDigest: result.order_digest,
+      status: result.status,
+      reason: result.reason ?? null,
+    })),
   };
 }
 

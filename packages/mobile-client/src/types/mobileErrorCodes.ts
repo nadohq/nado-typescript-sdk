@@ -98,6 +98,8 @@ export const MOBILE_ERROR_CODES = {
   INVALID_SOCIAL_FEED_IMAGE: 6326,
   /** Initial history/thoughts directory exceeds 4 MiB; do not automatically retry the same query. */
   SOCIAL_FEED_HISTORY_TOO_LARGE: 6328,
+  /** Attribution digests are empty, over 50 or repeated, or the item ID is not a lowercase UUID. */
+  INVALID_ORDER_ATTRIBUTION: 6500,
 } as const;
 
 /**
