@@ -746,10 +746,22 @@ export interface MobileServerSocialFeedUploadedImage {
   thumbnail: MobileServerSocialFeedImageThumbnail;
 }
 
+/** Caller-provided dimensions of the exact external image URL being published. */
+export interface MobileServerSocialFeedExternalImageDimensions {
+  /** Width in pixels; an integer from 1 through 4,294,967,295. */
+  width: number;
+  /** Height in pixels; an integer from 1 through 4,294,967,295. */
+  height: number;
+}
+
 /** External image loaded directly from its URL without Mobile session headers. */
 export interface MobileServerSocialFeedExternalImage {
   /** Original HTTP/HTTPS URL; no upload metadata or thumbnail is provided. */
   url: string;
+  /** Caller-provided width in pixels; omitted with height when unknown. */
+  width?: number;
+  /** Caller-provided height in pixels; omitted with width when unknown. */
+  height?: number;
 }
 
 /** Uploaded image metadata or an external URL; uploaded images precede external images. */

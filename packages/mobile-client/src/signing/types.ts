@@ -4,6 +4,7 @@ import { MobileSignedRequestParams } from '../types/clientTypes';
 import {
   MobileServerAvatarSelection,
   MobileServerProductEvent,
+  MobileServerSocialFeedExternalImageDimensions,
   MobileSocialFeedMention,
 } from '../types/serverModelTypes';
 import {
@@ -72,6 +73,8 @@ export type MobileSignedInner =
       image_ids?: string[];
       /** Up to ten original HTTP/HTTPS URLs in order; omission differs from an empty array. */
       image_urls?: string[];
+      /** Dimensions aligned with image_urls, with null for unknown sizes; omitted when absent. */
+      external_image_dimensions?: (MobileServerSocialFeedExternalImageDimensions | null)[];
     }
   | {
       /** Atomic comment publication. */
@@ -92,6 +95,8 @@ export type MobileSignedInner =
       image_ids?: string[];
       /** Up to ten original HTTP/HTTPS URLs in order; omission differs from an empty array. */
       image_urls?: string[];
+      /** Dimensions aligned with image_urls, with null for unknown sizes; omitted when absent. */
+      external_image_dimensions?: (MobileServerSocialFeedExternalImageDimensions | null)[];
     }
   | {
       /** Direct multipart post-image upload; content_hash is Keccak256 of the raw file bytes. */

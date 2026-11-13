@@ -1,4 +1,7 @@
-import { MobileSocialFeedMention } from '../types/serverModelTypes';
+import {
+  MobileServerSocialFeedExternalImageDimensions,
+  MobileSocialFeedMention,
+} from '../types/serverModelTypes';
 import { MobileSignedInner } from './types';
 
 /**
@@ -85,6 +88,13 @@ export function canonicalizeMobileInner(
         ...(inner.image_urls === undefined
           ? {}
           : { image_urls: [...inner.image_urls] }),
+        ...(inner.external_image_dimensions === undefined
+          ? {}
+          : {
+              external_image_dimensions: inner.external_image_dimensions.map(
+                canonicalizeExternalImageDimensions,
+              ),
+            }),
       };
     case 'create_feed_comment':
       return {
@@ -105,6 +115,13 @@ export function canonicalizeMobileInner(
         ...(inner.image_urls === undefined
           ? {}
           : { image_urls: [...inner.image_urls] }),
+        ...(inner.external_image_dimensions === undefined
+          ? {}
+          : {
+              external_image_dimensions: inner.external_image_dimensions.map(
+                canonicalizeExternalImageDimensions,
+              ),
+            }),
       };
     case 'create_feed_post_image_uploads':
     case 'create_feed_comment_image_uploads':
@@ -186,4 +203,12 @@ function canonicalizeMention(
     end: mention.end,
     label: mention.label,
   };
+}
+
+function canonicalizeExternalImageDimensions(
+  dimensions: MobileServerSocialFeedExternalImageDimensions | null,
+): MobileServerSocialFeedExternalImageDimensions | null {
+  return dimensions === null
+    ? null
+    : { width: dimensions.width, height: dimensions.height };
 }

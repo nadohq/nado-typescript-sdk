@@ -855,7 +855,11 @@ export function mapMobileSocialFeedImage(
   if ('image_id' in server) {
     return mapMobileSocialFeedUploadedImage(server);
   }
-  return { url: server.url };
+  return {
+    url: server.url,
+    ...(server.width === undefined ? {} : { width: server.width }),
+    ...(server.height === undefined ? {} : { height: server.height }),
+  };
 }
 
 /**
