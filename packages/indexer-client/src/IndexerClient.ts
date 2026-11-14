@@ -485,7 +485,18 @@ export class IndexerClient extends IndexerBaseClient {
     events: T[],
     requestedLimit: number,
   ): PaginatedIndexerEventsResponse<T> {
-    const truncatedEvents = events.slice(0, requestedLimit);
+    // The cursor is a submission index, so the next page restarts at the first event of that tx.
+    // Never cut inside a tx (ex. a settlement of several perps), or its first events repeat on
+    // every following page.
+    let cutoff = Math.min(requestedLimit, events.length);
+    while (
+      cutoff > 0 &&
+      cutoff < events.length &&
+      events[cutoff].submissionIndex === events[cutoff - 1].submissionIndex
+    ) {
+      cutoff++;
+    }
+    const truncatedEvents = events.slice(0, cutoff);
     const hasMore = events.length > truncatedEvents.length;
 
     return {
