@@ -40,6 +40,35 @@ import {
 } from './types';
 
 /**
+ * `product_id` of a `liquidate_subaccount` tx that finalizes the subaccount (`type(uint32).max`)
+ */
+const FINALIZE_SUBACCOUNT_PRODUCT_ID = 4294967295;
+
+/**
+ * Whether a `liquidate_subaccount` tx liquidated any of the given products. A spread liquidation
+ * encodes its perp and spot products in `product_id`, and a finalization is not tied to a single
+ * product; the events of a product it did not touch have no balance change.
+ *
+ * @param tx
+ * @param productIds
+ */
+function isLiquidationOfProducts(
+  tx: NadoLiquidateSubaccountTx['liquidate_subaccount'],
+  productIds: Set<number>,
+): boolean {
+  if (tx.product_id === FINALIZE_SUBACCOUNT_PRODUCT_ID) {
+    return true;
+  }
+  if (tx.is_encoded_spread) {
+    return (
+      productIds.has(tx.product_id >>> 16) ||
+      productIds.has(tx.product_id & 0xffff)
+    );
+  }
+  return productIds.has(tx.product_id);
+}
+
+/**
  * Indexer client providing paginated queries for historical data from the Nado indexer service
  */
 export class IndexerClient extends IndexerBaseClient {
@@ -321,11 +350,9 @@ export class IndexerClient extends IndexerBaseClient {
       // as a result, we need to filter out events that are not relevant to the requested product IDs
       if (
         productIdsSet &&
-        !productIdsSet.has(
-          // product_id can also encode a health group for spread liquidation, but we ignore
-          // this case for now
-          (event.tx as NadoLiquidateSubaccountTx).liquidate_subaccount
-            .product_id,
+        !isLiquidationOfProducts(
+          (event.tx as NadoLiquidateSubaccountTx).liquidate_subaccount,
+          productIdsSet,
         )
       ) {
         return;
