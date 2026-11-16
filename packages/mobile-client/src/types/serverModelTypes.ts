@@ -1230,6 +1230,8 @@ export type MobileSocialFeedFundingBasis =
 
 /** Additional history metrics; unavailable values are not zero. */
 export interface MobileServerSocialFeedHistoryMetrics {
+  /** Archive's average exit price in x18. Null for open, pre-rollout or unpriced positions. Older servers omit it. */
+  average_exit_price_x18?: string | null;
   /** Estimated liquidation price in x18, independent of event Oracle and execution prices. */
   estimated_liquidation_price_x18: string | null;
   /** Availability of the estimated price. */

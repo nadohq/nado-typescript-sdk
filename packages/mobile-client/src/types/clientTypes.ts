@@ -1427,6 +1427,8 @@ export interface MobileSocialFeedActionCandidate {
 
 /** Additional history metrics; unavailable values are not zero. */
 export interface MobileSocialFeedHistoryMetrics {
+  /** Archive's fee-exclusive average exit price in decimal units. Older servers omit it from patches. */
+  averageExitPrice?: BigNumber | null;
   /** Estimated liquidation price in decimal units, independent of event Oracle and execution prices. */
   estimatedLiquidationPrice: BigNumber | null;
   /** Availability of the estimated price. */
@@ -1445,7 +1447,10 @@ export interface MobileSocialFeedHistoryMetrics {
 
 /** Full position card displayed above its historical timeline. */
 export interface MobileSocialFeedPositionHistoryCard
-  extends MobileSocialFeedPositionCard, MobileSocialFeedHistoryMetrics {}
+  extends MobileSocialFeedPositionCard, MobileSocialFeedHistoryMetrics {
+  /** Archive's fee-exclusive average exit price in decimal units. Null for open, pre-rollout or unpriced positions. */
+  averageExitPrice: BigNumber | null;
+}
 
 /** Persisted action facts, independent of whether a feed item was published. */
 export interface MobileSocialFeedPositionAction {
