@@ -734,20 +734,29 @@ void describe(
           'https://example.com/sdk-post-1.png',
           'https://example.com/sdk-post-2.png',
         ],
+        externalImageDimensions: [{ width: 165, height: 231 }, null],
       };
+      const postExternalImages = [
+        {
+          url: 'https://example.com/sdk-post-1.png',
+          width: 165,
+          height: 231,
+        },
+        { url: 'https://example.com/sdk-post-2.png' },
+      ];
       const post = await tc.mobile.createFeedPost(params);
       assert.ok(post.kind === 'post');
-      assert.deepEqual(
-        post.images.slice(1),
-        params.imageUrls.map((url) => ({ url })),
-      );
+      assert.deepEqual(post.images.slice(1), postExternalImages);
       assert.deepEqual(
         post.images
           .filter(isMobileSocialFeedUploadedImage)
           .map((image) => image.imageId),
         params.imageIds,
       );
-      assert.equal((await tc.mobile.createFeedPost(params)).id, post.id);
+      const retriedPost = await tc.mobile.createFeedPost(params);
+      assert.equal(retriedPost.id, post.id);
+      assert.ok(retriedPost.kind === 'post');
+      assert.deepEqual(retriedPost.images, post.images);
       await assertRejectsWithMobileErrorCode(
         () =>
           tc.mobile.createFeedPost({
@@ -756,6 +765,17 @@ void describe(
           }),
         MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
       );
+      for (const externalImageDimensions of [
+        [{ width: 166, height: 231 }, null],
+        undefined,
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () =>
+            tc.mobile.createFeedPost({ ...params, externalImageDimensions }),
+          MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
+        );
+      }
+      await waitForRateLimitWindow();
       const drawingParams = {
         ...signed,
         itemId: post.id,
@@ -780,6 +800,7 @@ void describe(
       });
       const savedThought = thoughts.items.find((item) => item.id === post.id);
       assert.ok(savedThought);
+      assert.deepEqual(savedThought.images.slice(1), postExternalImages);
       assert.equal(savedThought.drawing.data, 0);
       assert.equal(
         savedThought.drawing.createdAtMs,
@@ -801,24 +822,46 @@ void describe(
         text: 'SDK comment verification',
         mentions: [],
         imageIds: [commentImage.imageId],
-        imageUrls: ['https://example.com/sdk-comment.png'],
+        imageUrls: [
+          'https://example.com/sdk-comment.png',
+          'https://example.com/sdk-comment-unknown.gif',
+        ],
+        externalImageDimensions: [{ width: 320, height: 180 }, null],
       };
+      const commentExternalImages = [
+        {
+          url: 'https://example.com/sdk-comment.png',
+          width: 320,
+          height: 180,
+        },
+        { url: 'https://example.com/sdk-comment-unknown.gif' },
+      ];
       const comment = await tc.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
-      assert.deepEqual(
-        comment.comment.images.slice(1),
-        commentParams.imageUrls.map((url) => ({ url })),
-      );
+      assert.deepEqual(comment.comment.images.slice(1), commentExternalImages);
       assert.deepEqual(
         comment.comment.images
           .filter(isMobileSocialFeedUploadedImage)
           .map((image) => image.imageId),
         commentParams.imageIds,
       );
-      assert.equal(
-        (await tc.mobile.createFeedComment(commentParams)).comment.id,
-        comment.comment.id,
-      );
+      const retriedComment = await tc.mobile.createFeedComment(commentParams);
+      assert.equal(retriedComment.comment.id, comment.comment.id);
+      assert.deepEqual(retriedComment.comment.images, comment.comment.images);
+      for (const externalImageDimensions of [
+        [{ width: 320, height: 181 }, null],
+        undefined,
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () =>
+            tc.mobile.createFeedComment({
+              ...commentParams,
+              externalImageDimensions,
+            }),
+          MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
+        );
+      }
+      await waitForRateLimitWindow();
       const liked = await tc.mobile.setFeedLike({
         ...signed,
         itemId: post.id,
@@ -844,6 +887,12 @@ void describe(
       });
       const session = getSessionParams(detail.readSession);
       assert.ok(detail.item.kind === 'post');
+      assert.deepEqual(detail.item.images.slice(1), postExternalImages);
+      const previewComment = detail.item.commentPreview.items.find(
+        (item) => item.id === comment.comment.id,
+      );
+      assert.ok(previewComment);
+      assert.deepEqual(previewComment.images.slice(1), commentExternalImages);
       assert.ok(isMobileSocialFeedUploadedImage(detail.item.images[0]));
       const imageRequest = mobile.getFeedImageRequest({
         ...session,
@@ -881,6 +930,10 @@ void describe(
         viewAs,
       });
       assert.ok(commentDetail.item.kind === 'reply');
+      assert.deepEqual(
+        commentDetail.item.images.slice(1),
+        commentExternalImages,
+      );
       assert.ok(isMobileSocialFeedUploadedImage(commentDetail.item.images[0]));
       const commentSession = getSessionParams(commentDetail.readSession);
       assert.equal(
@@ -907,6 +960,8 @@ void describe(
         replyToItemId: comment.comment.id,
         text: 'SDK child reply',
         mentions: [],
+        imageUrls: ['https://example.com/sdk-child.webp'],
+        externalImageDimensions: [{ width: 640, height: 480 }],
       });
       const grandchild = await tc.mobile.createFeedComment({
         ...signed,
@@ -925,6 +980,17 @@ void describe(
       assert.equal(grouped.anchorReplyId, grandchild.comment.id);
       assert.equal(grouped.comments.length, 1);
       assert.equal(grouped.comments[0].id, comment.comment.id);
+      assert.deepEqual(
+        grouped.comments[0].images.slice(1),
+        commentExternalImages,
+      );
+      assert.deepEqual(grouped.comments[0].replies[0].images, [
+        {
+          url: 'https://example.com/sdk-child.webp',
+          width: 640,
+          height: 480,
+        },
+      ]);
       assert.deepEqual(
         grouped.comments[0].replies.map((reply) => reply.id),
         [child.comment.id, grandchild.comment.id],
