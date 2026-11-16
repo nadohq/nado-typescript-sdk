@@ -6,6 +6,7 @@ import {
   NuanzeMarketComponentUpdatedAt,
   NuanzeMarketIdentity,
   NuanzeMarketTradingStatus,
+  NuanzeMarketValueKind,
   NuanzeMarketVenue,
   NuanzeMinPositionUsd,
   NuanzeNewsStory,
@@ -30,6 +31,16 @@ export interface NuanzeServerLatestTicker {
 }
 
 /**
+ * Underlying-asset USD value as returned on the wire. `usd` is a decimal string and `asOf` a UTC
+ * ISO 8601 string.
+ */
+export interface NuanzeServerMarketValue {
+  kind: NuanzeMarketValueKind;
+  usd: string;
+  asOf: string;
+}
+
+/**
  * Market entry as returned on the wire. Unlike the other Nado services, Nuanze already serves
  * camelCase keys and normalized enum values, so only decimals need mapping.
  */
@@ -41,6 +52,7 @@ export interface NuanzeServerMarket extends NuanzeMarketIdentity {
   latest: NuanzeServerLatestTicker | null;
   skew: string | null;
   skewUpdatedAt: string | null;
+  marketValue: NuanzeServerMarketValue | null;
   updatedAt: string;
 }
 

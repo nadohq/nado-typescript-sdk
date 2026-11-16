@@ -84,6 +84,46 @@ Each method maps one-to-one onto a public GET operation:
 - `getOpenPositions`
 
 Decimal fields are mapped to `BigNumber`; timestamps stay UTC ISO 8601 strings, matching the API contract.
+
+### Market value and sorting
+
+Every market from `getMarkets` and `getMarketByTicker` carries `marketValue`, the USD value of its underlying
+asset as `{ kind, usd, asOf }`, or null for commodities, FX, stablecoins, and unmapped assets. `kind` is
+`marketCap` (perps and xStock wrappers carry the company's, wrapped crypto the coin's), `aum` for ETFs and index
+products, or `privateValuation` for the last priced private round of a pre-IPO name. Several markets can share one
+underlying and carry the same value, so never sum `usd` across markets.
+
+`getMarkets` accepts `sortBy` (`productId`, `marketValue`, `volume24h`, `openInterest`, or `priceChange24hPct`;
+default `productId`) and `sortDirection`. When `sortDirection` is omitted the server picks it per key (`asc` for
+`productId`, `desc` otherwise); the SDK never fills one in. Markets with a null key always come last, and ties break
+on `productId` ascending.
+
+`getOpenPositions` accepts `sortBy: 'pnl'` (default, signed unrealized PnL) or `'notional'` (absolute USD notional),
+with `sortDirection` applied to the chosen key. Cursors are bound to a non-default `sortBy`, so keep the same `sortBy`
+on every page.
+
+### Private Mode positions
+
+`getOpenPositions` and `getMarketPositions` exclude legs owned by Private Mode subaccounts unless you pass
+`includePrivate: true`; the filter applies to both `positions` and `dataUpdatedAt`, and a leg whose subaccount never
+synced identity counts as public. The SDK sends `includePrivate` only when you supply it. Cursors are bound to
+`includePrivate` as well as to the sort, so keep every filter unchanged while paginating: the server rejects a cursor
+reused with different values with `CURSOR_FILTER_MISMATCH`.
+
+```ts
+const { markets } = await nuanze.getMarkets({ sortBy: 'marketValue' });
+const largest = markets[0]?.marketValue; // { kind: 'marketCap', usd: BigNumber, asOf: '...' } | null
+
+const page = await nuanze.getOpenPositions({ sortBy: 'notional', limit: 20 });
+if (page.nextCursor) {
+  // Keep sortBy: the cursor is bound to it.
+  const next = await nuanze.getOpenPositions({
+    sortBy: 'notional',
+    limit: 20,
+    cursor: page.nextCursor,
+  });
+}
+```
 All leaderboard collections accept an optional `viewAs` viewer selector: `getLeaderboard` takes an EVM address
 and returns the wallet's full row plus rank as `viewer`; `getSubaccountLeaderboard` and `getFollowedLeaderboard`
 take a bytes32 subaccount hex and return `{ filteredRank, item }` as `viewer`. A `viewer` is null when `viewAs` is

@@ -167,12 +167,16 @@ export class NuanzeClient {
   }
 
   /**
-   * Gets the active market universe, ordered by `productId` ascending. Never truncated, so `count`
-   * always equals the length of `markets`. Market metadata refreshes about every five minutes and
-   * prices about every minute.
+   * Gets the active market universe, ordered by `productId` ascending unless `sortBy` picks
+   * `marketValue`, `volume24h`, `openInterest`, or `priceChange24hPct`. `sortDirection` defaults
+   * server-side per key (`asc` for `productId`, `desc` otherwise) and is sent only when supplied.
+   * Markets with a null sort key always come last, and ties break on `productId` ascending. Never
+   * truncated, so `count` always equals the length of `markets`. Each market carries its
+   * underlying asset's `marketValue`, which several markets can share, so never sum it across
+   * markets. Market metadata refreshes about every five minutes and prices about every minute.
    *
-   * @throws {NuanzeServerFailureError} With error code `BAD_REQUEST` if a filter value is not a
-   * documented venue or tradability state.
+   * @throws {NuanzeServerFailureError} With error code `BAD_REQUEST` if a filter or sort value is
+   * not documented.
    */
   async getMarkets(
     params: GetNuanzeMarketsParams = {},
@@ -187,7 +191,8 @@ export class NuanzeClient {
    * when both are given, `productId` is used for the path segment and `ticker` is ignored.
    * Ticker lookup is case-insensitive and accepts canonical tickers or legacy source symbols.
    * An explicit unavailable venue returns `MARKET_NOT_FOUND`. With no venue, `strictVenue=true`
-   * returns `AMBIGUOUS_MARKET` for multi-venue assets; otherwise the primary venue is used.
+   * returns `AMBIGUOUS_MARKET` for multi-venue assets; otherwise the primary venue is used. The
+   * detail carries the same `marketValue` as the market list.
    *
    * @throws {NuanzeServerFailureError} With `AMBIGUOUS_MARKET` or `BAD_REQUEST` on invalid
    * selectors, and `MARKET_NOT_FOUND` when the selector does not resolve.
@@ -644,9 +649,12 @@ export class NuanzeClient {
    * Supply at least `ticker` or `productId`; when both are given, `productId` is used for the
    * path segment and `ticker` is ignored. Results default to absolute notional descending and
    * can be ordered by signed unrealized PnL or absolute base amount in either direction. Spot
-   * markets are not supported. Legs below $10 absolute notional are excluded. Wallet addresses,
-   * nullable synced usernames, display names, and avatar URLs, and signed exact base amounts are
-   * returned.
+   * markets are not supported. Legs below $10 absolute notional are excluded. Legs owned by
+   * Private Mode subaccounts are excluded from both `positions` and `dataUpdatedAt` unless
+   * `includePrivate=true`; a leg whose subaccount never synced identity is treated as public.
+   * Cursors are bound to the resolved product, non-default sorting, and `includePrivate`, so keep
+   * them unchanged while paginating. Wallet addresses, nullable synced usernames, display names,
+   * and avatar URLs, and signed exact base amounts are returned.
    * Isolated positions include effective leverage computed by Nuanze; cross positions return
    * null leverage.
    *
@@ -666,12 +674,16 @@ export class NuanzeClient {
   }
 
   /**
-   * Lists current open perpetual position legs across every market by signed unrealized PnL.
-   * Descending returns the largest gainers and ascending returns the largest losers. This is a
-   * latest indexed snapshot with no timeframe. Legs below $10 absolute notional are excluded.
-   * Private subaccounts are excluded unless `includePrivate=true`. Each row includes market
-   * identity, nullable synced username, display name, and avatar URL, and its source snapshot
-   * timestamp.
+   * Lists current open perpetual position legs across every market, by signed unrealized PnL
+   * (`sortBy: 'pnl'`, the default) or absolute USD notional (`sortBy: 'notional'`).
+   * `sortDirection` applies to the chosen key: for PnL, descending returns the largest gainers and
+   * ascending the largest losers. Cursors are bound to `sortDirection`, `includePrivate`, and a
+   * non-default `sortBy`, so keep them unchanged while paginating. This is a latest indexed
+   * snapshot with no timeframe. Legs below $10 absolute notional are excluded.
+   * Legs owned by Private Mode subaccounts are excluded from both `positions` and `dataUpdatedAt`
+   * unless `includePrivate=true`; a leg whose subaccount never synced identity is treated as
+   * public. Each row includes market identity, nullable synced username, display name, and avatar
+   * URL, and its source snapshot timestamp.
    * Isolated positions include effective leverage computed by Nuanze; cross positions return
    * null leverage.
    *

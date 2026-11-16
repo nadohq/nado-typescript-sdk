@@ -21,6 +21,8 @@ import {
   NuanzeMarketPositioningCohortResponse,
   NuanzeMarketPositioningNotionalBucketResponse,
   NuanzeMarketPositioningSideResponse,
+  NuanzeMarketSortBy,
+  NuanzeMarketSortDirection,
   NuanzeMarketTrade,
   NuanzeMarketTradingStatus,
   NuanzeMarketVenue,
@@ -29,6 +31,7 @@ import {
   NuanzeNewsSentiment,
   NuanzeNewsStory,
   NuanzeOpenPosition,
+  NuanzeOpenPositionSortBy,
   NuanzeOpenPositionSortDirection,
   NuanzePlatformDeltas,
   NuanzePlatformWindow,
@@ -55,6 +58,18 @@ export interface GetNuanzeMarketsParams {
   tradingStatus?: NuanzeMarketTradingStatus;
   /** Exact canonical ticker, matched case-insensitively. */
   ticker?: string;
+  /**
+   * Ordering key, default `productId`. `marketValue` orders by `marketValue.usd`; `volume24h`,
+   * `openInterest`, and `priceChange24hPct` by the matching `latest` field. Markets whose key is
+   * null (including a null `marketValue` or `latest`) always sort last, whatever the direction,
+   * and ties break on `productId` ascending.
+   */
+  sortBy?: NuanzeMarketSortBy;
+  /**
+   * Direction for `sortBy`. When omitted, the server picks it per key: `asc` for `productId` and
+   * `desc` for every other key. The SDK sends it only when supplied.
+   */
+  sortDirection?: NuanzeMarketSortDirection;
 }
 
 /**
@@ -62,8 +77,8 @@ export interface GetNuanzeMarketsParams {
  */
 export interface GetNuanzeMarketsResponse {
   /**
-   * Complete matching universe, ordered by `productId` ascending. Never truncated, so there is no
-   * cursor and `count` always equals this length.
+   * Complete matching universe in the requested order (`productId` ascending by default). Never
+   * truncated, so there is no cursor and `count` always equals this length.
    */
   markets: NuanzeMarket[];
   /** Number of markets returned. */
@@ -972,7 +987,17 @@ export type GetNuanzeMarketPositionsParams = NuanzeMarketSelector & {
   sortBy?: NuanzeMarketPositionSortBy;
   /** Primary ordering direction, default `desc`. */
   sortDirection?: NuanzeMarketPositionSortDirection;
-  /** Opaque exclusive cursor bound to the resolved product. */
+  /**
+   * Include legs owned by subaccounts with Private Mode enabled, default false. Applies to both
+   * `positions` and `dataUpdatedAt`. A leg whose subaccount never synced identity is treated as
+   * public.
+   */
+  includePrivate?: boolean;
+  /**
+   * Opaque exclusive cursor bound to the resolved product, a non-default `sortBy` or
+   * `sortDirection`, and `includePrivate`. Keep all of them unchanged while paginating; the server
+   * rejects a cursor reused with different values with `CURSOR_FILTER_MISMATCH`.
+   */
   cursor?: string;
 };
 
@@ -992,7 +1017,10 @@ export interface GetNuanzeMarketPositionsResponse {
   positions: NuanzeMarketPosition[];
   /** Cursor for the next page, or null when exhausted. */
   nextCursor: string | null;
-  /** When position snapshots were last updated, or null when unknown. */
+  /**
+   * When the position snapshots visible under `includePrivate` were last updated, or null when
+   * unknown.
+   */
   dataUpdatedAt: string | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;
@@ -1005,11 +1033,28 @@ export interface GetNuanzeMarketPositionsResponse {
 export interface GetNuanzeOpenPositionsParams {
   /** Page size, 1-200, default 50. */
   limit?: number;
-  /** Signed unrealized-PnL direction, default `desc` (largest gainers first). */
+  /**
+   * Ordering key, default `pnl` (signed unrealized PnL). `notional` orders by absolute USD
+   * notional. Cursors are bound to a non-default `sortBy`, so keep the same `sortBy` on every
+   * page when paginating with `cursor`.
+   */
+  sortBy?: NuanzeOpenPositionSortBy;
+  /**
+   * Direction applied to `sortBy`, default `desc`: largest gainers or largest absolute notional
+   * first. With `sortBy: 'pnl'`, `asc` lists the largest losers.
+   */
   sortDirection?: NuanzeOpenPositionSortDirection;
-  /** Include positions from subaccounts with Private Mode enabled, default false. */
+  /**
+   * Include legs owned by subaccounts with Private Mode enabled, default false. Applies to both
+   * `positions` and `dataUpdatedAt`. A leg whose subaccount never synced identity is treated as
+   * public.
+   */
   includePrivate?: boolean;
-  /** Opaque exclusive cursor bound to the sort direction and private visibility. */
+  /**
+   * Opaque exclusive cursor bound to a non-default `sortBy`, `sortDirection`, and
+   * `includePrivate`. Keep all three unchanged while paginating; the server rejects a cursor reused
+   * with different values with `CURSOR_FILTER_MISMATCH`.
+   */
   cursor?: string;
 }
 
@@ -1017,11 +1062,14 @@ export interface GetNuanzeOpenPositionsParams {
  * Response of `NuanzeClient.getOpenPositions`.
  */
 export interface GetNuanzeOpenPositionsResponse {
-  /** Current open perpetual legs in signed unrealized-PnL order across all markets. */
+  /** Current open perpetual legs across all markets, in the requested `sortBy` order. */
   positions: NuanzeOpenPosition[];
   /** Cursor for the next page, or null when exhausted. */
   nextCursor: string | null;
-  /** Newest source snapshot among qualifying positions, or null when none exist. */
+  /**
+   * Newest source snapshot among qualifying positions visible under `includePrivate`, or null when
+   * none exist.
+   */
   dataUpdatedAt: string | null;
   /** When the response was generated, as a UTC ISO 8601 string. */
   asOf: string;

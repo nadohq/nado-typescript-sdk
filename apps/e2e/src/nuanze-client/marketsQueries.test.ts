@@ -1,10 +1,14 @@
 import {
   NUANZE_MARKET_TRADING_STATUSES,
+  NUANZE_MARKET_VALUE_KINDS,
   NUANZE_MARKET_VENUES,
   NuanzeMarket,
+  NuanzeMarketSortBy,
+  NuanzeMarketSortDirection,
   NuanzeMarketVenue,
   NuanzeServerFailureError,
 } from '@nadohq/nuanze-client';
+import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
 import {
@@ -22,6 +26,13 @@ import { RunContext } from '../utils/types';
 
 /** UTC ISO 8601 with a required `Z`, as the Nuanze contract specifies. */
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
+/** `getMarkets` sort keys read from each market's `latest` ticker block. */
+const LATEST_TICKER_SORT_KEYS = [
+  'volume24h',
+  'openInterest',
+  'priceChange24hPct',
+] as const satisfies readonly NuanzeMarketSortBy[];
 
 void describe(
   '[nuanze-client]: markets',
@@ -89,6 +100,68 @@ void describe(
       );
     });
 
+    void test('reports a null or valid marketValue on every market', async () => {
+      const response = await tc.nuanze.getMarkets();
+      debugPrint(
+        'Market values',
+        response.markets.map(({ productId, ticker, marketValue }) => ({
+          productId,
+          ticker,
+          marketValue,
+        })),
+      );
+
+      // `assertMarketShape` checks each marketValue is null or has a valid kind, positive usd,
+      // and a UTC asOf.
+      assertArrayElements(response.markets, assertMarketShape, 'markets');
+      assert.ok(
+        response.markets.some((market) => market.marketValue !== null),
+        'at least one market should carry a marketValue',
+      );
+    });
+
+    void test('sorts markets by marketValue descending with nulls last by default', async () => {
+      const response = await tc.nuanze.getMarkets({ sortBy: 'marketValue' });
+      debugPrint('Markets by marketValue', response);
+
+      assert.equal(response.count, response.markets.length);
+      assertArrayElements(response.markets, assertMarketShape, 'markets');
+      assert.ok(
+        response.markets.some((market) => market.marketValue !== null),
+        'at least one market should carry a marketValue to order by',
+      );
+      assertMarketsSorted(response.markets, 'marketValue', 'desc', 'markets');
+    });
+
+    void test('sorts markets by marketValue ascending with nulls still last', async () => {
+      const response = await tc.nuanze.getMarkets({
+        sortBy: 'marketValue',
+        sortDirection: 'asc',
+      });
+      debugPrint('Markets by marketValue ascending', response);
+
+      assert.ok(
+        response.markets.some((market) => market.marketValue !== null),
+        'at least one market should carry a marketValue to order by',
+      );
+      assertMarketsSorted(response.markets, 'marketValue', 'asc', 'markets');
+    });
+
+    void test('sorts markets by latest ticker fields descending with nulls last by default', async () => {
+      for (const sortBy of LATEST_TICKER_SORT_KEYS) {
+        const response = await tc.nuanze.getMarkets({ sortBy });
+        debugPrint(`Markets by ${sortBy}`, response);
+
+        assert.ok(
+          response.markets.some(
+            (market) => marketSortValue(market, sortBy) !== null,
+          ),
+          `at least one market should carry latest.${sortBy} to order by`,
+        );
+        assertMarketsSorted(response.markets, sortBy, 'desc', sortBy);
+      }
+    });
+
     void test('rejects an unknown venue with BAD_REQUEST', async () => {
       try {
         await tc.nuanze.getMarkets({
@@ -129,6 +202,29 @@ void describe(
         ISO_UTC,
         'componentUpdatedAt.market',
       );
+    });
+
+    void test('carries the list marketValue on a resolved market', async () => {
+      const valued = (await tc.nuanze.getMarkets()).markets.find(
+        (market) => market.marketValue !== null,
+      );
+      assert.ok(
+        valued?.marketValue,
+        'expected at least one market with a marketValue to resolve',
+      );
+
+      const response = await tc.nuanze.getMarketByTicker({
+        productId: valued.productId,
+      });
+      debugPrint('Market by productId with marketValue', response);
+
+      assertMarketShape(response, 'market');
+      assert.ok(
+        response.marketValue,
+        `${valued.ticker} detail should carry its marketValue`,
+      );
+      // Only the kind is compared: usd and asOf may refresh between the two requests.
+      assert.equal(response.marketValue.kind, valued.marketValue.kind);
     });
 
     void test('resolves the same market by ticker or productId', async () => {
@@ -262,6 +358,15 @@ function assertMarketShape(market: NuanzeMarket, label: string): void {
   assertBigNumberPositive(market.priceIncrement, `${label}.priceIncrement`);
   assertBigNumberPositive(market.sizeIncrement, `${label}.sizeIncrement`);
   assertBigNumberPositive(market.minSize, `${label}.minSize`);
+  if (market.marketValue !== null) {
+    assertEnumMember(
+      market.marketValue.kind,
+      NUANZE_MARKET_VALUE_KINDS,
+      `${label}.marketValue.kind`,
+    );
+    assertBigNumberPositive(market.marketValue.usd, `${label}.marketValue.usd`);
+    assert.match(market.marketValue.asOf, ISO_UTC, `${label}.marketValue.asOf`);
+  }
   if (market.skew !== null) {
     assertBigNumberFinite(market.skew, `${label}.skew`);
   }
@@ -281,5 +386,61 @@ function assertMarketShape(market: NuanzeMarket, label: string): void {
       continue;
     }
     assertBigNumberFinite(value, `${label}.latest.${field}`);
+  }
+}
+
+/**
+ * Reads the value `getMarkets` orders by for a non-`productId` key: `marketValue.usd`, or the
+ * same-named `latest` field. A null `marketValue` or `latest` counts as a null key.
+ */
+function marketSortValue(
+  market: NuanzeMarket,
+  sortBy: Exclude<NuanzeMarketSortBy, 'productId'>,
+): BigNumber | null {
+  if (sortBy === 'marketValue') {
+    return market.marketValue?.usd ?? null;
+  }
+  return market.latest?.[sortBy] ?? null;
+}
+
+/**
+ * Asserts the `getMarkets` sort contract: markets with a key come first in `direction` order,
+ * every market with a null key comes after them whatever the direction, and equal keys (nulls
+ * included) break on `productId` ascending.
+ */
+function assertMarketsSorted(
+  markets: NuanzeMarket[],
+  sortBy: Exclude<NuanzeMarketSortBy, 'productId'>,
+  direction: NuanzeMarketSortDirection,
+  label: string,
+): void {
+  for (let i = 1; i < markets.length; i++) {
+    const previous = markets[i - 1];
+    const current = markets[i];
+    const previousValue = marketSortValue(previous, sortBy);
+    const currentValue = marketSortValue(current, sortBy);
+    const pair = `${label}[${i - 1}] ${previous.ticker} -> ${label}[${i}] ${current.ticker}`;
+
+    assert.ok(
+      !(previousValue === null && currentValue !== null),
+      `${pair}: markets with a null ${sortBy} should come last`,
+    );
+    if (previousValue !== null && currentValue !== null) {
+      if (!previousValue.eq(currentValue)) {
+        assert.ok(
+          direction === 'desc'
+            ? previousValue.gt(currentValue)
+            : previousValue.lt(currentValue),
+          `${pair}: ${sortBy} should be ${direction === 'desc' ? 'non-increasing' : 'non-decreasing'}`,
+        );
+        continue;
+      }
+    } else if (previousValue !== currentValue) {
+      continue;
+    }
+    assert.ok(
+      previous.productId < current.productId,
+      `${pair}: equal ${sortBy} should break ties on productId ascending`,
+    );
   }
 }
