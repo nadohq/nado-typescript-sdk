@@ -256,16 +256,77 @@ export type NuanzeMarketPositionSortDirection =
   (typeof NUANZE_MARKET_POSITION_SORT_DIRECTIONS)[number];
 
 /**
+ * Every field accepted for ordering globally ranked open positions.
+ */
+export const NUANZE_OPEN_POSITION_SORT_BYS = ['pnl', 'notional'] as const;
+
+/**
+ * Primary field used to order globally ranked open positions. `pnl` (the default) is signed
+ * unrealized PnL; `notional` is absolute USD notional.
+ */
+export type NuanzeOpenPositionSortBy =
+  (typeof NUANZE_OPEN_POSITION_SORT_BYS)[number];
+
+/**
  * Every direction accepted for globally ranked open positions.
  */
 export const NUANZE_OPEN_POSITION_SORT_DIRECTIONS =
   NUANZE_MARKET_POSITION_SORT_DIRECTIONS;
 
 /**
- * Signed unrealized-PnL ordering direction for globally ranked open positions.
+ * Direction applied to the chosen {@link NuanzeOpenPositionSortBy} key for globally ranked open
+ * positions.
  */
 export type NuanzeOpenPositionSortDirection =
   (typeof NUANZE_OPEN_POSITION_SORT_DIRECTIONS)[number];
+
+/**
+ * Every field accepted for ordering the market list.
+ */
+export const NUANZE_MARKET_SORT_BYS = [
+  'productId',
+  'marketValue',
+  'volume24h',
+  'openInterest',
+  'priceChange24hPct',
+] as const;
+
+/**
+ * Primary field used to order the market list. `productId` (the default) orders by public product
+ * ID; `marketValue` by {@link NuanzeMarketValue.usd}; `volume24h`, `openInterest`, and
+ * `priceChange24hPct` by the matching {@link NuanzeLatestTicker} field. Nulls always sort last
+ * whatever the direction, and ties break on `productId` ascending.
+ */
+export type NuanzeMarketSortBy = (typeof NUANZE_MARKET_SORT_BYS)[number];
+
+/**
+ * Every direction accepted for ordering the market list.
+ */
+export const NUANZE_MARKET_SORT_DIRECTIONS =
+  NUANZE_MARKET_POSITION_SORT_DIRECTIONS;
+
+/**
+ * Direction applied to the chosen {@link NuanzeMarketSortBy} key. When omitted, the server picks
+ * it per key: `asc` for `productId`, `desc` for every other key.
+ */
+export type NuanzeMarketSortDirection =
+  (typeof NUANZE_MARKET_SORT_DIRECTIONS)[number];
+
+/**
+ * Every {@link NuanzeMarketValueKind} the API can report.
+ */
+export const NUANZE_MARKET_VALUE_KINDS = [
+  'marketCap',
+  'aum',
+  'privateValuation',
+] as const;
+
+/**
+ * What {@link NuanzeMarketValue.usd} measures. `marketCap` is the market capitalization of the
+ * underlying listed company or crypto asset, `aum` is assets under management of an ETF or index
+ * product, and `privateValuation` is the last priced private round of a pre-IPO company.
+ */
+export type NuanzeMarketValueKind = (typeof NUANZE_MARKET_VALUE_KINDS)[number];
 
 /**
  * Every {@link NuanzePositioningGroupBy} the API can report.
@@ -400,6 +461,22 @@ export interface NuanzeLatestTicker {
 }
 
 /**
+ * Headline USD value of a market's underlying asset, for ranking markets by size. Several markets
+ * can share one underlying and then carry the same value, so never sum `usd` across markets.
+ */
+export interface NuanzeMarketValue {
+  /** What `usd` measures. */
+  kind: NuanzeMarketValueKind;
+  /** Value in US dollars, already normalized upstream. Positive. */
+  usd: BigNumber;
+  /**
+   * As a UTC ISO 8601 string: the provider refresh time for `marketCap` and `aum` (refreshed every
+   * 30-60 minutes), or the date of the priced round at 00:00 UTC for `privateValuation`.
+   */
+  asOf: string;
+}
+
+/**
  * A market listed on Nado, as served by Nuanze. Timestamps stay UTC ISO 8601 strings rather than
  * `Date`, matching the API contract.
  */
@@ -440,6 +517,17 @@ export interface NuanzeMarket extends NuanzeMarketIdentity {
    * a UTC ISO 8601 string, or null when skew is unavailable.
    */
   skewUpdatedAt: string | null;
+  /**
+   * USD value of the market's underlying asset, or null for commodities, FX, stablecoins, and
+   * assets with no mapped value.
+   *
+   * Perpetuals and tokenized xStock wrappers carry the company's market cap, and wrapped crypto
+   * (for example KBTC or WETH) carries the underlying coin's. ETFs and index products report
+   * `aum`, and pre-IPO names report the last priced private round as `privateValuation`.
+   * Several markets can share one underlying and then carry the same value, so never sum `usd`
+   * across markets.
+   */
+  marketValue: NuanzeMarketValue | null;
   /** When market metadata was last synced, as a UTC ISO 8601 string. */
   updatedAt: string;
 }
@@ -1019,7 +1107,8 @@ export interface NuanzeMarketPosition {
 }
 
 /**
- * Current open perpetual position leg in the global signed-unrealized-PnL ranking.
+ * Current open perpetual position leg in the global ranking, ordered by signed unrealized PnL or
+ * absolute notional.
  */
 export interface NuanzeOpenPosition extends NuanzeMarketPosition {
   /** Public product ID for this row's market. */

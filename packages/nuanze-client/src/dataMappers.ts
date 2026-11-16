@@ -19,6 +19,7 @@ import {
   NuanzeMarketPosition,
   NuanzeMarketPositioningBase,
   NuanzeMarketTrade,
+  NuanzeMarketValue,
   NuanzeOpenPosition,
   NuanzePlatformDeltas,
   NuanzePositioningCellBase,
@@ -81,6 +82,7 @@ import {
   NuanzeServerMarketPositioningBase,
   NuanzeServerMarketPositioningResponse,
   NuanzeServerMarketTrade,
+  NuanzeServerMarketValue,
   NuanzeServerNotionalBucketPositioningCell,
   NuanzeServerOpenPosition,
   NuanzeServerPlatformDeltas,
@@ -146,6 +148,20 @@ export function mapNuanzeLatestTicker(
 }
 
 /**
+ * Maps a server-side underlying-asset value, converting `usd` to `BigNumber`. `kind` and the
+ * `asOf` timestamp keep their wire types.
+ */
+export function mapNuanzeMarketValue(
+  server: NuanzeServerMarketValue,
+): NuanzeMarketValue {
+  return {
+    kind: server.kind,
+    usd: toBigNumber(server.usd),
+    asOf: server.asOf,
+  };
+}
+
+/**
  * Maps a server-side market to its client-side representation. Only the decimal fields change: IDs,
  * enums, and timestamps keep their wire types.
  */
@@ -163,6 +179,11 @@ export function mapNuanzeMarket(server: NuanzeServerMarket): NuanzeMarket {
       server.latest === null ? null : mapNuanzeLatestTicker(server.latest),
     skew: mapNuanzeDecimal(server.skew),
     skewUpdatedAt: server.skewUpdatedAt,
+    // Loose check: a deployment predating `marketValue` omits the field, which maps to null.
+    marketValue:
+      server.marketValue == null
+        ? null
+        : mapNuanzeMarketValue(server.marketValue),
     updatedAt: server.updatedAt,
   };
 }
