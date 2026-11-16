@@ -857,8 +857,9 @@ export function mapMobileSocialFeedImage(
   }
   return {
     url: server.url,
-    ...(server.width === undefined ? {} : { width: server.width }),
-    ...(server.height === undefined ? {} : { height: server.height }),
+    ...(server.width === undefined || server.height === undefined
+      ? {}
+      : { width: server.width, height: server.height }),
   };
 }
 

@@ -268,7 +268,6 @@ use `null` for an unknown entry. The whole field may be omitted but cannot be `n
 `external_image_dimensions` after `image_urls`, with each object's `width` before `height`. Keep dimensions
 and field presence unchanged on retries; adding dimensions to an earlier request changes its idempotency
 hash. The service stores the supplied dimensions without fetching the URL or backfilling existing content.
-Enable this parameter only after the backend has deployed migration 042 and support for the new field.
 
 Responses keep one `images` array: upload metadata first, then external URL objects in submitted order.
 External images include optional `width` and `height` together when known; both are omitted otherwise,
