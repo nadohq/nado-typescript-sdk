@@ -22,6 +22,7 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   create_feed_chart_drawing: 'mobile:execute_create_feed_chart_drawing',
   update_feed_chart_drawing: 'mobile:execute_update_feed_chart_drawing',
   set_feed_like: 'mobile:execute_set_feed_like',
+  attribute_orders: 'mobile:execute_attribute_orders',
   set_bio: 'mobile:execute_set_bio',
   create_avatar_upload: 'mobile:execute_create_avatar_upload',
   set_avatar: 'mobile:execute_set_avatar',

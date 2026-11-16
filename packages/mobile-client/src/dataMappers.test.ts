@@ -3,6 +3,7 @@ import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import {
+  mapMobileAttributeOrdersResult,
   mapMobileSocialFeedActionCandidate,
   mapMobileSocialFeedCommentsPage,
   mapMobileSocialFeedDrawingMutationResult,
@@ -1388,4 +1389,43 @@ describe('[mobile-client]: position and image transport', () => {
       expect(requests[0]).not.toHaveProperty('image_url');
     },
   );
+});
+
+describe('[mobile-client]: order attribution', () => {
+  it('maps the reason the server omits on non-rejected digests to null', () => {
+    expect(
+      mapMobileAttributeOrdersResult({
+        accepted: true,
+        results: [
+          {
+            order_digest:
+              '0x1111111111111111111111111111111111111111111111111111111111111111',
+            status: 'accepted',
+          },
+          {
+            order_digest:
+              '0x2222222222222222222222222222222222222222222222222222222222222222',
+            status: 'rejected',
+            reason: 'conflict',
+          },
+        ],
+      }),
+    ).toEqual({
+      isAccepted: true,
+      results: [
+        {
+          orderDigest:
+            '0x1111111111111111111111111111111111111111111111111111111111111111',
+          status: 'accepted',
+          reason: null,
+        },
+        {
+          orderDigest:
+            '0x2222222222222222222222222222222222222222222222222222222222222222',
+          status: 'rejected',
+          reason: 'conflict',
+        },
+      ],
+    });
+  });
 });

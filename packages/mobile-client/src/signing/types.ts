@@ -129,6 +129,14 @@ export type MobileSignedInner =
       /** Desired relationship state. */
       is_liked: boolean;
     }
+  | {
+      /** Links the orders of one `place_orders` call to the post they were placed from. */
+      type: 'attribute_orders';
+      /** Post or trade card UUID. */
+      item_id: string;
+      /** 1–50 distinct lowercase order digests. */
+      order_digests: string[];
+    }
   | { type: 'set_bio'; bio: string }
   | { type: 'create_avatar_upload'; content_length: number }
   | {

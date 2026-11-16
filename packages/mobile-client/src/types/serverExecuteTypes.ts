@@ -4,6 +4,8 @@ import {
   MobileServerSuccessResponse,
 } from './serverBaseTypes';
 import {
+  MobileOrderAttributionRejectReason,
+  MobileOrderAttributionStatus,
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedItem,
@@ -113,6 +115,8 @@ export interface MobileServerExecuteResponseByType {
   update_feed_chart_drawing: MobileServerSocialFeedDrawingMutationResponse;
   /** Post-mutation like state. */
   set_feed_like: MobileServerSocialFeedLikeResponse;
+  /** Per-digest attribution outcome. */
+  attribute_orders: MobileServerAttributeOrdersResponse;
   /** Bio writes return only the success envelope. */
   set_bio: MobileServerEmptyExecuteResponse;
   /** Avatar writes return only the success envelope. */
@@ -175,6 +179,22 @@ export interface MobileServerSocialFeedLikeResponse {
   like_count: number;
   /** Display version. */
   version: string;
+}
+
+/** One order digest's attribution outcome. */
+export interface MobileServerOrderAttributionResult {
+  /** The requested digest, as lowercase hex. */
+  order_digest: Hex;
+  status: MobileOrderAttributionStatus;
+  /** Omitted unless `status` is `rejected`. */
+  reason?: MobileOrderAttributionRejectReason;
+}
+
+/** `accepted` is false when the attribution program is switched off; nothing is stored then. */
+export interface MobileServerAttributeOrdersResponse {
+  accepted: boolean;
+  /** One result per requested digest, in request order. */
+  results: MobileServerOrderAttributionResult[];
 }
 
 /** Page lease result; this response does not carry as_of_ms. */

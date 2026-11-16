@@ -125,6 +125,12 @@ export function canonicalizeMobileInner(
         item_id: inner.item_id,
         is_liked: inner.is_liked,
       };
+    case 'attribute_orders':
+      return {
+        type: inner.type,
+        item_id: inner.item_id,
+        order_digests: [...inner.order_digests],
+      };
     case 'set_bio':
       return { type: 'set_bio', bio: inner.bio };
     case 'create_avatar_upload':
