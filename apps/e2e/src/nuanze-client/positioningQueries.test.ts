@@ -584,6 +584,24 @@ function assertMarketPositionShape(
   assertPositionShape(position, label);
   assertPositionIdentity(position, label);
   assertPositionLeverage(position, label);
+  assertPositionOpenId(position, label);
+}
+
+/**
+ * `positionId` is the Nado indexer open id: a decimal index, or null while Nuanze has not resolved
+ * the leg. `openedAt` is null exactly then.
+ */
+function assertPositionOpenId(
+  position: NuanzeMarketPosition | NuanzeOpenPosition,
+  label: string,
+): void {
+  if (position.positionId === null) {
+    assert.equal(position.openedAt, null, `${label}.openedAt`);
+    return;
+  }
+  assert.match(position.positionId, /^[0-9]+$/, `${label}.positionId`);
+  assert.ok(position.openedAt !== null, `${label}.openedAt`);
+  assert.match(position.openedAt, ISO_UTC, `${label}.openedAt`);
 }
 
 function assertPositionLeverage(
@@ -649,6 +667,7 @@ function assertOpenPositionShape(
   assertPositionShape(position, label);
   assertPositionIdentity(position, label);
   assertPositionLeverage(position, label);
+  assertPositionOpenId(position, label);
   assert.ok(
     Number.isSafeInteger(position.productId) && position.productId >= 0,
     `${label}.productId`,

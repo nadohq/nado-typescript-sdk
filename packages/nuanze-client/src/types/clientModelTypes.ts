@@ -1104,6 +1104,18 @@ export interface NuanzeMarketPosition {
    * Null for cross positions or when isolated equity is unavailable.
    */
   leverage: BigNumber | null;
+  /**
+   * Nado indexer `openId` of this position (submission index of the opening transaction). Pass it
+   * as `startCursor` with `limit: 1` to the indexer `getPositions` query, together with this row's
+   * subaccount, product and `isolated: marginKind === 'isolated'`, then check the returned `openId`
+   * equals it. It still resolves after the position has closed. Unique only within one subaccount,
+   * market and margin mode. Null while Nuanze is resolving it: for about a minute after the
+   * position first appears and again after each change to it (a fill, a liquidation, a
+   * settlement). When null, query `getPositions` with `open: true` and no `startCursor` instead.
+   */
+  positionId: string | null;
+  /** ISO time the position was opened. Null exactly when `positionId` is null. */
+  openedAt: string | null;
 }
 
 /**
