@@ -1373,14 +1373,17 @@ export function mapMobileSocialFeedActionCandidate(
 }
 
 /**
- * Maps history risk prices to decimals while retaining funding amounts in x18 units.
+ * Maps history prices to decimals while retaining funding amounts in x18 units.
  * @param server - Service payload with its original wire fields.
- * @returns Nullable decimal liquidation price and x18 funding PnL, with their independent quality and observation metadata.
+ * @returns History prices and x18 funding PnL. Preserves omitted exit prices for patch updates.
  */
 export function mapMobileSocialFeedHistoryMetrics(
   server: MobileServerSocialFeedHistoryMetrics,
 ): MobileSocialFeedHistoryMetrics {
   return {
+    ...(server.average_exit_price_x18 === undefined
+      ? {}
+      : { averageExitPrice: removeDecimals(server.average_exit_price_x18) }),
     estimatedLiquidationPrice: removeDecimals(
       server.estimated_liquidation_price_x18,
     ),
@@ -1736,6 +1739,7 @@ export function mapMobileSocialFeedPositionHistory(
     owner: mapMobileSocialFeedAuthor(server.owner),
     position: {
       ...mapMobileSocialFeedPositionCard(server.position),
+      averageExitPrice: null,
       ...mapMobileSocialFeedHistoryMetrics(server.position),
     },
     summary: {
