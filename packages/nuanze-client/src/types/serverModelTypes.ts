@@ -344,6 +344,8 @@ export interface NuanzeServerMarketPosition {
   margin: string | null;
   entryPrice: string | null;
   leverage: string | null;
+  positionId: string | null;
+  openedAt: string | null;
 }
 
 /**

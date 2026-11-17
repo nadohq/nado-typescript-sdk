@@ -1150,6 +1150,8 @@ export function mapNuanzeMarketPosition(
     margin: mapNuanzeDecimal(server.margin),
     entryPrice: mapNuanzeDecimal(server.entryPrice),
     leverage: mapNuanzeDecimal(server.leverage),
+    positionId: server.positionId,
+    openedAt: server.openedAt,
   };
 }
 
