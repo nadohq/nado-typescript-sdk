@@ -8,9 +8,11 @@ export interface NadoLiquidateSubaccountTx {
   liquidate_subaccount: {
     sender: string;
     liquidatee: string;
-    mode: number;
-    // Also encodes health group for spread liquidation: (perp_id << 16) | spot_id
+    // Encodes both products for a spread liquidation: (perp_id << 16) | spot_id
+    // u32::MAX (4294967295) finalizes the subaccount instead of liquidating a product
     product_id: number;
+    // Whether `product_id` encodes a spread liquidation
+    is_encoded_spread: boolean;
     amount: string;
     nonce: number;
   };
