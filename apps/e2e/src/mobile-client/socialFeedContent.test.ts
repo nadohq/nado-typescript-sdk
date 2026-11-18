@@ -731,18 +731,20 @@ void describe(
         mentions: [],
         imageIds: [postImage.imageId],
         imageUrls: [
-          'https://static.klipy.com/sdk-post-1.png',
-          'https://static.klipy.com/sdk-post-2.png',
+          'https://static.klipy.com/ii/925f17378dd1893b674a723c07535afe/d0/dc/dSJt0R1p.gif',
+          'https://static.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/a8/6a/QmXfWRrn.gif',
         ],
-        externalImageDimensions: [{ width: 165, height: 231 }, null],
+        externalImageDimensions: [{ width: 480, height: 470 }, null],
       };
       const postExternalImages = [
         {
-          url: 'https://static.klipy.com/sdk-post-1.png',
-          width: 165,
-          height: 231,
+          url: 'https://static.klipy.com/ii/925f17378dd1893b674a723c07535afe/d0/dc/dSJt0R1p.gif',
+          width: 480,
+          height: 470,
         },
-        { url: 'https://static.klipy.com/sdk-post-2.png' },
+        {
+          url: 'https://static.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/a8/6a/QmXfWRrn.gif',
+        },
       ];
       const post = await tc.mobile.createFeedPost(params);
       assert.ok(post.kind === 'post');
@@ -766,7 +768,7 @@ void describe(
         MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
       );
       for (const externalImageDimensions of [
-        [{ width: 166, height: 231 }, null],
+        [{ width: 481, height: 470 }, null],
         undefined,
       ]) {
         await assertRejectsWithMobileErrorCode(
@@ -823,18 +825,20 @@ void describe(
         mentions: [],
         imageIds: [commentImage.imageId],
         imageUrls: [
-          'https://static.klipy.com/sdk-comment.png',
-          'https://static.klipy.com/sdk-comment-unknown.gif',
+          'https://static.klipy.com/ii/35ccce3d852f7995dd2da910f2abd795/d3/7c/RmfRyhDq.webp',
+          'https://static.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f1/31/x9qnwc1d.gif',
         ],
-        externalImageDimensions: [{ width: 320, height: 180 }, null],
+        externalImageDimensions: [{ width: 220, height: 194 }, null],
       };
       const commentExternalImages = [
         {
-          url: 'https://static.klipy.com/sdk-comment.png',
-          width: 320,
-          height: 180,
+          url: 'https://static.klipy.com/ii/35ccce3d852f7995dd2da910f2abd795/d3/7c/RmfRyhDq.webp',
+          width: 220,
+          height: 194,
         },
-        { url: 'https://static.klipy.com/sdk-comment-unknown.gif' },
+        {
+          url: 'https://static.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f1/31/x9qnwc1d.gif',
+        },
       ];
       const comment = await tc.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
@@ -849,7 +853,7 @@ void describe(
       assert.equal(retriedComment.comment.id, comment.comment.id);
       assert.deepEqual(retriedComment.comment.images, comment.comment.images);
       for (const externalImageDimensions of [
-        [{ width: 320, height: 181 }, null],
+        [{ width: 220, height: 195 }, null],
         undefined,
       ]) {
         await assertRejectsWithMobileErrorCode(
@@ -960,8 +964,10 @@ void describe(
         replyToItemId: comment.comment.id,
         text: 'SDK child reply',
         mentions: [],
-        imageUrls: ['https://static.klipy.com/sdk-child.webp'],
-        externalImageDimensions: [{ width: 640, height: 480 }],
+        imageUrls: [
+          'https://static.klipy.com/ii/c44064a00e4b7451969381d90dea1769/d3/84/VxmTVl9w.webp',
+        ],
+        externalImageDimensions: [{ width: 220, height: 220 }],
       });
       const grandchild = await tc.mobile.createFeedComment({
         ...signed,
@@ -986,9 +992,9 @@ void describe(
       );
       assert.deepEqual(grouped.comments[0].replies[0].images, [
         {
-          url: 'https://static.klipy.com/sdk-child.webp',
-          width: 640,
-          height: 480,
+          url: 'https://static.klipy.com/ii/c44064a00e4b7451969381d90dea1769/d3/84/VxmTVl9w.webp',
+          width: 220,
+          height: 220,
         },
       ]);
       assert.deepEqual(
