@@ -70,6 +70,12 @@ export interface NadoTransferQuoteV2Tx {
   };
 }
 
+/**
+ * A transaction submitted on-chain through slow mode (e.g. `deposit_collateral`, `claim_builder_fee`).
+ * The archive returns these as this string rather than an object with the transaction data.
+ */
+export type NadoSlowModeTx = 'execute_slow_mode';
+
 export type NadoTx =
   | NadoMatchOrdersTx
   | NadoLiquidateSubaccountTx
@@ -78,6 +84,7 @@ export type NadoTx =
   | NadoTransferQuoteV2Tx
   | NadoWithdrawCollateralTx
   | NadoWithdrawCollateralV2Tx
+  | NadoSlowModeTx
   | {
       // TODO: Populate all types
       [key: string]: never;
