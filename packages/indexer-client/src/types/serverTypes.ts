@@ -362,6 +362,9 @@ export interface IndexerServerFundingRate {
   product_id: number;
   funding_rate_x18: string;
   update_time: number;
+  // Premium index underlying `funding_rate_x18`, in the same 24hr terms, but not subject to its daily cap.
+  // Omitted for markets that do not use the premium-index funding formula
+  premium_x18?: string;
 }
 
 export type IndexerServerFundingRateResponse = IndexerServerFundingRate;
