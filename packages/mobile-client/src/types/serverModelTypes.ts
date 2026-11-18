@@ -52,7 +52,8 @@ export type MobileNotificationTypeId =
   | 'notable_trader'
   | 'trader_streak'
   | 'account_drama'
-  | 'weekly_digest';
+  | 'weekly_digest'
+  | 'deposit_completed';
 
 /**
  * Named navigation destinations supported by notification payloads.
