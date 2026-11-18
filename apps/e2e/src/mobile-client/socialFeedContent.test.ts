@@ -731,18 +731,18 @@ void describe(
         mentions: [],
         imageIds: [postImage.imageId],
         imageUrls: [
-          'https://example.com/sdk-post-1.png',
-          'https://example.com/sdk-post-2.png',
+          'https://static.klipy.com/sdk-post-1.png',
+          'https://static.klipy.com/sdk-post-2.png',
         ],
         externalImageDimensions: [{ width: 165, height: 231 }, null],
       };
       const postExternalImages = [
         {
-          url: 'https://example.com/sdk-post-1.png',
+          url: 'https://static.klipy.com/sdk-post-1.png',
           width: 165,
           height: 231,
         },
-        { url: 'https://example.com/sdk-post-2.png' },
+        { url: 'https://static.klipy.com/sdk-post-2.png' },
       ];
       const post = await tc.mobile.createFeedPost(params);
       assert.ok(post.kind === 'post');
@@ -823,18 +823,18 @@ void describe(
         mentions: [],
         imageIds: [commentImage.imageId],
         imageUrls: [
-          'https://example.com/sdk-comment.png',
-          'https://example.com/sdk-comment-unknown.gif',
+          'https://static.klipy.com/sdk-comment.png',
+          'https://static.klipy.com/sdk-comment-unknown.gif',
         ],
         externalImageDimensions: [{ width: 320, height: 180 }, null],
       };
       const commentExternalImages = [
         {
-          url: 'https://example.com/sdk-comment.png',
+          url: 'https://static.klipy.com/sdk-comment.png',
           width: 320,
           height: 180,
         },
-        { url: 'https://example.com/sdk-comment-unknown.gif' },
+        { url: 'https://static.klipy.com/sdk-comment-unknown.gif' },
       ];
       const comment = await tc.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
@@ -960,7 +960,7 @@ void describe(
         replyToItemId: comment.comment.id,
         text: 'SDK child reply',
         mentions: [],
-        imageUrls: ['https://example.com/sdk-child.webp'],
+        imageUrls: ['https://static.klipy.com/sdk-child.webp'],
         externalImageDimensions: [{ width: 640, height: 480 }],
       });
       const grandchild = await tc.mobile.createFeedComment({
@@ -986,7 +986,7 @@ void describe(
       );
       assert.deepEqual(grouped.comments[0].replies[0].images, [
         {
-          url: 'https://example.com/sdk-child.webp',
+          url: 'https://static.klipy.com/sdk-child.webp',
           width: 640,
           height: 480,
         },
