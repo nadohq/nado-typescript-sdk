@@ -119,6 +119,7 @@ export function mapIndexerOrder(order: IndexerServerOrder): IndexerOrder {
     appendix,
     nonce: toBigNumber(order.nonce),
     isolated: order.isolated,
+    isOtc: order.is_otc,
     recvTimeSeconds: getRecvTimeFromOrderNonce(order.nonce) / 1000,
     price: removeDecimals(order.price_x18),
     productId: order.product_id,

@@ -636,6 +636,7 @@ export class IndexerBaseClient {
       return {
         productId: postBalances.base.productId,
         isolated: matchEvent.isolated,
+        isOtc: matchEvent.is_otc,
         totalFee: toBigNumber(matchEvent.fee),
         sequencerFee: toBigNumber(matchEvent.sequencer_fee),
         builderFee: toBigNumber(matchEvent.builder_fee),

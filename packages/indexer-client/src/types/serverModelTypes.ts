@@ -112,6 +112,8 @@ export interface IndexerServerOrder {
   appendix: string;
   nonce: string;
   isolated: boolean;
+  // Filled on the OTC (Prime) venue rather than the book
+  is_otc: boolean;
   base_filled: string;
   // Includes fee
   quote_filled: string;
@@ -139,6 +141,8 @@ export interface IndexerServerOrder {
 export interface IndexerServerMatchEvent {
   digest: string;
   isolated: boolean;
+  // Filled on the OTC (Prime) venue rather than the book
+  is_otc: boolean;
   order: EIP712OrderValues;
   base_filled: string;
   // Includes fee

@@ -520,6 +520,8 @@ export interface IndexerOrder {
   appendix: OrderAppendix;
   nonce: BigNumber;
   isolated: boolean;
+  // Filled on the OTC (Prime) venue rather than the book
+  isOtc: boolean;
   // Derived from the nonce
   recvTimeSeconds: number;
   // Fill amounts
@@ -574,6 +576,8 @@ export interface IndexerMatchEvent extends Subaccount {
   productId: number;
   digest: string;
   isolated: boolean;
+  // Filled on the OTC (Prime) venue rather than the book
+  isOtc: boolean;
   order: EIP712OrderValues;
   baseFilled: BigNumber;
   quoteFilled: BigNumber;
