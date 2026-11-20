@@ -22,6 +22,7 @@ import {
   MobileNotificationSettingsV2,
   MobileNotificationSubscriptions,
   MobileNotificationSubscriptionsUpdate,
+  MobilePositionLookup,
   MobileProductEvent,
   MobileProfileSearchPage,
   MobileProfilesInclude,
@@ -150,6 +151,7 @@ import {
   MobileServerNotificationRegistrationV2Response,
   MobileServerNotificationSettingsV2Response,
   MobileServerNotificationSubscriptionsResponse,
+  MobileServerPositionLookupResponse,
   MobileServerRegisteredWalletResponse,
   MobileServerSearchProfilesResponse,
   MobileServerSocialFeedActionResolutionResponse,
@@ -177,6 +179,13 @@ import {
   MobileServerSocialFeedListParams,
   MobileServerSocialFeedReadParams,
 } from './types/serverRequestTypes';
+
+/** Maps a position lookup payload to its client-side lifecycle UUID. */
+export function mapMobilePositionLookup(
+  server: MobileServerPositionLookupResponse,
+): MobilePositionLookup {
+  return { positionId: server.position_id };
+}
 
 /**
  * Maps a server-side avatar preset to its client-side representation.

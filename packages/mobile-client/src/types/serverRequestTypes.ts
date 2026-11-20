@@ -1,6 +1,8 @@
 import { Hex } from 'viem';
 import { MobileSignedInner } from '../signing/types';
 import {
+  MobileFeedMarginMode,
+  MobileFeedTradePositionDirection,
   MobileNotificationRouteName,
   MobileNotificationTypeId,
   MobileServerNotificationDeviceMetadata,
@@ -155,6 +157,19 @@ export interface MobileServerSocialFeedReadParams {
  * Params for each unsigned `public_query`, keyed by request `type`.
  */
 export interface MobileServerPublicQueryRequestByType {
+  /** Look up a lifecycle UUID using its indexer position identity. */
+  position_lookup: {
+    /** Position-owning subaccount. */
+    subaccount: Hex;
+    /** Market product ID. */
+    product_id: number;
+    /** Position margin mode. */
+    margin_mode: MobileFeedMarginMode;
+    /** Position direction. */
+    direction: MobileFeedTradePositionDirection;
+    /** Opening submission index, preserved as a decimal string. */
+    open_id: string;
+  };
   /** Selected account's open position candidates. */
   self_feed_positions: {
     /** Full identity. */
