@@ -251,6 +251,8 @@ export interface MobileServerRegisteredWalletResponse extends MobileServerNotifi
  * by {@link MobileServerPublicQuerySuccessResponse}.
  */
 export interface MobileServerPublicQueryResponseByType {
+  /** Lifecycle UUID matching the supplied position identity. */
+  position_lookup: MobileServerPositionLookupResponse;
   /** Latest saved device generation and v1/v2 capabilities. */
   notification_registration_v2: MobileServerNotificationRegistrationV2Response;
   /** Full settings document with its revision. */
@@ -301,6 +303,12 @@ export interface MobileServerPublicQueryResponseByType {
   feed: MobileServerFeedResponse;
   notification_preferences: MobileServerNotificationPreferencesResponse;
   registered_wallet: MobileServerRegisteredWalletResponse;
+}
+
+/** Payload of the `position_lookup` public query success response. */
+export interface MobileServerPositionLookupResponse {
+  /** Position lifecycle UUID. */
+  position_id: string;
 }
 
 /**

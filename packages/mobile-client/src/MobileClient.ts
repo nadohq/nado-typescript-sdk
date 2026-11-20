@@ -25,6 +25,7 @@ import {
   mapMobileNotificationSettingsV2,
   mapMobileNotificationSubscriptions,
   mapMobileNotificationSubscriptionsUpdateToServer,
+  mapMobilePositionLookup,
   mapMobileProductEventToServer,
   mapMobileProfileSearchPage,
   mapMobileProfileSearchParamsToServer,
@@ -85,6 +86,7 @@ import {
   GetMobilePositionFeedParams,
   GetMobilePositionHistoryAllParams,
   GetMobilePositionHistoryParams,
+  GetMobilePositionLookupParams,
   GetMobilePositionThoughtsParams,
   GetMobilePositionWatchersParams,
   GetMobileProfileFeedParams,
@@ -112,6 +114,7 @@ import {
   MobileNotificationRegistrationV2,
   MobileNotificationSettingsV2,
   MobileNotificationSubscriptions,
+  MobilePositionLookup,
   MobilePositionPresenceParams,
   MobileProfileSearchPage,
   MobilePublicProfile,
@@ -605,6 +608,26 @@ export class MobileClient {
     };
     const data = await this.publicQuery(body);
     return mapMobileRegisteredWallet(data);
+  }
+
+  /**
+   * Looks up a position lifecycle UUID from its indexer identity without requiring a signature.
+   * @param params - Owning subaccount, market, margin mode, direction, and opening submission index.
+   * @returns The lifecycle UUID for use with position history and other position queries.
+   * @throws {MobileServerFailureError} If the service rejects the lookup.
+   */
+  async getPositionLookup(
+    params: GetMobilePositionLookupParams,
+  ): Promise<MobilePositionLookup> {
+    const body: MobileServerPublicQueryRequest<'position_lookup'> = {
+      type: 'position_lookup',
+      subaccount: subaccountToHex(params.subaccount),
+      product_id: params.productId,
+      margin_mode: params.marginMode,
+      direction: params.direction,
+      open_id: params.openId,
+    };
+    return mapMobilePositionLookup(await this.publicQuery(body));
   }
 
   /**
