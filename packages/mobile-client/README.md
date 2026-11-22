@@ -49,7 +49,7 @@ await mobile.setUsername({
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
 `getNotificationPreferences`, `getRegisteredWallet`, `getForYouFeed`, `getTopTradersFeed`,
 `getFriendsFeed`, `getProfileFeed`, `getMarketFeed`, `getPositionFeed`, `getFeedItem`, `getFeedUpdates`,
-`getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
+`getPositionLookup`, `getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
 `getPositionHistory`, `getPositionHistoryAll`, `getPositionThoughts`, `getPositionChart`, `getPositionWatchers`.
 
 `getNotificationRegistrationV2` and `getNotificationSettingsV2` use an active Expo token as their credential,
@@ -84,6 +84,21 @@ parameter JSDoc for session and polling rules.
 hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
 thread pagination. Lists, details, and history return parsed drawings and readable comment previews;
 `getFeedChartDrawing` refreshes a drawing independently when needed.
+
+`getPositionLookup` resolves an indexer position's identity into the lifecycle UUID used by the position APIs:
+
+```ts
+const { positionId } = await mobile.getPositionLookup({
+  subaccount: { subaccountOwner: '0x...', subaccountName: 'default' },
+  productId: 4,
+  marginMode: 'cross',
+  direction: 'long',
+  openId: '123456789',
+});
+```
+
+Keep `openId` as a decimal string to preserve the opening submission index exactly. This public lookup
+requires no wallet signature or reading session.
 
 `getPositionHistory` returns the full action/take timeline, distinct from published-only `getPositionFeed`,
 and a position-mode session for navigation and updates. `getPositionChart` returns candles and action markers,

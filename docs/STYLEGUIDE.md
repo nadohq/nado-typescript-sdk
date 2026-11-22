@@ -224,6 +224,17 @@ export function toBigDecimal(val: BigDecimalish): BigDecimal {
 }
 ```
 
+## Testing
+
+For now, cover thin HTTP client wrappers with E2E tests against the released APIs. Avoid adding unit
+tests that mock Axios or fetch merely to repeat request construction, trivial response mapping, or
+shared error passthrough. E2E coverage should verify the actual request, response, and server error
+contracts.
+
+Use unit tests for independent local logic, including signing vectors, encoding, mathematical
+calculations, and validation boundaries. Continue running the existing unit suite as part of the
+verification sequence in [AGENTS.md](../AGENTS.md).
+
 ## Code Quality Checklist
 
 When reviewing SDK code, ensure:
