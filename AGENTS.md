@@ -37,6 +37,11 @@ project uses Lerna for workspace management and provides a comprehensive SDK for
  (no `skip:` tied to `process.env`, no base-URL overrides such as `NUANZE_E2E_URL`, no "until deployed"
  placeholders). Features land in the API first, then in the SDK; only data-dependent `context.skip(...)` is
  acceptable.
+- **Prefer E2E for thin HTTP client wrappers.** For now, do not add mock-transport unit tests that only
+  repeat request construction, trivial response mapping, or shared error passthrough. Verify these contracts
+  against the released APIs instead.
+- **Use unit tests for independent local logic**, such as signing vectors, encoding, mathematical
+  calculations, and validation boundaries. Continue running the existing unit suite during verification.
 
 ### Package Management
 
