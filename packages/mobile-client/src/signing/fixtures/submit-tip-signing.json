@@ -1,0 +1,64 @@
+{
+  "sdk": "@nadohq/shared and @nadohq/mobile-client 0.74.0; getSignedTransactionRequest and getMobilePayloadHash",
+  "endpoint": "0x0123456789012345678901234567890123456789",
+  "chain_id": 31337,
+  "withdrawal_digest": "0xcd017bd45321c5489c154ba4acf8169ddf6e29a7ccba42531b19944291e67d3c",
+  "linked_inner": {
+    "withdrawal_signature": "0x3d268f9965a029bf61668122f05e549ef775c03ad74acbbfd162b47b24991d344f32b1e38329d56431657f5268b9e974c8f80f774b78f9ee6d89c1d4685e1a0e1c",
+    "signature": "0xf5cc4f7ae767d3cebc23f792e2b7b78ff94833b37be26344188c75e03f324992294f2f77fc04feaaa9a4a3adbb8622608bf6addce88ac9e9728479c673e74bf41c",
+    "nonce": "1795000000000000003"
+  },
+  "first": {
+    "payload_hash": "0x5f7b905b694b37b996318170354a3c9e7d121709e756b887fe688e8c35657773",
+    "signer": "0xC8b414D6c563B2554889A6124797199298A5d201",
+    "request": {
+      "type": "submit_tip",
+      "chain_id": "31337",
+      "recipient_subaccount": "0x030303030303030303030303030303030303030374726164696e670000000000",
+      "origin_post_id": null,
+      "note": "Thank you!",
+      "background_id": "celebration",
+      "visibility": "private",
+      "withdrawal": {
+        "sender": "0xc8b414d6c563b2554889a6124797199298a5d20164656661756c740000000000",
+        "productId": 0,
+        "amount": "5000000",
+        "nonce": "42",
+        "sendTo": "0x0202020202020202020202020202020202020202",
+        "appendix": "0"
+      },
+      "withdrawal_signature": "0xf3e5f1f4c2ffa21117a562d1c9819324571a89a54cd81d387fc439aadfb4477941efd45bb06245d5941eaa643dff56c4c555fe35c282d2de1eb94f13d7c474501c",
+      "max_fee_x18": "20000000000000000",
+      "sender": "0xc8b414d6c563b2554889a6124797199298a5d20164656661756c740000000000",
+      "nonce": "1795000000000000001",
+      "signature": "0x287414e79b8d5fdc2e6201bd3799e581ab01a0916a9d80c6b642fb1da64a97fc130c81ec56884c27fec6ef3003dfcfe6ddb08ba621c882264f16f37de684ea181c"
+    }
+  },
+  "confirmed": {
+    "payload_hash": "0x7a06feda6aa6ef5165329d06d15b2c9eaba0e53d25cbc1373a0fe9c88237cdd6",
+    "signer": "0xb311dbf4166954CBaF349FBb0D62ed01310353d6",
+    "request": {
+      "type": "submit_tip",
+      "chain_id": "31337",
+      "recipient_subaccount": "0x030303030303030303030303030303030303030374726164696e670000000000",
+      "origin_post_id": null,
+      "note": "Thank you!",
+      "background_id": "celebration",
+      "visibility": "private",
+      "withdrawal": {
+        "sender": "0xc8b414d6c563b2554889a6124797199298a5d20164656661756c740000000000",
+        "productId": 0,
+        "amount": "5000000",
+        "nonce": "42",
+        "sendTo": "0x0202020202020202020202020202020202020202",
+        "appendix": "0"
+      },
+      "withdrawal_signature": "0xf3e5f1f4c2ffa21117a562d1c9819324571a89a54cd81d387fc439aadfb4477941efd45bb06245d5941eaa643dff56c4c555fe35c282d2de1eb94f13d7c474501c",
+      "max_fee_x18": "30000000000000000",
+      "expected_version": "2",
+      "sender": "0xc8b414d6c563b2554889a6124797199298a5d20164656661756c740000000000",
+      "nonce": "1795000000000000002",
+      "signature": "0x29fd9d7cd76f6f9a31e4048eea94a655ffa8508abcafd5cf42e825a147a7fd926c5b9c9fa9823a15ad12aae20b4d54fdb3554036091ba5570db4f9f4fe422ff51b"
+    }
+  }
+}

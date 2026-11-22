@@ -11,6 +11,8 @@ import {
   MobileServerSocialFeedItem,
   MobileServerSocialFeedReply,
   MobileServerSocialFeedUploadedImage,
+  MobileServerTipGatewayResult,
+  MobileTipStatus,
 } from './serverModelTypes';
 import { MobileServerNotificationSettingsV2Response } from './serverQueryTypes';
 import {
@@ -90,11 +92,29 @@ export interface MobileServerSocialFeedImageUploadResponse {
   image: MobileServerSocialFeedUploadedImage;
 }
 
+/** Durable business result returned after Mobile admits a signed Tip submission or recovers its replay. */
+export interface MobileServerSubmitTipResponse {
+  /** Server-issued Tip UUID, including after a Gateway rejection. */
+  tip_id: string;
+  /** Business progress independent of the successful Mobile envelope. */
+  tip_status: MobileTipStatus;
+  /** Exact concurrency version used when explicitly reconfirming a fee rejection. */
+  version: string;
+  /** Original admission timestamp in UTC milliseconds. */
+  submitted_at_ms: number;
+  /** Latest Gateway attempt outcome. */
+  gateway: MobileServerTipGatewayResult;
+  /** Open-ended recovery or failure reason; null when none is recorded. */
+  processing_reason: string | null;
+}
+
 /**
  * Success payloads for each signed `execute`, keyed by request `type`. Mutations return either the success
  * envelope alone or authoritative post-commit state; avatar upload creation returns a temporary grant.
  */
 export interface MobileServerExecuteResponseByType {
+  /** Durable submission state, including admitted attempts rejected by Gateway. */
+  submit_tip: MobileServerSubmitTipResponse;
   /** Capability-aware device registration returns only status. */
   register_expo_token_v2: MobileServerEmptyExecuteResponse;
   /** Re-query subscriptions after success to obtain the new revision. */

@@ -29,6 +29,7 @@ import {
   MobileServerSocialFeedReadSession,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
+  MobileServerTipCollateralMapping,
   MobileSocialFeedActionResolution,
   MobileSocialFeedChartDataQuality,
   MobileSocialFeedHistoryQuality,
@@ -46,10 +47,18 @@ import {
  * Success payloads for each signed `query`, keyed by request `type`.
  */
 export interface MobileServerSignedQueryResponseByType {
+  /** Collateral attributions in submission_indices request order. */
+  tips_history: MobileServerTipCollateralMappingsResponse;
   /** Wallet subscriptions and the signing Identity's bells. */
   notification_subscriptions: MobileServerNotificationSubscriptionsResponse;
   /** Private notification page. */
   notification_inbox_v2: MobileServerNotificationInboxV2Response;
+}
+
+/** Payload of the signed tips_history query in collateral_mapping mode. */
+export interface MobileServerTipCollateralMappingsResponse {
+  /** One result per requested index, preserving request order and unknown amounts. */
+  mappings: MobileServerTipCollateralMapping[];
 }
 
 /**

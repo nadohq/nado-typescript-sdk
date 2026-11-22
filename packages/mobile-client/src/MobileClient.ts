@@ -54,6 +54,10 @@ import {
   mapMobileSocialFeedUpdates,
   mapMobileSocialFeedUploadedImage,
   mapMobileSocialFeedWatchers,
+  mapMobileSubmitTipParamsToServer,
+  mapMobileSubmitTipResult,
+  mapMobileTipCollateralMappings,
+  mapMobileTipCollateralMappingsParamsToServer,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
@@ -91,6 +95,7 @@ import {
   GetMobileProfilesParams,
   GetMobileRegisteredWalletParams,
   GetMobileSelfFeedPositionsParams,
+  GetMobileTipCollateralMappingsParams,
   GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
   MobileAttributeOrdersParams,
@@ -148,6 +153,9 @@ import {
   MobileSocialFeedUpdates,
   MobileSocialFeedUploadedImage,
   MobileSocialFeedWatchers,
+  MobileSubmitTipParams,
+  MobileSubmitTipResult,
+  MobileTipCollateralMappings,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUpdateNotificationSettingsV2Params,
@@ -917,6 +925,31 @@ export class MobileClient {
    */
 
   /**
+   * Annotates exact Indexer collateral submissions in request order, including partial pending results.
+   * The target and outer sender must belong to the same wallet. A linked signer needs current
+   * authorization for both subaccounts; an owner can query any subaccount of their wallet.
+   *
+   * Merge by submissionIdx within the same subaccount/product/direction, retain complete results, and
+   * requery only pending indices with fresh outer authentication. Batch pending cold deposits by at most
+   * four indices. This method performs one request and leaves unknown amounts as null.
+   * @throws {RangeError} If the product ID or distinct unsigned 64-bit indices are invalid (1–100 required).
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} If authentication, authorization, or the attribution query fails.
+   * @throws {Error} If a subaccount cannot be encoded, wallet signing fails, or a transport or malformed
+   * response error occurs outside a Mobile failure envelope.
+   */
+  async getTipCollateralMappings(
+    params: GetMobileTipCollateralMappingsParams,
+  ): Promise<MobileTipCollateralMappings> {
+    const request = await this.getSignedRequest(
+      'tips_history',
+      params,
+      mapMobileTipCollateralMappingsParamsToServer(params),
+    );
+    return mapMobileTipCollateralMappings(await this.query(request));
+  }
+
+  /**
    * Reads wallet market subscriptions and the signing Identity's enabled trader bells.
    * @param params - Wallet authentication context; no Expo token is needed.
    * @returns Subscriptions, import state, and the independent subscription revision.
@@ -1171,6 +1204,35 @@ export class MobileClient {
       { private_mode: params.privateMode },
     );
     return this.execute(signedRequest);
+  }
+
+  /**
+   * Submits an owner-signed cash withdrawal through Mobile's Tip flow. Requires a backend release
+   * implementing `submit_tip`; participant detail/history reads remain in the separate draft adapter.
+   * The outer Mobile authorization may use the linked signer, while the inner withdrawal must be signed
+   * by the owner of the same subaccount. This method never dispatches an Engine withdrawal directly.
+   *
+   * Preserve the original withdrawal, inner signature, and confirmed fee cap when recovering a lost
+   * response. Increase the cap only after an explicit user confirmation of a `failed` result whose
+   * processingReason is `FEE_TOO_LOW`, passing that result's version as expectedVersion.
+   * @param params - Mobile authorization, recipient, card details, owner-signed withdrawal, and confirmed cap.
+   * @returns Durable Tip identity and business state, including synchronous Gateway rejections.
+   * @throws {RangeError} If the chain ID or a withdrawal amount, appendix, or fee cap is not a valid integer.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On pre-admission validation, authentication, balance, service, or
+   * submission conflicts. A rejected Gateway attempt after admission is returned as a business result.
+   * @throws {Error} If a subaccount cannot be encoded, wallet signing fails, or a transport or malformed
+   * response error occurs outside a Mobile failure envelope.
+   */
+  async submitTip(
+    params: MobileSubmitTipParams,
+  ): Promise<MobileSubmitTipResult> {
+    const request = await this.getSignedRequest(
+      'submit_tip',
+      params,
+      mapMobileSubmitTipParamsToServer(params),
+    );
+    return mapMobileSubmitTipResult(await this.execute(request));
   }
 
   /**

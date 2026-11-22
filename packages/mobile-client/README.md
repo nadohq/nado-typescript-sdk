@@ -44,6 +44,88 @@ await mobile.setUsername({
 
 ## API Surface
 
+### Send Money
+
+The 22 November 2026 handoff identifies `submit_tip` and `tips_history(mode=collateral_mapping)` as
+implemented backend operations. `submitTip` authenticates an already owner-signed `WithdrawCollateralV2`
+through Mobile. Confirm that the selected environment has deployed the operation and configured its
+Tip background catalog and credit reconciliation before enabling live submission. The inner withdrawal
+requires the owner, while the outer Mobile authorization can use the current linked signer. Both senders
+must identify the exact same subaccount.
+
+Query `engine.getDynamicFeeQuote({ ...senderSubaccount, kind: 'withdrawal', productId: 0 })` for the fee
+and `engine.getMaxWithdrawable({ ...senderSubaccount, productId: 0, spotLeverage: false })` for the
+non-borrowing limit. Build the inner transaction using the existing Engine payload builder, with the
+recipient's DDA from `indexer.getSubaccountDDA({ subaccount: recipientSubaccount })`. Pass its `tx` and
+`signature` through:
+
+```ts
+const result = await mobile.submitTip({
+  subaccountOwner: walletClient.account.address,
+  subaccountName: 'default',
+  chainId,
+  verifyingAddr,
+  recipientSubaccount,
+  originPostId: null,
+  note: 'Nice call!',
+  backgroundId: 'celebration',
+  visibility: 'private',
+  withdrawal: withdrawalPayload.tx,
+  withdrawalSignature: withdrawalPayload.signature,
+  maxFeeX18: confirmedFeeX18,
+});
+```
+
+`withdrawalPayload` is the result of `engine.payloadBuilder.buildWithdrawCollateralV2Payload(...)`,
+with product 0, an amount in native USDT0 units, the recipient DDA as `sendTo`, and appendix zero.
+The fee cap uses x18 units and must equal the fee explicitly confirmed by the user. Mobile handles
+dispatch with borrowing disabled. Calling an Engine withdrawal execute method bypasses the Tip flow.
+
+Read the returned `tipStatus` and `processingReason`, including when HTTP and Mobile transport succeeded.
+For lost responses, preserve the original withdrawal, its nonce/signature, business fields, and fee cap;
+only the outer Mobile authentication can be renewed. When `tipStatus === 'failed'` and
+`processingReason === 'FEE_TOO_LOW'`, fetch a fresh Gateway withdrawal quote for the original sending
+subaccount and product. Show its `requiredFee` to the user, then pass the confirmed quote as `maxFeeX18`
+and the current Tip `version` as `expectedVersion`. Preserve the original withdrawal and inner signature.
+Repeat this quote/confirmation flow if the same signal returns. A historical Gateway error alone does
+not authorize reconfirmation; the backend checks the nonce and execution evidence again. A 503/1006
+during that check preserves the existing Tip. The SDK never increases a cap or retries automatically.
+
+`getTipCollateralMappings` signs `tips_history(mode=collateral_mapping)` through `/query`, using the
+handoff's canonical field order and pinned MessagePack/EIP-712 vector:
+
+```ts
+const { mappings } = await mobile.getTipCollateralMappings({
+  subaccountOwner: walletClient.account.address,
+  subaccountName: 'default',
+  chainId,
+  verifyingAddr,
+  subaccount: {
+    subaccountOwner: walletClient.account.address,
+    subaccountName: 'default',
+  },
+  productId: 0,
+  direction: 'deposit',
+  submissionIndices: ['501', '9007199254740993'],
+});
+```
+
+The target must share the outer sender's owning wallet. An owner can query any of its subaccounts.
+A linked signer needs current authorization on both the outer sender and target subaccounts. Continue paging ordinary
+collateral events through Indexer, then query their deduplicated indices (1–100 per request). Indices are
+exact decimal strings; amounts remain `BigNumber` values in x18 units, with unknown amounts preserved as
+`null`. Results retain request order. Within the same subaccount, product, and direction, merge by
+`submissionIdx`, retain `complete` entries, and requery only `pending` entries with fresh outer signatures.
+Retry cold deposits in batches of at most four. Display `review_required` for review; a new page refresh
+can query all its indices again. Withdrawal mapping describes sender-side attribution, not recipient
+delivery. The SDK performs one query per call and leaves polling to the caller.
+
+Detail, list history, receipt cards, seen acknowledgements, notification v3, and public Tip Feed/thread
+extensions remain planned backend work in this handoff. `MobileSendMoneyDraftClient` follows the frozen
+private-operation fields behind an injected transport for mock development. It has no default HTTP
+transport or signing behavior. See [the draft adapter](src/drafts/sendMoney/README.md). Existing device
+registration lists should advertise Tip capabilities only after backend support and client pages are ready.
+
 ### Public Queries
 
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,

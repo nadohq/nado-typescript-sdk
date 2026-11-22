@@ -7,6 +7,8 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   MobileSignedInner['type'],
   string
 > = {
+  tips_history: 'mobile:query_tips_history',
+  submit_tip: 'mobile:execute_submit_tip',
   register_expo_token_v2: 'mobile:execute_register_expo_token_v2',
   notification_subscriptions: 'mobile:query_notification_subscriptions',
   update_notification_subscriptions:

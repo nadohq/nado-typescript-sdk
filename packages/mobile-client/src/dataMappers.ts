@@ -1,6 +1,15 @@
-import { removeDecimals, subaccountToHex, toBigNumber } from '@nadohq/shared';
+import {
+  BigNumberish,
+  EIP712WithdrawCollateralV2Values,
+  removeDecimals,
+  subaccountToHex,
+  toBigNumber,
+  toIntegerString,
+} from '@nadohq/shared';
+import type { MobileSignedInnerParams } from './signing/types';
 import {
   GetMobileFollowListParams,
+  GetMobileTipCollateralMappingsParams,
   MobileAttributeOrdersResult,
   MobileAvatarPreset,
   MobileAvatarSelection,
@@ -83,6 +92,9 @@ import {
   MobileSocialFeedUpdates,
   MobileSocialFeedUploadedImage,
   MobileSocialFeedWatchers,
+  MobileSubmitTipParams,
+  MobileSubmitTipResult,
+  MobileTipCollateralMappings,
   SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
@@ -96,6 +108,7 @@ import {
   MobileServerSocialFeedDrawingMutationResponse,
   MobileServerSocialFeedLikeResponse,
   MobileServerSocialFeedPresenceResponse,
+  MobileServerSubmitTipResponse,
 } from './types/serverExecuteTypes';
 import {
   MobileServerAvatarPreset,
@@ -143,6 +156,7 @@ import {
   MobileServerSocialFeedTradingContext,
   MobileServerSocialFeedTradingTarget,
   MobileServerSocialFeedUploadedImage,
+  MobileServerTipWithdrawal,
   MobileSocialFeedMention,
 } from './types/serverModelTypes';
 import {
@@ -169,6 +183,7 @@ import {
   MobileServerSocialFeedTopTradersResponse,
   MobileServerSocialFeedUpdatesResponse,
   MobileServerSocialFeedWatchersResponse,
+  MobileServerTipCollateralMappingsResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerFollowListRequest,
@@ -1839,4 +1854,163 @@ export function mapMobileSocialFeedPositionThoughts(
     nextCursor: server.next_cursor,
     readSession: mapMobileSocialFeedReadSession(server.read_session),
   };
+}
+
+/**
+ * Converts Engine payload-builder values to Tip wire fields without executing or re-signing a withdrawal.
+ * Existing decimal and hex strings remain unchanged so recovery can reuse the same owner-signed values.
+ * @throws {RangeError} If amount or appendix is not a non-negative integer representable as a decimal string.
+ */
+export function mapMobileTipWithdrawalToServer(
+  withdrawal: EIP712WithdrawCollateralV2Values,
+): MobileServerTipWithdrawal {
+  return {
+    sender: withdrawal.sender,
+    productId: withdrawal.productId,
+    amount: mapTipWithdrawalInteger(withdrawal.amount, 'amount'),
+    nonce: withdrawal.nonce,
+    sendTo: withdrawal.sendTo,
+    appendix: mapTipWithdrawalInteger(withdrawal.appendix, 'appendix'),
+  };
+}
+
+/**
+ * Maps explicitly confirmed Tip inputs while preserving the inner owner signature and withdrawal nonce.
+ * Ordinary recovery omits expected_version; it never increases the confirmed cap or authorizes a retry.
+ * @throws {RangeError} If chainId is not a positive safe integer, the fee cap is not a finite non-negative
+ * integer in x18 units, or a withdrawal amount/appendix cannot be encoded without rounding.
+ * @throws {Error} If the recipient subaccount cannot be encoded as bytes32.
+ */
+export function mapMobileSubmitTipParamsToServer(
+  params: MobileSubmitTipParams,
+): MobileSignedInnerParams<'submit_tip'> {
+  if (!Number.isSafeInteger(params.chainId) || params.chainId <= 0) {
+    throw new RangeError('chainId must be a positive safe integer.');
+  }
+  const maxFee = toBigNumber(params.maxFeeX18);
+  if (
+    (typeof params.maxFeeX18 === 'number' &&
+      !Number.isSafeInteger(params.maxFeeX18)) ||
+    !maxFee.isFinite() ||
+    !maxFee.isInteger() ||
+    maxFee.lt(0)
+  ) {
+    throw new RangeError(
+      'maxFeeX18 must be a finite non-negative integer in x18 units.',
+    );
+  }
+  return {
+    chain_id: params.chainId.toString(),
+    recipient_subaccount: subaccountToHex(params.recipientSubaccount),
+    origin_post_id: params.originPostId ?? null,
+    note: params.note ?? null,
+    background_id: params.backgroundId,
+    visibility: params.visibility,
+    withdrawal: mapMobileTipWithdrawalToServer(params.withdrawal),
+    withdrawal_signature: params.withdrawalSignature,
+    max_fee_x18: toIntegerString(maxFee),
+    ...(params.expectedVersion === undefined
+      ? {}
+      : { expected_version: params.expectedVersion }),
+  };
+}
+
+/** Maps durable Tip state without treating an admitted Gateway rejection as a transport failure. */
+export function mapMobileSubmitTipResult(
+  server: MobileServerSubmitTipResponse,
+): MobileSubmitTipResult {
+  return {
+    tipId: server.tip_id,
+    tipStatus: server.tip_status,
+    version: server.version,
+    submittedAtMs: server.submitted_at_ms,
+    gateway: {
+      status: server.gateway.status,
+      errorCode: server.gateway.error_code,
+      errorName: server.gateway.error_name,
+    },
+    processingReason: server.processing_reason,
+  };
+}
+
+/**
+ * Maps one attribution request while retaining exact Indexer indices and their order.
+ * @throws {RangeError} If productId is not a non-negative safe integer or submissionIndices does not
+ * contain one to one hundred distinct canonical unsigned 64-bit decimal integers.
+ * @throws {Error} If the target subaccount cannot be encoded as bytes32.
+ */
+export function mapMobileTipCollateralMappingsParamsToServer(
+  params: GetMobileTipCollateralMappingsParams,
+): MobileSignedInnerParams<'tips_history'> {
+  if (!Number.isSafeInteger(params.productId) || params.productId < 0) {
+    throw new RangeError('productId must be a non-negative safe integer.');
+  }
+  if (
+    params.submissionIndices.length < 1 ||
+    params.submissionIndices.length > 100 ||
+    new Set(params.submissionIndices).size !==
+      params.submissionIndices.length ||
+    params.submissionIndices.some(
+      (index) =>
+        !/^(0|[1-9]\d*)$/.test(index) || BigInt(index) > 18446744073709551615n,
+    )
+  ) {
+    throw new RangeError(
+      'submissionIndices must contain 1–100 distinct canonical unsigned 64-bit decimal integers.',
+    );
+  }
+  return {
+    mode: 'collateral_mapping',
+    subaccount: subaccountToHex(params.subaccount),
+    product_id: params.productId,
+    direction: params.direction,
+    submission_indices: [...params.submissionIndices],
+  };
+}
+
+/** Maps partial attribution results, preserving unknown amounts and source order. */
+export function mapMobileTipCollateralMappings(
+  server: MobileServerTipCollateralMappingsResponse,
+): MobileTipCollateralMappings {
+  return {
+    mappings: server.mappings.map((mapping) => ({
+      subaccount: mapping.subaccount,
+      productId: mapping.product_id,
+      direction: mapping.direction,
+      submissionIdx: mapping.submission_idx,
+      mappingState: mapping.mapping_state,
+      classification: mapping.classification,
+      depositTotalX18:
+        mapping.deposit_total_x18 === null
+          ? null
+          : toBigNumber(mapping.deposit_total_x18),
+      tipTotalX18:
+        mapping.tip_total_x18 === null
+          ? null
+          : toBigNumber(mapping.tip_total_x18),
+      ordinaryAmountX18:
+        mapping.ordinary_amount_x18 === null
+          ? null
+          : toBigNumber(mapping.ordinary_amount_x18),
+    })),
+  };
+}
+
+function mapTipWithdrawalInteger(
+  value: BigNumberish,
+  field: 'amount' | 'appendix',
+): string {
+  const integer = toBigNumber(value);
+  if (
+    (typeof value === 'number' && !Number.isSafeInteger(value)) ||
+    !integer.isFinite() ||
+    !integer.isInteger() ||
+    integer.lt(0) ||
+    (typeof value === 'string' && !/^(0|[1-9]\d*)$/.test(value))
+  ) {
+    throw new RangeError(
+      `withdrawal.${field} must be a canonical non-negative decimal integer.`,
+    );
+  }
+  return typeof value === 'string' ? value : toIntegerString(integer);
 }

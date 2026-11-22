@@ -2,8 +2,8 @@ import { NADO_ERROR_CODES } from '@nadohq/shared';
 
 /**
  * Numeric error codes returned by the mobile service API. Identity codes (61xx), notification codes (62xx),
- * and feed codes (63xx) are mobile-specific; the remaining codes are shared cross-service codes from the
- * backend's common error enum, inlined via spread from {@link NADO_ERROR_CODES}.
+ * feed codes (63xx), attribution codes (65xx), and Tip codes (67xx) are mobile-specific. Other codes come
+ * from the backend's common error enum, inlined via spread from {@link NADO_ERROR_CODES}.
  */
 export const MOBILE_ERROR_CODES = {
   ...NADO_ERROR_CODES,
@@ -100,6 +100,12 @@ export const MOBILE_ERROR_CODES = {
   SOCIAL_FEED_HISTORY_TOO_LARGE: 6328,
   /** Attribution digests are empty, over 50 or repeated, or the item ID is not a lowercase UUID. */
   INVALID_ORDER_ATTRIBUTION: 6500,
+  /** Invalid Tip fields, withdrawal values, configured background, recipient DDA, or confirmed fee cap. */
+  INVALID_TIP_REQUEST: 6700,
+  /** Tip replay changes business fields or its fee cap without a matching reconfirmed version. */
+  TIP_SUBMISSION_CONFLICT: 6701,
+  /** Available non-borrowed cash cannot cover the net Tip amount and the confirmed fee cap. */
+  INSUFFICIENT_TIP_BALANCE: 6702,
 } as const;
 
 /**

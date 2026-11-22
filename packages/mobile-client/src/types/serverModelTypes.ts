@@ -1412,3 +1412,117 @@ export interface MobileServerSocialFeedChartRange {
   /** Exclusive end in milliseconds. */
   to_ms: number;
 }
+
+/** Publication choices for a Tip; private Tips still have participant receipts and history. */
+export const MOBILE_TIP_VISIBILITIES = ['public', 'private'] as const;
+
+/** Publication choice carried by the signed Tip request. */
+export type MobileTipVisibility = (typeof MOBILE_TIP_VISIBILITIES)[number];
+
+/** Business states of a durable Tip, independent of its HTTP success envelope. */
+export const MOBILE_TIP_STATUSES = [
+  'submitting',
+  'reconciling',
+  'sending',
+  'credited',
+  'failed',
+  'review_required',
+] as const;
+
+/** Current business state of a durable Tip. */
+export type MobileTipStatus = (typeof MOBILE_TIP_STATUSES)[number];
+
+/** Gateway dispatch outcomes preserved in a Tip submission result. */
+export const MOBILE_TIP_GATEWAY_STATUSES = [
+  'accepted',
+  'rejected',
+  'not_submitted',
+  'unknown',
+] as const;
+
+/** Gateway outcome independent of whether the Tip has sufficient evidence to permit another dispatch. */
+export type MobileTipGatewayStatus =
+  (typeof MOBILE_TIP_GATEWAY_STATUSES)[number];
+
+/**
+ * Owner-signed WithdrawCollateralV2 in the exact Engine wire format. Unlike other Mobile fields, productId
+ * and sendTo retain Engine's camelCase spelling. Preserve these original strings for recovery replays.
+ */
+export interface MobileServerTipWithdrawal {
+  /** Full bytes32 funding identity, matching the outer Mobile sender. */
+  sender: Hex;
+  /** Cash asset product ID; the current cash flow uses product 0. */
+  productId: number;
+  /** Net withdrawal amount as a decimal integer in native product units. */
+  amount: string;
+  /** Engine wallet transaction nonce as an exact decimal string. */
+  nonce: string;
+  /** Registered recipient DDA, preserving the exact owner-signed address spelling. */
+  sendTo: Hex;
+  /** Reserved uint128 as a decimal string; the current flow requires zero. */
+  appendix: string;
+}
+
+/** Wire-format Gateway outcome included alongside durable Tip business state. */
+export interface MobileServerTipGatewayResult {
+  /** Explicit execute or locally observed dispatch outcome. */
+  status: MobileTipGatewayStatus;
+  /** Engine error code for a rejected attempt; otherwise null. */
+  error_code: number | null;
+  /** Engine error name for a rejected attempt; otherwise null. */
+  error_name: string | null;
+}
+
+/** Indexer collateral-history directions accepted by Tip attribution queries. */
+export const MOBILE_TIP_COLLATERAL_DIRECTIONS = [
+  'deposit',
+  'withdrawal',
+] as const;
+
+/** Direction of the exact Indexer collateral submission being annotated. */
+export type MobileTipCollateralDirection =
+  (typeof MOBILE_TIP_COLLATERAL_DIRECTIONS)[number];
+
+/** Verification states for one collateral attribution. */
+export const MOBILE_TIP_MAPPING_STATES = [
+  'pending',
+  'complete',
+  'review_required',
+] as const;
+
+/** Whether the service has finalized the submission's attribution. */
+export type MobileTipMappingState = (typeof MOBILE_TIP_MAPPING_STATES)[number];
+
+/** Attribution categories reported for collateral submissions. */
+export const MOBILE_TIP_COLLATERAL_CLASSIFICATIONS = [
+  'pending',
+  'ordinary',
+  'split',
+  'tip_only',
+] as const;
+
+/** Final or provisional ordinary-versus-Tip attribution of one submission. */
+export type MobileTipCollateralClassification =
+  (typeof MOBILE_TIP_COLLATERAL_CLASSIFICATIONS)[number];
+
+/** Wire-format attribution for one exact Indexer collateral submission. */
+export interface MobileServerTipCollateralMapping {
+  /** Exact bytes32 source identity. */
+  subaccount: Hex;
+  /** Source asset product ID. */
+  product_id: number;
+  /** Source collateral direction. */
+  direction: MobileTipCollateralDirection;
+  /** Exact unsigned 64-bit Indexer submission index. */
+  submission_idx: string;
+  /** Verification state independent of any already known amounts. */
+  mapping_state: MobileTipMappingState;
+  /** Attribution category; pending does not imply a known zero Tip amount. */
+  classification: MobileTipCollateralClassification;
+  /** Verified deposit principal in x18 units; null when unknown or for withdrawals. */
+  deposit_total_x18: string | null;
+  /** Tip contribution in x18 units, or null while unknown. */
+  tip_total_x18: string | null;
+  /** Verified ordinary remainder in x18 units; null when unknown or for withdrawals. */
+  ordinary_amount_x18: string | null;
+}

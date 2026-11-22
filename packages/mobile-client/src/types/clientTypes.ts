@@ -1,4 +1,9 @@
-import { SignatureParams, Subaccount } from '@nadohq/shared';
+import {
+  BigNumberish,
+  EIP712WithdrawCollateralV2Values,
+  SignatureParams,
+  Subaccount,
+} from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { Hex } from 'viem';
 import {
@@ -46,6 +51,12 @@ import {
   MobileSocialFeedTradingResolution,
   MobileSocialFeedType,
   MobileSocialFeedUnavailableTarget,
+  MobileTipCollateralClassification,
+  MobileTipCollateralDirection,
+  MobileTipGatewayStatus,
+  MobileTipMappingState,
+  MobileTipStatus,
+  MobileTipVisibility,
 } from './serverModelTypes';
 
 /**
@@ -2067,4 +2078,112 @@ export interface MobileSocialFeedPositionThoughtsPage {
   nextCursor: string | null;
   /** Independent position session; newly published content requires a refresh. */
   readSession: MobileSocialFeedReadSession;
+}
+
+/**
+ * Submits an already owner-signed cash withdrawal through Mobile, without executing it through Engine.
+ * Reuse the original withdrawal, signature, business fields, and fee cap when recovering a lost response.
+ * The outer Mobile authorization may use the owner's current linked signer; the withdrawal still requires
+ * the owner and must name the same exact subaccount as this request's signing context.
+ */
+export interface MobileSubmitTipParams extends MobileSignedRequestParams {
+  /** Exact recipient identity; the withdrawal must send to this subaccount's registered DDA. */
+  recipientSubaccount: Subaccount;
+  /** Original post UUID when tipping its author; omitted or null for a profile tip. */
+  originPostId?: string | null;
+  /** Unmodified optional message, at most 50 Unicode scalars; omitted is sent as null. */
+  note?: string | null;
+  /** Server-configured card background ID. */
+  backgroundId: string;
+  /** Controls public Feed publication independently of participant receipt access. */
+  visibility: MobileTipVisibility;
+  /**
+   * Owner-signed WithdrawCollateralV2 values, as returned by Engine's payload builder. Amount is in native
+   * product units; its nonce is the Engine wallet transaction nonce, separate from the Mobile auth nonce.
+   * The SDK serializes these values but does not build, sign, or dispatch the withdrawal itself.
+   * Use decimal strings or BigNumber for values beyond JavaScript's safe integer range.
+   */
+  withdrawal: EIP712WithdrawCollateralV2Values;
+  /** Existing owner signature over the exact withdrawal; passed through without normalization. */
+  withdrawalSignature: string;
+  /**
+   * Highest fee explicitly confirmed by the user, as a non-negative integer in x18 units. Zero authorizes
+   * only a free withdrawal. Never increase this cap automatically after a timeout or lost response.
+   * Pass a decimal string or BigNumber for values beyond JavaScript's safe integer range.
+   */
+  maxFeeX18: BigNumberish;
+  /**
+   * Current failed Tip version explicitly reconfirmed after processingReason FEE_TOO_LOW. Omit for initial
+   * submission and ordinary recovery; reconfirmation changes the cap, not the original withdrawal.
+   */
+  expectedVersion?: string;
+}
+
+/** Gateway outcome attached to a durable Tip, including a rejected or unknown execute attempt. */
+export interface MobileTipGatewayResult {
+  /** Authoritative Gateway outcome; a rejected attempt can coexist with a Tip requiring review. */
+  status: MobileTipGatewayStatus;
+  /** Preserved Engine error code for a rejected attempt; null when no explicit Gateway error is known. */
+  errorCode: number | null;
+  /** Engine error name corresponding to errorCode, or null. */
+  errorName: string | null;
+}
+
+/**
+ * Durable submission state, returned in the Mobile success envelope even after an explicit Gateway reject.
+ * Only failed with processingReason FEE_TOO_LOW permits offering a newly confirmed fee cap.
+ */
+export interface MobileSubmitTipResult {
+  /** Server-issued lifecycle UUID; retain it for recovery and participant details. */
+  tipId: string;
+  /** Business progress independent of HTTP and Mobile transport success. */
+  tipStatus: MobileTipStatus;
+  /** Exact optimistic-concurrency version; never convert to a JavaScript number. */
+  version: string;
+  /** Original admission time in UTC milliseconds; remains fixed throughout recovery. */
+  submittedAtMs: number;
+  /** Latest known execute outcome; does not independently authorize a fee retry. */
+  gateway: MobileTipGatewayResult;
+  /** Open-ended recovery or failure reason supplied by the server, or null when none is recorded. */
+  processingReason: string | null;
+}
+
+/** Annotates an Indexer collateral page without replacing its pagination. */
+export interface GetMobileTipCollateralMappingsParams extends MobileSignedRequestParams {
+  /** Exact source identity, belonging to the outer sender's wallet. */
+  subaccount: Subaccount;
+  /** Non-negative integer source asset product ID. */
+  productId: number;
+  /** Source collateral-history direction. */
+  direction: MobileTipCollateralDirection;
+  /** One to one hundred distinct canonical unsigned 64-bit decimal indices in request order. */
+  submissionIndices: string[];
+}
+
+/** Verified or pending attribution of one Indexer collateral submission. */
+export interface MobileTipCollateralMapping {
+  /** Exact source identity as bytes32 hex. */
+  subaccount: Hex;
+  /** Source asset product ID. */
+  productId: number;
+  /** Source collateral direction. */
+  direction: MobileTipCollateralDirection;
+  /** Exact unsigned 64-bit submission index; never convert to a JavaScript number. */
+  submissionIdx: string;
+  /** Finality of the attribution, independent of any known principal. */
+  mappingState: MobileTipMappingState;
+  /** Ordinary-versus-Tip attribution; pending does not mean a zero Tip contribution. */
+  classification: MobileTipCollateralClassification;
+  /** Verified deposit principal in x18 units; null when unknown or for withdrawals. */
+  depositTotalX18: BigNumber | null;
+  /** Tip contribution in x18 units, or null while unknown; a known zero remains zero. */
+  tipTotalX18: BigNumber | null;
+  /** Ordinary remainder in x18 units; null when unknown or for withdrawals. */
+  ordinaryAmountX18: BigNumber | null;
+}
+
+/** Annotations for the requested Indexer indices, including partial pending results. */
+export interface MobileTipCollateralMappings {
+  /** One annotation per requested index, in request order. */
+  mappings: MobileTipCollateralMapping[];
 }
