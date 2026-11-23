@@ -270,6 +270,31 @@ void describe(
       assertArrayElements(eventsAsc, assertIndexerEventShape, 'eventsAsc');
     });
 
+    void test('getEvents accepts the deleverage event type', async () => {
+      const events = await client.getEvents({
+        eventTypes: ['deleverage'],
+        limit: {
+          type: 'events',
+          value: 1,
+        },
+      });
+
+      debugPrint('Deleverage Events', events);
+      assertArray(events, 'deleverageEvents');
+      assertArrayElements(events, assertIndexerEventShape, 'deleverageEvents');
+
+      for (const event of events) {
+        if ('deleverage' in event.tx) {
+          const tx = event.tx.deleverage;
+          assertHexString(tx.subaccount, 'deleverageTx.subaccount');
+          assertHexString(tx.counterparty, 'deleverageTx.counterparty');
+          assertNumber(tx.product_id, 'deleverageTx.product_id');
+          assertString(tx.amount, 'deleverageTx.amount');
+          assertString(tx.price_x18, 'deleverageTx.price_x18');
+        }
+      }
+    });
+
     void test('getPaginatedSubaccountMatchEvents returns match events', async () => {
       const matchEvents = await client.getPaginatedSubaccountMatchEvents({
         subaccountName: subaccount.subaccountName,

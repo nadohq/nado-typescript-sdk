@@ -4,6 +4,8 @@
  */
 export const INDEXER_EVENT_TYPES = [
   'liquidate_subaccount',
+  // Auto-deleveraging: closes positions against a counterparty without the orderbook
+  'deleverage',
   'deposit_collateral',
   'withdraw_collateral',
   'withdraw_collateral_v2',
