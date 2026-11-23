@@ -43,7 +43,7 @@
   "dependencies": {
     "@nadohq/engine-client": "^0.80.0",
     "@nadohq/shared": "^0.80.0",
-    "axios": "1.16.1"
+    "axios": "1.21.1"
   },
   "devDependencies": {
     "@jest/globals": "30.4.1"
