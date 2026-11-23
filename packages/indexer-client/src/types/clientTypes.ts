@@ -742,6 +742,47 @@ export interface GetIndexerLinkedSignerResponse {
 }
 
 /**
+ * Order Signers
+ */
+
+export interface GetIndexerOrderSignerRateLimitParams {
+  subaccount: Subaccount;
+}
+
+/**
+ * Weekly `add_order_signer` allowance for a subaccount. Deletes are never rate limited.
+ */
+export interface GetIndexerOrderSignerRateLimitResponse {
+  totalTxLimit: BigNumber;
+  remainingTxs: BigNumber;
+  // If remainingTxs is 0, this is the time until the next add can be sent
+  waitTimeUntilNextTx: BigNumber;
+  // Order signers as indexed, which can lag the engine's `order_signers` query
+  orderSigners: string[];
+}
+
+export interface GetIndexerOrderSignerEventsParams {
+  // Defaults to all subaccounts
+  subaccount?: Subaccount;
+  // Submission index to start from, inclusive
+  startIdx?: number;
+  limit?: number;
+}
+
+export interface IndexerOrderSignerEvent {
+  subaccount: Subaccount;
+  // 20-byte address
+  signer: string;
+  submissionIndex: number;
+  // true for an add, false for a delete
+  added: boolean;
+  // Unix timestamp in seconds
+  updateTime: BigNumber;
+}
+
+export type GetIndexerOrderSignerEventsResponse = IndexerOrderSignerEvent[];
+
+/**
  * Interest / funding payments
  */
 

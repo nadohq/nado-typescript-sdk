@@ -5,6 +5,7 @@ import {
   EIP712MintNlpValues,
   EIP712OrderCancellationValues,
   EIP712OrderParams,
+  EIP712OrderSignerValues,
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
   EIP712TransferQuoteValues,
@@ -32,9 +33,11 @@ export interface EngineServerUpdateDependencyResponse {
 
 export interface EngineServerExecuteResponseDataByType {
   burn_nlp: null;
+  add_order_signer: null;
   cancel_and_place: EngineServerPlaceOrderResponse;
   cancel_orders: EngineServerCancelOrdersResponse;
   cancel_product_orders: EngineServerCancelOrdersResponse;
+  delete_order_signer: null;
   link_signer: null;
   liquidate_subaccount: null;
   mint_nlp: null;
@@ -121,6 +124,8 @@ export interface EngineServerExecuteRequestByType {
     }
   >;
   link_signer: SignedTx<EIP712LinkSignerValues>;
+  add_order_signer: SignedTx<EIP712OrderSignerValues>;
+  delete_order_signer: SignedTx<EIP712OrderSignerValues>;
   liquidate_subaccount: SignedTx<EIP712LiquidateSubaccountValues>;
   mint_nlp: WithSpotLeverage<SignedTx<EIP712MintNlpValues>>;
   place_order: EngineServerPlaceOrderParams;

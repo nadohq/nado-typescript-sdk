@@ -5,6 +5,7 @@ import type {
 import type {
   Candlestick,
   GetIndexerLinkedSignerResponse,
+  GetIndexerOrderSignerRateLimitResponse,
   IndexerEventWithTx,
   IndexerLeaderboardParticipant,
   IndexerMarketSnapshot,
@@ -32,6 +33,7 @@ import type {
 import type { TriggerOrderInfo } from '@nadohq/trigger-client';
 import assert from 'node:assert/strict';
 import {
+  assertArray,
   assertArrayElements,
   assertBigNumberFinite,
   assertBigNumberNonNegative,
@@ -569,6 +571,25 @@ export function assertLinkedSignerShape(
     `${label}.waitTimeUntilNextTx`,
   );
   assertString(signer.signer, `${label}.signer`);
+}
+
+/**
+ * Validates the shape of a {@link GetIndexerOrderSignerRateLimitResponse}.
+ */
+export function assertOrderSignerRateLimitShape(
+  rateLimit: GetIndexerOrderSignerRateLimitResponse,
+  label: string,
+): void {
+  assertBigNumberFinite(rateLimit.totalTxLimit, `${label}.totalTxLimit`);
+  assertBigNumberFinite(rateLimit.remainingTxs, `${label}.remainingTxs`);
+  assertBigNumberFinite(
+    rateLimit.waitTimeUntilNextTx,
+    `${label}.waitTimeUntilNextTx`,
+  );
+  assertArray(rateLimit.orderSigners, `${label}.orderSigners`);
+  rateLimit.orderSigners.forEach((signer, idx) => {
+    assertHexString(signer, `${label}.orderSigners[${idx}]`);
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -305,6 +305,16 @@ export interface GetEngineLinkedSignerResponse {
   signer: string;
 }
 
+export type GetEngineOrderSignersParams = Subaccount;
+
+/**
+ * Order signers of a subaccount, as 20-byte addresses. Isolated subaccounts are covered by their
+ * parent's order signers.
+ */
+export interface GetEngineOrderSignersResponse {
+  orderSigners: string[];
+}
+
 export type GetEngineInsuranceResponse = BigNumber;
 
 /**

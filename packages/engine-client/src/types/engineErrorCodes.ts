@@ -262,6 +262,18 @@ export const ENGINE_ERROR_CODES = {
   NO_ELIGIBLE_TRIGGER: 2126,
   /** Dynamic fee at execution exceeded `max_fee_x18`; re-quote and resubmit. */
   FEE_TOO_LOW: 2135,
+  /** Order signer sender must be a non-isolated subaccount. */
+  ORDER_SIGNER_ISOLATED_SENDER: 2140,
+  /** Order signer is the zero address. */
+  INVALID_ORDER_SIGNER: 2141,
+  /** Order signer is already added to the subaccount. */
+  ORDER_SIGNER_ALREADY_EXISTS: 2142,
+  /** Subaccount already has the maximum of 15 order signers. */
+  TOO_MANY_ORDER_SIGNERS: 2143,
+  /** Order signer to delete is not on the subaccount. */
+  ORDER_SIGNER_NOT_FOUND: 2144,
+  /** Weekly order signer add limit exceeded; the message carries the seconds to wait. */
+  ORDER_SIGNER_ADD_LIMIT_EXCEEDED: 2145,
 } as const;
 
 /**

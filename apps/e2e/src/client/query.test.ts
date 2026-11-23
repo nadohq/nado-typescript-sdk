@@ -34,6 +34,7 @@ import {
   assertLinkedSignerShape,
   assertMarketSnapshotShape,
   assertMarketWithProductShape,
+  assertOrderSignerRateLimitShape,
   assertProductSnapshotShape,
   assertSubaccountSummaryShape,
 } from '../utils/shapeAssertions';
@@ -246,6 +247,30 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
     debugPrint('Linked signer with rate limit', linkedSigner);
     assertDefined(linkedSigner, 'linkedSigner');
     assertLinkedSignerShape(linkedSigner, 'linkedSigner');
+  });
+
+  void test('getSubaccountOrderSigners returns the live order signers', async () => {
+    const result = await nadoClient.subaccount.getSubaccountOrderSigners({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+    });
+
+    debugPrint('Order signers', result);
+    assertArray(result.orderSigners, 'orderSigners');
+  });
+
+  void test('getSubaccountOrderSignerRateLimit returns order signer info', async () => {
+    const rateLimit =
+      await nadoClient.subaccount.getSubaccountOrderSignerRateLimit({
+        subaccount: {
+          subaccountOwner: walletClientAddress,
+          subaccountName: TEST_SUBACCOUNT_NAME,
+        },
+      });
+
+    debugPrint('Order signer rate limit', rateLimit);
+    assertDefined(rateLimit, 'orderSignerRateLimit');
+    assertOrderSignerRateLimitShape(rateLimit, 'orderSignerRateLimit');
   });
 
   void describe('open order queries', () => {

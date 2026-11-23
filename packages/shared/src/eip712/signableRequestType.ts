@@ -9,6 +9,7 @@ import {
   EIP712MintNlpParams,
   EIP712NadoAuthenticationParams,
   EIP712OrderParams,
+  EIP712OrderSignerParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712UpdateDependencyParams,
@@ -20,9 +21,11 @@ import {
  * All possible requests to be signed, to the expected params
  */
 export interface SignableRequestTypeToParams {
+  add_order_signer: EIP712OrderSignerParams;
   burn_nlp: EIP712BurnNlpParams;
   cancel_orders: EIP712CancelOrdersParams;
   cancel_product_orders: EIP712CancelProductOrdersParams;
+  delete_order_signer: EIP712OrderSignerParams;
   leaderboard_authentication: EIP712LeaderboardAuthenticationParams;
   link_signer: EIP712LinkSignerParams;
   liquidate_subaccount: EIP712LiquidateSubaccountParams;

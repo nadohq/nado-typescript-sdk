@@ -1,11 +1,14 @@
 import {
   GetEngineEstimatedSubaccountSummaryParams,
   GetEngineIsolatedPositionsParams,
+  GetEngineOrderSignersParams,
   GetEngineSubaccountFeeRatesParams,
   GetEngineSubaccountSummaryParams,
 } from '@nadohq/engine-client';
 import {
   GetIndexerLinkedSignerParams,
+  GetIndexerOrderSignerEventsParams,
+  GetIndexerOrderSignerRateLimitParams,
   GetIndexerReferralCodeParams,
 } from '@nadohq/indexer-client';
 import { BaseNadoAPI } from '../base';
@@ -53,6 +56,32 @@ export class SubaccountQueryAPI extends BaseNadoAPI {
     params: GetIndexerLinkedSignerParams,
   ) {
     return this.context.indexerClient.getLinkedSignerWithRateLimit(params);
+  }
+
+  /**
+   * Retrieves the live order signers for a subaccount from the engine
+   * @param params
+   */
+  async getSubaccountOrderSigners(params: GetEngineOrderSignersParams) {
+    return this.context.engineClient.getOrderSigners(params);
+  }
+
+  /**
+   * Retrieves the indexed order signers and the remaining weekly adds from the indexer
+   * @param params
+   */
+  async getSubaccountOrderSignerRateLimit(
+    params: GetIndexerOrderSignerRateLimitParams,
+  ) {
+    return this.context.indexerClient.getOrderSignerRateLimit(params);
+  }
+
+  /**
+   * Retrieves order signer add / delete events from the indexer
+   * @param params
+   */
+  async getOrderSignerEvents(params: GetIndexerOrderSignerEventsParams) {
+    return this.context.indexerClient.getOrderSignerEvents(params);
   }
 
   /**

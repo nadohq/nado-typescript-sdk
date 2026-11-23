@@ -41,7 +41,7 @@ const trades = await indexer.getPaginatedSubaccountMatchEvents({ ... });
 
 ### Subaccount History
 
-`listSubaccounts`, `getMultiSubaccountSnapshots`, `getOrders`, `getMatchEvents`, `getEvents`, `getInterestFundingPayments`, `getLinkedSignerWithRateLimit`, `getSubaccountDDA`.
+`listSubaccounts`, `getMultiSubaccountSnapshots`, `getOrders`, `getMatchEvents`, `getEvents`, `getInterestFundingPayments`, `getLinkedSignerWithRateLimit`, `getOrderSignerRateLimit`, `getOrderSignerEvents`, `getSubaccountDDA`.
 
 ### Paginated Queries
 

@@ -185,6 +185,18 @@ export interface IndexerServerLinkedSignerParams {
   subaccount: string;
 }
 
+export interface IndexerServerOrderSignerRateLimitParams {
+  subaccount: string;
+}
+
+export interface IndexerServerOrderSignerEventsParams {
+  // Defaults to all subaccounts
+  subaccount?: string;
+  // submission_idx for pagination, inclusive
+  start_idx?: number;
+  limit?: number;
+}
+
 export interface IndexerServerMarketSnapshotsParams {
   interval: IndexerServerMarketSnapshotInterval;
   // Defaults to all
@@ -305,6 +317,8 @@ export interface IndexerServerQueryRequestByType {
   leaderboard_register: IndexerServerLeaderboardRegisterParams;
   leaderboard_registrations: IndexerServerLeaderboardRegistrationsParams;
   linked_signer_rate_limit: IndexerServerLinkedSignerParams;
+  order_signer_rate_limit: IndexerServerOrderSignerRateLimitParams;
+  order_signer_events: IndexerServerOrderSignerEventsParams;
   maker_statistics: IndexerServerMakerStatisticsParams;
   market_snapshots: IndexerServerMarketSnapshotsParams;
   matches: IndexerServerMatchEventsParams;
@@ -503,6 +517,28 @@ export interface IndexerServerLinkedSignerResponse {
   remaining_tx: string;
   wait_time: string;
   signer: string;
+}
+
+export interface IndexerServerOrderSignerRateLimitResponse {
+  total_tx_limit: string;
+  remaining_tx: string;
+  wait_time: string;
+  // 20-byte addresses
+  order_signers: string[];
+}
+
+export interface IndexerServerOrderSignerEvent {
+  subaccount: string;
+  // 20-byte address
+  signer: string;
+  submission_idx: number;
+  // true for an add, false for a delete
+  added: boolean;
+  update_time: string;
+}
+
+export interface IndexerServerOrderSignerEventsResponse {
+  events: IndexerServerOrderSignerEvent[];
 }
 
 export interface IndexerServerMarketSnapshotsResponse {
@@ -762,6 +798,8 @@ export interface IndexerServerQueryResponseByType {
   leaderboard_register: IndexerServerLeaderboardRegisterResponse;
   leaderboard_registrations: IndexerServerLeaderboardRegistrationsResponse;
   linked_signer_rate_limit: IndexerServerLinkedSignerResponse;
+  order_signer_rate_limit: IndexerServerOrderSignerRateLimitResponse;
+  order_signer_events: IndexerServerOrderSignerEventsResponse;
   maker_statistics: IndexerServerMakerStatisticsResponse;
   market_snapshots: IndexerServerMarketSnapshotsResponse;
   matches: IndexerServerMatchEventsResponse;

@@ -97,6 +97,22 @@ export function getNadoEIP712Types(
           { name: 'nonce', type: 'uint64' },
         ],
       };
+    case 'add_order_signer':
+      return {
+        AddOrderSigner: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'signer', type: 'bytes32' },
+          { name: 'nonce', type: 'uint64' },
+        ],
+      };
+    case 'delete_order_signer':
+      return {
+        DeleteOrderSigner: [
+          { name: 'sender', type: 'bytes32' },
+          { name: 'signer', type: 'bytes32' },
+          { name: 'nonce', type: 'uint64' },
+        ],
+      };
     case 'transfer_quote':
       return {
         TransferQuote: [
