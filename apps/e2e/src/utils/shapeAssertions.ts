@@ -488,6 +488,12 @@ export function assertV2SymbolShape(
     `${label}.longWeightMaintenance`,
   );
   assertString(symbol.tradingStatus, `${label}.tradingStatus`);
+  if (symbol.tradingStatusUpdatedAt != null) {
+    assertNumber(
+      symbol.tradingStatusUpdatedAt,
+      `${label}.tradingStatusUpdatedAt`,
+    );
+  }
   assertBoolean(symbol.isolatedOnly, `${label}.isolatedOnly`);
   if (symbol.marketHours != null) {
     assertBoolean(symbol.marketHours.isOpen, `${label}.marketHours.isOpen`);
@@ -503,6 +509,16 @@ export function assertV2SymbolShape(
   }
   if (symbol.makerMultiplier != null) {
     assertNumber(symbol.makerMultiplier, `${label}.makerMultiplier`);
+  }
+  if (symbol.token != null) {
+    assertString(symbol.token.address, `${label}.token.address`);
+    assertNumber(symbol.token.decimals, `${label}.token.decimals`);
+  }
+  // Spot products carry an ERC-20 token; perps must not
+  if (symbol.type === 'spot') {
+    assertDefined(symbol.token, `${label}.token`);
+  } else {
+    assert.equal(symbol.token, null, `${label}.token`);
   }
 }
 

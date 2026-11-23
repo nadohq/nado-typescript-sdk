@@ -16,6 +16,24 @@ export interface NadoLiquidateSubaccountTx {
   };
 }
 
+/**
+ * An auto-deleverage (ADL) transaction: closes a position against a counterparty
+ * at the oracle price, without going through the orderbook.
+ */
+export interface NadoDeleverageTx {
+  deleverage: {
+    /** Hex encoded bytes32 subaccount */
+    subaccount: string;
+    /** Hex encoded bytes32 counterparty subaccount */
+    counterparty: string;
+    product_id: number;
+    /** Amount deleveraged, in base units (x18) */
+    amount: string;
+    /** Oracle price of the deleverage, x18 */
+    price_x18: string;
+  };
+}
+
 export interface NadoWithdrawCollateralTx {
   withdraw_collateral: {
     sender: string;
@@ -73,6 +91,7 @@ export interface NadoTransferQuoteV2Tx {
 export type NadoTx =
   | NadoMatchOrdersTx
   | NadoLiquidateSubaccountTx
+  | NadoDeleverageTx
   | NadoDepositCollateralTx
   | NadoTransferQuoteTx
   | NadoTransferQuoteV2Tx

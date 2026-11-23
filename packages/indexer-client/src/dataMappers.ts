@@ -564,6 +564,7 @@ export function mapIndexerV2Symbols(
       ? removeDecimals(symbol.exchange_rate_x18)
       : null,
     tradingStatus: symbol.trading_status as IndexerV2TradingStatus,
+    tradingStatusUpdatedAt: symbol.trading_status_updated_at ?? null,
     isolatedOnly: symbol.isolated_only,
     marketHours: symbol.market_hours
       ? mapIndexerV2MarketHours(symbol.market_hours)
@@ -571,5 +572,11 @@ export function mapIndexerV2Symbols(
     boostType: symbol.boost_type ?? null,
     takerMultiplier: symbol.taker_multiplier ?? null,
     makerMultiplier: symbol.maker_multiplier ?? null,
+    token: symbol.token
+      ? {
+          address: symbol.token.address,
+          decimals: symbol.token.decimals,
+        }
+      : null,
   };
 }

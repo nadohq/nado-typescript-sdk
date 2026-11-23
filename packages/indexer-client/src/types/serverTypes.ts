@@ -826,6 +826,14 @@ export interface IndexerServerV2MarketHours {
 }
 
 /**
+ * Spot product's ERC-20 token from v2 symbols endpoint (server format)
+ */
+export interface IndexerServerV2Token {
+  address: string;
+  decimals: number;
+}
+
+/**
  * Individual symbol data from v2 indexer endpoint (server format)
  */
 export interface IndexerServerV2Symbol {
@@ -844,15 +852,20 @@ export interface IndexerServerV2Symbol {
    */
   max_open_interest_x18: string | null;
   /**
-   * Defined only for xStocks spot markets
+   * Defined for xStocks spot markets (the wrapped token's exchange rate) and for perps whose
+   * underlying stock has split (the cumulative split ratio)
    */
   exchange_rate_x18: string | null;
   trading_status: string;
+  /**
+   * Unix timestamp (seconds) of the last `trading_status` change, or null if none recorded
+   */
+  trading_status_updated_at: number | null;
   isolated_only: boolean;
   market_hours: IndexerServerV2MarketHours | null;
   /**
-   * Boost tier for products with rewards boosts. Null for non-boosted products.
-   * 0 = none, 1 = taker 4x / maker 4x, 2 = taker 3x / maker 4x
+   * Boost tier for products with rewards boosts. 0 = none, 1 = taker 0x / maker 4x,
+   * 2 = taker 0x / maker 3x. Null for non-boosted products.
    */
   boost_type: number | null;
   /**
@@ -863,6 +876,10 @@ export interface IndexerServerV2Symbol {
    * Maker rewards multiplier. Null for non-boosted products.
    */
   maker_multiplier: number | null;
+  /**
+   * Defined only for spot markets
+   */
+  token: IndexerServerV2Token | null;
 }
 
 /**

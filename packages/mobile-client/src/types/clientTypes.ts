@@ -1597,6 +1597,26 @@ export interface MobileSocialFeedActionMarker {
   priceBasis: MobileSocialFeedActionPriceBasis;
 }
 
+/** Parameters for looking up a lifecycle UUID using its indexer position identity. */
+export interface GetMobilePositionLookupParams {
+  /** Position-owning subaccount. */
+  subaccount: Subaccount;
+  /** Market product ID. */
+  productId: number;
+  /** Position margin mode. */
+  marginMode: MobileFeedMarginMode;
+  /** Position direction. */
+  direction: MobileFeedTradePositionDirection;
+  /** Opening submission index; keep it as a decimal string to avoid precision loss. */
+  openId: string;
+}
+
+/** Lifecycle UUID resolved from an indexer position identity. */
+export interface MobilePositionLookup {
+  /** Position lifecycle UUID, usable with position history and other position queries. */
+  positionId: string;
+}
+
 /** Parameters for listing the selected account's open position candidates. */
 export interface GetMobileSelfFeedPositionsParams {
   /** Full non-isolated identity; selecting it is not authentication. */
