@@ -1320,6 +1320,16 @@ export type IndexerV2TradingStatus =
   | 'not_tradable';
 
 /**
+ * Spot product's ERC-20 token
+ */
+export interface IndexerV2Token {
+  /** Token contract address, lowercase hex */
+  address: string;
+  /** Token decimals (e.g. 6 for USDC, 18 for WETH) */
+  decimals: number;
+}
+
+/**
  * Individual symbol data from v2 endpoint
  */
 export interface IndexerV2Symbol {
@@ -1346,11 +1356,17 @@ export interface IndexerV2Symbol {
   /** Maximum open interest cap. Null if uncapped. */
   maxOpenInterest: BigNumber | null;
   /**
-   * Exchange rate for xStocks. Null if not applicable.
+   * Exchange rate for xStocks spot products (the wrapped token's rate) and for perps whose
+   * underlying stock has split (the cumulative split ratio). Null if not applicable.
    */
   exchangeRate: BigNumber | null;
   /** Current trading status */
   tradingStatus: IndexerV2TradingStatus;
+  /**
+   * Unix timestamp (seconds) of the last trading status change. Null when none recorded;
+   * treat as not recent.
+   */
+  tradingStatusUpdatedAt: number | null;
   /** Whether the market only accepts isolated margin orders */
   isolatedOnly: boolean;
   /** Market hours information. Null for 24/7 markets. */
@@ -1364,6 +1380,8 @@ export interface IndexerV2Symbol {
   takerMultiplier: number | null;
   /** Maker rewards multiplier. Null for non-boosted products. */
   makerMultiplier: number | null;
+  /** Spot product's ERC-20 token. Null for perps. */
+  token: IndexerV2Token | null;
 }
 
 /**
