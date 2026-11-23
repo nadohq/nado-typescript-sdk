@@ -42,7 +42,7 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@nadohq/shared": "^0.80.0",
-    "axios": "1.16.1"
+    "axios": "1.21.1"
   },
   "peerDependencies": {
     "bignumber.js": "11.1.1"
