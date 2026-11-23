@@ -7,7 +7,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}
-  cancel-in-progress: true
+  # Runs share one funded test account, so queue them instead of cancelling in-flight runs
+  cancel-in-progress: false
 
 jobs:
   e2e:
