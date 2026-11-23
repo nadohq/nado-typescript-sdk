@@ -864,8 +864,8 @@ export interface IndexerServerV2Symbol {
   isolated_only: boolean;
   market_hours: IndexerServerV2MarketHours | null;
   /**
-   * Boost tier for products with rewards boosts. Null for non-boosted products.
-   * 0 = none, 1 = taker 4x / maker 4x, 2 = taker 3x / maker 4x
+   * Boost tier for products with rewards boosts. 0 = none, 1 = taker 0x / maker 4x,
+   * 2 = taker 0x / maker 3x. Null for non-boosted products.
    */
   boost_type: number | null;
   /**
