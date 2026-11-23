@@ -16,7 +16,19 @@ export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
+    case 'tip_detail':
+      return { type: inner.type, tip_id: inner.tip_id };
     case 'tips_history':
+      if (inner.mode === 'list') {
+        return {
+          type: inner.type,
+          mode: inner.mode,
+          direction: inner.direction,
+          subaccount: inner.subaccount ?? null,
+          cursor: inner.cursor ?? null,
+          limit: inner.limit ?? null,
+        };
+      }
       return {
         type: inner.type,
         mode: inner.mode,
@@ -24,6 +36,20 @@ export function canonicalizeMobileInner(
         product_id: inner.product_id,
         direction: inner.direction,
         submission_indices: [...inner.submission_indices],
+      };
+    case 'received_tips':
+    case 'notification_inbox_v3':
+      return {
+        type: inner.type,
+        cursor: inner.cursor ?? null,
+        limit: inner.limit ?? null,
+      };
+    case 'mark_tips_seen':
+      return { type: inner.type, tip_ids: [...inner.tip_ids] };
+    case 'mark_notifications_seen':
+      return {
+        type: inner.type,
+        notification_ids: [...inner.notification_ids],
       };
     case 'submit_tip':
       return {

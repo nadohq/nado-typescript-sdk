@@ -321,6 +321,12 @@ export interface MobileServerNotificationSettings {
   discovery: boolean;
 }
 
+/** Full v3 notification settings, including the wallet's saved social interaction preference. */
+export interface MobileServerNotificationSettingsV3 extends MobileServerNotificationSettings {
+  /** Like/reply push preference; the service returns true for an unset legacy value. */
+  likes_and_replies: boolean;
+}
+
 /**
  * Server-side allowlisted destination; notification data must never be interpreted as an arbitrary URL.
  */
@@ -374,6 +380,81 @@ export interface MobileServerNotificationInboxItem {
   created_at: number;
   /** Backend-computed trade attribution. */
   trade_within_24h: boolean;
+}
+
+/** Tip notification types understood by v3 inbox data, independent of device registration support. */
+export const MOBILE_TIP_NOTIFICATION_TYPE_IDS = [
+  'tip_received',
+  'tip_liked',
+  'tip_replied',
+] as const;
+
+/** Tip notification type returned in the v3 inbox contract. */
+export type MobileTipNotificationTypeId =
+  (typeof MOBILE_TIP_NOTIFICATION_TYPE_IDS)[number];
+
+/** Private receipt destination carried by Tip notification data. */
+export interface MobileServerTipReceiptNotificationRoute {
+  /** Opens a participant-authorized Tip receipt. */
+  name: 'tip';
+  /** Payment record UUID, distinct from a public Feed item UUID. */
+  tip_id: string;
+}
+
+/** Public Tip thread destination; callers must recheck current access before navigation. */
+export interface MobileServerTipThreadNotificationRoute {
+  /** Opens a public Tip thread. */
+  name: 'tip_thread';
+  /** Payment record UUID. */
+  tip_id: string;
+  /** Public Tip Feed item UUID used as the thread anchor. */
+  feed_item_id: string;
+  /** Original post UUID, or null when there is no readable original. */
+  origin_post_id: string | null;
+  /** Triggering reply UUID, or null for a like notification. */
+  reply_item_id: string | null;
+}
+
+/** Shared Tip notification data; existing v2 notification payload requirements stay unchanged. */
+export interface MobileServerTipNotificationCommon extends Omit<
+  MobileServerNotificationPayloadV2,
+  'type_id' | 'route'
+> {
+  /** Server-generated display title, shared with the push envelope. */
+  title: string;
+  /** Server-generated display body, shared with the push envelope. */
+  body: string;
+}
+
+/** V3 inbox Tip data; this declaration does not advertise Tip support for registered devices. */
+export type MobileServerTipNotificationData =
+  MobileServerTipNotificationCommon &
+    (
+      | {
+          /** Verified receipt notification. */
+          type_id: 'tip_received';
+          /** Private receipt destination. */
+          route: MobileServerTipReceiptNotificationRoute;
+        }
+      | {
+          /** Public interaction notification. */
+          type_id: 'tip_liked' | 'tip_replied';
+          /** Public Tip thread destination. */
+          route: MobileServerTipThreadNotificationRoute;
+        }
+    );
+
+/** Accepted v3 inbox notification, including its independent first-display acknowledgement. */
+export interface MobileServerNotificationInboxV3Item extends Omit<
+  MobileServerNotificationInboxItem,
+  'type_id' | 'data'
+> {
+  /** Existing notification type or a Tip notification type. */
+  type_id: MobileNotificationTypeId | MobileTipNotificationTypeId;
+  /** Existing v2 data remains unchanged; Tip data includes its display strings. */
+  data: MobileServerNotificationPayloadV2 | MobileServerTipNotificationData;
+  /** First display acknowledgement in UTC milliseconds, or null while unseen. */
+  seen_at: number | null;
 }
 
 /**
@@ -1525,4 +1606,200 @@ export interface MobileServerTipCollateralMapping {
   tip_total_x18: string | null;
   /** Verified ordinary remainder in x18 units; null when unknown or for withdrawals. */
   ordinary_amount_x18: string | null;
+}
+
+/** Participant perspectives returned by authenticated Tip reads. */
+export const MOBILE_TIP_ROLES = ['sender', 'recipient'] as const;
+
+/** Participant perspective, which controls access to private execution and read state. */
+export type MobileTipRole = (typeof MOBILE_TIP_ROLES)[number];
+
+/** Wallet activity directions supported by participant Tip history. */
+export const MOBILE_TIPS_HISTORY_DIRECTIONS = [
+  'all',
+  'sent',
+  'received',
+] as const;
+
+/** Filter for outgoing Tips, verified incoming Tips, or both. */
+export type MobileTipsHistoryDirection =
+  (typeof MOBILE_TIPS_HISTORY_DIRECTIONS)[number];
+
+/** Readability states for an existing original-post reference. */
+export const MOBILE_TIP_ORIGIN_AVAILABILITIES = [
+  'available',
+  'unavailable',
+] as const;
+
+/** Original-post readability, or null when the Tip has no original-post reference. */
+export type MobileTipOriginAvailability =
+  | (typeof MOBILE_TIP_ORIGIN_AVAILABILITIES)[number]
+  | null;
+
+/** Bases for the sender's displayed fee and total. */
+export const MOBILE_TIP_FEE_BASES = [
+  'execution_cap',
+  'actual',
+  'not_executed',
+] as const;
+
+/** Whether displayed costs use a confirmed cap, verified execution, or a known non-execution. */
+export type MobileTipFeeBasis = (typeof MOBILE_TIP_FEE_BASES)[number];
+
+/** Required identity and nullable public profile fields for one Tip participant. */
+export interface MobileServerTipParticipant {
+  /** Full bytes32 participant subaccount. */
+  subaccount: Hex;
+  /** Public display name, or null when no profile name is available. */
+  display_name: string | null;
+  /** Public avatar URL, or null when no avatar is available. */
+  avatar_url: string | null;
+}
+
+/** Sender-only fee breakdown in integer x18 units. */
+export interface MobileServerTipSenderCost {
+  /** Highest execution fee explicitly approved by the sender. */
+  max_fee_x18: string;
+  /** Verified execution fee, or null until known. */
+  actual_fee_x18: string | null;
+  /** Verified net amount plus execution fee, or null until known. */
+  actual_total_x18: string | null;
+  /** Fee shown using the specified basis; zero for known non-execution. */
+  display_fee_x18: string;
+  /** Total shown using the specified basis; zero for known non-execution. */
+  display_total_x18: string;
+  /** How to label and interpret the display amounts. */
+  fee_basis: MobileTipFeeBasis;
+}
+
+/** Tip detail shared by the sender and the recipient. */
+export interface MobileServerTipDetailCommon {
+  /** Payment record UUID, distinct from the public Feed item UUID. */
+  tip_id: string;
+  /** Current business state; verified credit history survives later review. */
+  tip_status: MobileTipStatus;
+  /** Exact optimistic-concurrency version as a decimal integer string. */
+  version: string;
+  /** Sending participant. */
+  sender: MobileServerTipParticipant;
+  /** Receiving participant. */
+  recipient: MobileServerTipParticipant;
+  /** Source asset product ID. */
+  product_id: number;
+  /** Net payment amount in integer x18 units. */
+  net_amount_x18: string;
+  /** Public Feed publication preference. */
+  visibility: MobileTipVisibility;
+  /** Unmodified message, or null when unset. */
+  note: string | null;
+  /** Catalog background identifier fixed when Mobile admitted the Tip. */
+  background_id: string;
+  /** Opaque catalog version fixed at admission. */
+  background_version: string;
+  /** Saved original-post UUID, or null for a profile Tip. */
+  origin_post_id: string | null;
+  /** Current original-post readability, or null when no reference exists. */
+  origin_availability: MobileTipOriginAvailability;
+  /** Public Feed item UUID while readable, otherwise null. */
+  feed_item_id: string | null;
+  /** Original admission time in UTC milliseconds. */
+  submitted_at_ms: number;
+  /** Verified recipient credit time in UTC milliseconds, or null while unverified. */
+  credited_at_ms: number | null;
+  /** Exact withdrawal submission index, or null while unknown. */
+  withdrawal_submission_idx: string | null;
+  /** Exact recipient deposit submission index, or null while unknown. */
+  deposit_submission_idx: string | null;
+}
+
+/** Sender detail, including private execution facts and no recipient read state. */
+export interface MobileServerSenderTipDetail extends MobileServerTipDetailCommon {
+  /** Sender perspective. */
+  role: 'sender';
+  /** Sender-only fee breakdown. */
+  sender_cost: MobileServerTipSenderCost;
+  /** Latest Gateway outcome, independent of verified recipient credit. */
+  gateway: MobileServerTipGatewayResult;
+  /** Open-ended processing reason, or null when none is recorded. */
+  processing_reason: string | null;
+}
+
+/** Recipient detail, available after verified credit and excluding sender execution facts. */
+export interface MobileServerRecipientTipDetail extends MobileServerTipDetailCommon {
+  /** Recipient perspective. */
+  role: 'recipient';
+  /** First explicit acknowledgment time in UTC milliseconds, or null while unread. */
+  seen_at: number | null;
+}
+
+/** Authenticated detail whose role determines its private fields. */
+export type MobileServerTipDetail =
+  | MobileServerSenderTipDetail
+  | MobileServerRecipientTipDetail;
+
+/** Participant history fields; the fee breakdown is available only from detail. */
+export interface MobileServerTipHistoryCommon {
+  /** Payment record UUID. */
+  tip_id: string;
+  /** Current business state, retaining verified credit history through review. */
+  tip_status: MobileTipStatus;
+  /** Sending participant. */
+  sender: MobileServerTipParticipant;
+  /** Receiving participant. */
+  recipient: MobileServerTipParticipant;
+  /** Source asset product ID. */
+  product_id: number;
+  /** Net payment amount in integer x18 units. */
+  net_amount_x18: string;
+  /** Public Feed publication preference. */
+  visibility: MobileTipVisibility;
+  /** Unmodified message, or null. */
+  note: string | null;
+  /** Original admission time in UTC milliseconds. */
+  submitted_at_ms: number;
+  /** Verified recipient credit time in UTC milliseconds, or null. */
+  credited_at_ms: number | null;
+  /** Exact withdrawal submission index, or null. */
+  withdrawal_submission_idx: string | null;
+  /** Exact recipient deposit submission index, or null. */
+  deposit_submission_idx: string | null;
+}
+
+/** Outgoing history row without recipient read state. */
+export interface MobileServerSenderTipHistoryRow extends MobileServerTipHistoryCommon {
+  /** Sender perspective. */
+  role: 'sender';
+}
+
+/** Verified incoming history row with its first explicit acknowledgment time. */
+export interface MobileServerRecipientTipHistoryRow extends MobileServerTipHistoryCommon {
+  /** Recipient perspective. */
+  role: 'recipient';
+  /** First acknowledgment in UTC milliseconds, or null while unread. */
+  seen_at: number | null;
+}
+
+/** Role-specific row returned by participant Tip history. */
+export type MobileServerTipHistoryRow =
+  | MobileServerSenderTipHistoryRow
+  | MobileServerRecipientTipHistoryRow;
+
+/** Unread receipt card for a verified incoming Tip, including credit later placed under review. */
+export interface MobileServerReceivedTipCard {
+  /** Payment record UUID. */
+  tip_id: string;
+  /** Sending participant. */
+  sender: MobileServerTipParticipant;
+  /** Verified net payment amount in integer x18 units. */
+  net_amount_x18: string;
+  /** Unmodified message, or null. */
+  note: string | null;
+  /** Catalog background identifier fixed at admission. */
+  background_id: string;
+  /** Opaque catalog version fixed at admission. */
+  background_version: string;
+  /** Verified credit time in UTC milliseconds. */
+  credited_at_ms: number;
+  /** Always null; reading or preloading a receipt does not acknowledge it. */
+  seen_at: null;
 }

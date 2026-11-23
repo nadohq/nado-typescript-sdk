@@ -575,6 +575,34 @@ describe('MobileSendMoneyDraftClient', () => {
   });
 
   describe('collateral mapping', () => {
+    it('deduplicates exact indices in first-occurrence order without changing caller-owned input', async () => {
+      const transport = createTransport();
+      const client = new MobileSendMoneyDraftClient(transport);
+      const indices = [
+        '18446744073709551615',
+        '9007199254740993',
+        '18446744073709551615',
+        '0',
+      ];
+      const original = [...indices];
+      await client.getTipCollateralMappings({
+        subaccount: recipientSubaccount,
+        productId: 0,
+        direction: 'deposit',
+        submissionIndices: indices,
+      });
+      expect(transport.getTipCollateralMappings).toHaveBeenCalledWith({
+        type: 'tips_history',
+        mode: 'collateral_mapping',
+        subaccount:
+          fixtures.scenarios.deposit_mapping_pending.request.subaccount,
+        product_id: 0,
+        direction: 'deposit',
+        submission_indices: ['18446744073709551615', '9007199254740993', '0'],
+      });
+      expect(indices).toEqual(original);
+    });
+
     it('keeps an unknown remainder pending and maps the complete mixed deposit to the server remainder', async () => {
       const transport = createTransport();
       transport.getTipCollateralMappings

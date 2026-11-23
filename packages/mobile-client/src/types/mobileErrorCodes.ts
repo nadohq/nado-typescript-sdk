@@ -106,6 +106,8 @@ export const MOBILE_ERROR_CODES = {
   TIP_SUBMISSION_CONFLICT: 6701,
   /** Available non-borrowed cash cannot cover the net Tip amount and the confirmed fee cap. */
   INSUFFICIENT_TIP_BALANCE: 6702,
+  /** Tip missing, inaccessible, or not yet verified as credited for recipient access. */
+  TIP_NOT_FOUND: 6703,
 } as const;
 
 /**

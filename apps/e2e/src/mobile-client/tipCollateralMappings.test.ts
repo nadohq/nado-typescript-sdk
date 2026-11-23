@@ -21,7 +21,7 @@ void describe(
     });
 
     for (const direction of ['deposit', 'withdrawal'] as const) {
-      void test(`annotates a real ${direction} Indexer submission`, async (context) => {
+      void test(`deduplicates a real ${direction} Indexer submission`, async (context) => {
         const auth = getMobileSignedParams(tc);
         const page = await tc.indexer.getPaginatedSubaccountCollateralEvents({
           ...auth,
@@ -45,7 +45,7 @@ void describe(
           subaccount: auth,
           productId,
           direction,
-          submissionIndices: [event.submissionIndex],
+          submissionIndices: [event.submissionIndex, event.submissionIndex],
         });
 
         assert.equal(mappings.length, 1);

@@ -24,7 +24,7 @@ import {
 import { MobileSendMoneyDraftTransport } from './wireTypes';
 
 /**
- * Mock frontend adapter for the 22 November 2026 Send Money handoff. An explicit decoded-business
+ * Mock frontend adapter for the 23 November 2026 Send Money handoff. An explicit decoded-business
  * transport is required; this class has no default network, signer, fee retry, or Engine dispatch. It does
  * not register the v1 operations with the production MobileClient signing or capability protocols.
  */
@@ -95,7 +95,8 @@ export class MobileSendMoneyDraftClient {
    * Annotates one active-chain Indexer page without hiding entries or calculating unknown remainders.
    * Continue using the Indexer cursor even when all returned entries are classified as tip_only.
    * Merge by source index within the same subaccount, product, and direction; retain complete rows and
-   * requery pending deposits in batches of at most four.
+   * requery pending deposits in batches of at most four. Duplicate indices are removed in first-occurrence
+   * order without modifying the input array.
    * Linked signers require current authorization for both the outer sender and target subaccount.
    * @throws {Error} If the target subaccount cannot be encoded as 32 bytes or a returned source subaccount
    * cannot be decoded as 32 bytes.

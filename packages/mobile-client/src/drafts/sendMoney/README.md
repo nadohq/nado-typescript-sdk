@@ -1,10 +1,10 @@
 # Send Money frontend mock adapter
 
-This adapter follows the **22 November 2026 v1** Send Money API handoff. The request fields, response
+This adapter follows the **23 November 2026 v1** Send Money API handoff. The request fields, response
 fields, enums, and nullability are frozen by that document. The backend currently implements
-`submit_tip` (PR3) and `tips_history(mode=collateral_mapping)` (PR4). Private detail, activity history,
-unseen cards, and acknowledgement remain planned PR5 operations; their presence here supports frontend
-mock development and does not establish deployment availability.
+`submit_tip` (PR3), `tips_history(mode=collateral_mapping)` (PR4), and the PR5 private detail, activity
+history, unseen-card, and acknowledgement operations. The production `MobileClient` provides their
+signed HTTP methods; this separate adapter remains useful for injected frontend mocks.
 
 `MobileSendMoneyDraftClient` requires an explicit `MobileSendMoneyDraftTransport`. Its six transport
 methods distinguish the two `tips_history` modes and consume decoded business requests/results, without
@@ -48,15 +48,16 @@ history subaccount omitted or `null`, owners read wallet-wide activity and linke
 outer sender's subaccount. Preserve backend history order, which merges sent submission times and
 received verified-credit times; do not resort the mixed page by one timestamp.
 
-Collateral pagination remains with Indexer. Preserve exact string indices and merge annotations by index
+Collateral pagination remains with Indexer. The adapter deduplicates exact string indices in first-occurrence
+order without modifying caller-owned arrays. Merge annotations by index
 within the same subaccount, product, and direction. Retain complete mappings; requery pending deposits in
 batches of at most four using fresh outer signatures in a live integration. Review/pending rows may have
 verified principal while split amounts remain unknown. Withdrawal mappings never describe recipient
 delivery and keep deposit total and ordinary amount `null`.
 
-Production `MobileClient` APIs handle submission and collateral mapping separately. The four planned
-PR5 operations are not registered with its signing/canonicalization. Before live integration, verify
-backend deployment and the required signing vectors. Planned v3 Inbox/settings, Tip push routes,
-device capability additions, public Tip Feed reads, and thread grouping remain outside this adapter;
-their declaration here would not establish backend support. Feed ordering belongs to the server, and
+Production `MobileClient` APIs provide submission, collateral mapping, the four PR5 operations, and PR2
+v3 Inbox/settings with the canonical signing protocols. Use those methods for live HTTP integration;
+this adapter's decoded transport does not supply authentication. Inbox/settings remain outside this
+mock adapter. Tip push routes, device capability additions, public Tip Feed reads, and thread grouping
+remain planned features and are not enabled by this adapter. Feed ordering belongs to the server, and
 temporary own-reply pinning belongs to the App.

@@ -46,8 +46,8 @@ await mobile.setUsername({
 
 ### Send Money
 
-The 22 November 2026 handoff identifies `submit_tip` and `tips_history(mode=collateral_mapping)` as
-implemented backend operations. `submitTip` authenticates an already owner-signed `WithdrawCollateralV2`
+The 23 November 2026 handoff identifies submission, collateral mapping, PR5 participant reads and receipt
+acknowledgements, and PR2 notification v3 as implemented backend operations. `submitTip` authenticates an already owner-signed `WithdrawCollateralV2`
 through Mobile. Confirm that the selected environment has deployed the operation and configured its
 Tip background catalog and credit reconciliation before enabling live submission. The inner withdrawal
 requires the owner, while the outer Mobile authorization can use the current linked signer. Both senders
@@ -112,7 +112,8 @@ const { mappings } = await mobile.getTipCollateralMappings({
 
 The target must share the outer sender's owning wallet. An owner can query any of its subaccounts.
 A linked signer needs current authorization on both the outer sender and target subaccounts. Continue paging ordinary
-collateral events through Indexer, then query their deduplicated indices (1–100 per request). Indices are
+collateral events through Indexer, then query their indices. The SDK deduplicates before signing in
+first-occurrence order without changing the input array, allowing 1–100 unique indices per request. Indices are
 exact decimal strings; amounts remain `BigNumber` values in x18 units, with unknown amounts preserved as
 `null`. Results retain request order. Within the same subaccount, product, and direction, merge by
 `submissionIdx`, retain `complete` entries, and requery only `pending` entries with fresh outer signatures.
@@ -120,11 +121,44 @@ Retry cold deposits in batches of at most four. Display `review_required` for re
 can query all its indices again. Withdrawal mapping describes sender-side attribution, not recipient
 delivery. The SDK performs one query per call and leaves polling to the caller.
 
-Detail, list history, receipt cards, seen acknowledgements, notification v3, and public Tip Feed/thread
-extensions remain planned backend work in this handoff. `MobileSendMoneyDraftClient` follows the frozen
-private-operation fields behind an injected transport for mock development. It has no default HTTP
-transport or signing behavior. See [the draft adapter](src/drafts/sendMoney/README.md). Existing device
-registration lists should advertise Tip capabilities only after backend support and client pages are ready.
+The following methods use the formal HTTP transport and canonical signing protocols:
+
+| Method | Operation | Route |
+| --- | --- | --- |
+| `getTipDetail` | `tip_detail` | Signed `/query` |
+| `getTipsHistory` | `tips_history(mode=list)` | Signed `/query` |
+| `getReceivedTips` | `received_tips` | Signed `/query` |
+| `markTipsSeen` | `mark_tips_seen` | Signed `/execute` |
+| `getNotificationInboxV3` | `notification_inbox_v3` | Signed `/query` |
+| `markNotificationsSeen` | `mark_notifications_seen` | Signed `/execute` |
+| `getNotificationSettingsV3` | `notification_settings_v3` | `/public_query` with an active Expo token |
+| `updateNotificationSettingsV3` | `update_notification_settings_v3` | `/public_execute` with an active Expo token |
+
+History defaults to `direction: 'all'`. Omitted `subaccount`, `cursor`, and `limit` are sent and signed as
+explicit `null`. Owners default to wallet-wide history; linked signers default to the outer sender's
+subaccount and need current authorization for the selected participants. Preserve server ordering and
+opaque cursors. Versions and source indices remain strings, and amounts ending in `X18` remain integer
+`BigNumber` values in x18 units.
+
+Sender detail includes `senderCost`, `gateway`, and `processingReason`; recipient detail includes `seenAt`
+and omits those sender-only fields. A verified `creditedAtMs` establishes delivery even when the current
+status later becomes `review_required`. `TIP_NOT_FOUND` (6703) covers missing or inaccessible details and
+receipt acknowledgements, including recipient access before verified credit.
+
+Reads never acknowledge Tips or notifications. Call `markTipsSeen` only for displayed Tip IDs and
+`markNotificationsSeen` only for displayed notification IDs; these are independent read states. Both
+accept 1–50 IDs, let the server deduplicate and authorize atomically, and return `{ status: 'success' }`.
+
+Notification v3 settings add `likesAndReplies` to the nine v2 fields and use `schemaVersion: 3`. Send all
+ten fields with the latest settings revision; re-read on 6203 conflicts instead of replaying a stale
+document. Older settings writes preserve a saved `likesAndReplies` value. V3 Inbox entries preserve
+`createdAt` and nullable `seenAt`; existing notification data retains its v2 shape.
+
+Tip push generation, device capability additions, public Tip Feed reads, and thread grouping remain
+planned backend work in this handoff. V3 Inbox types can represent the specified Tip notification data,
+but do not advertise new device capabilities. `MobileSendMoneyDraftClient` remains available for mock
+development with an injected decoded-business transport, without default HTTP or signing behavior.
+See [the draft adapter](src/drafts/sendMoney/README.md).
 
 ### Public Queries
 
@@ -134,7 +168,7 @@ registration lists should advertise Tip capabilities only after backend support 
 `getPositionLookup`, `getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
 `getPositionHistory`, `getPositionHistoryAll`, `getPositionThoughts`, `getPositionChart`, `getPositionWatchers`.
 
-`getNotificationRegistrationV2` and `getNotificationSettingsV2` use an active Expo token as their credential,
+`getNotificationRegistrationV2`, `getNotificationSettingsV2`, and `getNotificationSettingsV3` use an active Expo token as their credential,
 not a wallet signature. Before displaying wallet settings, compare the wallet returned by `getRegisteredWallet`
 with the connected wallet (case-insensitively).
 
@@ -264,7 +298,7 @@ price when the new value is unavailable or null.
 
 ### Public Executes
 
-`unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`. These are authenticated by possession of an active Expo
+`unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`, `updateNotificationSettingsV3`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 `recordFeedViews` accepts `itemIds`, an array of 1–50 canonical lowercase UUIDs. Posts, trade cards,
@@ -337,7 +371,7 @@ const source = isMobileSocialFeedUploadedImage(image)
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
 `createFeedPost`, `createFeedComment`, `createFeedPostImageUpload`, `createFeedCommentImageUpload`,
 `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`, `registerExpoTokenV2`,
-`updateNotificationSubscriptions`, `recordProductEvents`.
+`updateNotificationSubscriptions`, `recordProductEvents`, `submitTip`, `markTipsSeen`, `markNotificationsSeen`.
 
 Upload images one at a time with the multipart helpers (≤ 2 MiB whole request), then pass ordered ready
 `imageIds` to `createFeedPost` / `createFeedComment`. The SDK throws `RangeError` before requesting a signature or sending a request
@@ -377,7 +411,8 @@ without Mobile session headers.
 
 ### Signed Queries
 
-`getNotificationSubscriptions` and `getNotificationInboxV2` use wallet authentication on `/query`.
+`getNotificationSubscriptions`, `getNotificationInboxV2`, `getNotificationInboxV3`, `getTipCollateralMappings`,
+`getTipDetail`, `getTipsHistory`, and `getReceivedTips` use wallet authentication on `/query`.
 They do not require an Expo token or system push permission. The configured linked signer is supported.
 
 ### Notifications V2

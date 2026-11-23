@@ -119,6 +119,56 @@ describe('MobileClient', () => {
       expect(params.submissionIndices).toEqual(original);
     });
 
+    it('deduplicates exact indices before signing without changing their first-occurrence order or input', async () => {
+      const { client, requests } = mockClient({
+        status: 'success',
+        mappings: [],
+      });
+      const submissionIndices = [
+        '18446744073709551615',
+        '9007199254740993',
+        '18446744073709551615',
+        '0',
+        '9007199254740993',
+      ];
+      const original = [...submissionIndices];
+      await client.getTipCollateralMappings(
+        createParams({ submissionIndices }),
+      );
+      await client.getTipCollateralMappings(
+        createParams({
+          submissionIndices: ['18446744073709551615', '9007199254740993', '0'],
+        }),
+      );
+
+      expect(requests).toHaveLength(2);
+      expect(requests[0]?.body.submission_indices).toEqual([
+        '18446744073709551615',
+        '9007199254740993',
+        '0',
+      ]);
+      expect(requests[0]).toEqual(requests[1]);
+      expect(submissionIndices).toEqual(original);
+    });
+
+    it('applies the batch limit to unique indices after deduplication', async () => {
+      const { client, requests } = mockClient({
+        status: 'success',
+        mappings: [],
+      });
+      const uniqueIndices = Array.from({ length: 100 }, (_, index) =>
+        index.toString(),
+      );
+      await client.getTipCollateralMappings(
+        createParams({
+          submissionIndices: [...uniqueIndices, ...uniqueIndices],
+        }),
+      );
+
+      expect(requests).toHaveLength(1);
+      expect(requests[0]?.body.submission_indices).toEqual(uniqueIndices);
+    });
+
     it('uses the linked signer while retaining the owner sender and distinct target subaccount', async () => {
       const linked = privateKeyToAccount(
         '0x0123456789012345678901234567890123456789012345678901234567890123',
@@ -235,8 +285,8 @@ describe('MobileClient', () => {
 
     it.each([
       [],
-      ['1', '1'],
       ['01'],
+      ['01', '01'],
       ['-1'],
       ['1.5'],
       ['18446744073709551616'],

@@ -53,10 +53,14 @@ import {
   MobileSocialFeedUnavailableTarget,
   MobileTipCollateralClassification,
   MobileTipCollateralDirection,
+  MobileTipFeeBasis,
   MobileTipGatewayStatus,
   MobileTipMappingState,
+  MobileTipNotificationTypeId,
+  MobileTipOriginAvailability,
   MobileTipStatus,
   MobileTipVisibility,
+  MobileTipsHistoryDirection,
 } from './serverModelTypes';
 
 /**
@@ -377,6 +381,22 @@ export interface MobileNotificationSettingsV2 {
   settings: MobileNotificationSettings;
 }
 
+/** Complete v3 settings values; all ten fields are required on replacement. */
+export interface MobileNotificationSettingsV3Values extends MobileNotificationSettings {
+  /** Like/reply push preference; false is an explicit saved choice. */
+  likesAndReplies: boolean;
+}
+
+/** Versioned v3 settings document; the revision continues across a v2-to-v3 upgrade. */
+export interface MobileNotificationSettingsV3 {
+  /** Settings schema version, independent of the push payload version. */
+  schemaVersion: 3;
+  /** Current settings revision used for optimistic concurrency. */
+  revision: number;
+  /** Full saved settings, including the effective like/reply preference. */
+  settings: MobileNotificationSettingsV3Values;
+}
+
 /** Wallet market subscriptions and the signing Identity's enabled trader bells. */
 export interface MobileNotificationSubscriptions {
   /** Wallet-level subscription revision; refresh after every mutation. */
@@ -484,6 +504,77 @@ export interface MobileNotificationInboxV2 {
   /** Accepted intents owned by the signing wallet. */
   notifications: MobileNotificationInboxItem[];
   /** Pass unchanged to the next request, or null when pagination is complete. */
+  nextCursor: string | null;
+}
+
+/** Private receipt destination in v3 inbox Tip data. */
+export interface MobileTipReceiptNotificationRoute {
+  /** Opens a participant-authorized receipt. */
+  name: 'tip';
+  /** Payment record UUID, distinct from the public Feed item UUID. */
+  tipId: string;
+}
+
+/** Public Tip thread destination; recheck current access when opening it. */
+export interface MobileTipThreadNotificationRoute {
+  /** Opens a public Tip thread. */
+  name: 'tip_thread';
+  /** Payment record UUID. */
+  tipId: string;
+  /** Public Tip Feed item UUID used as the thread anchor. */
+  feedItemId: string;
+  /** Original post UUID, or null when no readable original was available. */
+  originPostId: string | null;
+  /** Triggering reply UUID, or null for a like notification. */
+  replyItemId: string | null;
+}
+
+/** Shared display data for Tip notifications without changing existing v2 payloads. */
+export interface MobileTipNotificationCommon extends Omit<
+  MobileNotificationPayloadV2,
+  'typeId' | 'route'
+> {
+  /** Display title supplied by the service. */
+  title: string;
+  /** Display body supplied by the service. */
+  body: string;
+}
+
+/** Tip notification data accepted by the v3 inbox; device capabilities remain opt-in separately. */
+export type MobileTipNotificationData = MobileTipNotificationCommon &
+  (
+    | {
+        /** Verified receipt notification. */
+        typeId: 'tip_received';
+        /** Private receipt destination. */
+        route: MobileTipReceiptNotificationRoute;
+      }
+    | {
+        /** Public interaction notification. */
+        typeId: 'tip_liked' | 'tip_replied';
+        /** Public Tip thread destination. */
+        route: MobileTipThreadNotificationRoute;
+      }
+  );
+
+/** Accepted v3 notification with read state independent of any Tip receipt acknowledgement. */
+export interface MobileNotificationInboxV3Item extends Omit<
+  MobileNotificationInboxItem,
+  'typeId' | 'data'
+> {
+  /** Existing notification type or a Tip notification type. */
+  typeId: MobileNotificationTypeId | MobileTipNotificationTypeId;
+  /** Existing v2 data or server-rendered Tip notification data. */
+  data: MobileNotificationPayloadV2 | MobileTipNotificationData;
+  /** First display acknowledgement in UTC milliseconds, or null while unseen. */
+  seenAt: number | null;
+}
+
+/** Private newest-first v3 inbox page; reading never marks notifications as seen. */
+export interface MobileNotificationInboxV3 {
+  /** Notifications in server order, including their independent display acknowledgement. */
+  notifications: MobileNotificationInboxV3Item[];
+  /** Opaque next cursor, or explicit null when pagination is complete. */
   nextCursor: string | null;
 }
 
@@ -794,6 +885,17 @@ export interface MobileUpdateNotificationSettingsV2Params extends MobileWithExpo
   settings: MobileNotificationSettings;
 }
 
+/** Params for the token-authenticated v3 settings query. */
+export type GetMobileNotificationSettingsV3Params = MobileWithExpoTokenParams;
+
+/** Full v3 settings replacement guarded by the current wallet settings revision. */
+export interface MobileUpdateNotificationSettingsV3Params extends MobileWithExpoTokenParams {
+  /** Latest settings revision; conflicts return 6203 and require a fresh read. */
+  expectedRevision: number;
+  /** All ten settings fields, including the user's explicit like/reply preference. */
+  settings: MobileNotificationSettingsV3Values;
+}
+
 /**
  * Params for {@link MobileClient.getNotificationSubscriptions}; no Expo token is needed.
  */
@@ -816,6 +918,20 @@ export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestP
   cursor?: string | null;
   /** Page size from 1 to 50; omission/null uses the server default of 20. */
   limit?: number | null;
+}
+
+/** Params for the wallet-scoped v3 inbox; no Expo token is needed. */
+export interface GetMobileNotificationInboxV3Params extends MobileSignedRequestParams {
+  /** Previous nextCursor; omission/null is signed as explicit null for the first page. */
+  cursor?: string | null;
+  /** One to fifty notifications; omission/null signs explicit null for the default of 20. */
+  limit?: number | null;
+}
+
+/** Explicit notification acknowledgement, separate from Tip receipt acknowledgement and analytics. */
+export interface MobileMarkNotificationsSeenParams extends MobileSignedRequestParams {
+  /** One to fifty displayed notification UUIDs; the server deduplicates and commits atomically. */
+  notificationIds: string[];
 }
 
 /**
@@ -2176,7 +2292,10 @@ export interface GetMobileTipCollateralMappingsParams extends MobileSignedReques
   productId: number;
   /** Source collateral-history direction. */
   direction: MobileTipCollateralDirection;
-  /** One to one hundred distinct canonical unsigned 64-bit decimal indices in request order. */
+  /**
+   * Canonical unsigned 64-bit decimal indices, deduplicated before signing in first-occurrence order.
+   * Must contain one to one hundred unique indices.
+   */
   submissionIndices: string[];
 }
 
@@ -2204,6 +2323,216 @@ export interface MobileTipCollateralMapping {
 
 /** Annotations for the requested Indexer indices, including partial pending results. */
 export interface MobileTipCollateralMappings {
-  /** One annotation per requested index, in request order. */
+  /** One annotation per unique requested index, in first-occurrence order. */
   mappings: MobileTipCollateralMapping[];
+}
+
+/** Parameters for a participant-only Tip detail read; reading does not acknowledge the receipt. */
+export interface GetMobileTipDetailParams extends MobileSignedRequestParams {
+  /** Payment record UUID, distinct from a public Feed item UUID. */
+  tipId: string;
+}
+
+/** Parameters for wallet Tip activity with server ordering and opaque cursor pagination. */
+export interface GetMobileTipsHistoryParams extends MobileSignedRequestParams {
+  /** Outgoing, verified incoming, or both; omitted uses all. */
+  direction?: MobileTipsHistoryDirection;
+  /**
+   * Participating subaccount within the signing wallet, or null/omitted for the default scope.
+   * Owners default to wallet-wide history; linked signers default to the outer sender subaccount.
+   */
+  subaccount?: Subaccount | null;
+  /** Opaque cursor for the same wallet, chain, filters, and effective subaccount scope. */
+  cursor?: string | null;
+  /** Page size, 1–50; null or omitted uses the server default of 20. */
+  limit?: number | null;
+}
+
+/** Parameters for unread verified receipt cards; reading does not mark them as seen. */
+export interface GetMobileReceivedTipsParams extends MobileSignedRequestParams {
+  /** Opaque cursor for the same wallet and effective signer scope. */
+  cursor?: string | null;
+  /** Page size, 1–50; null or omitted uses the server default of 10. */
+  limit?: number | null;
+}
+
+/** Explicit recipient acknowledgment, independent of notification acknowledgments. */
+export interface MobileMarkTipsSeenParams extends MobileSignedRequestParams {
+  /**
+   * One to fifty payment UUIDs. The server deduplicates and authorizes the entire batch atomically,
+   * recording its first seen time; a missing, inaccessible, or uncredited Tip rejects the whole batch.
+   */
+  tipIds: string[];
+}
+
+/** Required identity and nullable public profile fields for a Tip participant. */
+export interface MobileTipParticipant {
+  /** Exact participant subaccount decoded from the required bytes32 identity. */
+  subaccount: Subaccount;
+  /** Public display name, or null when unavailable. */
+  displayName: string | null;
+  /** Public avatar URL, or null when unavailable. */
+  avatarUrl: string | null;
+}
+
+/** Sender-only cost display, preserving unknown actual amounts independently of the confirmed cap. */
+export interface MobileTipSenderCost {
+  /** Highest explicitly approved execution fee in integer x18 units. */
+  maxFeeX18: BigNumber;
+  /** Verified execution fee in integer x18 units, or null while unknown. */
+  actualFeeX18: BigNumber | null;
+  /** Verified net amount plus fee in integer x18 units, or null while unknown. */
+  actualTotalX18: BigNumber | null;
+  /** Display fee in integer x18 units, interpreted according to feeBasis. */
+  displayFeeX18: BigNumber;
+  /** Display total in integer x18 units, interpreted according to feeBasis. */
+  displayTotalX18: BigNumber;
+  /** Execution cap, verified actual values, or a known zero-cost non-execution. */
+  feeBasis: MobileTipFeeBasis;
+}
+
+/** Participant detail shared by both roles; verified credit history survives later review. */
+export interface MobileTipDetailCommon {
+  /** Payment record UUID, distinct from the public Feed item UUID. */
+  tipId: string;
+  /** Current business state; a verified creditedAtMs still establishes delivery during review. */
+  tipStatus: MobileTipStatus;
+  /** Exact optimistic-concurrency version; never convert to a JavaScript number. */
+  version: string;
+  /** Sending participant. */
+  sender: MobileTipParticipant;
+  /** Receiving participant. */
+  recipient: MobileTipParticipant;
+  /** Source asset product ID. */
+  productId: number;
+  /** Net payment amount in integer x18 units. */
+  netAmountX18: BigNumber;
+  /** Public Feed publication preference. */
+  visibility: MobileTipVisibility;
+  /** Unmodified message, or null when unset. */
+  note: string | null;
+  /** Catalog background identifier fixed at admission. */
+  backgroundId: string;
+  /** Opaque catalog version fixed at admission. */
+  backgroundVersion: string;
+  /** Saved original-post UUID, or null for a profile Tip. */
+  originPostId: string | null;
+  /** Current original-post readability, or null when no reference exists. */
+  originAvailability: MobileTipOriginAvailability;
+  /** Public Feed item UUID while readable, otherwise null. */
+  feedItemId: string | null;
+  /** Original admission time in UTC milliseconds. */
+  submittedAtMs: number;
+  /** Verified recipient credit time in UTC milliseconds, or null while unverified. */
+  creditedAtMs: number | null;
+  /** Exact withdrawal submission index, or null while unknown. */
+  withdrawalSubmissionIdx: string | null;
+  /** Exact recipient deposit submission index, or null while unknown. */
+  depositSubmissionIdx: string | null;
+}
+
+/** Sender detail with private fee and execution facts; recipient seen state is omitted. */
+export interface MobileSenderTipDetail extends MobileTipDetailCommon {
+  /** Sender perspective. */
+  role: 'sender';
+  /** Sender-only fee breakdown. */
+  senderCost: MobileTipSenderCost;
+  /** Latest known Gateway outcome, independent of verified recipient credit. */
+  gateway: MobileTipGatewayResult;
+  /** Open-ended processing reason, or null when none is recorded. */
+  processingReason: string | null;
+}
+
+/** Recipient detail after verified credit, without private sender execution facts. */
+export interface MobileRecipientTipDetail extends MobileTipDetailCommon {
+  /** Recipient perspective. */
+  role: 'recipient';
+  /** First explicit acknowledgment time in UTC milliseconds, or null while unread. */
+  seenAt: number | null;
+}
+
+/** Role-discriminated participant detail returned without changing read state. */
+export type MobileTipDetail = MobileSenderTipDetail | MobileRecipientTipDetail;
+
+/** Participant history fields, without the detail response's fee breakdown. */
+export interface MobileTipHistoryCommon {
+  /** Payment record UUID. */
+  tipId: string;
+  /** Current business state, retaining verified credit history through review. */
+  tipStatus: MobileTipStatus;
+  /** Sending participant. */
+  sender: MobileTipParticipant;
+  /** Receiving participant. */
+  recipient: MobileTipParticipant;
+  /** Source asset product ID. */
+  productId: number;
+  /** Net payment amount in integer x18 units. */
+  netAmountX18: BigNumber;
+  /** Public Feed publication preference. */
+  visibility: MobileTipVisibility;
+  /** Unmodified message, or null. */
+  note: string | null;
+  /** Original admission time in UTC milliseconds. */
+  submittedAtMs: number;
+  /** Verified credit time in UTC milliseconds, or null. */
+  creditedAtMs: number | null;
+  /** Exact withdrawal submission index, or null. */
+  withdrawalSubmissionIdx: string | null;
+  /** Exact recipient deposit submission index, or null. */
+  depositSubmissionIdx: string | null;
+}
+
+/** Outgoing history row without recipient read state. */
+export interface MobileSenderTipHistoryRow extends MobileTipHistoryCommon {
+  /** Sender perspective. */
+  role: 'sender';
+}
+
+/** Verified incoming history row with recipient read state. */
+export interface MobileRecipientTipHistoryRow extends MobileTipHistoryCommon {
+  /** Recipient perspective. */
+  role: 'recipient';
+  /** First acknowledgment time in UTC milliseconds, or null while unread. */
+  seenAt: number | null;
+}
+
+/** Role-specific participant history row. */
+export type MobileTipHistoryRow =
+  | MobileSenderTipHistoryRow
+  | MobileRecipientTipHistoryRow;
+
+/** Participant Tip activity in the server's timestamp and UUID ordering. */
+export interface MobileTipsHistoryPage {
+  /** Rows in server order; outgoing rows use admission time, incoming rows use verified credit time. */
+  tips: MobileTipHistoryRow[];
+  /** Opaque next cursor, or null when pagination is complete. */
+  nextCursor: string | null;
+}
+
+/** Unread verified receipt card, which remains eligible after credit enters review. */
+export interface MobileReceivedTipCard {
+  /** Payment record UUID. */
+  tipId: string;
+  /** Sending participant. */
+  sender: MobileTipParticipant;
+  /** Verified net payment amount in integer x18 units. */
+  netAmountX18: BigNumber;
+  /** Unmodified message, or null. */
+  note: string | null;
+  /** Catalog background identifier fixed at admission. */
+  backgroundId: string;
+  /** Opaque catalog version fixed at admission. */
+  backgroundVersion: string;
+  /** Verified credit time in UTC milliseconds. */
+  creditedAtMs: number;
+  /** Always null; reads and preloads do not acknowledge this receipt. */
+  seenAt: null;
+}
+
+/** Unread receipts in the server's ascending verified credit time and UUID ordering. */
+export interface MobileReceivedTipsPage {
+  /** Receipt cards in server order; acknowledging them requires an explicit markTipsSeen call. */
+  tips: MobileReceivedTipCard[];
+  /** Opaque next cursor, or null when pagination is complete. */
+  nextCursor: string | null;
 }

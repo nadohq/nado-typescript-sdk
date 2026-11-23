@@ -169,7 +169,7 @@ export function mapMobileDraftTipsHistoryPage(
 }
 
 /**
- * Maps one v1 Indexer-page annotation request, preserving decimal indices exactly.
+ * Maps one v1 Indexer-page annotation request, deduplicating exact decimal indices in first-occurrence order.
  * @throws {Error} If the target subaccount owner is not 20 bytes or its name exceeds 12 bytes.
  */
 export function mapMobileDraftTipCollateralMappingsParamsToWire(
@@ -181,7 +181,7 @@ export function mapMobileDraftTipCollateralMappingsParamsToWire(
     subaccount: subaccountToHex(params.subaccount),
     product_id: params.productId,
     direction: params.direction,
-    submission_indices: [...params.submissionIndices],
+    submission_indices: [...new Set(params.submissionIndices)],
   };
 }
 

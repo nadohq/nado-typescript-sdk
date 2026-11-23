@@ -1,6 +1,6 @@
 {
   "fixture_version": "2026-11-22-v1",
-  "scope": "Decoded business requests and results aligned with the 22 November 2026 frozen v1 handoff. Mobile authentication and status=success are omitted by this mock adapter; mark_tips_seen null means decoded empty completion, while the real RPC returns {status: success}. Planned PR5 reads and PR6 receipt_push do not imply deployment. Synthetic six-decimal withdrawals cannot authorize transfers. Millisecond times are UTC numbers.",
+  "scope": "Decoded business requests and results aligned with the frozen v1 handoff. Mobile authentication and status=success are omitted by this mock adapter; mark_tips_seen null means decoded empty completion, while the real RPC returns {status: success}. Production MobileClient supplies signed PR5 reads; PR6 receipt_push remains a synthetic UI example. This fixture is not a deployment record. Synthetic six-decimal withdrawals cannot authorize transfers. Millisecond times are UTC numbers.",
   "scenarios": {
     "fee_rejected": {
       "request": {

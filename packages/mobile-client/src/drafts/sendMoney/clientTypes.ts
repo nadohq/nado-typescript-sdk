@@ -244,7 +244,7 @@ export interface GetMobileDraftTipCollateralMappingsParams {
   productId: number;
   /** Source collateral-history direction. */
   direction: MobileDraftTipCollateralDirection;
-  /** One to one hundred distinct source indices, retained as strings. */
+  /** Source indices, deduplicated in first-occurrence order; use one to one hundred unique strings. */
   submissionIndices: string[];
 }
 

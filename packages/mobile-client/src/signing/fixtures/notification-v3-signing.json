@@ -1,0 +1,52 @@
+{
+  "provenance": "App SDK 0.78.0 MessagePack payload hashing and EIP-712 signing primitives, with manual canonical field order and disposable wallet 2.",
+  "chain_id": 1,
+  "endpoint": "0x0101010101010101010101010101010101010101",
+  "signer": "0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF",
+  "vectors": [
+    {
+      "operation": "query",
+      "method": "mobile:query_notification_inbox_v3",
+      "payload_hash": "0xd97e6d3ea391731a702a27c89ab124da0cb70fe1179338bbe5da1b7ab86a3352",
+      "authentication_digest": "0x79b36d592d7155128c4cd98803739b13f7009cf31c62015aebbc7e0b4714abba",
+      "request": {
+        "type": "notification_inbox_v3",
+        "cursor": null,
+        "limit": null,
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0x734b9fb479c8249a9506c04b7f6470cae223a55dd4948d58552b2ff513c13f595c62b2903e321d841870baced473e5c57527170111ab99774528b86fe72090d91c"
+      }
+    },
+    {
+      "operation": "query",
+      "method": "mobile:query_notification_inbox_v3",
+      "payload_hash": "0x4312af7a68c68818c191a4f59ff923601726bd79742b067a10f05a0817beb1a3",
+      "authentication_digest": "0x13fd8f3f8c7266578d0af781f3db91d20e2775946e45103791fc941e8557aca7",
+      "request": {
+        "type": "notification_inbox_v3",
+        "cursor": "11111111-1111-4111-8111-111111111111",
+        "limit": 20,
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0x0ca35b1ad32987b4d0dad0af64ea8486498b06673cfe0b206440e93ed80bd8ae465a6e761d48282fe303a78b795b0d52151822cafe07e3d6a03945cb1c026ffb1b"
+      }
+    },
+    {
+      "operation": "execute",
+      "method": "mobile:execute_mark_notifications_seen",
+      "payload_hash": "0x740b3881e9c5f5d91547606b9ca6eca513b78b8e926fbd71727c36e9641e8269",
+      "authentication_digest": "0x1213b7b2bdf19152ffdc643cd9ec170654f083f8d38cf0eee71f5f5ac79082d3",
+      "request": {
+        "type": "mark_notifications_seen",
+        "notification_ids": [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222"
+        ],
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0xa093f448c9dc8322ffe3ef6608e4f3f3ba6e05f48537fb3c79d91095023ab31e63fd46c6a2a21deff0ee265db4c15dea16c228125f45ce7db61908f0f5d1abf91c"
+      }
+    }
+  ]
+}

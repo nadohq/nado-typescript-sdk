@@ -11,7 +11,10 @@ import { MOBILE_EIP712_METHOD_BY_TYPE } from './eip712MethodByType';
 import { getMobilePayloadHash } from './payloadHash';
 import { MobileSignedInnerByType, MobileSignedRequest } from './types';
 
-type MappingInner = MobileSignedInnerByType<'tips_history'>;
+type MappingInner = Extract<
+  MobileSignedInnerByType<'tips_history'>,
+  { mode: 'collateral_mapping' }
+>;
 interface MappingSigningFixture {
   chain_id: number;
   endpoint: Hex;
@@ -64,7 +67,10 @@ describe('tips_history collateral_mapping signing', () => {
     expect(getMobilePayloadHash(canonical)).toBe(fixture.payload_hash);
     expect(canonical).not.toHaveProperty('cursor');
     expect(canonical).not.toHaveProperty('limit');
-    if (canonical.type !== 'tips_history')
+    if (
+      canonical.type !== 'tips_history' ||
+      canonical.mode !== 'collateral_mapping'
+    )
       throw new Error('Expected collateral mapping');
     expect(canonical.submission_indices).not.toBe(inner.submission_indices);
     expect(inner).toEqual(original);

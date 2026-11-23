@@ -2,14 +2,20 @@ import {
   BigNumberish,
   EIP712WithdrawCollateralV2Values,
   removeDecimals,
+  subaccountFromHex,
   subaccountToHex,
   toBigNumber,
   toIntegerString,
 } from '@nadohq/shared';
-import type { MobileSignedInnerParams } from './signing/types';
+import type BigNumber from 'bignumber.js';
+import type {
+  MobileSignedInnerByType,
+  MobileSignedInnerParams,
+} from './signing/types';
 import {
   GetMobileFollowListParams,
   GetMobileTipCollateralMappingsParams,
+  GetMobileTipsHistoryParams,
   MobileAttributeOrdersResult,
   MobileAvatarPreset,
   MobileAvatarSelection,
@@ -23,6 +29,7 @@ import {
   MobileIdentitySummary,
   MobileNotificationCapabilities,
   MobileNotificationInboxV2,
+  MobileNotificationInboxV3,
   MobileNotificationPayloadV2,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
@@ -30,6 +37,8 @@ import {
   MobileNotificationRoute,
   MobileNotificationSettings,
   MobileNotificationSettingsV2,
+  MobileNotificationSettingsV3,
+  MobileNotificationSettingsV3Values,
   MobileNotificationSubscriptions,
   MobileNotificationSubscriptionsUpdate,
   MobilePositionLookup,
@@ -37,6 +46,7 @@ import {
   MobileProfileSearchPage,
   MobileProfilesInclude,
   MobilePublicProfile,
+  MobileReceivedTipsPage,
   MobileRegisteredWallet,
   MobileSocialFeedActionCandidate,
   MobileSocialFeedActionMarker,
@@ -96,6 +106,14 @@ import {
   MobileSubmitTipParams,
   MobileSubmitTipResult,
   MobileTipCollateralMappings,
+  MobileTipDetail,
+  MobileTipDetailCommon,
+  MobileTipHistoryCommon,
+  MobileTipHistoryRow,
+  MobileTipNotificationData,
+  MobileTipParticipant,
+  MobileTipSenderCost,
+  MobileTipsHistoryPage,
   SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
@@ -122,6 +140,7 @@ import {
   MobileServerNotificationPreferences,
   MobileServerNotificationRoute,
   MobileServerNotificationSettings,
+  MobileServerNotificationSettingsV3,
   MobileServerProductEvent,
   MobileServerProfile,
   MobileServerSocialFeedActionCandidate,
@@ -157,6 +176,13 @@ import {
   MobileServerSocialFeedTradingContext,
   MobileServerSocialFeedTradingTarget,
   MobileServerSocialFeedUploadedImage,
+  MobileServerTipDetail,
+  MobileServerTipDetailCommon,
+  MobileServerTipHistoryRow,
+  MobileServerTipNotificationCommon,
+  MobileServerTipNotificationData,
+  MobileServerTipParticipant,
+  MobileServerTipSenderCost,
   MobileServerTipWithdrawal,
   MobileSocialFeedMention,
 } from './types/serverModelTypes';
@@ -164,10 +190,13 @@ import {
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
   MobileServerNotificationInboxV2Response,
+  MobileServerNotificationInboxV3Response,
   MobileServerNotificationRegistrationV2Response,
   MobileServerNotificationSettingsV2Response,
+  MobileServerNotificationSettingsV3Response,
   MobileServerNotificationSubscriptionsResponse,
   MobileServerPositionLookupResponse,
+  MobileServerReceivedTipsResponse,
   MobileServerRegisteredWalletResponse,
   MobileServerSearchProfilesResponse,
   MobileServerSocialFeedActionResolutionResponse,
@@ -186,6 +215,7 @@ import {
   MobileServerSocialFeedUpdatesResponse,
   MobileServerSocialFeedWatchersResponse,
   MobileServerTipCollateralMappingsResponse,
+  MobileServerTipsHistoryResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerFollowListRequest,
@@ -312,6 +342,30 @@ export function mapMobileNotificationSettingsV2(
   };
 }
 
+/** Maps all ten v3 settings fields, preserving the current revision and an explicit false preference. */
+export function mapMobileNotificationSettingsV3(
+  server: MobileServerNotificationSettingsV3Response,
+): MobileNotificationSettingsV3 {
+  return {
+    schemaVersion: server.schema_version,
+    revision: server.revision,
+    settings: {
+      ...mapMobileNotificationSettings(server.settings),
+      likesAndReplies: server.settings.likes_and_replies,
+    },
+  };
+}
+
+/** Maps a complete v3 settings replacement without changing the existing nine v2 fields. */
+export function mapMobileNotificationSettingsV3ToServer(
+  settings: MobileNotificationSettingsV3Values,
+): MobileServerNotificationSettingsV3 {
+  return {
+    ...mapMobileNotificationSettingsToServer(settings),
+    likes_and_replies: settings.likesAndReplies,
+  };
+}
+
 /** Maps wallet market subscriptions and Identity bells.
  * @param server - Subscription payload.
  * @returns Client subscription state without the response envelope.
@@ -411,6 +465,80 @@ export function mapMobileNotificationInboxV2(
     })),
     nextCursor: server.next_cursor,
   };
+}
+
+/**
+ * Maps a v3 inbox without acknowledging notifications or changing existing notification data.
+ * Tip data retains its server-rendered text and nullable thread targets.
+ * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route or a
+ * route that does not match its notification type.
+ */
+export function mapMobileNotificationInboxV3(
+  server: MobileServerNotificationInboxV3Response,
+): MobileNotificationInboxV3 {
+  return {
+    notifications: server.notifications.map((item) => ({
+      notificationId: item.notification_id,
+      typeId: item.type_id,
+      data: mapMobileNotificationInboxV3Data(item.data),
+      createdAt: item.created_at,
+      tradeWithin24h: item.trade_within_24h,
+      seenAt: item.seen_at,
+    })),
+    nextCursor: server.next_cursor,
+  };
+}
+
+function mapMobileNotificationInboxV3Data(
+  server: MobileServerNotificationPayloadV2 | MobileServerTipNotificationData,
+): MobileNotificationPayloadV2 | MobileTipNotificationData {
+  switch (server.type_id) {
+    case 'tip_received':
+      checkMobileTipNotificationRoute(server.route.name, 'tip');
+      return {
+        ...mapMobileTipNotificationCommon(server),
+        typeId: server.type_id,
+        route: { name: 'tip', tipId: server.route.tip_id },
+      };
+    case 'tip_liked':
+    case 'tip_replied':
+      checkMobileTipNotificationRoute(server.route.name, 'tip_thread');
+      return {
+        ...mapMobileTipNotificationCommon(server),
+        typeId: server.type_id,
+        route: {
+          name: 'tip_thread',
+          tipId: server.route.tip_id,
+          feedItemId: server.route.feed_item_id,
+          originPostId: server.route.origin_post_id,
+          replyItemId: server.route.reply_item_id,
+        },
+      };
+    default:
+      return mapMobileNotificationPayloadV2(server);
+  }
+}
+
+function mapMobileTipNotificationCommon(
+  server: MobileServerTipNotificationCommon,
+) {
+  return {
+    payloadVersion: server.payload_version,
+    notificationId: server.notification_id,
+    recipientWallet: server.recipient_wallet,
+    templateVersion: server.template_version,
+    title: server.title,
+    body: server.body,
+  };
+}
+
+function checkMobileTipNotificationRoute(
+  actual: string,
+  expected: string,
+): void {
+  if (actual !== expected) {
+    throw new MobileUnsupportedNotificationRouteError(actual);
+  }
 }
 
 /** Maps a typed analytics interaction, nulling unused wire fields.
@@ -1943,9 +2071,9 @@ export function mapMobileSubmitTipResult(
 }
 
 /**
- * Maps one attribution request while retaining exact Indexer indices and their order.
+ * Maps one attribution request, deduplicating exact Indexer indices in first-occurrence order.
  * @throws {RangeError} If productId is not a non-negative safe integer or submissionIndices does not
- * contain one to one hundred distinct canonical unsigned 64-bit decimal integers.
+ * contain one to one hundred unique canonical unsigned 64-bit decimal integers after deduplication.
  * @throws {Error} If the target subaccount cannot be encoded as bytes32.
  */
 export function mapMobileTipCollateralMappingsParamsToServer(
@@ -1954,12 +2082,11 @@ export function mapMobileTipCollateralMappingsParamsToServer(
   if (!Number.isSafeInteger(params.productId) || params.productId < 0) {
     throw new RangeError('productId must be a non-negative safe integer.');
   }
+  const submissionIndices = [...new Set(params.submissionIndices)];
   if (
-    params.submissionIndices.length < 1 ||
-    params.submissionIndices.length > 100 ||
-    new Set(params.submissionIndices).size !==
-      params.submissionIndices.length ||
-    params.submissionIndices.some(
+    submissionIndices.length < 1 ||
+    submissionIndices.length > 100 ||
+    submissionIndices.some(
       (index) =>
         !/^(0|[1-9]\d*)$/.test(index) || BigInt(index) > 18446744073709551615n,
     )
@@ -1973,7 +2100,7 @@ export function mapMobileTipCollateralMappingsParamsToServer(
     subaccount: subaccountToHex(params.subaccount),
     product_id: params.productId,
     direction: params.direction,
-    submission_indices: [...params.submissionIndices],
+    submission_indices: submissionIndices,
   };
 }
 
@@ -2022,4 +2149,165 @@ function mapTipWithdrawalInteger(
     );
   }
   return typeof value === 'string' ? value : toIntegerString(integer);
+}
+
+/**
+ * Maps participant history filters to their canonical signed shape, retaining explicit null defaults.
+ * @throws {Error} If a supplied participant subaccount cannot be encoded as bytes32.
+ */
+export function mapMobileTipsHistoryParamsToServer(
+  params: GetMobileTipsHistoryParams,
+): Omit<
+  Extract<MobileSignedInnerByType<'tips_history'>, { mode: 'list' }>,
+  'type'
+> {
+  return {
+    mode: 'list',
+    direction: params.direction ?? 'all',
+    subaccount:
+      params.subaccount == null ? null : subaccountToHex(params.subaccount),
+    cursor: params.cursor ?? null,
+    limit: params.limit ?? null,
+  };
+}
+
+/**
+ * Decodes a required participant identity while preserving missing public profile fields as null.
+ * @throws {Error} If the server returns an invalid bytes32 subaccount.
+ */
+export function mapMobileTipParticipant(
+  participant: MobileServerTipParticipant,
+): MobileTipParticipant {
+  return {
+    subaccount: subaccountFromHex(participant.subaccount),
+    displayName: participant.display_name,
+    avatarUrl: participant.avatar_url,
+  };
+}
+
+/**
+ * Maps role-specific Tip detail without changing read state or exposing fields from the other role.
+ * Verified credit time and exact source indices remain intact when a credited Tip enters review.
+ * @throws {Error} If a participant identity cannot be decoded.
+ */
+export function mapMobileTipDetail(
+  detail: MobileServerTipDetail,
+): MobileTipDetail {
+  const common = mapTipDetailCommon(detail);
+  if (detail.role === 'sender') {
+    return {
+      ...common,
+      role: detail.role,
+      senderCost: mapTipSenderCost(detail.sender_cost),
+      gateway: {
+        status: detail.gateway.status,
+        errorCode: detail.gateway.error_code,
+        errorName: detail.gateway.error_name,
+      },
+      processingReason: detail.processing_reason,
+    };
+  }
+  return {
+    ...common,
+    role: detail.role,
+    seenAt: detail.seen_at,
+  };
+}
+
+/**
+ * Maps mixed participant activity in server order, retaining exact indices and recipient-only read state.
+ * @throws {Error} If a participant identity cannot be decoded.
+ */
+export function mapMobileTipsHistoryPage(
+  page: MobileServerTipsHistoryResponse,
+): MobileTipsHistoryPage {
+  return {
+    tips: page.tips.map(mapTipHistoryRow),
+    nextCursor: page.next_cursor,
+  };
+}
+
+/**
+ * Maps unread verified receipt cards in server order; this read never acknowledges a receipt.
+ * Amounts retain integer x18 units and catalog versions remain opaque strings.
+ * @throws {Error} If a sender identity cannot be decoded.
+ */
+export function mapMobileReceivedTipsPage(
+  page: MobileServerReceivedTipsResponse,
+): MobileReceivedTipsPage {
+  return {
+    tips: page.tips.map((tip) => ({
+      tipId: tip.tip_id,
+      sender: mapMobileTipParticipant(tip.sender),
+      netAmountX18: toBigNumber(tip.net_amount_x18),
+      note: tip.note,
+      backgroundId: tip.background_id,
+      backgroundVersion: tip.background_version,
+      creditedAtMs: tip.credited_at_ms,
+      seenAt: tip.seen_at,
+    })),
+    nextCursor: page.next_cursor,
+  };
+}
+
+function mapTipDetailCommon(
+  detail: MobileServerTipDetailCommon,
+): MobileTipDetailCommon {
+  return {
+    tipId: detail.tip_id,
+    tipStatus: detail.tip_status,
+    version: detail.version,
+    sender: mapMobileTipParticipant(detail.sender),
+    recipient: mapMobileTipParticipant(detail.recipient),
+    productId: detail.product_id,
+    netAmountX18: toBigNumber(detail.net_amount_x18),
+    visibility: detail.visibility,
+    note: detail.note,
+    backgroundId: detail.background_id,
+    backgroundVersion: detail.background_version,
+    originPostId: detail.origin_post_id,
+    originAvailability: detail.origin_availability,
+    feedItemId: detail.feed_item_id,
+    submittedAtMs: detail.submitted_at_ms,
+    creditedAtMs: detail.credited_at_ms,
+    withdrawalSubmissionIdx: detail.withdrawal_submission_idx,
+    depositSubmissionIdx: detail.deposit_submission_idx,
+  };
+}
+
+function mapTipSenderCost(
+  cost: MobileServerTipSenderCost,
+): MobileTipSenderCost {
+  return {
+    maxFeeX18: toBigNumber(cost.max_fee_x18),
+    actualFeeX18: mapTipNullableX18(cost.actual_fee_x18),
+    actualTotalX18: mapTipNullableX18(cost.actual_total_x18),
+    displayFeeX18: toBigNumber(cost.display_fee_x18),
+    displayTotalX18: toBigNumber(cost.display_total_x18),
+    feeBasis: cost.fee_basis,
+  };
+}
+
+function mapTipHistoryRow(row: MobileServerTipHistoryRow): MobileTipHistoryRow {
+  const common: MobileTipHistoryCommon = {
+    tipId: row.tip_id,
+    tipStatus: row.tip_status,
+    sender: mapMobileTipParticipant(row.sender),
+    recipient: mapMobileTipParticipant(row.recipient),
+    productId: row.product_id,
+    netAmountX18: toBigNumber(row.net_amount_x18),
+    visibility: row.visibility,
+    note: row.note,
+    submittedAtMs: row.submitted_at_ms,
+    creditedAtMs: row.credited_at_ms,
+    withdrawalSubmissionIdx: row.withdrawal_submission_idx,
+    depositSubmissionIdx: row.deposit_submission_idx,
+  };
+  return row.role === 'sender'
+    ? { ...common, role: row.role }
+    : { ...common, role: row.role, seenAt: row.seen_at };
+}
+
+function mapTipNullableX18(value: string | null): BigNumber | null {
+  return value === null ? null : toBigNumber(value);
 }

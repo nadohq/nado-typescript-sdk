@@ -7,9 +7,12 @@ import {
   MobileServerNotificationCapabilities,
   MobileServerNotificationDeviceMetadata,
   MobileServerNotificationInboxItem,
+  MobileServerNotificationInboxV3Item,
   MobileServerNotificationPreferences,
   MobileServerNotificationSettings,
+  MobileServerNotificationSettingsV3,
   MobileServerProfile,
+  MobileServerReceivedTipCard,
   MobileServerSocialFeedActionCandidate,
   MobileServerSocialFeedActionMarker,
   MobileServerSocialFeedAuthor,
@@ -30,6 +33,8 @@ import {
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
   MobileServerTipCollateralMapping,
+  MobileServerTipDetail,
+  MobileServerTipHistoryRow,
   MobileSocialFeedActionResolution,
   MobileSocialFeedChartDataQuality,
   MobileSocialFeedHistoryQuality,
@@ -47,8 +52,16 @@ import {
  * Success payloads for each signed `query`, keyed by request `type`.
  */
 export interface MobileServerSignedQueryResponseByType {
-  /** Collateral attributions in submission_indices request order. */
-  tips_history: MobileServerTipCollateralMappingsResponse;
+  /** Collateral attributions or participant history, selected by the request's mode. */
+  tips_history:
+    | MobileServerTipCollateralMappingsResponse
+    | MobileServerTipsHistoryResponse;
+  /** Participant-specific detail with sender-only costs or recipient read state. */
+  tip_detail: MobileServerTipDetail;
+  /** Unseen verified-credit cards, oldest first. */
+  received_tips: MobileServerReceivedTipsResponse;
+  /** Wallet notifications including read timestamps. */
+  notification_inbox_v3: MobileServerNotificationInboxV3Response;
   /** Wallet subscriptions and the signing Identity's bells. */
   notification_subscriptions: MobileServerNotificationSubscriptionsResponse;
   /** Private notification page. */
@@ -59,6 +72,40 @@ export interface MobileServerSignedQueryResponseByType {
 export interface MobileServerTipCollateralMappingsResponse {
   /** One result per requested index, preserving request order and unknown amounts. */
   mappings: MobileServerTipCollateralMapping[];
+}
+
+/** Paginated activity in the server's merged sent/received order. */
+export interface MobileServerTipsHistoryResponse {
+  /** Role-specific history rows without detail-only fees. */
+  tips: MobileServerTipHistoryRow[];
+  /** Opaque continuation cursor, or null at the end. */
+  next_cursor: string | null;
+}
+
+/** Unseen verified-credit cards; reading does not acknowledge them. */
+export interface MobileServerReceivedTipsResponse {
+  /** Cards sorted by verified credit time and Tip UUID, both ascending. */
+  tips: MobileServerReceivedTipCard[];
+  /** Opaque continuation cursor, or null at the end. */
+  next_cursor: string | null;
+}
+
+/** Complete v3 notification settings returned by both reads and updates. */
+export interface MobileServerNotificationSettingsV3Response {
+  /** Notification settings schema version. */
+  schema_version: 3;
+  /** Settings revision, shared with v2 and independent of subscriptions. */
+  revision: number;
+  /** All ten effective settings, including a non-null likes_and_replies flag. */
+  settings: MobileServerNotificationSettingsV3;
+}
+
+/** Newest-first notification inbox including first display acknowledgements. */
+export interface MobileServerNotificationInboxV3Response {
+  /** Accepted notification intents owned by the signing wallet. */
+  notifications: MobileServerNotificationInboxV3Item[];
+  /** Opaque continuation cursor, or null at the end. */
+  next_cursor: string | null;
 }
 
 /**
@@ -266,6 +313,8 @@ export interface MobileServerPublicQueryResponseByType {
   notification_registration_v2: MobileServerNotificationRegistrationV2Response;
   /** Full settings document with its revision. */
   notification_settings_v2: MobileServerNotificationSettingsV2Response;
+  /** Complete settings including likes-and-replies preferences. */
+  notification_settings_v3: MobileServerNotificationSettingsV3Response;
   /** Open position candidates. */
   self_feed_positions: MobileServerSocialFeedPositionsResponse;
   /** Position command resolution. */

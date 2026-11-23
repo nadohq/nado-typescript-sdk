@@ -8,6 +8,7 @@ import {
   MobileSocialFeedMention,
   type MobileServerTipWithdrawal,
   type MobileTipCollateralDirection,
+  type MobileTipsHistoryDirection,
   type MobileTipVisibility,
 } from '../types/serverModelTypes';
 import {
@@ -31,6 +32,54 @@ import {
  * and withdrawal hex values as strings, so their exact original spelling participates in its payload hash.
  */
 export type MobileSignedInner =
+  | {
+      /** Participant-visible detail without changing receipt state. */
+      type: 'tip_detail';
+      /** Durable Tip UUID, distinct from a public Feed item UUID. */
+      tip_id: string;
+    }
+  | {
+      /** Participant activity, distinct from collateral attribution. */
+      type: 'tips_history';
+      /** Selects paginated Tip activity. */
+      mode: 'list';
+      /** Explicit activity direction; all merges sent and received records. */
+      direction: MobileTipsHistoryDirection;
+      /** Owned bytes32 identity, or null for the signer's default scope. */
+      subaccount: Hex | null;
+      /** Opaque cursor, or null for the first page. */
+      cursor: string | null;
+      /** Page size, or null for the server default. */
+      limit: number | null;
+    }
+  | {
+      /** Unseen cards with verified recipient credit. */
+      type: 'received_tips';
+      /** Opaque cursor, or null for the first page. */
+      cursor: string | null;
+      /** Page size, or null for the server default. */
+      limit: number | null;
+    }
+  | {
+      /** Explicit receipt acknowledgement; independent of notification read state. */
+      type: 'mark_tips_seen';
+      /** One to fifty Tip UUIDs actually displayed to the recipient. */
+      tip_ids: string[];
+    }
+  | {
+      /** Wallet notification inbox including first-seen timestamps. */
+      type: 'notification_inbox_v3';
+      /** Opaque cursor, or null for the first page. */
+      cursor: string | null;
+      /** Page size, or null for the server default. */
+      limit: number | null;
+    }
+  | {
+      /** Explicit notification acknowledgement; independent of Tip receipt state. */
+      type: 'mark_notifications_seen';
+      /** One to fifty notification UUIDs actually displayed. */
+      notification_ids: string[];
+    }
   | {
       /** Annotates exact Indexer collateral submissions without list pagination. */
       type: 'tips_history';
@@ -210,19 +259,23 @@ export type MobileSignedInner =
     };
 
 /**
- * The single {@link MobileSignedInner} member carrying the given `type` tag.
+ * The {@link MobileSignedInner} members carrying the given `type` tag. Payloads sharing a type, such as
+ * `tips_history`, remain discriminated by their mode.
  */
 export type MobileSignedInnerByType<T extends MobileSignedInner['type']> =
   Extract<MobileSignedInner, { type: T }>;
 
 /**
  * Type-specific payload fields for a signed inner request of a given `type` (the inner payload without its
- * `type` tag). Derived from {@link MobileSignedInner} so the two never drift apart.
+ * `type` tag). Each mode retains its own fields when multiple payloads share a type. Derived from
+ * {@link MobileSignedInner} so the two never drift apart.
  */
-export type MobileSignedInnerParams<T extends MobileSignedInner['type']> = Omit<
-  MobileSignedInnerByType<T>,
-  'type'
->;
+export type MobileSignedInnerParams<T extends MobileSignedInner['type']> =
+  MobileSignedInnerByType<T> extends infer Inner
+    ? Inner extends MobileSignedInner
+      ? Omit<Inner, 'type'>
+      : never
+    : never;
 
 /**
  * A signed mobile service API request body: the inner payload flattened with its signature, sender, and
