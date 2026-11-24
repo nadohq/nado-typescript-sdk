@@ -8,6 +8,7 @@ import {
   TriggerCancelOrdersParams,
   TriggerCancelProductOrdersParams,
   TriggerListOrdersParams,
+  TriggerListOrdersUnsignedParams,
   TriggerPlaceOrderParams,
 } from '@nadohq/trigger-client';
 import BigNumber from 'bignumber.js';
@@ -71,3 +72,5 @@ export type CancelTriggerProductOrdersParams = OptionalSignatureParams<
 
 export type GetTriggerOrdersParams =
   OptionalSignatureParams<TriggerListOrdersParams>;
+
+export type GetTriggerOrdersUnsignedParams = TriggerListOrdersUnsignedParams;

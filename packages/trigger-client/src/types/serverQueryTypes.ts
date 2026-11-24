@@ -1,5 +1,5 @@
 import { EngineServerExecuteResult } from '@nadohq/engine-client';
-import { EIP712ListTriggerOrdersValues, SignedTx } from '@nadohq/shared';
+import { EIP712ListTriggerOrdersValues } from '@nadohq/shared';
 import { TriggerServerPlaceOrderParams } from './serverExecuteTypes';
 
 export type TriggerServerOrderStatus =
@@ -51,7 +51,10 @@ export type TriggerServerStatusTypeFilter =
   | 'twap_completed'
   | 'otc_pending_resolution';
 
-export interface TriggerServerListTriggerOrdersParams extends SignedTx<EIP712ListTriggerOrdersValues> {
+export interface TriggerServerListTriggerOrdersParams {
+  tx: EIP712ListTriggerOrdersValues;
+  // Can be omitted where the service has list-order signatures disabled
+  signature?: string;
   // If not given, defaults to all products
   product_ids?: number[];
   max_update_time?: number;
