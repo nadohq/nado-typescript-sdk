@@ -41,6 +41,10 @@ export type MobileSignedInner =
       type: 'update_notification_subscriptions';
     } & MobileServerNotificationSubscriptionsUpdate)
   | {
+      /** Signed query for the signing Identity's Creator Rate and earnings. */
+      type: 'creator_earnings_summary';
+    }
+  | {
       /** Signed query for the wallet's private notification page. */
       type: 'notification_inbox_v2';
       /** Previous page cursor, or nil for the first page. */

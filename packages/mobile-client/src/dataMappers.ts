@@ -5,6 +5,7 @@ import {
   MobileAvatarPreset,
   MobileAvatarSelection,
   MobileAvatarUpload,
+  MobileCreatorEarningsSummary,
   MobileFeedPage,
   MobileFeedTrade,
   MobileFollowBatchResultItem,
@@ -147,6 +148,7 @@ import {
   MobileSocialFeedMention,
 } from './types/serverModelTypes';
 import {
+  MobileServerCreatorEarningsSummaryResponse,
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
   MobileServerNotificationInboxV2Response,
@@ -375,6 +377,23 @@ export function mapMobileNotificationPayloadV2(
     typeId: server.type_id,
     templateVersion: server.template_version,
     route: mapMobileNotificationRoute(server.route),
+  };
+}
+
+/** Maps the Creator Rate and earnings, retaining x18 amount units.
+ * @param server - `creator_earnings_summary` payload.
+ * @returns CamelCase rate fields with BigNumber amounts.
+ */
+export function mapMobileCreatorEarningsSummary(
+  server: MobileServerCreatorEarningsSummaryResponse,
+): MobileCreatorEarningsSummary {
+  return {
+    creatorRateBps: server.creator_rate_bps,
+    creatorRateSource: server.creator_rate_source,
+    creatorRateLabel: server.creator_rate_label,
+    creatorRateEndsAtMs: server.creator_rate_ends_at_ms,
+    claimable: toBigNumber(server.claimable_x18),
+    lifetime: toBigNumber(server.lifetime_x18),
   };
 }
 

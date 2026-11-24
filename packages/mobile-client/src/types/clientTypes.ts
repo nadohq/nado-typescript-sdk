@@ -2,6 +2,7 @@ import { SignatureParams, Subaccount } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import { Hex } from 'viem';
 import {
+  MobileCreatorRateSource,
   MobileFeedMarginMode,
   MobileFeedTradePosition,
   MobileFeedTradePositionDirection,
@@ -476,6 +477,22 @@ export interface MobileNotificationInboxV2 {
   nextCursor: string | null;
 }
 
+/** The signing Identity's Creator Rate and earnings. */
+export interface MobileCreatorEarningsSummary {
+  /** Rate that prices the next attributed fill, 0 to 10,000 bps of the net fee. Never re-prices past earnings. */
+  creatorRateBps: number;
+  /** `assigned` while an operator-assigned rate is active, otherwise the service-wide `default`. */
+  creatorRateSource: MobileCreatorRateSource;
+  /** Label of the assigned rate, such as `Founding`; always null for `default`. */
+  creatorRateLabel: string | null;
+  /** End of the assigned rate in Unix milliseconds; null when open-ended and for `default`. */
+  creatorRateEndsAtMs: number | null;
+  /** Earnings not yet paid out, in x18 USD units. Equals `lifetime` until payouts ship. */
+  claimable: BigNumber;
+  /** Sum of every creator earning on this network, in x18 USD units. */
+  lifetime: BigNumber;
+}
+
 /** Analytics event with the fields required by its interaction; unused wire fields are filled with null. */
 export type MobileProductEvent = {
   /** Stable event UUID; reuse across retries. */
@@ -796,6 +813,11 @@ export interface MobileUpdateNotificationSubscriptionsParams extends MobileSigne
   /** Exactly one operation, with the latest subscription revision. */
   update: MobileNotificationSubscriptionsUpdate;
 }
+
+/**
+ * Params for {@link MobileClient.getCreatorEarningsSummary}. The sender must be an Identity Subaccount.
+ */
+export type GetMobileCreatorEarningsSummaryParams = MobileSignedRequestParams;
 
 /**
  * Params for {@link MobileClient.getNotificationInboxV2}; no Expo token is needed.

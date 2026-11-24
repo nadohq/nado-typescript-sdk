@@ -51,6 +51,8 @@ export function canonicalizeMobileInner(
         import_markets:
           inner.import_markets == null ? null : [...inner.import_markets],
       };
+    case 'creator_earnings_summary':
+      return { type: inner.type };
     case 'notification_inbox_v2':
       return {
         type: inner.type,

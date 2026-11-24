@@ -424,6 +424,46 @@ describe('[mobile-client]: signing (offline)', () => {
     });
   });
 
+  // Vector from nado-mobile-be PR #110 (feat/creator-rewards-reads): mobile/tests/fixtures/creator-earnings-signing.json,
+  // signed by disposable wallet 2 for chain 1 and endpoint 0x0101…0101.
+  it('reproduces the backend creator_earnings_summary request byte for byte', async () => {
+    const account = privateKeyToAccount(
+      '0x0000000000000000000000000000000000000000000000000000000000000002',
+    );
+    const walletClient = createWalletClient({
+      account,
+      chain: ink,
+      transport: http(),
+    });
+    const inner: MobileSignedInner = { type: 'creator_earnings_summary' };
+
+    expect(getMobilePayloadHash(canonicalizeMobileInner(inner))).toBe(
+      '0xef0bfdd0eacdc0c724559fcca75f27c61b507bb463306704be13fb6eee4abbad',
+    );
+    expect(MOBILE_EIP712_METHOD_BY_TYPE[inner.type]).toBe(
+      'mobile:query_creator_earnings_summary',
+    );
+
+    const signedRequest = await buildSignedMobileRequest({
+      walletClient,
+      subaccountOwner: account.address,
+      subaccountName: 'default',
+      chainId: 1,
+      verifyingAddr: '0x0101010101010101010101010101010101010101',
+      inner,
+      nonce: 1_795_000_000_000_000_001n,
+    });
+
+    expect(signedRequest).toEqual({
+      type: 'creator_earnings_summary',
+      sender:
+        '0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000',
+      nonce: '1795000000000000001',
+      signature:
+        '0x8d7f3b2fa0305107d948fa68913d2c625e5b67dea0c40b1617977067c8a90d04655a1b0fb3bfc8603efcd2e425a75635ec8566b5c5a812017c2b0db97d2731f31c',
+    });
+  });
+
   it('signs a request that recovers to the expected signer with a correctly flattened body', async () => {
     const account = privateKeyToAccount(FIXED_PRIVATE_KEY);
     const walletClient = createWalletClient({
