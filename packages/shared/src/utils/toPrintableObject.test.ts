@@ -41,15 +41,43 @@ describe('toPrintableObject', () => {
     expect(input.values[3]).toBeUndefined();
   });
 
-  it('keeps circular object and already-visited object handling', () => {
+  it('marks circular objects but prints shared objects each time', () => {
     const shared = { value: 1 };
     const input: Record<string, unknown> = { first: shared, second: shared };
     input.self = input;
 
     expect(toPrintableObject(input)).toEqual({
       first: { value: 1 },
-      second: '[Circular]',
+      second: { value: 1 },
       self: '[Circular]',
+    });
+  });
+
+  it('prints an object shared by array elements each time', () => {
+    const shared = { value: 1 };
+
+    expect(toPrintableObject([shared, shared])).toEqual([
+      { value: 1 },
+      { value: 1 },
+    ]);
+  });
+
+  it('prints a shared array each time', () => {
+    const shared = [1, 2];
+
+    expect(toPrintableObject({ first: shared, second: shared })).toEqual({
+      first: [1, 2],
+      second: [1, 2],
+    });
+  });
+
+  it('marks the cycle inside every copy of a shared circular object', () => {
+    const shared: Record<string, unknown> = { value: 1 };
+    shared.self = shared;
+
+    expect(toPrintableObject({ first: shared, second: shared })).toEqual({
+      first: { value: 1, self: '[Circular]' },
+      second: { value: 1, self: '[Circular]' },
     });
   });
 
