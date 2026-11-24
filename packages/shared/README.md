@@ -16,11 +16,11 @@ On-chain contract addresses by environment via `NADO_DEPLOYMENTS`.
 
 ### `consts`
 
-Chain environment mappings (`chainEnvToChain`), product ID constants, and chain configurations.
+Chain environment mappings (`CHAIN_ENV_TO_CHAIN`, `CHAIN_ID_TO_CHAIN_ENV`), product ID constants, and chain configurations.
 
 ### `eip712`
 
-EIP-712 typed signing for Nado transactions: `getSignedTransactionRequest`, `getNadoEIP712Values`, `getNadoEIP712Types`, `getNadoEIP712Domain`, `orderDigest`, and signable request type definitions.
+EIP-712 typed signing for Nado transactions: `getSignedTransactionRequest`, `getNadoEIP712Values`, `getNadoEIP712Types`, `getNadoEIP712Domain`, `getOrderDigest`, and signable request type definitions.
 
 ### `execute`
 
@@ -32,7 +32,7 @@ Core type definitions: `ChainEnv`, market/subaccount/order/product types, `Walle
 
 ### `utils`
 
-- **Math**: `BigDecimal` helpers, `sumBigNumberBy`, `toBigInt`, `toIntegerString`, `clamp`, decimal adjustment
+- **Math**: `toBigNumber`, `BigNumbers`, `sumBigNumberBy`, `toBigInt`, `toIntegerString`, `clampBigNumber`, decimal adjustment
 - **Orders**: nonce generation, appendix packing/unpacking, `recvTime`
 - **Bytes**: `bytes32` encoding/decoding, hex validation, address validation
 - **Errors**: `WalletNotProvidedError`
@@ -42,22 +42,26 @@ Core type definitions: `ChainEnv`, market/subaccount/order/product types, `Walle
 
 ```ts
 import {
+  CHAIN_ENV_TO_CHAIN,
   NADO_DEPLOYMENTS,
   NADO_ABIS,
+  getOrderVerifyingAddress,
   getSignedTransactionRequest,
   depositCollateral,
-  BigDecimal,
 } from '@nadohq/shared';
 
 // Get contract addresses for mainnet
 const addresses = NADO_DEPLOYMENTS.inkMainnet;
 
-// Sign an EIP-712 transaction
-const signed = await getSignedTransactionRequest({
+// Sign an EIP-712 order: orders are verified against the product's orderbook address,
+// other requests against `addresses.endpoint`
+const productId = 2;
+const signature = await getSignedTransactionRequest({
   requestType: 'place_order',
-  params: { ... },
+  requestParams: { ... },
+  chainId: CHAIN_ENV_TO_CHAIN.inkMainnet.id,
+  verifyingContract: getOrderVerifyingAddress(productId),
   walletClient,
-  verifyingAddress: addresses.endpoint,
 });
 ```
 
