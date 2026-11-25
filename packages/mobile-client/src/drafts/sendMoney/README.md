@@ -1,10 +1,10 @@
 # Send Money frontend mock adapter
 
-This adapter follows the **23 November 2026 v1** Send Money API handoff. The request fields, response
-fields, enums, and nullability are frozen by that document. The backend currently implements
-`submit_tip` (PR3), `tips_history(mode=collateral_mapping)` (PR4), and the PR5 private detail, activity
-history, unseen-card, and acknowledgement operations. The production `MobileClient` provides their
-signed HTTP methods; this separate adapter remains useful for injected frontend mocks.
+This adapter uses the Tip field contract retained by the **25 November 2026** testnet deployment
+[`450684e`](https://github.com/nadohq/nado-mobile-be/actions/runs/45492386197). Its six Tip operations are
+`submit_tip`, both `tips_history` modes, `tip_detail`, `received_tips`, and `mark_tips_seen`. The formal
+`MobileClient` provides their signed HTTP methods; this separate adapter remains useful for injected
+frontend mocks. Deployment on another environment must be checked separately.
 
 `MobileSendMoneyDraftClient` requires an explicit `MobileSendMoneyDraftTransport`. Its six transport
 methods distinguish the two `tips_history` modes and consume decoded business requests/results, without
@@ -36,11 +36,20 @@ and user confirmation. A separate reconfirmation request sends the new confirmed
 version while retaining the original withdrawal nonce and signature. Historical Gateway rejection names
 alone do not authorize retry. `gateway.status='not_submitted'` is preserved.
 
+For sender presentation, `sending` means Sent. An uncredited `review_required` Tip also means Sent
+when the receipt or sender detail has `gateway.status='accepted'`; unresolved execution remains Sending.
+History rows have no Gateway fields, so use that Tip's detail when a reviewed outgoing row needs this
+distinction. The adapter does not infer a status or retry from a historical Gateway rejection alone.
+
 Reading cards, detail, or history never marks Tips seen. Only acknowledge the Tip IDs actually displayed;
 notification acknowledgement uses different IDs. A verified `creditedAtMs` remains meaningful when a Tip
 later enters review, and its unseen card remains eligible. Sender detail includes cost, Gateway, and
 processing reason; recipient detail exposes `seenAt` and excludes those sender-only fields. Unseen cards
 always return `seenAt=null`.
+
+The sender cost basis `not_executed` requires sufficient evidence that the withdrawal did not execute
+and that the submission has terminated. Its actual fee, actual total, display fee, and display total
+are all zero. Pending or conflicting execution evidence must not be converted into this basis locally.
 
 Injected adapters must enforce current authorization. Owners can access their wallet's participants;
 linked signers need authorization for both the outer sender and relevant participant subaccount. With
@@ -48,16 +57,26 @@ history subaccount omitted or `null`, owners read wallet-wide activity and linke
 outer sender's subaccount. Preserve backend history order, which merges sent submission times and
 received verified-credit times; do not resort the mixed page by one timestamp.
 
-Collateral pagination remains with Indexer. The adapter deduplicates exact string indices in first-occurrence
-order without modifying caller-owned arrays. Merge annotations by index
-within the same subaccount, product, and direction. Retain complete mappings; requery pending deposits in
-batches of at most four using fresh outer signatures in a live integration. Review/pending rows may have
-verified principal while split amounts remain unknown. Withdrawal mappings never describe recipient
-delivery and keep deposit total and ordinary amount `null`.
+Activity's Tips, Deposits, and Withdrawals tabs remain independent. Deposits and Withdrawals keep their
+Indexer pagination and original amounts; collateral mapping is an optional attribution tool, not a
+prerequisite for any tab. The adapter deduplicates exact string indices in first-occurrence order without
+modifying caller-owned arrays. Merge annotations by index within the same subaccount, product, and
+direction. Retain complete mappings and requery only pending entries when the tool needs fresh attribution,
+using fresh outer signatures in a live integration. A complete ordinary deposit may have zero Tip total
+and null deposit total and ordinary amount; use its Indexer amount and do not retry that completed row.
+Review/pending rows may retain verified principal while split amounts remain unknown. Withdrawal mappings
+never describe recipient delivery and keep deposit total and ordinary amount `null`.
 
-Production `MobileClient` APIs provide submission, collateral mapping, the four PR5 operations, and PR2
-v3 Inbox/settings with the canonical signing protocols. Use those methods for live HTTP integration;
-this adapter's decoded transport does not supply authentication. Inbox/settings remain outside this
-mock adapter. Tip push routes, device capability additions, public Tip Feed reads, and thread grouping
-remain planned features and are not enabled by this adapter. Feed ordering belongs to the server, and
+The current testnet handoff specifies notification v2 Inbox/settings and `mark_notifications_seen`,
+separate from Tip read receipts. `MobileClient` provides their formal transports: v2 Inbox entries include
+`seenAt`, and its query accepts optional `supportedTypes` filters. Settings use schema 2 and an optional
+`likesAndReplies` write: omission preserves the saved preference, while an explicit false disables it.
+Retained notification v3 SDK methods do not imply deployment by this handoff. Notification operations
+remain outside this mock adapter; its decoded transport does not supply authentication.
+
+Feed preview totals are also outside this adapter. The service counts only Tips to the original author
+that are public, currently credited, and satisfy Feed visibility. A credit later under review remains in
+participant history but leaves the preview total; display the server aggregate even when it decreases.
+The preview uses existing Feed requests and does not enable Tip push routes, device capability additions,
+public Tip items, `include_tips`, or PR8 grouping and anchors. Feed ordering belongs to the server, and
 temporary own-reply pinning belongs to the App.

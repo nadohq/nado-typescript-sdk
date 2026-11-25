@@ -46,12 +46,14 @@ await mobile.setUsername({
 
 ### Send Money
 
-The 23 November 2026 handoff identifies submission, collateral mapping, PR5 participant reads and receipt
-acknowledgements, and PR2 notification v3 as implemented backend operations. `submitTip` authenticates an already owner-signed `WithdrawCollateralV2`
-through Mobile. Confirm that the selected environment has deployed the operation and configured its
-Tip background catalog and credit reconciliation before enabling live submission. The inner withdrawal
-requires the owner, while the outer Mobile authorization can use the current linked signer. Both senders
-must identify the exact same subaccount.
+The [25 November 2026 testnet deployment](https://github.com/nadohq/nado-mobile-be/actions/runs/45492386197)
+at `450684e` provides the six Tip operations and four notification v2 operations listed below. This
+deployment record does not establish availability on other environments. The SDK retains its notification
+v3 methods, but this testnet handoff guarantees the v2 routes and schema rather than their v3 counterparts.
+
+`submitTip` authenticates an already owner-signed `WithdrawCollateralV2` through Mobile. The inner
+withdrawal requires the owner, while the outer Mobile authorization can use the current linked signer.
+Both senders must identify the exact same subaccount, and the recipient must belong to another wallet.
 
 Query `engine.getDynamicFeeQuote({ ...senderSubaccount, kind: 'withdrawal', productId: 0 })` for the fee
 and `engine.getMaxWithdrawable({ ...senderSubaccount, productId: 0, spotLeverage: false })` for the
@@ -81,7 +83,18 @@ with product 0, an amount in native USDT0 units, the recipient DDA as `sendTo`, 
 The fee cap uses x18 units and must equal the fee explicitly confirmed by the user. Mobile handles
 dispatch with borrowing disabled. Calling an Engine withdrawal execute method bypasses the Tip flow.
 
-Read the returned `tipStatus` and `processingReason`, including when HTTP and Mobile transport succeeded.
+At `450684e`, testnet requires a minimum net amount of 5 USDT0, encoded as `"5000000"` in the
+six-decimal native withdrawal amount. It configures 18 backgrounds: `celebration`, `tip-plain`, and
+`tip-01` through `tip-16`. These are environment settings, not SDK constants. Submit only the selected
+`backgroundId`; the server fixes the background version at admission.
+
+Read the returned `tipStatus`, `gateway.status`, and `processingReason`, including when HTTP and Mobile
+transport succeeded. For the sender, `sending` means Sent. A `review_required` Tip without verified
+recipient credit also means Sent when its submission receipt or sender detail reports
+`gateway.status === 'accepted'`; an unresolved execution remains Sending. A verified `creditedAtMs`
+preserves completed history for both participants even if the current status later enters review.
+Before verified credit, the recipient cannot read the Tip detail.
+
 For lost responses, preserve the original withdrawal, its nonce/signature, business fields, and fee cap;
 only the outer Mobile authentication can be renewed. When `tipStatus === 'failed'` and
 `processingReason === 'FEE_TOO_LOW'`, fetch a fresh Gateway withdrawal quote for the original sending
@@ -91,8 +104,13 @@ Repeat this quote/confirmation flow if the same signal returns. A historical Gat
 not authorize reconfirmation; the backend checks the nonce and execution evidence again. A 503/1006
 during that check preserves the existing Tip. The SDK never increases a cap or retries automatically.
 
-`getTipCollateralMappings` signs `tips_history(mode=collateral_mapping)` through `/query`, using the
-handoff's canonical field order and pinned MessagePack/EIP-712 vector:
+Activity's Tips, Deposits, and Withdrawals tabs are independent. Tips use `getTipsHistory`; Deposits and
+Withdrawals retain their existing Indexer pagination and original amounts. Do not hide or reduce an
+Indexer entry because a separate Tip or attribution record exists.
+
+`getTipCollateralMappings` is an optional attribution tool, not a prerequisite for those three tabs. It
+signs `tips_history(mode=collateral_mapping)` through `/query`, using the handoff's canonical field order
+and pinned MessagePack/EIP-712 vector:
 
 ```ts
 const { mappings } = await mobile.getTipCollateralMappings({
@@ -111,28 +129,34 @@ const { mappings } = await mobile.getTipCollateralMappings({
 ```
 
 The target must share the outer sender's owning wallet. An owner can query any of its subaccounts.
-A linked signer needs current authorization on both the outer sender and target subaccounts. Continue paging ordinary
-collateral events through Indexer, then query their indices. The SDK deduplicates before signing in
+A linked signer needs current authorization on both the outer sender and target subaccounts. When an
+attribution tool needs to inspect Indexer entries, query their exact indices. The SDK deduplicates before signing in
 first-occurrence order without changing the input array, allowing 1–100 unique indices per request. Indices are
 exact decimal strings; amounts remain `BigNumber` values in x18 units, with unknown amounts preserved as
 `null`. Results retain request order. Within the same subaccount, product, and direction, merge by
 `submissionIdx`, retain `complete` entries, and requery only `pending` entries with fresh outer signatures.
-Retry cold deposits in batches of at most four. Display `review_required` for review; a new page refresh
-can query all its indices again. Withdrawal mapping describes sender-side attribution, not recipient
-delivery. The SDK performs one query per call and leaves polling to the caller.
+A `complete` / `ordinary` deposit may have `tipTotalX18` equal to zero while `depositTotalX18` and
+`ordinaryAmountX18` are both null. Keep its original Indexer amount and do not retry a completed
+classification merely to fill those nulls. Pending or review rows can retain a verified principal while
+their split remains unknown. Withdrawal mapping describes sender-side attribution, not recipient delivery;
+its deposit total and ordinary amount stay null. The SDK performs one query per call and leaves any
+necessary polling to the tool.
 
-The following methods use the formal HTTP transport and canonical signing protocols:
+The current testnet handoff covers these formal HTTP methods. Signed operations use the canonical
+MessagePack/EIP-712 protocols:
 
 | Method | Operation | Route |
 | --- | --- | --- |
+| `submitTip` | `submit_tip` | Signed `/execute` |
+| `getTipCollateralMappings` | `tips_history(mode=collateral_mapping)` | Signed `/query` |
 | `getTipDetail` | `tip_detail` | Signed `/query` |
 | `getTipsHistory` | `tips_history(mode=list)` | Signed `/query` |
 | `getReceivedTips` | `received_tips` | Signed `/query` |
 | `markTipsSeen` | `mark_tips_seen` | Signed `/execute` |
-| `getNotificationInboxV3` | `notification_inbox_v3` | Signed `/query` |
+| `getNotificationInboxV2` | `notification_inbox_v2` | Signed `/query` |
 | `markNotificationsSeen` | `mark_notifications_seen` | Signed `/execute` |
-| `getNotificationSettingsV3` | `notification_settings_v3` | `/public_query` with an active Expo token |
-| `updateNotificationSettingsV3` | `update_notification_settings_v3` | `/public_execute` with an active Expo token |
+| `getNotificationSettingsV2` | `notification_settings_v2` | `/public_query` with an active Expo token |
+| `updateNotificationSettingsV2` | `update_notification_settings_v2` | `/public_execute` with an active Expo token |
 
 History defaults to `direction: 'all'`. Omitted `subaccount`, `cursor`, and `limit` are sent and signed as
 explicit `null`. Owners default to wallet-wide history; linked signers default to the outer sender's
@@ -140,23 +164,37 @@ subaccount and need current authorization for the selected participants. Preserv
 opaque cursors. Versions and source indices remain strings, and amounts ending in `X18` remain integer
 `BigNumber` values in x18 units.
 
+History rows omit `gateway` and the fee breakdown. For an uncredited outgoing row in `review_required`,
+read that Tip's sender detail when the UI needs to distinguish Sent from Sending. Other rows normally
+need only their list fields.
+
 Sender detail includes `senderCost`, `gateway`, and `processingReason`; recipient detail includes `seenAt`
 and omits those sender-only fields. A verified `creditedAtMs` establishes delivery even when the current
 status later becomes `review_required`. `TIP_NOT_FOUND` (6703) covers missing or inaccessible details and
 receipt acknowledgements, including recipient access before verified credit.
 
+`senderCost.feeBasis === 'not_executed'` requires sufficient evidence that the original withdrawal did
+not execute and that the submission has terminated. Its `actualFeeX18`, `actualTotalX18`, `displayFeeX18`,
+and `displayTotalX18` are all zero. A failed attempt, historical Gateway rejection, or pending review alone
+does not establish that basis. For `execution_cap`, actual amounts remain null and the display amounts
+show the approved fee cap and net amount plus that cap; label them as a cap. For `actual`, display the
+verified actual values.
+
 Reads never acknowledge Tips or notifications. Call `markTipsSeen` only for displayed Tip IDs and
 `markNotificationsSeen` only for displayed notification IDs; these are independent read states. Both
 accept 1–50 IDs, let the server deduplicate and authorize atomically, and return `{ status: 'success' }`.
 
-Notification v3 settings add `likesAndReplies` to the nine v2 fields and use `schemaVersion: 3`. Send all
-ten fields with the latest settings revision; re-read on 6203 conflicts instead of replaying a stale
-document. Older settings writes preserve a saved `likesAndReplies` value. V3 Inbox entries preserve
-`createdAt` and nullable `seenAt`; existing notification data retains its v2 shape.
+On this testnet, notification settings use `schemaVersion: 2` and include the effective
+`likesAndReplies` preference. The nine original settings are required on replacement; omit
+`likesAndReplies` to preserve its saved value, or send an explicit boolean to change it, including
+`false`. New wallets default to true. Re-read on 6203 conflicts instead of replaying a stale document.
+V2 Inbox entries preserve `createdAt` and nullable `seenAt`; existing notification data keeps its shape.
+The retained v3 SDK methods use their separate schema and request types and are not the routes specified
+by this testnet deployment record.
 
-Tip push generation, device capability additions, public Tip Feed reads, and thread grouping remain
-planned backend work in this handoff. V3 Inbox types can represent the specified Tip notification data,
-but do not advertise new device capabilities. `MobileSendMoneyDraftClient` remains available for mock
+PR6 Tip push generation and device additions, full PR7 public Tip Feed reads, and PR8 thread grouping
+are not deployed in this testnet environment. V3 Inbox types can represent the specified Tip notification
+data, but do not advertise new device capabilities. `MobileSendMoneyDraftClient` remains available for mock
 development with an injected decoded-business transport, without default HTTP or signing behavior.
 See [the draft adapter](src/drafts/sendMoney/README.md).
 
@@ -195,6 +233,46 @@ using the returned `viewerToken`. All are unsigned. Profile, position, and item 
 account's own hidden content under `account_view`; the viewing account is not proof of wallet ownership.
 Prices are decimal `BigNumber` values; quantities, notionals, and PnL retain x18 units. See method and
 parameter JSDoc for session and polling rules.
+
+Feed lists and item details expose `capabilities.canTip` using the existing request parameters. Show
+the tip button only when it is exactly `true` and the author wallet differs from the connected wallet
+(compare addresses case-insensitively). An omitted capability does not enable tipping.
+For a post or trade-card Tip, pass the item's `id` as `originPostId` and
+`subaccountFromHex(item.author.subaccount)` as `recipientSubaccount`.
+
+Original posts and trade cards can also include `publicTipTotalX18`, a `BigNumber` retaining the wire
+`public_tip_total_x18` USDT0 x18 units. Omission hides the amount; an explicit zero means there are no
+qualifying Tips. `getFeedUpdates` item patches include updated totals; an omitted patch field leaves
+the existing value unchanged. When a patch includes `capabilities`, replace the whole flags object so
+an omitted `canTip` cannot retain an older true value. For example, with an optional connected
+`currentWalletAddress`:
+
+```ts
+import { removeDecimals, subaccountFromHex } from '@nadohq/shared';
+
+const { item } = await mobile.getFeedItem({
+  itemId: 'a62b3a6e-1c45-43fa-9732-f4a12a36eae1',
+});
+const authorWallet = subaccountFromHex(item.author.subaccount).subaccountOwner;
+const showTipButton =
+  item.capabilities.canTip === true &&
+  currentWalletAddress !== undefined &&
+  authorWallet.toLowerCase() !== currentWalletAddress.toLowerCase();
+const publicTipAmount =
+  (item.kind === 'post' || item.kind === 'trade_card') &&
+  item.publicTipTotalX18 !== undefined
+    ? removeDecimals(item.publicTipTotalX18).toFixed()
+    : undefined;
+```
+
+These totals are currently a testnet preview: `"15000000000000000000"` displays as `15` USDT0.
+The server sums only Tips addressed to the original post's author, with `visibility === 'public'`,
+current `tipStatus === 'credited'`, and the required Feed visibility. Display the returned aggregate
+directly. A verified credit later placed in `review_required` remains in participant history but no
+longer contributes to this preview, so a later total may decrease. Do not recompute it from participant
+history or keep an older higher total. This preview uses the existing For You, Friends, item, and update
+requests; it does not add `include_tips`, a public Tip item kind, `feed_types: ['tips']`, public lookup by
+Tip ID, or PR8 thread anchors and grouping.
 
 `getSelfFeedPositions`, `resolveFeedPosition`, and `resolveFeedAction` require `viewAs` and return eligibility
 hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
@@ -456,21 +534,36 @@ await mobile.updateNotificationSubscriptions({
   },
 });
 const updatedSubscriptions = await mobile.getNotificationSubscriptions(auth);
-const inbox = await mobile.getNotificationInboxV2({ ...auth, limit: 20 });
+const inbox = await mobile.getNotificationInboxV2({
+  ...auth,
+  limit: 20,
+  supportedTypes: ['deposit_completed', 'new_follower'],
+});
+// Acknowledge only notification IDs that were actually displayed.
+await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotificationIds });
 ```
 
 - Declare only types/routes the application handles. Re-registration advances the generation and cancels
   old pending deliveries; calling legacy `registerExpoToken` resets capabilities to v1.
-- Settings replacement requires every field. Settings and subscription revisions are independent.
+- The deployed v2 settings document has `schemaVersion: 2`. Replacement requires the nine original fields;
+  optional `likesAndReplies` preserves its saved value when omitted, while explicit false disables it.
+  Copy the current document and change only the user's choice. Settings and subscription revisions are independent.
   On `MOBILE_ERROR_CODES.NOTIFICATION_REVISION_CONFLICT` (6203), re-read and merge only the current user change.
 - A subscription update selects exactly one operation; omit the other operations and the SDK sends them as `null`. Successful subscription
   updates return only status, so re-query even after repeated ON/OFF. Favorites import merges once, never replaces.
 - Enabling a bell requires following the target. Unfollowing clears its bell without advancing the subscription
   revision; refresh subscriptions after follow mutations. Bells are Identity-scoped; markets are wallet-scoped.
   Pass `traderBell.subaccount` as a `Subaccount` (`subaccountOwner` and `subaccountName`); the SDK encodes it for signing.
-- Inbox pages are accepted intents, not delivery/read receipts. There is no title/body, unread count, mark-read,
-  or delete operation. Do not use the unimplemented legacy `notification_history` route.
+- V2 Inbox pages contain accepted intents with `createdAt` and first-display `seenAt` in UTC milliseconds;
+  unseen entries have `seenAt: null`. Reading does not acknowledge them, and `markNotificationsSeen`
+  updates notification read state independently of Tip receipts. Push delivery remains separate.
+  Existing notification data has no title/body, and these pages provide no unread count or delete operation.
+  Do not use the unimplemented legacy `notification_history` route.
   An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`.
+- `supportedTypes` is optional: omission selects the existing v2 types and `[]` returns an empty page.
+  It accepts at most 64 names, each containing 1–64 lowercase ASCII letters, digits, or underscores.
+  The canonical signed field order is `type`, `cursor`, `limit`, then `supported_types` only when supplied;
+  omitted cursor and limit remain explicit null. Keep the same filters when paging.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,
   actual millisecond timestamps, and stable `clientEventId` UUIDs across retries. The SDK fills unused wire fields with `null`. Supported
   names are `notif_opened`, `market_viewed`, `chart_opened`, and `search`; obtain analytics consent first.

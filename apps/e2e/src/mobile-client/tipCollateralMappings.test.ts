@@ -72,6 +72,33 @@ void describe(
         if (direction === 'withdrawal') {
           assert.equal(mapping.depositTotalX18, null);
           assert.equal(mapping.ordinaryAmountX18, null);
+        } else {
+          if (
+            mapping.mappingState === 'complete' &&
+            mapping.classification === 'ordinary'
+          ) {
+            assert.ok(
+              mapping.tipTotalX18 !== null && mapping.tipTotalX18.isZero(),
+            );
+            if (mapping.depositTotalX18 === null) {
+              assert.equal(mapping.ordinaryAmountX18, null);
+            } else {
+              assert.ok(mapping.ordinaryAmountX18 !== null);
+              assert.ok(mapping.ordinaryAmountX18.eq(mapping.depositTotalX18));
+            }
+          }
+          if (
+            mapping.mappingState === 'complete' &&
+            mapping.depositTotalX18 !== null &&
+            mapping.tipTotalX18 !== null &&
+            mapping.ordinaryAmountX18 !== null
+          ) {
+            assert.ok(
+              mapping.depositTotalX18.eq(
+                mapping.tipTotalX18.plus(mapping.ordinaryAmountX18),
+              ),
+            );
+          }
         }
       });
     }

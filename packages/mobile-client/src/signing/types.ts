@@ -137,6 +137,8 @@ export type MobileSignedInner =
       cursor: string | null;
       /** Page size, or nil for the server default. */
       limit: number | null;
+      /** Optional type filter appended when present; an empty array requests an empty page. */
+      supported_types?: string[];
     }
   | {
       /** Atomic product analytics batch. */

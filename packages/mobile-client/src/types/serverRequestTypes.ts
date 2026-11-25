@@ -391,7 +391,7 @@ export interface MobileServerPublicExecuteRequestByType {
   update_notification_settings_v2: MobileServerWithExpoTokenParams & {
     /** Latest settings revision. */
     expected_revision: number;
-    /** Complete settings document. */
+    /** Nine original fields, plus optional likes_and_replies; omission preserves its saved value. */
     settings: MobileServerNotificationSettings;
   };
 

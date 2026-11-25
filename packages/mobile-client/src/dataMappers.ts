@@ -53,6 +53,7 @@ import {
   MobileSocialFeedActionResolutionResult,
   MobileSocialFeedAuthor,
   MobileSocialFeedCandle,
+  MobileSocialFeedCapabilities,
   MobileSocialFeedCommentGroup,
   MobileSocialFeedCommentResult,
   MobileSocialFeedCommentsPage,
@@ -147,6 +148,7 @@ import {
   MobileServerSocialFeedActionMarker,
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
+  MobileServerSocialFeedCapabilities,
   MobileServerSocialFeedCommentGroup,
   MobileServerSocialFeedCompactCard,
   MobileServerSocialFeedContentBase,
@@ -305,6 +307,9 @@ export function mapMobileNotificationSettings(
     newFollowers: server.new_followers,
     announcements: server.announcements,
     discovery: server.discovery,
+    ...(server.likes_and_replies === undefined
+      ? {}
+      : { likesAndReplies: server.likes_and_replies }),
   };
 }
 
@@ -325,6 +330,9 @@ export function mapMobileNotificationSettingsToServer(
     new_followers: settings.newFollowers,
     announcements: settings.announcements,
     discovery: settings.discovery,
+    ...(settings.likesAndReplies === undefined
+      ? {}
+      : { likes_and_replies: settings.likesAndReplies }),
   };
 }
 
@@ -461,6 +469,7 @@ export function mapMobileNotificationInboxV2(
       typeId: item.type_id,
       data: mapMobileNotificationPayloadV2(item.data),
       createdAt: item.created_at,
+      seenAt: item.seen_at,
       tradeWithin24h: item.trade_within_24h,
     })),
     nextCursor: server.next_cursor,
@@ -1017,6 +1026,17 @@ export function mapMobileSocialFeedImage(
   };
 }
 
+function mapMobileSocialFeedCapabilities(
+  server: MobileServerSocialFeedCapabilities,
+): MobileSocialFeedCapabilities {
+  return {
+    canLike: server.can_like,
+    canComment: server.can_comment,
+    canRecordView: server.can_record_view,
+    ...(server.can_tip === undefined ? {} : { canTip: server.can_tip }),
+  };
+}
+
 /**
  * Maps common item metadata and server capabilities.
  * @param server - The service response.
@@ -1037,11 +1057,7 @@ export function mapMobileSocialFeedItemBase(
     displayAtMs: server.display_at_ms,
     version: server.version,
     market: mapMobileSocialFeedMarket(server.market),
-    capabilities: {
-      canLike: server.capabilities.can_like,
-      canComment: server.capabilities.can_comment,
-      canRecordView: server.capabilities.can_record_view,
-    },
+    capabilities: mapMobileSocialFeedCapabilities(server.capabilities),
   };
 }
 
@@ -1065,6 +1081,9 @@ export function mapMobileSocialFeedContentBase(
       totalCount: server.comment_preview.total_count,
       nextCursor: server.comment_preview.next_cursor,
     },
+    ...(server.public_tip_total_x18 === undefined
+      ? {}
+      : { publicTipTotalX18: toBigNumber(server.public_tip_total_x18) }),
   };
 }
 
@@ -1279,6 +1298,12 @@ export function mapMobileSocialFeedItemPatch(
     ...(server.interaction === undefined
       ? {}
       : { interaction: mapMobileSocialFeedInteraction(server.interaction) }),
+    ...(server.capabilities === undefined
+      ? {}
+      : { capabilities: mapMobileSocialFeedCapabilities(server.capabilities) }),
+    ...(server.public_tip_total_x18 === undefined
+      ? {}
+      : { publicTipTotalX18: toBigNumber(server.public_tip_total_x18) }),
     ...(server.trade_count === undefined
       ? {}
       : { tradeCount: server.trade_count }),

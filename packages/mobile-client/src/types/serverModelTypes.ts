@@ -298,7 +298,7 @@ export interface MobileServerNotificationCapabilities {
 }
 
 /**
- * Server-side wallet settings; all fields are required on replacement.
+ * Server-side wallet settings; the original nine fields are required on replacement.
  */
 export interface MobileServerNotificationSettings {
   /** Own position milestones and the initial weekly digest. */
@@ -319,6 +319,8 @@ export interface MobileServerNotificationSettings {
   announcements: boolean;
   /** Opt-in trader streak and account drama discovery notifications. */
   discovery: boolean;
+  /** Like/reply preference; omission on v2 writes preserves the saved value, defaulting to true. */
+  likes_and_replies?: boolean;
 }
 
 /** Full v3 notification settings, including the wallet's saved social interaction preference. */
@@ -367,17 +369,19 @@ export interface MobileServerNotificationPayloadV2 {
 }
 
 /**
- * Server-side accepted logical notification; does not prove device delivery or read status.
+ * Server-side accepted logical notification with first-seen state; does not prove device delivery.
  */
 export interface MobileServerNotificationInboxItem {
   /** Logical notification UUID. */
   notification_id: string;
   /** Registered notification type. */
   type_id: MobileNotificationTypeId;
-  /** Navigation data, without title, body, or read state. */
+  /** Navigation data, without title or body. */
   data: MobileServerNotificationPayloadV2;
   /** Intent acceptance time in milliseconds. */
   created_at: number;
+  /** First acknowledgement in UTC milliseconds, or null while unread. */
+  seen_at: number | null;
   /** Backend-computed trade attribution. */
   trade_within_24h: boolean;
 }
@@ -798,6 +802,8 @@ export interface MobileServerSocialFeedCapabilities {
   can_comment: boolean;
   /** Whether exposure recording is available. */
   can_record_view: boolean;
+  /** Whether tipping is available; clients must also exclude the current wallet's own items. */
+  can_tip?: boolean;
 }
 
 /** Comment preview metadata for a social trade card. */
@@ -919,6 +925,8 @@ export interface MobileServerSocialFeedContentBase extends MobileServerSocialFee
   interaction: MobileServerSocialFeedInteraction;
   /** Readable comment preview. */
   comment_preview: MobileServerSocialFeedCommentPreview;
+  /** Public Tip total in USDT0 x18 units; "0" means none, omission hides the amount. */
+  public_tip_total_x18?: string;
 }
 
 /** Trade card with optional authored text and analysis. */
@@ -1012,6 +1020,10 @@ export interface MobileServerSocialFeedItemPatch {
   version: string;
   /** Updated interaction counters. */
   interaction?: MobileServerSocialFeedInteraction;
+  /** Updated capability flags when included in the patch. */
+  capabilities?: MobileServerSocialFeedCapabilities;
+  /** Updated public Tip total in USDT0 x18 units; "0" means none, omission leaves it unchanged. */
+  public_tip_total_x18?: string;
   /** Updated display timestamp; does not reorder the current list. */
   display_at_ms: number;
   /** Updated aggregate count. */
@@ -1668,7 +1680,7 @@ export interface MobileServerTipSenderCost {
   display_fee_x18: string;
   /** Total shown using the specified basis; zero for known non-execution. */
   display_total_x18: string;
-  /** How to label and interpret the display amounts. */
+  /** not_executed requires confirmed non-execution after termination, with all actual/display amounts zero. */
   fee_basis: MobileTipFeeBasis;
 }
 

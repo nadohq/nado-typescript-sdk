@@ -349,7 +349,7 @@ export interface MobileNotificationRegistrationV2 {
   };
 }
 
-/** Complete wallet-level notification settings; every field is required on replacement. */
+/** Wallet-level notification settings; the original nine fields are required on replacement. */
 export interface MobileNotificationSettings {
   /** Own position milestones and the initial weekly digest. */
   myPositions: boolean;
@@ -369,6 +369,11 @@ export interface MobileNotificationSettings {
   announcements: boolean;
   /** Opt-in trader streak and account drama discovery notifications. */
   discovery: boolean;
+  /**
+   * Like/reply preference when provided. Omit on v2 writes to preserve the saved value;
+   * the server defaults an unset preference to true.
+   */
+  likesAndReplies?: boolean;
 }
 
 /** Versioned settings document returned by v2 reads and writes. */
@@ -485,16 +490,18 @@ export interface MobileNotificationPayloadV2 {
   route: MobileNotificationRoute;
 }
 
-/** Accepted logical notification; does not prove device delivery or read status. */
+/** Accepted logical notification with its first-seen state; does not prove device delivery. */
 export interface MobileNotificationInboxItem {
   /** Logical notification UUID. */
   notificationId: string;
   /** Registered notification type. */
   typeId: MobileNotificationTypeId;
-  /** Navigation data, without title, body, or read state. */
+  /** Navigation data, without title or body. */
   data: MobileNotificationPayloadV2;
   /** Intent acceptance time in milliseconds. */
   createdAt: number;
+  /** First acknowledgement in UTC milliseconds, or null while unread. */
+  seenAt: number | null;
   /** Backend-computed trade attribution. */
   tradeWithin24h: boolean;
 }
@@ -881,7 +888,7 @@ export type GetMobileNotificationSettingsV2Params = MobileWithExpoTokenParams;
 export interface MobileUpdateNotificationSettingsV2Params extends MobileWithExpoTokenParams {
   /** Latest settings revision; stale values fail with 6203. */
   expectedRevision: number;
-  /** Full replacement, not a partial patch. */
+  /** All nine original fields; omit likesAndReplies to preserve its saved value. */
   settings: MobileNotificationSettings;
 }
 
@@ -918,6 +925,12 @@ export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestP
   cursor?: string | null;
   /** Page size from 1 to 50; omission/null uses the server default of 20. */
   limit?: number | null;
+  /**
+   * Up to 64 type names, each 1–64 lowercase ASCII letters, digits, or underscores.
+   * Omission uses the existing v2 types; an empty array returns no notifications.
+   * Keep the same filter throughout pagination.
+   */
+  supportedTypes?: string[];
 }
 
 /** Params for the wallet-scoped v3 inbox; no Expo token is needed. */
@@ -1082,6 +1095,11 @@ export interface MobileSocialFeedCapabilities {
   canComment: boolean;
   /** Whether exposure recording is available. */
   canRecordView: boolean;
+  /**
+   * Show tipping only when true and the author wallet differs from the current wallet.
+   * Omission does not enable tipping.
+   */
+  canTip?: boolean;
 }
 
 /** Comment preview metadata for a social trade card. */
@@ -1203,6 +1221,8 @@ export interface MobileSocialFeedContentBase extends MobileSocialFeedItemBase {
   interaction: MobileSocialFeedInteraction;
   /** Readable comment preview. */
   commentPreview: MobileSocialFeedCommentPreview;
+  /** Public Tip total in USDT0 x18 units; zero means none, omission hides the amount. */
+  publicTipTotalX18?: BigNumber;
 }
 
 /** Trade card with optional authored text and analysis. */
@@ -1327,6 +1347,10 @@ export interface MobileSocialFeedItemPatch {
   version: string;
   /** Updated interaction counters. */
   interaction?: MobileSocialFeedInteraction;
+  /** Updated capability flags; omission leaves existing flags unchanged. */
+  capabilities?: MobileSocialFeedCapabilities;
+  /** Updated public Tip total in USDT0 x18 units; zero means none, omission leaves it unchanged. */
+  publicTipTotalX18?: BigNumber;
   /** Updated display timestamp; does not reorder the current list. */
   displayAtMs: number;
   /** Updated aggregate count. */
@@ -1363,7 +1387,7 @@ export interface MobileSocialFeedUpdates {
   newItemsCount: number;
   /** Baseline to use for the next update call with the same viewport. */
   updateCursor: string;
-  /** Full snapshot of applicable mutable fields; currently always true. Apply author updates even when the item version is unchanged. */
+  /** Full snapshot of applicable mutable fields; currently always true. Apply author, capability, and Tip total updates even when the item version is unchanged. */
   reset: boolean;
   /** Echoed viewport revision. */
   viewportRevision: number;
@@ -2387,7 +2411,10 @@ export interface MobileTipSenderCost {
   displayFeeX18: BigNumber;
   /** Display total in integer x18 units, interpreted according to feeBasis. */
   displayTotalX18: BigNumber;
-  /** Execution cap, verified actual values, or a known zero-cost non-execution. */
+  /**
+   * Execution cap, verified actual values, or confirmed non-execution after termination.
+   * not_executed reports zero actual/display amounts; review_required alone does not imply it.
+   */
   feeBasis: MobileTipFeeBasis;
 }
 

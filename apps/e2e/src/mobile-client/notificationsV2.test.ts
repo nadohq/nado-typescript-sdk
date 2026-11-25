@@ -46,11 +46,15 @@ void describe(
   () => {
     let mobile: MobileClient;
     let auth: MobileSignedRequestParams;
+    let existingWalletMobile: MobileClient;
+    let existingWalletAuth: MobileSignedRequestParams;
     let expoToken: string;
     let registered = false;
 
     before(() => {
       const context = createTestContext();
+      existingWalletMobile = context.mobile;
+      existingWalletAuth = getMobileSignedParams(context);
       const account = privateKeyToAccount(generatePrivateKey());
       mobile = new MobileClient({
         url: context.endpoints.mobile,
@@ -164,6 +168,67 @@ void describe(
       }
     });
 
+    void test('keeps schema v2 and preserves an explicit false preference when a later write omits it', async () => {
+      const original = await mobile.getNotificationSettingsV2({ expoToken });
+      assertNotificationSettingsShape(original);
+      assert.equal(original.settings.likesAndReplies, true);
+      try {
+        const saved = await mobile.updateNotificationSettingsV2({
+          expoToken,
+          expectedRevision: original.revision,
+          settings: { ...original.settings, likesAndReplies: false },
+        });
+        assertNotificationSettingsShape(saved);
+        assert.equal(saved.revision, original.revision + 1);
+        assert.equal(saved.settings.likesAndReplies, false);
+        const reloaded = await mobile.getNotificationSettingsV2({ expoToken });
+        assertNotificationSettingsShape(reloaded);
+        assert.equal(reloaded.settings.likesAndReplies, false);
+
+        const nineFieldSettings: MobileNotificationSettings = {
+          ...reloaded.settings,
+          myOrders: !reloaded.settings.myOrders,
+        };
+        delete nineFieldSettings.likesAndReplies;
+        assert.equal(
+          Object.hasOwn(nineFieldSettings, 'likesAndReplies'),
+          false,
+        );
+        const afterOmittedWrite = await mobile.updateNotificationSettingsV2({
+          expoToken,
+          expectedRevision: reloaded.revision,
+          settings: nineFieldSettings,
+        });
+        assertNotificationSettingsShape(afterOmittedWrite);
+        assert.equal(afterOmittedWrite.revision, reloaded.revision + 1);
+        assert.deepEqual(afterOmittedWrite.settings, {
+          ...nineFieldSettings,
+          likesAndReplies: false,
+        });
+        await assertRejectsWithMobileErrorCode(
+          () =>
+            mobile.updateNotificationSettingsV2({
+              expoToken,
+              expectedRevision: reloaded.revision,
+              settings: { ...nineFieldSettings, likesAndReplies: true },
+            }),
+          MOBILE_ERROR_CODES.NOTIFICATION_REVISION_CONFLICT,
+        );
+        const afterConflict = await mobile.getNotificationSettingsV2({
+          expoToken,
+        });
+        assert.equal(afterConflict.revision, afterOmittedWrite.revision);
+        assert.equal(afterConflict.settings.likesAndReplies, false);
+      } finally {
+        const current = await mobile.getNotificationSettingsV2({ expoToken });
+        await mobile.updateNotificationSettingsV2({
+          expoToken,
+          expectedRevision: current.revision,
+          settings: original.settings,
+        });
+      }
+    });
+
     void test('reads subscriptions, imports favorites once, and applies revision-guarded market changes', async () => {
       const productId = TEST_PRODUCT_IDS.PERP_BTC;
       const initial = await mobile.getNotificationSubscriptions(auth);
@@ -260,6 +325,104 @@ void describe(
       );
     });
 
+    void test('accepts supported-type filters and returns no notifications for an explicit empty list', async () => {
+      const page = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes: [],
+      });
+      assert.deepEqual(page.notifications, []);
+      assert.equal(page.nextCursor, null);
+      const supportedTypes = ['deposit_completed', 'new_follower'];
+      const filtered = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes,
+      });
+      for (const entry of filtered.notifications) {
+        assert.ok(supportedTypes.includes(entry.typeId));
+        assert.ok(Object.hasOwn(entry, 'seenAt'));
+        if (entry.seenAt !== null)
+          assertNonNegativeInteger(entry.seenAt, 'seenAt');
+      }
+    });
+
+    void test('preserves read timestamps and filters the existing wallet Inbox by supported type', async (testContext) => {
+      const defaults = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+      });
+      for (const entry of defaults.notifications) {
+        assertNonNegativeInteger(entry.createdAt, 'createdAt');
+        assertBoolean(entry.tradeWithin24h, 'tradeWithin24h');
+        assert.ok(Object.hasOwn(entry, 'seenAt'));
+        if (entry.seenAt !== null)
+          assertNonNegativeInteger(entry.seenAt, 'seenAt');
+      }
+      const notification = defaults.notifications[0];
+      if (!notification) {
+        testContext.skip(
+          'The test wallet has no accepted v2 Inbox notifications.',
+        );
+        return;
+      }
+      const supportedTypes = [notification.typeId];
+      const page = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes,
+      });
+      assert.ok(page.notifications.length > 0);
+      for (const entry of page.notifications) {
+        assert.ok(supportedTypes.includes(entry.typeId));
+        assert.ok(Object.hasOwn(entry, 'seenAt'));
+        if (entry.seenAt !== null)
+          assertNonNegativeInteger(entry.seenAt, 'seenAt');
+      }
+      if (page.nextCursor !== null) {
+        const next = await existingWalletMobile.getNotificationInboxV2({
+          ...existingWalletAuth,
+          cursor: page.nextCursor,
+          limit: 20,
+          supportedTypes,
+        });
+        const firstPageIds = new Set(
+          page.notifications.map((entry) => entry.notificationId),
+        );
+        for (const entry of next.notifications) {
+          assert.ok(supportedTypes.includes(entry.typeId));
+          assert.ok(!firstPageIds.has(entry.notificationId));
+        }
+      }
+    });
+
+    void test('rejects an unsupported type-filter spelling', async () => {
+      await assertRejectsWithMobileErrorCode(
+        () =>
+          mobile.getNotificationInboxV2({
+            ...auth,
+            supportedTypes: ['New_Follower'],
+          }),
+        MOBILE_ERROR_CODES.INVALID_NOTIFICATION_REQUEST,
+      );
+    });
+
+    void test('rejects repeated missing notification IDs with INVALID_NOTIFICATION_REQUEST', async () => {
+      const notificationId = randomUUID();
+      await assertRejectsWithMobileErrorCode(
+        () =>
+          mobile.markNotificationsSeen({
+            ...auth,
+            notificationIds: [notificationId, notificationId],
+          }),
+        MOBILE_ERROR_CODES.INVALID_NOTIFICATION_REQUEST,
+      );
+    });
+
     void test('records product events, accepts stable-ID retries, and rejects invalid batches/ownership', async () => {
       const events: MobileProductEvent[] = [
         {
@@ -347,7 +510,6 @@ function assertNotificationSettingsShape(
 ): void {
   assert.equal(document.schemaVersion, 2);
   assertNonNegativeInteger(document.revision, 'revision');
-  assert.equal(Object.keys(document.settings).length, 9);
   assert.ok(document.settings.positionThresholds.length >= 1);
   for (const threshold of document.settings.positionThresholds) {
     assert.ok(MOBILE_NOTIFICATION_POSITION_THRESHOLDS.includes(threshold));
@@ -358,6 +520,12 @@ function assertNotificationSettingsShape(
     ),
   );
   assert.equal('status' in document, false);
+  if (Object.hasOwn(document.settings, 'likesAndReplies')) {
+    assertBoolean(
+      document.settings.likesAndReplies,
+      'settings.likesAndReplies',
+    );
+  }
   for (const field of [
     'myPositions',
     'myOrders',

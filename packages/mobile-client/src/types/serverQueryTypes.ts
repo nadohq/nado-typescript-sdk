@@ -229,7 +229,7 @@ export interface MobileServerSocialFeedUpdatesResponse {
   new_items_count: number;
   /** Baseline to use for the next update call with the same viewport. */
   update_cursor: string;
-  /** Full snapshot of applicable mutable fields; currently always true. Apply author updates even when the item version is unchanged. */
+  /** Full snapshot of applicable mutable fields; currently always true. Apply author, capability, and Tip total updates even when the item version is unchanged. */
   reset: boolean;
   /** Echoed viewport revision. */
   viewport_revision: number;

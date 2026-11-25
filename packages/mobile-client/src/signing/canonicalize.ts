@@ -115,6 +115,9 @@ export function canonicalizeMobileInner(
         type: inner.type,
         cursor: inner.cursor,
         limit: inner.limit,
+        ...(inner.supported_types === undefined
+          ? {}
+          : { supported_types: [...inner.supported_types] }),
       };
     case 'record_product_events':
       return {

@@ -1,5 +1,7 @@
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_TIP_FEE_BASES,
+  MOBILE_TIP_GATEWAY_STATUSES,
   MOBILE_TIP_STATUSES,
   MobileTipDetail,
   MobileTipHistoryRow,
@@ -46,25 +48,30 @@ void describe(
       });
     }
 
-    void test('reads explicitly scoped history and participant detail when a Tip exists', async (testContext) => {
+    void test('reads explicitly scoped history and participant details when Tips exist', async (testContext) => {
       const auth = getMobileSignedParams(context);
       const page = await context.mobile.getTipsHistory({
         ...auth,
         direction: 'all',
         subaccount: auth,
-        limit: 1,
+        limit: 5,
       });
-      const tip = page.tips[0];
-      if (!tip) {
+      if (page.tips.length === 0) {
         testContext.skip('The test subaccount has no participating Tips.');
         return;
       }
-      const detail = await context.mobile.getTipDetail({
-        ...auth,
-        tipId: tip.tipId,
-      });
-      assert.equal(detail.tipId, tip.tipId);
-      assertDetail(detail);
+      for (const tip of page.tips) {
+        const detail = await context.mobile.getTipDetail({
+          ...auth,
+          tipId: tip.tipId,
+        });
+        assert.equal(detail.tipId, tip.tipId);
+        assert.equal(detail.role, tip.role);
+        if (tip.creditedAtMs !== null) {
+          assert.equal(detail.creditedAtMs, tip.creditedAtMs);
+        }
+        assertDetail(detail);
+      }
     });
 
     void test('returns the private not-found error for an inaccessible detail', async () => {
@@ -144,8 +151,47 @@ function assertDetail(tip: MobileTipDetail): void {
   assert.ok(tip.netAmountX18.isFinite() && tip.netAmountX18.gte(0));
   assert.equal(typeof tip.backgroundVersion, 'string');
   if (tip.role === 'sender') {
-    assert.ok(tip.senderCost.maxFeeX18.isFinite());
-    assert.equal(typeof tip.gateway.status, 'string');
+    const cost = tip.senderCost;
+    assert.ok(MOBILE_TIP_FEE_BASES.includes(cost.feeBasis));
+    assert.ok(MOBILE_TIP_GATEWAY_STATUSES.includes(tip.gateway.status));
+    for (const amount of [
+      cost.maxFeeX18,
+      cost.actualFeeX18,
+      cost.actualTotalX18,
+      cost.displayFeeX18,
+      cost.displayTotalX18,
+    ]) {
+      if (amount !== null) {
+        assert.ok(amount.isFinite() && amount.isInteger() && amount.gte(0));
+      }
+    }
+    switch (cost.feeBasis) {
+      case 'execution_cap':
+        assert.equal(cost.actualFeeX18, null);
+        assert.equal(cost.actualTotalX18, null);
+        assert.ok(cost.displayFeeX18.eq(cost.maxFeeX18));
+        assert.ok(
+          cost.displayTotalX18.eq(tip.netAmountX18.plus(cost.maxFeeX18)),
+        );
+        break;
+      case 'actual':
+        assert.ok(cost.actualFeeX18 !== null && cost.actualTotalX18 !== null);
+        assert.ok(
+          cost.actualTotalX18.eq(tip.netAmountX18.plus(cost.actualFeeX18)),
+        );
+        assert.ok(cost.displayFeeX18.eq(cost.actualFeeX18));
+        assert.ok(cost.displayTotalX18.eq(cost.actualTotalX18));
+        break;
+      case 'not_executed':
+        assert.notEqual(tip.gateway.status, 'accepted');
+        assert.equal(tip.creditedAtMs, null);
+        assert.ok(cost.actualFeeX18 !== null && cost.actualTotalX18 !== null);
+        assert.ok(cost.actualFeeX18.isZero());
+        assert.ok(cost.actualTotalX18.isZero());
+        assert.ok(cost.displayFeeX18.isZero());
+        assert.ok(cost.displayTotalX18.isZero());
+        break;
+    }
     assert.ok(!('seenAt' in tip));
   } else {
     assert.ok(tip.seenAt === null || typeof tip.seenAt === 'number');

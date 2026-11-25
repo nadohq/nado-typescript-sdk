@@ -573,7 +573,8 @@ export class MobileClient {
    * Includes ROI bases even for sessions whose initial response omitted them.
    * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
    * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
-   * Updates currently always return reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
+   * Updates currently always return reset=true. Apply author details, capabilities, and Tip totals even
+   * if the item version is unchanged.
    * Null patches clear values;
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
@@ -966,6 +967,7 @@ export class MobileClient {
   /**
    * Reads all ten notification settings using an active Expo token, without a wallet signature.
    * The revision is shared with older settings APIs; likesAndReplies always has an effective boolean.
+   * The 450684e testnet deployment uses getNotificationSettingsV2 instead of this v3 route.
    * @throws {MobileServerFailureError} If the token is invalid or unregistered, or the service is unavailable.
    * @throws {Error} If a transport or malformed response error occurs outside a Mobile failure envelope.
    */
@@ -990,9 +992,11 @@ export class MobileClient {
    * The target and outer sender must belong to the same wallet. A linked signer needs current
    * authorization for both subaccounts; an owner can query any subaccount of their wallet.
    *
+   * This optional attribution query does not change Activity amounts, which come from Indexer.
    * Merge by submissionIdx within the same subaccount/product/direction, retain complete results, and
-   * requery only pending indices with fresh outer authentication. Batch pending cold deposits by at most
-   * four indices. This method performs one request and leaves unknown amounts as null.
+   * requery only pending indices with fresh outer authentication. A complete ordinary deposit may have
+   * null deposit/ordinary amounts and a zero Tip total; it does not require retrying.
+   * This method performs one request and leaves unknown amounts as null.
    * @throws {RangeError} If the product ID or unsigned 64-bit indices are invalid (1–100 unique required).
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication, authorization, or the attribution query fails.
@@ -1020,6 +1024,7 @@ export class MobileClient {
    * Reads one participant-visible Tip without marking it seen. Sender detail includes fees and Gateway
    * state; recipient detail includes seenAt and becomes readable after verified credit. A verified
    * creditedAtMs remains meaningful if the current status later becomes review_required.
+   * For an uncredited sender, gateway.status accepted confirms sending even under review_required.
    * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
    * @throws {MobileServerFailureError} If authentication fails or the Tip is inaccessible (TIP_NOT_FOUND).
    * @throws {Error} If a participant cannot be decoded, signing fails, or the transport/response is invalid.
@@ -1037,6 +1042,7 @@ export class MobileClient {
    * Reads paginated Tip activity in server order: outgoing entries use submission time and incoming
    * entries use verified-credit time. With no subaccount filter, owners read their wallet and linked
    * signers read the outer sender's subaccount. Preserve the returned order and opaque cursor.
+   * History rows omit Gateway state; use participant detail for uncredited sender review_required rows.
    * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
    * @throws {MobileServerFailureError} If authentication, scope, pagination, or availability checks fail.
    * @throws {Error} If a subaccount cannot be encoded/decoded, signing fails, or the response is invalid.
@@ -1095,8 +1101,10 @@ export class MobileClient {
   }
 
   /**
-   * Reads private accepted notification intents, not delivery receipts or read states.
-   * @param params - Wallet authentication and optional cursor/page size (1-50, default 20).
+   * Reads private accepted notifications and first-seen timestamps without acknowledging them.
+   * Omitted supportedTypes uses the existing v2 types; an empty array returns no notifications.
+   * Keep the same type filter for every page in a cursor chain.
+   * @param params - Wallet authentication, optional type filter, and cursor/page size (1-50, default 20).
    * @returns A camelCase page; discard cached pages and cursors when switching wallets.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication or pagination validation fails.
@@ -1111,6 +1119,9 @@ export class MobileClient {
       {
         cursor: params.cursor ?? null,
         limit: params.limit ?? null,
+        ...(params.supportedTypes === undefined
+          ? {}
+          : { supported_types: [...params.supportedTypes] }),
       },
     );
     return mapMobileNotificationInboxV2(await this.query(request));
@@ -1119,6 +1130,7 @@ export class MobileClient {
   /**
    * Reads newest-first wallet notifications including first-seen timestamps, without acknowledging them.
    * Tip receipt read state is independent. The default page size is twenty and the maximum is fifty.
+   * The 450684e testnet deployment uses getNotificationInboxV2 instead of this v3 route.
    * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
    * @throws {MobileServerFailureError} If authentication, pagination, or service availability checks fail.
    * @throws {MobileUnsupportedNotificationRouteError} If a notification contains an unsupported route.
@@ -1187,8 +1199,9 @@ export class MobileClient {
   }
 
   /**
-   * Replaces all v2 settings fields using optimistic concurrency; legacy overlapping preferences are synced.
-   * @param params - Active Expo token, latest settings revision, and complete replacement settings.
+   * Replaces the nine original v2 settings using optimistic concurrency; legacy preferences are synced.
+   * likesAndReplies is optional: omission preserves the saved value, while false explicitly disables it.
+   * @param params - Active Expo token, latest settings revision, and replacement settings.
    * @returns The saved settings document with its incremented revision.
    * @throws {MobileServerFailureError} On invalid token/settings or revision conflict (`NOTIFICATION_REVISION_CONFLICT`). Re-read and
    * merge only the user's current change before retrying; never blindly replay a stale document.
@@ -1210,6 +1223,7 @@ export class MobileClient {
    * Replaces all ten v3 notification settings with the latest shared settings revision. On a conflict,
    * re-read and merge the user's current change before retrying. Older settings writes preserve the
    * saved likesAndReplies value. This method never retries or silently overwrites a newer revision.
+   * The 450684e testnet deployment uses updateNotificationSettingsV2 instead of this v3 route.
    * @throws {MobileServerFailureError} If the token/settings are invalid or the revision conflicts (6203).
    * @throws {Error} If a transport or malformed response error occurs outside a Mobile failure envelope.
    */
@@ -1384,6 +1398,7 @@ export class MobileClient {
    * Preserve the original withdrawal, inner signature, and confirmed fee cap when recovering a lost
    * response. Increase the cap only after an explicit user confirmation of a `failed` result whose
    * processingReason is `FEE_TOO_LOW`, passing that result's version as expectedVersion.
+   * A sending result, or review_required with gateway.status accepted, confirms the sender's withdrawal.
    * @param params - Mobile authorization, recipient, card details, owner-signed withdrawal, and confirmed cap.
    * @returns Durable Tip identity and business state, including synchronous Gateway rejections.
    * @throws {RangeError} If the chain ID or a withdrawal amount, appendix, or fee cap is not a valid integer.
