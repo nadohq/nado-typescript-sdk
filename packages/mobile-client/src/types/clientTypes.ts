@@ -828,7 +828,9 @@ export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestP
   limit?: number | null;
   /**
    * Up to 64 types from MOBILE_NOTIFICATION_TYPE_IDS that this SDK can decode.
-   * Omission uses the existing v2 types; an empty array returns no notifications.
+   * Omission uses the server's default types; an empty array returns no notifications.
+   * Defaults may expand to routes this SDK cannot decode, rejecting the whole page with
+   * MobileUnsupportedNotificationRouteError. Pass an explicit supported subset for stable decoding.
    * Keep the same filter throughout pagination.
    */
   supportedTypes?: MobileNotificationTypeId[];
@@ -1226,7 +1228,7 @@ export interface MobileSocialFeedItemResponse {
   readSession: MobileSocialFeedReadSession;
 }
 
-/** Item delta: omitted means unchanged; explicit null clears a prior value. */
+/** Item delta: omitted means unchanged; null clears only fields whose types explicitly allow null. */
 export interface MobileSocialFeedItemPatch {
   /** Updated reply attachment; null clears it, omission leaves it unchanged. */
   attachedPosition?: MobileSocialFeedPositionCard | null;
@@ -1240,9 +1242,9 @@ export interface MobileSocialFeedItemPatch {
   version: string;
   /** Updated interaction counters. */
   interaction?: MobileSocialFeedInteraction;
-  /** Updated capability flags; omission leaves existing flags unchanged. */
+  /** Updated capability object; never null. Omission leaves existing flags unchanged. */
   capabilities?: MobileSocialFeedCapabilities;
-  /** Updated public Tip total in USDT0 x18 units; zero means none, omission leaves it unchanged. */
+  /** Updated USDT0 x18 total; never null. Zero means none, omission leaves it unchanged. */
   publicTipTotal?: BigNumber;
   /** Updated display timestamp; does not reorder the current list. */
   displayAtMs: number;
@@ -2218,7 +2220,11 @@ export interface GetMobileTipCollateralMappingsParams extends MobileSignedReques
 
 /** Verified or pending attribution of one Indexer collateral submission. */
 export interface MobileTipCollateralMapping {
-  /** Exact source identity as bytes32 hex. */
+  /**
+   * Exact source identity retained as bytes32 Hex for collateral-attribution correlation keys.
+   * Compare with subaccountToHex(request.subaccount) or subaccountToHex(indexerEvent),
+   * or decode with subaccountFromHex when a structured identity is needed.
+   */
   subaccount: Hex;
   /** Source asset product ID. */
   productId: number;

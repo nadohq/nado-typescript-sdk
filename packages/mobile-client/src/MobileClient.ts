@@ -570,7 +570,7 @@ export class MobileClient {
    * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
    * Updates currently always return reset=true. Apply author details, capabilities, and Tip totals even
    * if the item version is unchanged.
-   * Null patches clear values;
+   * Null clears only fields whose types allow it; capabilities and publicTipTotal are never null.
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
    * @returns Item/position patches, revoked targets, and a new-content hint.
@@ -1072,7 +1072,9 @@ export class MobileClient {
 
   /**
    * Reads private accepted notifications and first-seen timestamps without acknowledging them.
-   * Omitted supportedTypes uses the existing v2 types; an empty array returns no notifications.
+   * Omitted supportedTypes uses the server's default type set; an empty array returns no notifications.
+   * Server defaults may expand to unsupported routes and reject the whole page with
+   * MobileUnsupportedNotificationRouteError. Pass an explicit supported subset for stable decoding.
    * Explicit filters are typed to notification types this SDK can decode.
    * Keep the same type filter for every page in a cursor chain.
    * @param params - Wallet authentication, optional type filter, and cursor/page size (1-50, default 20).

@@ -847,7 +847,7 @@ export interface MobileServerSocialFeedContentBase extends MobileServerSocialFee
   interaction: MobileServerSocialFeedInteraction;
   /** Readable comment preview. */
   comment_preview: MobileServerSocialFeedCommentPreview;
-  /** Public Tip total in USDT0 x18 units; "0" means none, omission hides the amount. */
+  /** Public Tip total in USDT0 x18 units; never null. "0" means none, omission hides the amount. */
   public_tip_total_x18?: string;
 }
 
@@ -928,7 +928,7 @@ export interface MobileServerSocialFeedReadSession {
   viewer_token: string;
 }
 
-/** Item delta: omitted means unchanged; explicit null clears a prior value. */
+/** Item delta: omitted means unchanged; null clears only fields whose types explicitly allow null. */
 export interface MobileServerSocialFeedItemPatch {
   /** Updated reply attachment; null clears it, omission leaves it unchanged. */
   attached_position?: MobileServerSocialFeedPositionCard | null;
@@ -942,9 +942,9 @@ export interface MobileServerSocialFeedItemPatch {
   version: string;
   /** Updated interaction counters. */
   interaction?: MobileServerSocialFeedInteraction;
-  /** Updated capability flags when included in the patch. */
+  /** Updated capability object; never null. Omission leaves the existing flags unchanged. */
   capabilities?: MobileServerSocialFeedCapabilities;
-  /** Updated public Tip total in USDT0 x18 units; "0" means none, omission leaves it unchanged. */
+  /** Updated USDT0 x18 total; never null. "0" means none, omission leaves it unchanged. */
   public_tip_total_x18?: string;
   /** Updated display timestamp; does not reorder the current list. */
   display_at_ms: number;

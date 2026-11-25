@@ -12,8 +12,6 @@ import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
 
-const PREVIEW_POST_ID = 'a62b3a6e-1c45-43fa-9732-f4a12a36eae1';
-
 void describe(
   '[mobile-client]: Feed Tip preview fields',
   { timeout: TEST_TIMEOUTS.DEFAULT },
@@ -27,11 +25,10 @@ void describe(
       viewAs = getMobileSignedParams(context);
     });
 
-    void test('preserves post detail capability and total from the same released API response', async (testContext) => {
-      const detail = await getPreviewDetail(mobile, viewAs, testContext);
+    void test('preserves live content detail capability and total from the same released API response', async (testContext) => {
+      const detail = await getLiveContentDetail(mobile, viewAs, testContext);
       if (!detail) return;
 
-      assert.equal(detail.result.item.id, PREVIEW_POST_ID);
       const wireItem = asRecord(detail.wire.item, 'wire detail item');
       assert.equal(
         typeof asRecord(wireItem.capabilities, 'wire capabilities').can_tip,
@@ -84,16 +81,17 @@ void describe(
       }
     });
 
-    void test('preserves the same post preview in Feed update patches', async (testContext) => {
-      const detail = await getPreviewDetail(mobile, viewAs, testContext);
+    void test('preserves the selected live content preview in Feed update patches', async (testContext) => {
+      const detail = await getLiveContentDetail(mobile, viewAs, testContext);
       if (!detail) return;
 
       const { sessionId, viewerToken } = detail.result.readSession;
+      const itemId = detail.result.item.id;
       const updates = await capturePublicQuery(mobile, () =>
         mobile.getFeedUpdates({
           sessionId,
           viewerToken,
-          visibleItemIds: [PREVIEW_POST_ID],
+          visibleItemIds: [itemId],
           visiblePositionIds: [],
           updateCursor: null,
           viewportRevision: 0,
@@ -104,17 +102,17 @@ void describe(
       assertArray(wirePatches, 'wire item patches');
       const wirePatch = wirePatches
         .map((patch) => asRecord(patch, 'wire item patch'))
-        .find((patch) => patch.item_id === PREVIEW_POST_ID);
+        .find((patch) => patch.item_id === itemId);
       if (!wirePatch) {
         testContext.skip(
-          'The preview post did not produce a readable item patch.',
+          'The selected live content did not produce a readable item patch.',
         );
         return;
       }
       const patch = updates.result.itemPatches.find(
-        (item) => item.itemId === PREVIEW_POST_ID,
+        (item) => item.itemId === itemId,
       );
-      assert.ok(patch, 'SDK updates must retain the preview post patch.');
+      assert.ok(patch, 'SDK updates must retain the selected content patch.');
       assert.equal(
         typeof asRecord(wirePatch.capabilities, 'wire capabilities').can_tip,
         'boolean',
@@ -124,26 +122,45 @@ void describe(
   },
 );
 
-async function getPreviewDetail(
+async function getLiveContentDetail(
   mobile: MobileClient,
   viewAs: Subaccount,
   testContext: TestContext,
 ) {
+  const page = await mobile.getForYouFeed({ viewAs, limit: 10 });
+  const item = page.items.find(
+    (candidate) => candidate.kind === 'post' || candidate.kind === 'trade_card',
+  );
+  if (!item) {
+    testContext.skip(
+      'The live For You page has no readable post or trade card.',
+    );
+    return undefined;
+  }
   try {
-    return await capturePublicQuery(mobile, () =>
+    const detail = await capturePublicQuery(mobile, () =>
       mobile.getFeedItem({
-        itemId: PREVIEW_POST_ID,
+        itemId: item.id,
         viewAs,
         commentPreviewLimit: 0,
+        sessionId: page.readSession.sessionId,
+        viewerToken: page.readSession.viewerToken,
       }),
     );
+    assert.equal(detail.result.item.id, item.id);
+    assert.equal(detail.result.item.kind, item.kind);
+    assert.equal(
+      detail.result.readSession.sessionId,
+      page.readSession.sessionId,
+    );
+    return detail;
   } catch (error: unknown) {
     if (
       error instanceof MobileServerFailureError &&
       error.errorCode === MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE
     ) {
       testContext.skip(
-        'The preview post is not readable in the current released dataset.',
+        'The selected content became unavailable after the live For You read.',
       );
       return undefined;
     }

@@ -437,8 +437,10 @@ await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotifica
   Do not use the unimplemented legacy `notification_history` route.
   An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`.
 - `supportedTypes` is typed to the current `MOBILE_NOTIFICATION_TYPE_IDS` subset that this SDK
-  can decode. Omission selects the existing v2 types and `[]` returns an empty page; at most 64 entries
-  are allowed. Tip-specific notification types and unknown types are not supported by this client.
+  can decode. Omission selects the server's default types and `[]` returns an empty page; at most 64
+  entries are allowed. Defaults may expand to routes this SDK cannot decode, causing the entire page
+  to reject with `MobileUnsupportedNotificationRouteError`. Pass an explicit supported subset for
+  stable decoding. Tip-specific notification types and unknown types are not supported by this client.
   The canonical signed field order is `type`, `cursor`, `limit`, then `supported_types` only when supplied;
   omitted cursor and limit remain explicit null. Keep the same filters when paging.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,

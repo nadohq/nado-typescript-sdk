@@ -446,7 +446,10 @@ export function mapMobileNotificationInboxV2(
   };
 }
 
-/** Maps typed Inbox filters, preserving omission separately from an explicit empty filter. */
+/**
+ * Maps typed Inbox filters, preserving omission separately from an explicit empty filter.
+ * Omission uses the server's default type set, which may expand beyond this SDK's supported routes.
+ */
 export function mapMobileNotificationInboxV2ParamsToServer(
   params: Pick<
     GetMobileNotificationInboxV2Params,
@@ -1184,7 +1187,7 @@ export function mapMobileSocialFeedItemResponse(
 }
 
 /**
- * Maps item deltas, preserving omitted fields and explicit null clears.
+ * Maps item deltas, preserving omitted fields and null clears on nullable fields.
  * @param server - The service response.
  * @returns The mapped feed item patch.
  */
@@ -1991,7 +1994,13 @@ export function mapMobileSubmitTipResult(
  */
 export function mapMobileTipCollateralMappingsParamsToServer(
   params: GetMobileTipCollateralMappingsParams,
-): MobileSignedInnerParams<'tips_history'> {
+): Omit<
+  Extract<
+    MobileSignedInnerByType<'tips_history'>,
+    { mode: 'collateral_mapping' }
+  >,
+  'type'
+> {
   return {
     mode: 'collateral_mapping',
     subaccount: subaccountToHex(params.subaccount),
@@ -2001,7 +2010,10 @@ export function mapMobileTipCollateralMappingsParamsToServer(
   };
 }
 
-/** Maps partial attribution results, preserving unknown amounts and source order. */
+/**
+ * Maps partial attribution results, preserving unknown amounts and source order.
+ * Subaccounts retain their exact bytes32 Hex identity for collateral-attribution correlation keys.
+ */
 export function mapMobileTipCollateralMappings(
   server: MobileServerTipCollateralMappingsResponse,
 ): MobileTipCollateralMappings {
