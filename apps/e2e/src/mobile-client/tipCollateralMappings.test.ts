@@ -1,10 +1,12 @@
 import {
+  MOBILE_ERROR_CODES,
   MOBILE_TIP_COLLATERAL_CLASSIFICATIONS,
   MOBILE_TIP_MAPPING_STATES,
 } from '@nadohq/mobile-client';
 import { subaccountToHex } from '@nadohq/shared';
 import assert from 'node:assert/strict';
 import { before, describe, test } from 'node:test';
+import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
@@ -21,7 +23,7 @@ void describe(
     });
 
     for (const direction of ['deposit', 'withdrawal'] as const) {
-      void test(`deduplicates a real ${direction} Indexer submission`, async (context) => {
+      void test(`annotates a real ${direction} Indexer submission`, async (context) => {
         const auth = getMobileSignedParams(tc);
         const page = await tc.indexer.getPaginatedSubaccountCollateralEvents({
           ...auth,
@@ -45,7 +47,7 @@ void describe(
           subaccount: auth,
           productId,
           direction,
-          submissionIndices: [event.submissionIndex, event.submissionIndex],
+          submissionIndices: [event.submissionIndex],
         });
 
         assert.equal(mappings.length, 1);
@@ -62,45 +64,59 @@ void describe(
           ),
         );
         for (const amount of [
-          mapping.depositTotalX18,
-          mapping.tipTotalX18,
-          mapping.ordinaryAmountX18,
+          mapping.depositTotal,
+          mapping.tipTotal,
+          mapping.ordinaryAmount,
         ]) {
           if (amount === null) continue;
           assert.ok(amount.isFinite() && amount.isInteger() && amount.gte(0));
         }
         if (direction === 'withdrawal') {
-          assert.equal(mapping.depositTotalX18, null);
-          assert.equal(mapping.ordinaryAmountX18, null);
+          assert.equal(mapping.depositTotal, null);
+          assert.equal(mapping.ordinaryAmount, null);
         } else {
           if (
             mapping.mappingState === 'complete' &&
             mapping.classification === 'ordinary'
           ) {
-            assert.ok(
-              mapping.tipTotalX18 !== null && mapping.tipTotalX18.isZero(),
-            );
-            if (mapping.depositTotalX18 === null) {
-              assert.equal(mapping.ordinaryAmountX18, null);
+            assert.ok(mapping.tipTotal !== null && mapping.tipTotal.isZero());
+            if (mapping.depositTotal === null) {
+              assert.equal(mapping.ordinaryAmount, null);
             } else {
-              assert.ok(mapping.ordinaryAmountX18 !== null);
-              assert.ok(mapping.ordinaryAmountX18.eq(mapping.depositTotalX18));
+              assert.ok(mapping.ordinaryAmount !== null);
+              assert.ok(mapping.ordinaryAmount.eq(mapping.depositTotal));
             }
           }
           if (
             mapping.mappingState === 'complete' &&
-            mapping.depositTotalX18 !== null &&
-            mapping.tipTotalX18 !== null &&
-            mapping.ordinaryAmountX18 !== null
+            mapping.depositTotal !== null &&
+            mapping.tipTotal !== null &&
+            mapping.ordinaryAmount !== null
           ) {
             assert.ok(
-              mapping.depositTotalX18.eq(
-                mapping.tipTotalX18.plus(mapping.ordinaryAmountX18),
+              mapping.depositTotal.eq(
+                mapping.tipTotal.plus(mapping.ordinaryAmount),
               ),
             );
           }
         }
       });
     }
+
+    void test('returns the backend invalid-request error for duplicate submission indices', async () => {
+      const auth = getMobileSignedParams(tc);
+      await assertRejectsWithMobileErrorCode(
+        () =>
+          tc.mobile.getTipCollateralMappings({
+            ...auth,
+            subaccount: auth,
+            productId: 0,
+            direction: 'deposit',
+            submissionIndices: ['0', '0'],
+          }),
+        MOBILE_ERROR_CODES.INVALID_TIP_REQUEST,
+        'query_tips_history',
+      );
+    });
   },
 );

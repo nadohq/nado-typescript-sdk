@@ -193,6 +193,8 @@ import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
   MobileServerSignedQuerySuccessResponse,
+  MobileServerTipCollateralMappingsResponse,
+  MobileServerTipsHistoryResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
@@ -962,8 +964,8 @@ export class MobileClient {
    */
 
   /**
-   * Annotates exact Indexer collateral submissions, including partial pending results. Duplicate indices
-   * are removed before signing, retaining first-occurrence order without changing the input array.
+   * Annotates exact Indexer collateral submissions, including partial pending results.
+   * Indices are sent unchanged; the server rejects duplicates and invalid batches.
    * The target and outer sender must belong to the same wallet. A linked signer needs current
    * authorization for both subaccounts; an owner can query any subaccount of their wallet.
    *
@@ -972,7 +974,6 @@ export class MobileClient {
    * requery only pending indices with fresh outer authentication. A complete ordinary deposit may have
    * null deposit/ordinary amounts and a zero Tip total; it does not require retrying.
    * This method performs one request and leaves unknown amounts as null.
-   * @throws {RangeError} If the product ID or unsigned 64-bit indices are invalid (1–100 unique required).
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication, authorization, or the attribution query fails.
    * @throws {Error} If a subaccount cannot be encoded, wallet signing fails, or a transport or malformed
@@ -987,12 +988,9 @@ export class MobileClient {
       mapMobileTipCollateralMappingsParamsToServer(params),
     );
     const response = await this.query(request);
-    if (!('mappings' in response)) {
-      throw new Error(
-        'Unexpected tips_history response: expected collateral mappings.',
-      );
-    }
-    return mapMobileTipCollateralMappings(response);
+    return mapMobileTipCollateralMappings(
+      response as MobileServerTipCollateralMappingsResponse,
+    );
   }
 
   /**
@@ -1031,12 +1029,9 @@ export class MobileClient {
       mapMobileTipsHistoryParamsToServer(params),
     );
     const response = await this.query(request);
-    if (!('tips' in response)) {
-      throw new Error(
-        'Unexpected tips_history response: expected a participant history page.',
-      );
-    }
-    return mapMobileTipsHistoryPage(response);
+    return mapMobileTipsHistoryPage(
+      response as MobileServerTipsHistoryResponse,
+    );
   }
 
   /**
@@ -1078,14 +1073,13 @@ export class MobileClient {
   /**
    * Reads private accepted notifications and first-seen timestamps without acknowledging them.
    * Omitted supportedTypes uses the existing v2 types; an empty array returns no notifications.
-   * Explicit filters are limited to notification types this SDK can decode and are checked before signing.
+   * Explicit filters are typed to notification types this SDK can decode.
    * Keep the same type filter for every page in a cursor chain.
    * @param params - Wallet authentication, optional type filter, and cursor/page size (1-50, default 20).
    * @returns A camelCase page; discard cached pages and cursors when switching wallets.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication or pagination validation fails.
    * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route name.
-   * @throws {RangeError} If supportedTypes contains a type this SDK cannot decode.
    */
   async getNotificationInboxV2(
     params: GetMobileNotificationInboxV2Params,
@@ -1317,8 +1311,8 @@ export class MobileClient {
   }
 
   /**
-   * Submits an owner-signed cash withdrawal through Mobile's Tip flow. Requires a backend release
-   * implementing `submit_tip`. Use getTipDetail for participant progress and getTipsHistory for activity.
+   * Submits an owner-signed cash withdrawal through Mobile's Tip flow.
+   * Use getTipDetail for participant progress and getTipsHistory for activity.
    * The outer Mobile authorization may use the linked signer, while the inner withdrawal must be signed
    * by the owner of the same subaccount. This method never dispatches an Engine withdrawal directly.
    *
@@ -1328,7 +1322,6 @@ export class MobileClient {
    * A sending result, or review_required with gateway.status accepted, confirms the sender's withdrawal.
    * @param params - Mobile authorization, recipient, card details, owner-signed withdrawal, and confirmed cap.
    * @returns Durable Tip identity and business state, including synchronous Gateway rejections.
-   * @throws {RangeError} If the chain ID or a withdrawal amount, appendix, or fee cap is not a valid integer.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} On pre-admission validation, authentication, balance, service, or
    * submission conflicts. A rejected Gateway attempt after admission is returned as a business result.
@@ -1741,10 +1734,10 @@ export class MobileClient {
       throw new WalletNotProvidedError();
     }
 
-    const inner = Object.assign(
-      { type },
-      innerParams,
-    ) as unknown as MobileSignedInnerByType<T>;
+    const inner = {
+      type,
+      ...innerParams,
+    } as unknown as MobileSignedInnerByType<T>;
     return buildSignedMobileRequest({ ...params, walletClient, inner });
   }
 

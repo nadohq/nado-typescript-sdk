@@ -411,6 +411,71 @@ void describe(
       );
     });
 
+    void test('acknowledges an accepted notification and preserves its first-seen timestamp on retry', async (testContext) => {
+      const initial = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 50,
+      });
+      const notification =
+        initial.notifications.find((entry) => entry.seenAt === null) ??
+        initial.notifications[0];
+      if (!notification) {
+        testContext.skip(
+          'The test wallet has no accepted v2 Inbox notifications.',
+        );
+        return;
+      }
+
+      assert.equal(
+        (
+          await existingWalletMobile.markNotificationsSeen({
+            ...existingWalletAuth,
+            notificationIds: [notification.notificationId],
+          })
+        ).status,
+        'success',
+      );
+      const acknowledged = await findInboxNotification(
+        existingWalletMobile,
+        existingWalletAuth,
+        notification.notificationId,
+        notification.typeId,
+      );
+      assert.ok(
+        acknowledged,
+        'Acknowledged notifications remain in the accepted Inbox.',
+      );
+      assertNonNegativeInteger(acknowledged.seenAt, 'seenAt');
+      if (notification.seenAt !== undefined && notification.seenAt !== null) {
+        assert.equal(acknowledged.seenAt, notification.seenAt);
+      }
+
+      assert.equal(
+        (
+          await existingWalletMobile.markNotificationsSeen({
+            ...existingWalletAuth,
+            notificationIds: [
+              notification.notificationId,
+              notification.notificationId,
+            ],
+          })
+        ).status,
+        'success',
+      );
+      const repeated = await findInboxNotification(
+        existingWalletMobile,
+        existingWalletAuth,
+        notification.notificationId,
+        notification.typeId,
+      );
+      assert.ok(
+        repeated,
+        'Repeated acknowledgement must not remove the notification.',
+      );
+      assert.equal(repeated.seenAt, acknowledged.seenAt);
+    });
+
     void test('records product events, accepts stable-ID retries, and rejects invalid batches/ownership', async () => {
       const events: MobileProductEvent[] = [
         {
@@ -488,6 +553,34 @@ void describe(
     });
   },
 );
+
+async function findInboxNotification(
+  mobile: MobileClient,
+  auth: MobileSignedRequestParams,
+  notificationId: string,
+  typeId: MobileNotificationTypeId,
+): Promise<MobileNotificationInboxItem | undefined> {
+  let cursor: string | null = null;
+  const visitedCursors = new Set<string>();
+  for (;;) {
+    const page = await mobile.getNotificationInboxV2({
+      ...auth,
+      cursor,
+      limit: 50,
+      supportedTypes: [typeId],
+    });
+    const notification = page.notifications.find(
+      (entry) => entry.notificationId === notificationId,
+    );
+    if (notification || page.nextCursor === null) return notification;
+    assert.ok(
+      !visitedCursors.has(page.nextCursor),
+      'Inbox pagination must advance.',
+    );
+    visitedCursors.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+}
 
 function assertInboxReadState(item: MobileNotificationInboxItem): void {
   if (item.seenAt === undefined) {

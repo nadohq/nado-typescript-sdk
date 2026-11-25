@@ -1,4 +1,3 @@
-export * from './drafts';
 export * from './endpoints';
 export * from './MobileClient';
 export * from './signing';

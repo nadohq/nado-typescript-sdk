@@ -1,5 +1,4 @@
 import {
-  BigNumberish,
   EIP712WithdrawCollateralV2Values,
   removeDecimals,
   subaccountFromHex,
@@ -107,6 +106,7 @@ import {
   MobileTipCollateralMappings,
   MobileTipDetail,
   MobileTipDetailCommon,
+  MobileTipGatewayResult,
   MobileTipHistoryCommon,
   MobileTipHistoryRow,
   MobileTipParticipant,
@@ -128,7 +128,6 @@ import {
   MobileServerSubmitTipResponse,
 } from './types/serverExecuteTypes';
 import {
-  MOBILE_NOTIFICATION_TYPE_IDS,
   MobileServerAvatarPreset,
   MobileServerAvatarSelection,
   MobileServerFeedTrade,
@@ -177,6 +176,8 @@ import {
   MobileServerSocialFeedUploadedImage,
   MobileServerTipDetail,
   MobileServerTipDetailCommon,
+  MobileServerTipGatewayResult,
+  MobileServerTipHistoryCommon,
   MobileServerTipHistoryRow,
   MobileServerTipParticipant,
   MobileServerTipSenderCost,
@@ -445,31 +446,19 @@ export function mapMobileNotificationInboxV2(
   };
 }
 
-/**
- * Maps Inbox filters without requesting notification types this SDK cannot decode.
- * @throws {RangeError} If a filter includes an unsupported notification type.
- */
+/** Maps typed Inbox filters, preserving omission separately from an explicit empty filter. */
 export function mapMobileNotificationInboxV2ParamsToServer(
   params: Pick<
     GetMobileNotificationInboxV2Params,
     'cursor' | 'limit' | 'supportedTypes'
   >,
 ): MobileSignedInnerParams<'notification_inbox_v2'> {
-  if (
-    params.supportedTypes?.some(
-      (type) => !MOBILE_NOTIFICATION_TYPE_IDS.includes(type),
-    )
-  ) {
-    throw new RangeError(
-      'supportedTypes contains a notification type not supported by this SDK.',
-    );
-  }
   return {
     cursor: params.cursor ?? null,
     limit: params.limit ?? null,
     ...(params.supportedTypes === undefined
       ? {}
-      : { supported_types: [...params.supportedTypes] }),
+      : { supported_types: params.supportedTypes }),
   };
 }
 
@@ -1006,7 +995,7 @@ export function mapMobileSocialFeedContentBase(
     },
     ...(server.public_tip_total_x18 === undefined
       ? {}
-      : { publicTipTotalX18: toBigNumber(server.public_tip_total_x18) }),
+      : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
   };
 }
 
@@ -1226,7 +1215,7 @@ export function mapMobileSocialFeedItemPatch(
       : { capabilities: mapMobileSocialFeedCapabilities(server.capabilities) }),
     ...(server.public_tip_total_x18 === undefined
       ? {}
-      : { publicTipTotalX18: toBigNumber(server.public_tip_total_x18) }),
+      : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
     ...(server.trade_count === undefined
       ? {}
       : { tradeCount: server.trade_count }),
@@ -1943,8 +1932,7 @@ export function mapMobileSocialFeedPositionThoughts(
 
 /**
  * Converts Engine payload-builder values to Tip wire fields without executing or re-signing a withdrawal.
- * Existing decimal and hex strings remain unchanged so recovery can reuse the same owner-signed values.
- * @throws {RangeError} If amount or appendix is not a non-negative integer representable as a decimal string.
+ * Amount and appendix use integer-string encoding; hex spellings and the withdrawal nonce pass through.
  */
 export function mapMobileTipWithdrawalToServer(
   withdrawal: EIP712WithdrawCollateralV2Values,
@@ -1952,38 +1940,21 @@ export function mapMobileTipWithdrawalToServer(
   return {
     sender: withdrawal.sender,
     productId: withdrawal.productId,
-    amount: mapTipWithdrawalInteger(withdrawal.amount, 'amount'),
+    amount: toIntegerString(withdrawal.amount),
     nonce: withdrawal.nonce,
     sendTo: withdrawal.sendTo,
-    appendix: mapTipWithdrawalInteger(withdrawal.appendix, 'appendix'),
+    appendix: toIntegerString(withdrawal.appendix),
   };
 }
 
 /**
  * Maps explicitly confirmed Tip inputs while preserving the inner owner signature and withdrawal nonce.
  * Ordinary recovery omits expected_version; it never increases the confirmed cap or authorizes a retry.
- * @throws {RangeError} If chainId is not a positive safe integer, the fee cap is not a finite non-negative
- * integer in x18 units, or a withdrawal amount/appendix cannot be encoded without rounding.
  * @throws {Error} If the recipient subaccount cannot be encoded as bytes32.
  */
 export function mapMobileSubmitTipParamsToServer(
   params: MobileSubmitTipParams,
 ): MobileSignedInnerParams<'submit_tip'> {
-  if (!Number.isSafeInteger(params.chainId) || params.chainId <= 0) {
-    throw new RangeError('chainId must be a positive safe integer.');
-  }
-  const maxFee = toBigNumber(params.maxFeeX18);
-  if (
-    (typeof params.maxFeeX18 === 'number' &&
-      !Number.isSafeInteger(params.maxFeeX18)) ||
-    !maxFee.isFinite() ||
-    !maxFee.isInteger() ||
-    maxFee.lt(0)
-  ) {
-    throw new RangeError(
-      'maxFeeX18 must be a finite non-negative integer in x18 units.',
-    );
-  }
   return {
     chain_id: params.chainId.toString(),
     recipient_subaccount: subaccountToHex(params.recipientSubaccount),
@@ -1993,7 +1964,7 @@ export function mapMobileSubmitTipParamsToServer(
     visibility: params.visibility,
     withdrawal: mapMobileTipWithdrawalToServer(params.withdrawal),
     withdrawal_signature: params.withdrawalSignature,
-    max_fee_x18: toIntegerString(maxFee),
+    max_fee_x18: toIntegerString(params.maxFeeX18),
     ...(params.expectedVersion === undefined
       ? {}
       : { expected_version: params.expectedVersion }),
@@ -2009,46 +1980,24 @@ export function mapMobileSubmitTipResult(
     tipStatus: server.tip_status,
     version: server.version,
     submittedAtMs: server.submitted_at_ms,
-    gateway: {
-      status: server.gateway.status,
-      errorCode: server.gateway.error_code,
-      errorName: server.gateway.error_name,
-    },
+    gateway: mapTipGatewayResult(server.gateway),
     processingReason: server.processing_reason,
   };
 }
 
 /**
- * Maps one attribution request, deduplicating exact Indexer indices in first-occurrence order.
- * @throws {RangeError} If productId is not a non-negative safe integer or submissionIndices does not
- * contain one to one hundred unique canonical unsigned 64-bit decimal integers after deduplication.
+ * Maps one attribution request without changing its exact Indexer indices or their order.
  * @throws {Error} If the target subaccount cannot be encoded as bytes32.
  */
 export function mapMobileTipCollateralMappingsParamsToServer(
   params: GetMobileTipCollateralMappingsParams,
 ): MobileSignedInnerParams<'tips_history'> {
-  if (!Number.isSafeInteger(params.productId) || params.productId < 0) {
-    throw new RangeError('productId must be a non-negative safe integer.');
-  }
-  const submissionIndices = [...new Set(params.submissionIndices)];
-  if (
-    submissionIndices.length < 1 ||
-    submissionIndices.length > 100 ||
-    submissionIndices.some(
-      (index) =>
-        !/^(0|[1-9]\d*)$/.test(index) || BigInt(index) > 18446744073709551615n,
-    )
-  ) {
-    throw new RangeError(
-      'submissionIndices must contain 1–100 distinct canonical unsigned 64-bit decimal integers.',
-    );
-  }
   return {
     mode: 'collateral_mapping',
     subaccount: subaccountToHex(params.subaccount),
     product_id: params.productId,
     direction: params.direction,
-    submission_indices: submissionIndices,
+    submission_indices: params.submissionIndices,
   };
 }
 
@@ -2064,39 +2013,11 @@ export function mapMobileTipCollateralMappings(
       submissionIdx: mapping.submission_idx,
       mappingState: mapping.mapping_state,
       classification: mapping.classification,
-      depositTotalX18:
-        mapping.deposit_total_x18 === null
-          ? null
-          : toBigNumber(mapping.deposit_total_x18),
-      tipTotalX18:
-        mapping.tip_total_x18 === null
-          ? null
-          : toBigNumber(mapping.tip_total_x18),
-      ordinaryAmountX18:
-        mapping.ordinary_amount_x18 === null
-          ? null
-          : toBigNumber(mapping.ordinary_amount_x18),
+      depositTotal: mapTipNullableAmount(mapping.deposit_total_x18),
+      tipTotal: mapTipNullableAmount(mapping.tip_total_x18),
+      ordinaryAmount: mapTipNullableAmount(mapping.ordinary_amount_x18),
     })),
   };
-}
-
-function mapTipWithdrawalInteger(
-  value: BigNumberish,
-  field: 'amount' | 'appendix',
-): string {
-  const integer = toBigNumber(value);
-  if (
-    (typeof value === 'number' && !Number.isSafeInteger(value)) ||
-    !integer.isFinite() ||
-    !integer.isInteger() ||
-    integer.lt(0) ||
-    (typeof value === 'string' && !/^(0|[1-9]\d*)$/.test(value))
-  ) {
-    throw new RangeError(
-      `withdrawal.${field} must be a canonical non-negative decimal integer.`,
-    );
-  }
-  return typeof value === 'string' ? value : toIntegerString(integer);
 }
 
 /**
@@ -2147,11 +2068,7 @@ export function mapMobileTipDetail(
       ...common,
       role: detail.role,
       senderCost: mapTipSenderCost(detail.sender_cost),
-      gateway: {
-        status: detail.gateway.status,
-        errorCode: detail.gateway.error_code,
-        errorName: detail.gateway.error_name,
-      },
+      gateway: mapTipGatewayResult(detail.gateway),
       processingReason: detail.processing_reason,
     };
   }
@@ -2187,7 +2104,7 @@ export function mapMobileReceivedTipsPage(
     tips: page.tips.map((tip) => ({
       tipId: tip.tip_id,
       sender: mapMobileTipParticipant(tip.sender),
-      netAmountX18: toBigNumber(tip.net_amount_x18),
+      netAmount: toBigNumber(tip.net_amount_x18),
       note: tip.note,
       backgroundId: tip.background_id,
       backgroundVersion: tip.background_version,
@@ -2202,24 +2119,23 @@ function mapTipDetailCommon(
   detail: MobileServerTipDetailCommon,
 ): MobileTipDetailCommon {
   return {
-    tipId: detail.tip_id,
-    tipStatus: detail.tip_status,
+    ...mapTipHistoryCommon(detail),
     version: detail.version,
-    sender: mapMobileTipParticipant(detail.sender),
-    recipient: mapMobileTipParticipant(detail.recipient),
-    productId: detail.product_id,
-    netAmountX18: toBigNumber(detail.net_amount_x18),
-    visibility: detail.visibility,
-    note: detail.note,
     backgroundId: detail.background_id,
     backgroundVersion: detail.background_version,
     originPostId: detail.origin_post_id,
     originAvailability: detail.origin_availability,
     feedItemId: detail.feed_item_id,
-    submittedAtMs: detail.submitted_at_ms,
-    creditedAtMs: detail.credited_at_ms,
-    withdrawalSubmissionIdx: detail.withdrawal_submission_idx,
-    depositSubmissionIdx: detail.deposit_submission_idx,
+  };
+}
+
+function mapTipGatewayResult(
+  gateway: MobileServerTipGatewayResult,
+): MobileTipGatewayResult {
+  return {
+    status: gateway.status,
+    errorCode: gateway.error_code,
+    errorName: gateway.error_name,
   };
 }
 
@@ -2227,23 +2143,32 @@ function mapTipSenderCost(
   cost: MobileServerTipSenderCost,
 ): MobileTipSenderCost {
   return {
-    maxFeeX18: toBigNumber(cost.max_fee_x18),
-    actualFeeX18: mapTipNullableX18(cost.actual_fee_x18),
-    actualTotalX18: mapTipNullableX18(cost.actual_total_x18),
-    displayFeeX18: toBigNumber(cost.display_fee_x18),
-    displayTotalX18: toBigNumber(cost.display_total_x18),
+    maxFee: toBigNumber(cost.max_fee_x18),
+    actualFee: mapTipNullableAmount(cost.actual_fee_x18),
+    actualTotal: mapTipNullableAmount(cost.actual_total_x18),
+    displayFee: toBigNumber(cost.display_fee_x18),
+    displayTotal: toBigNumber(cost.display_total_x18),
     feeBasis: cost.fee_basis,
   };
 }
 
 function mapTipHistoryRow(row: MobileServerTipHistoryRow): MobileTipHistoryRow {
-  const common: MobileTipHistoryCommon = {
+  const common = mapTipHistoryCommon(row);
+  return row.role === 'sender'
+    ? { ...common, role: row.role }
+    : { ...common, role: row.role, seenAt: row.seen_at };
+}
+
+function mapTipHistoryCommon(
+  row: MobileServerTipHistoryCommon,
+): MobileTipHistoryCommon {
+  return {
     tipId: row.tip_id,
     tipStatus: row.tip_status,
     sender: mapMobileTipParticipant(row.sender),
     recipient: mapMobileTipParticipant(row.recipient),
     productId: row.product_id,
-    netAmountX18: toBigNumber(row.net_amount_x18),
+    netAmount: toBigNumber(row.net_amount_x18),
     visibility: row.visibility,
     note: row.note,
     submittedAtMs: row.submitted_at_ms,
@@ -2251,11 +2176,8 @@ function mapTipHistoryRow(row: MobileServerTipHistoryRow): MobileTipHistoryRow {
     withdrawalSubmissionIdx: row.withdrawal_submission_idx,
     depositSubmissionIdx: row.deposit_submission_idx,
   };
-  return row.role === 'sender'
-    ? { ...common, role: row.role }
-    : { ...common, role: row.role, seenAt: row.seen_at };
 }
 
-function mapTipNullableX18(value: string | null): BigNumber | null {
+function mapTipNullableAmount(value: string | null): BigNumber | null {
   return value === null ? null : toBigNumber(value);
 }

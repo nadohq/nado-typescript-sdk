@@ -259,17 +259,17 @@ export type MobileSignedInner =
 export type MobileSignedInnerByType<T extends MobileSignedInner['type']> =
   Extract<MobileSignedInner, { type: T }>;
 
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
 /**
  * Type-specific payload fields for a signed inner request of a given `type` (the inner payload without its
  * `type` tag). Each mode retains its own fields when multiple payloads share a type. Derived from
  * {@link MobileSignedInner} so the two never drift apart.
  */
 export type MobileSignedInnerParams<T extends MobileSignedInner['type']> =
-  MobileSignedInnerByType<T> extends infer Inner
-    ? Inner extends MobileSignedInner
-      ? Omit<Inner, 'type'>
-      : never
-    : never;
+  DistributiveOmit<MobileSignedInnerByType<T>, 'type'>;
 
 /**
  * A signed mobile service API request body: the inner payload flattened with its signature, sender, and

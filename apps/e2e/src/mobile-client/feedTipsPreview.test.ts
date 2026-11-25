@@ -202,13 +202,13 @@ function assertPreviewFields(
     }
   }
   assert.equal(
-    Object.hasOwn(client, 'publicTipTotalX18'),
+    Object.hasOwn(client, 'publicTipTotal'),
     Object.hasOwn(wire, 'public_tip_total_x18'),
   );
   if (Object.hasOwn(wire, 'public_tip_total_x18')) {
     assert.equal(typeof wire.public_tip_total_x18, 'string');
     assert.match(wire.public_tip_total_x18 as string, /^(0|[1-9]\d*)$/);
-    const total = client.publicTipTotalX18;
+    const total = client.publicTipTotal;
     assert.ok(
       BigNumber.isBigNumber(total),
       'The Tip total must remain an exact BigNumber in x18 units.',

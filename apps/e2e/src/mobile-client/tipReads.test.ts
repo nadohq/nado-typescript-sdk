@@ -100,7 +100,7 @@ void describe(
         assert.equal(typeof tip.tipId, 'string');
         assert.equal(tip.seenAt, null);
         assertNonNegativeInteger(tip.creditedAtMs, 'creditedAtMs');
-        assert.ok(tip.netAmountX18.isFinite() && tip.netAmountX18.gte(0));
+        assert.ok(tip.netAmount.isFinite() && tip.netAmount.gte(0));
         assert.equal(typeof tip.backgroundId, 'string');
         assert.equal(typeof tip.backgroundVersion, 'string');
         assert.equal(tip.sender.subaccount.subaccountOwner.length, 42);
@@ -125,9 +125,9 @@ function assertHistoryRow(tip: MobileTipHistoryRow): void {
   assert.equal(typeof tip.tipId, 'string');
   assert.ok(MOBILE_TIP_STATUSES.includes(tip.tipStatus));
   assert.ok(
-    tip.netAmountX18.isFinite() &&
-      tip.netAmountX18.isInteger() &&
-      tip.netAmountX18.gte(0),
+    tip.netAmount.isFinite() &&
+      tip.netAmount.isInteger() &&
+      tip.netAmount.gte(0),
   );
   assertNonNegativeInteger(tip.submittedAtMs, 'submittedAtMs');
   if (tip.creditedAtMs !== null)
@@ -148,18 +148,18 @@ function assertHistoryRow(tip: MobileTipHistoryRow): void {
 function assertDetail(tip: MobileTipDetail): void {
   assert.match(tip.version, /^(0|[1-9]\d*)$/);
   assert.ok(MOBILE_TIP_STATUSES.includes(tip.tipStatus));
-  assert.ok(tip.netAmountX18.isFinite() && tip.netAmountX18.gte(0));
+  assert.ok(tip.netAmount.isFinite() && tip.netAmount.gte(0));
   assert.equal(typeof tip.backgroundVersion, 'string');
   if (tip.role === 'sender') {
     const cost = tip.senderCost;
     assert.ok(MOBILE_TIP_FEE_BASES.includes(cost.feeBasis));
     assert.ok(MOBILE_TIP_GATEWAY_STATUSES.includes(tip.gateway.status));
     for (const amount of [
-      cost.maxFeeX18,
-      cost.actualFeeX18,
-      cost.actualTotalX18,
-      cost.displayFeeX18,
-      cost.displayTotalX18,
+      cost.maxFee,
+      cost.actualFee,
+      cost.actualTotal,
+      cost.displayFee,
+      cost.displayTotal,
     ]) {
       if (amount !== null) {
         assert.ok(amount.isFinite() && amount.isInteger() && amount.gte(0));
@@ -167,29 +167,25 @@ function assertDetail(tip: MobileTipDetail): void {
     }
     switch (cost.feeBasis) {
       case 'execution_cap':
-        assert.equal(cost.actualFeeX18, null);
-        assert.equal(cost.actualTotalX18, null);
-        assert.ok(cost.displayFeeX18.eq(cost.maxFeeX18));
-        assert.ok(
-          cost.displayTotalX18.eq(tip.netAmountX18.plus(cost.maxFeeX18)),
-        );
+        assert.equal(cost.actualFee, null);
+        assert.equal(cost.actualTotal, null);
+        assert.ok(cost.displayFee.eq(cost.maxFee));
+        assert.ok(cost.displayTotal.eq(tip.netAmount.plus(cost.maxFee)));
         break;
       case 'actual':
-        assert.ok(cost.actualFeeX18 !== null && cost.actualTotalX18 !== null);
-        assert.ok(
-          cost.actualTotalX18.eq(tip.netAmountX18.plus(cost.actualFeeX18)),
-        );
-        assert.ok(cost.displayFeeX18.eq(cost.actualFeeX18));
-        assert.ok(cost.displayTotalX18.eq(cost.actualTotalX18));
+        assert.ok(cost.actualFee !== null && cost.actualTotal !== null);
+        assert.ok(cost.actualTotal.eq(tip.netAmount.plus(cost.actualFee)));
+        assert.ok(cost.displayFee.eq(cost.actualFee));
+        assert.ok(cost.displayTotal.eq(cost.actualTotal));
         break;
       case 'not_executed':
         assert.notEqual(tip.gateway.status, 'accepted');
         assert.equal(tip.creditedAtMs, null);
-        assert.ok(cost.actualFeeX18 !== null && cost.actualTotalX18 !== null);
-        assert.ok(cost.actualFeeX18.isZero());
-        assert.ok(cost.actualTotalX18.isZero());
-        assert.ok(cost.displayFeeX18.isZero());
-        assert.ok(cost.displayTotalX18.isZero());
+        assert.ok(cost.actualFee !== null && cost.actualTotal !== null);
+        assert.ok(cost.actualFee.isZero());
+        assert.ok(cost.actualTotal.isZero());
+        assert.ok(cost.displayFee.isZero());
+        assert.ok(cost.displayTotal.isZero());
         break;
     }
     assert.ok(!('seenAt' in tip));

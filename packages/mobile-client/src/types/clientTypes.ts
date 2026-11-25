@@ -1115,7 +1115,7 @@ export interface MobileSocialFeedContentBase extends MobileSocialFeedItemBase {
   /** Readable comment preview. */
   commentPreview: MobileSocialFeedCommentPreview;
   /** Public Tip total in USDT0 x18 units; zero means none, omission hides the amount. */
-  publicTipTotalX18?: BigNumber;
+  publicTipTotal?: BigNumber;
 }
 
 /** Trade card with optional authored text and analysis. */
@@ -1243,7 +1243,7 @@ export interface MobileSocialFeedItemPatch {
   /** Updated capability flags; omission leaves existing flags unchanged. */
   capabilities?: MobileSocialFeedCapabilities;
   /** Updated public Tip total in USDT0 x18 units; zero means none, omission leaves it unchanged. */
-  publicTipTotalX18?: BigNumber;
+  publicTipTotal?: BigNumber;
   /** Updated display timestamp; does not reorder the current list. */
   displayAtMs: number;
   /** Updated aggregate count. */
@@ -2210,8 +2210,8 @@ export interface GetMobileTipCollateralMappingsParams extends MobileSignedReques
   /** Source collateral-history direction. */
   direction: MobileTipCollateralDirection;
   /**
-   * Canonical unsigned 64-bit decimal indices, deduplicated before signing in first-occurrence order.
-   * Must contain one to one hundred unique indices.
+   * One to one hundred distinct canonical unsigned 64-bit decimal indices, sent unchanged.
+   * The server rejects invalid or repeated indices with INVALID_TIP_REQUEST.
    */
   submissionIndices: string[];
 }
@@ -2231,16 +2231,16 @@ export interface MobileTipCollateralMapping {
   /** Ordinary-versus-Tip attribution; pending does not mean a zero Tip contribution. */
   classification: MobileTipCollateralClassification;
   /** Verified deposit principal in x18 units; null when unknown or for withdrawals. */
-  depositTotalX18: BigNumber | null;
+  depositTotal: BigNumber | null;
   /** Tip contribution in x18 units, or null while unknown; a known zero remains zero. */
-  tipTotalX18: BigNumber | null;
+  tipTotal: BigNumber | null;
   /** Ordinary remainder in x18 units; null when unknown or for withdrawals. */
-  ordinaryAmountX18: BigNumber | null;
+  ordinaryAmount: BigNumber | null;
 }
 
 /** Annotations for the requested Indexer indices, including partial pending results. */
 export interface MobileTipCollateralMappings {
-  /** One annotation per unique requested index, in first-occurrence order. */
+  /** One annotation per requested index, in server order. */
   mappings: MobileTipCollateralMapping[];
 }
 
@@ -2295,15 +2295,15 @@ export interface MobileTipParticipant {
 /** Sender-only cost display, preserving unknown actual amounts independently of the confirmed cap. */
 export interface MobileTipSenderCost {
   /** Highest explicitly approved execution fee in integer x18 units. */
-  maxFeeX18: BigNumber;
+  maxFee: BigNumber;
   /** Verified execution fee in integer x18 units, or null while unknown. */
-  actualFeeX18: BigNumber | null;
+  actualFee: BigNumber | null;
   /** Verified net amount plus fee in integer x18 units, or null while unknown. */
-  actualTotalX18: BigNumber | null;
+  actualTotal: BigNumber | null;
   /** Display fee in integer x18 units, interpreted according to feeBasis. */
-  displayFeeX18: BigNumber;
+  displayFee: BigNumber;
   /** Display total in integer x18 units, interpreted according to feeBasis. */
-  displayTotalX18: BigNumber;
+  displayTotal: BigNumber;
   /**
    * Execution cap, verified actual values, or confirmed non-execution after termination.
    * not_executed reports zero actual/display amounts; review_required alone does not imply it.
@@ -2311,14 +2311,12 @@ export interface MobileTipSenderCost {
   feeBasis: MobileTipFeeBasis;
 }
 
-/** Participant detail shared by both roles; verified credit history survives later review. */
-export interface MobileTipDetailCommon {
-  /** Payment record UUID, distinct from the public Feed item UUID. */
+/** Participant history fields, without the detail response's fee breakdown. */
+export interface MobileTipHistoryCommon {
+  /** Payment record UUID. */
   tipId: string;
-  /** Current business state; a verified creditedAtMs still establishes delivery during review. */
+  /** Current business state, retaining verified credit history through review. */
   tipStatus: MobileTipStatus;
-  /** Exact optimistic-concurrency version; never convert to a JavaScript number. */
-  version: string;
   /** Sending participant. */
   sender: MobileTipParticipant;
   /** Receiving participant. */
@@ -2326,11 +2324,25 @@ export interface MobileTipDetailCommon {
   /** Source asset product ID. */
   productId: number;
   /** Net payment amount in integer x18 units. */
-  netAmountX18: BigNumber;
+  netAmount: BigNumber;
   /** Public Feed publication preference. */
   visibility: MobileTipVisibility;
-  /** Unmodified message, or null when unset. */
+  /** Unmodified message, or null. */
   note: string | null;
+  /** Original admission time in UTC milliseconds. */
+  submittedAtMs: number;
+  /** Verified credit time in UTC milliseconds, or null. */
+  creditedAtMs: number | null;
+  /** Exact withdrawal submission index, or null. */
+  withdrawalSubmissionIdx: string | null;
+  /** Exact recipient deposit submission index, or null. */
+  depositSubmissionIdx: string | null;
+}
+
+/** Participant detail shared by both roles; verified credit history survives later review. */
+export interface MobileTipDetailCommon extends MobileTipHistoryCommon {
+  /** Exact optimistic-concurrency version; never convert to a JavaScript number. */
+  version: string;
   /** Catalog background identifier fixed at admission. */
   backgroundId: string;
   /** Opaque catalog version fixed at admission. */
@@ -2338,17 +2350,9 @@ export interface MobileTipDetailCommon {
   /** Saved original-post UUID, or null for a profile Tip. */
   originPostId: string | null;
   /** Current original-post readability, or null when no reference exists. */
-  originAvailability: MobileTipOriginAvailability;
+  originAvailability: MobileTipOriginAvailability | null;
   /** Public Feed item UUID while readable, otherwise null. */
   feedItemId: string | null;
-  /** Original admission time in UTC milliseconds. */
-  submittedAtMs: number;
-  /** Verified recipient credit time in UTC milliseconds, or null while unverified. */
-  creditedAtMs: number | null;
-  /** Exact withdrawal submission index, or null while unknown. */
-  withdrawalSubmissionIdx: string | null;
-  /** Exact recipient deposit submission index, or null while unknown. */
-  depositSubmissionIdx: string | null;
 }
 
 /** Sender detail with private fee and execution facts; recipient seen state is omitted. */
@@ -2373,34 +2377,6 @@ export interface MobileRecipientTipDetail extends MobileTipDetailCommon {
 
 /** Role-discriminated participant detail returned without changing read state. */
 export type MobileTipDetail = MobileSenderTipDetail | MobileRecipientTipDetail;
-
-/** Participant history fields, without the detail response's fee breakdown. */
-export interface MobileTipHistoryCommon {
-  /** Payment record UUID. */
-  tipId: string;
-  /** Current business state, retaining verified credit history through review. */
-  tipStatus: MobileTipStatus;
-  /** Sending participant. */
-  sender: MobileTipParticipant;
-  /** Receiving participant. */
-  recipient: MobileTipParticipant;
-  /** Source asset product ID. */
-  productId: number;
-  /** Net payment amount in integer x18 units. */
-  netAmountX18: BigNumber;
-  /** Public Feed publication preference. */
-  visibility: MobileTipVisibility;
-  /** Unmodified message, or null. */
-  note: string | null;
-  /** Original admission time in UTC milliseconds. */
-  submittedAtMs: number;
-  /** Verified credit time in UTC milliseconds, or null. */
-  creditedAtMs: number | null;
-  /** Exact withdrawal submission index, or null. */
-  withdrawalSubmissionIdx: string | null;
-  /** Exact recipient deposit submission index, or null. */
-  depositSubmissionIdx: string | null;
-}
 
 /** Outgoing history row without recipient read state. */
 export interface MobileSenderTipHistoryRow extends MobileTipHistoryCommon {
@@ -2436,7 +2412,7 @@ export interface MobileReceivedTipCard {
   /** Sending participant. */
   sender: MobileTipParticipant;
   /** Verified net payment amount in integer x18 units. */
-  netAmountX18: BigNumber;
+  netAmount: BigNumber;
   /** Unmodified message, or null. */
   note: string | null;
   /** Catalog background identifier fixed at admission. */

@@ -1565,10 +1565,9 @@ export const MOBILE_TIP_ORIGIN_AVAILABILITIES = [
   'unavailable',
 ] as const;
 
-/** Original-post readability, or null when the Tip has no original-post reference. */
+/** Readability of an existing original-post reference. */
 export type MobileTipOriginAvailability =
-  | (typeof MOBILE_TIP_ORIGIN_AVAILABILITIES)[number]
-  | null;
+  (typeof MOBILE_TIP_ORIGIN_AVAILABILITIES)[number];
 
 /** Bases for the sender's displayed fee and total. */
 export const MOBILE_TIP_FEE_BASES = [
@@ -1606,71 +1605,6 @@ export interface MobileServerTipSenderCost {
   fee_basis: MobileTipFeeBasis;
 }
 
-/** Tip detail shared by the sender and the recipient. */
-export interface MobileServerTipDetailCommon {
-  /** Payment record UUID, distinct from the public Feed item UUID. */
-  tip_id: string;
-  /** Current business state; verified credit history survives later review. */
-  tip_status: MobileTipStatus;
-  /** Exact optimistic-concurrency version as a decimal integer string. */
-  version: string;
-  /** Sending participant. */
-  sender: MobileServerTipParticipant;
-  /** Receiving participant. */
-  recipient: MobileServerTipParticipant;
-  /** Source asset product ID. */
-  product_id: number;
-  /** Net payment amount in integer x18 units. */
-  net_amount_x18: string;
-  /** Public Feed publication preference. */
-  visibility: MobileTipVisibility;
-  /** Unmodified message, or null when unset. */
-  note: string | null;
-  /** Catalog background identifier fixed when Mobile admitted the Tip. */
-  background_id: string;
-  /** Opaque catalog version fixed at admission. */
-  background_version: string;
-  /** Saved original-post UUID, or null for a profile Tip. */
-  origin_post_id: string | null;
-  /** Current original-post readability, or null when no reference exists. */
-  origin_availability: MobileTipOriginAvailability;
-  /** Public Feed item UUID while readable, otherwise null. */
-  feed_item_id: string | null;
-  /** Original admission time in UTC milliseconds. */
-  submitted_at_ms: number;
-  /** Verified recipient credit time in UTC milliseconds, or null while unverified. */
-  credited_at_ms: number | null;
-  /** Exact withdrawal submission index, or null while unknown. */
-  withdrawal_submission_idx: string | null;
-  /** Exact recipient deposit submission index, or null while unknown. */
-  deposit_submission_idx: string | null;
-}
-
-/** Sender detail, including private execution facts and no recipient read state. */
-export interface MobileServerSenderTipDetail extends MobileServerTipDetailCommon {
-  /** Sender perspective. */
-  role: 'sender';
-  /** Sender-only fee breakdown. */
-  sender_cost: MobileServerTipSenderCost;
-  /** Latest Gateway outcome, independent of verified recipient credit. */
-  gateway: MobileServerTipGatewayResult;
-  /** Open-ended processing reason, or null when none is recorded. */
-  processing_reason: string | null;
-}
-
-/** Recipient detail, available after verified credit and excluding sender execution facts. */
-export interface MobileServerRecipientTipDetail extends MobileServerTipDetailCommon {
-  /** Recipient perspective. */
-  role: 'recipient';
-  /** First explicit acknowledgment time in UTC milliseconds, or null while unread. */
-  seen_at: number | null;
-}
-
-/** Authenticated detail whose role determines its private fields. */
-export type MobileServerTipDetail =
-  | MobileServerSenderTipDetail
-  | MobileServerRecipientTipDetail;
-
 /** Participant history fields; the fee breakdown is available only from detail. */
 export interface MobileServerTipHistoryCommon {
   /** Payment record UUID. */
@@ -1698,6 +1632,47 @@ export interface MobileServerTipHistoryCommon {
   /** Exact recipient deposit submission index, or null. */
   deposit_submission_idx: string | null;
 }
+
+/** Tip detail shared by the sender and the recipient. */
+export interface MobileServerTipDetailCommon extends MobileServerTipHistoryCommon {
+  /** Exact optimistic-concurrency version as a decimal integer string. */
+  version: string;
+  /** Catalog background identifier fixed when Mobile admitted the Tip. */
+  background_id: string;
+  /** Opaque catalog version fixed at admission. */
+  background_version: string;
+  /** Saved original-post UUID, or null for a profile Tip. */
+  origin_post_id: string | null;
+  /** Current original-post readability, or null when no reference exists. */
+  origin_availability: MobileTipOriginAvailability | null;
+  /** Public Feed item UUID while readable, otherwise null. */
+  feed_item_id: string | null;
+}
+
+/** Sender detail, including private execution facts and no recipient read state. */
+export interface MobileServerSenderTipDetail extends MobileServerTipDetailCommon {
+  /** Sender perspective. */
+  role: 'sender';
+  /** Sender-only fee breakdown. */
+  sender_cost: MobileServerTipSenderCost;
+  /** Latest Gateway outcome, independent of verified recipient credit. */
+  gateway: MobileServerTipGatewayResult;
+  /** Open-ended processing reason, or null when none is recorded. */
+  processing_reason: string | null;
+}
+
+/** Recipient detail, available after verified credit and excluding sender execution facts. */
+export interface MobileServerRecipientTipDetail extends MobileServerTipDetailCommon {
+  /** Recipient perspective. */
+  role: 'recipient';
+  /** First explicit acknowledgment time in UTC milliseconds, or null while unread. */
+  seen_at: number | null;
+}
+
+/** Authenticated detail whose role determines its private fields. */
+export type MobileServerTipDetail =
+  | MobileServerSenderTipDetail
+  | MobileServerRecipientTipDetail;
 
 /** Outgoing history row without recipient read state. */
 export interface MobileServerSenderTipHistoryRow extends MobileServerTipHistoryCommon {
