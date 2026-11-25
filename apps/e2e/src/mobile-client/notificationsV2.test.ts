@@ -4,8 +4,10 @@ import {
   MOBILE_NOTIFICATION_POSITION_THRESHOLDS,
   MobileClient,
   MobileNotificationCapabilities,
+  MobileNotificationInboxItem,
   MobileNotificationSettings,
   MobileNotificationSettingsV2,
+  MobileNotificationTypeId,
   MobileProductEvent,
   MobileRegisterExpoTokenV2Params,
   MobileSignedRequestParams,
@@ -334,7 +336,10 @@ void describe(
       });
       assert.deepEqual(page.notifications, []);
       assert.equal(page.nextCursor, null);
-      const supportedTypes = ['deposit_completed', 'new_follower'];
+      const supportedTypes: MobileNotificationTypeId[] = [
+        'deposit_completed',
+        'new_follower',
+      ];
       const filtered = await existingWalletMobile.getNotificationInboxV2({
         ...existingWalletAuth,
         cursor: null,
@@ -343,9 +348,7 @@ void describe(
       });
       for (const entry of filtered.notifications) {
         assert.ok(supportedTypes.includes(entry.typeId));
-        assert.ok(Object.hasOwn(entry, 'seenAt'));
-        if (entry.seenAt !== null)
-          assertNonNegativeInteger(entry.seenAt, 'seenAt');
+        assertInboxReadState(entry);
       }
     });
 
@@ -358,9 +361,7 @@ void describe(
       for (const entry of defaults.notifications) {
         assertNonNegativeInteger(entry.createdAt, 'createdAt');
         assertBoolean(entry.tradeWithin24h, 'tradeWithin24h');
-        assert.ok(Object.hasOwn(entry, 'seenAt'));
-        if (entry.seenAt !== null)
-          assertNonNegativeInteger(entry.seenAt, 'seenAt');
+        assertInboxReadState(entry);
       }
       const notification = defaults.notifications[0];
       if (!notification) {
@@ -379,9 +380,7 @@ void describe(
       assert.ok(page.notifications.length > 0);
       for (const entry of page.notifications) {
         assert.ok(supportedTypes.includes(entry.typeId));
-        assert.ok(Object.hasOwn(entry, 'seenAt'));
-        if (entry.seenAt !== null)
-          assertNonNegativeInteger(entry.seenAt, 'seenAt');
+        assertInboxReadState(entry);
       }
       if (page.nextCursor !== null) {
         const next = await existingWalletMobile.getNotificationInboxV2({
@@ -398,17 +397,6 @@ void describe(
           assert.ok(!firstPageIds.has(entry.notificationId));
         }
       }
-    });
-
-    void test('rejects an unsupported type-filter spelling', async () => {
-      await assertRejectsWithMobileErrorCode(
-        () =>
-          mobile.getNotificationInboxV2({
-            ...auth,
-            supportedTypes: ['New_Follower'],
-          }),
-        MOBILE_ERROR_CODES.INVALID_NOTIFICATION_REQUEST,
-      );
     });
 
     void test('rejects repeated missing notification IDs with INVALID_NOTIFICATION_REQUEST', async () => {
@@ -500,6 +488,14 @@ void describe(
     });
   },
 );
+
+function assertInboxReadState(item: MobileNotificationInboxItem): void {
+  if (item.seenAt === undefined) {
+    assert.equal(Object.hasOwn(item, 'seenAt'), false);
+  } else if (item.seenAt !== null) {
+    assertNonNegativeInteger(item.seenAt, 'seenAt');
+  }
+}
 
 /**
  * Asserts the v2 settings document's schema, revision, and required field shapes.

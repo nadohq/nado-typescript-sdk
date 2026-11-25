@@ -38,7 +38,6 @@ export function canonicalizeMobileInner(
         submission_indices: [...inner.submission_indices],
       };
     case 'received_tips':
-    case 'notification_inbox_v3':
       return {
         type: inner.type,
         cursor: inner.cursor ?? null,

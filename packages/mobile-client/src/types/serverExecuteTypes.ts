@@ -14,10 +14,7 @@ import {
   MobileServerTipGatewayResult,
   MobileTipStatus,
 } from './serverModelTypes';
-import {
-  MobileServerNotificationSettingsV2Response,
-  MobileServerNotificationSettingsV3Response,
-} from './serverQueryTypes';
+import { MobileServerNotificationSettingsV2Response } from './serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
   MobileServerPublicExecuteRequestByType,
@@ -238,8 +235,6 @@ export interface MobileServerSocialFeedPresenceResponse {
 
 /** Response payloads for unsigned writes. */
 export interface MobileServerPublicExecuteResponseByType {
-  /** Saved v3 document with its advanced settings revision. */
-  update_notification_settings_v3: MobileServerNotificationSettingsV3Response;
   /** Saved document, including the advanced settings revision. */
   update_notification_settings_v2: MobileServerNotificationSettingsV2Response;
   /** Token removal returns only the success envelope. */

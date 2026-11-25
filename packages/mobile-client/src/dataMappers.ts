@@ -14,6 +14,7 @@ import type {
 } from './signing/types';
 import {
   GetMobileFollowListParams,
+  GetMobileNotificationInboxV2Params,
   GetMobileTipCollateralMappingsParams,
   GetMobileTipsHistoryParams,
   MobileAttributeOrdersResult,
@@ -29,7 +30,6 @@ import {
   MobileIdentitySummary,
   MobileNotificationCapabilities,
   MobileNotificationInboxV2,
-  MobileNotificationInboxV3,
   MobileNotificationPayloadV2,
   MobileNotificationPreferenceScope,
   MobileNotificationPreferences,
@@ -37,8 +37,6 @@ import {
   MobileNotificationRoute,
   MobileNotificationSettings,
   MobileNotificationSettingsV2,
-  MobileNotificationSettingsV3,
-  MobileNotificationSettingsV3Values,
   MobileNotificationSubscriptions,
   MobileNotificationSubscriptionsUpdate,
   MobilePositionLookup,
@@ -111,7 +109,6 @@ import {
   MobileTipDetailCommon,
   MobileTipHistoryCommon,
   MobileTipHistoryRow,
-  MobileTipNotificationData,
   MobileTipParticipant,
   MobileTipSenderCost,
   MobileTipsHistoryPage,
@@ -131,6 +128,7 @@ import {
   MobileServerSubmitTipResponse,
 } from './types/serverExecuteTypes';
 import {
+  MOBILE_NOTIFICATION_TYPE_IDS,
   MobileServerAvatarPreset,
   MobileServerAvatarSelection,
   MobileServerFeedTrade,
@@ -141,7 +139,6 @@ import {
   MobileServerNotificationPreferences,
   MobileServerNotificationRoute,
   MobileServerNotificationSettings,
-  MobileServerNotificationSettingsV3,
   MobileServerProductEvent,
   MobileServerProfile,
   MobileServerSocialFeedActionCandidate,
@@ -181,8 +178,6 @@ import {
   MobileServerTipDetail,
   MobileServerTipDetailCommon,
   MobileServerTipHistoryRow,
-  MobileServerTipNotificationCommon,
-  MobileServerTipNotificationData,
   MobileServerTipParticipant,
   MobileServerTipSenderCost,
   MobileServerTipWithdrawal,
@@ -192,10 +187,8 @@ import {
   MobileServerFeedResponse,
   MobileServerFollowListResponse,
   MobileServerNotificationInboxV2Response,
-  MobileServerNotificationInboxV3Response,
   MobileServerNotificationRegistrationV2Response,
   MobileServerNotificationSettingsV2Response,
-  MobileServerNotificationSettingsV3Response,
   MobileServerNotificationSubscriptionsResponse,
   MobileServerPositionLookupResponse,
   MobileServerReceivedTipsResponse,
@@ -350,30 +343,6 @@ export function mapMobileNotificationSettingsV2(
   };
 }
 
-/** Maps all ten v3 settings fields, preserving the current revision and an explicit false preference. */
-export function mapMobileNotificationSettingsV3(
-  server: MobileServerNotificationSettingsV3Response,
-): MobileNotificationSettingsV3 {
-  return {
-    schemaVersion: server.schema_version,
-    revision: server.revision,
-    settings: {
-      ...mapMobileNotificationSettings(server.settings),
-      likesAndReplies: server.settings.likes_and_replies,
-    },
-  };
-}
-
-/** Maps a complete v3 settings replacement without changing the existing nine v2 fields. */
-export function mapMobileNotificationSettingsV3ToServer(
-  settings: MobileNotificationSettingsV3Values,
-): MobileServerNotificationSettingsV3 {
-  return {
-    ...mapMobileNotificationSettingsToServer(settings),
-    likes_and_replies: settings.likesAndReplies,
-  };
-}
-
 /** Maps wallet market subscriptions and Identity bells.
  * @param server - Subscription payload.
  * @returns Client subscription state without the response envelope.
@@ -469,7 +438,7 @@ export function mapMobileNotificationInboxV2(
       typeId: item.type_id,
       data: mapMobileNotificationPayloadV2(item.data),
       createdAt: item.created_at,
-      seenAt: item.seen_at,
+      ...(item.seen_at === undefined ? {} : { seenAt: item.seen_at }),
       tradeWithin24h: item.trade_within_24h,
     })),
     nextCursor: server.next_cursor,
@@ -477,77 +446,31 @@ export function mapMobileNotificationInboxV2(
 }
 
 /**
- * Maps a v3 inbox without acknowledging notifications or changing existing notification data.
- * Tip data retains its server-rendered text and nullable thread targets.
- * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route or a
- * route that does not match its notification type.
+ * Maps Inbox filters without requesting notification types this SDK cannot decode.
+ * @throws {RangeError} If a filter includes an unsupported notification type.
  */
-export function mapMobileNotificationInboxV3(
-  server: MobileServerNotificationInboxV3Response,
-): MobileNotificationInboxV3 {
-  return {
-    notifications: server.notifications.map((item) => ({
-      notificationId: item.notification_id,
-      typeId: item.type_id,
-      data: mapMobileNotificationInboxV3Data(item.data),
-      createdAt: item.created_at,
-      tradeWithin24h: item.trade_within_24h,
-      seenAt: item.seen_at,
-    })),
-    nextCursor: server.next_cursor,
-  };
-}
-
-function mapMobileNotificationInboxV3Data(
-  server: MobileServerNotificationPayloadV2 | MobileServerTipNotificationData,
-): MobileNotificationPayloadV2 | MobileTipNotificationData {
-  switch (server.type_id) {
-    case 'tip_received':
-      checkMobileTipNotificationRoute(server.route.name, 'tip');
-      return {
-        ...mapMobileTipNotificationCommon(server),
-        typeId: server.type_id,
-        route: { name: 'tip', tipId: server.route.tip_id },
-      };
-    case 'tip_liked':
-    case 'tip_replied':
-      checkMobileTipNotificationRoute(server.route.name, 'tip_thread');
-      return {
-        ...mapMobileTipNotificationCommon(server),
-        typeId: server.type_id,
-        route: {
-          name: 'tip_thread',
-          tipId: server.route.tip_id,
-          feedItemId: server.route.feed_item_id,
-          originPostId: server.route.origin_post_id,
-          replyItemId: server.route.reply_item_id,
-        },
-      };
-    default:
-      return mapMobileNotificationPayloadV2(server);
+export function mapMobileNotificationInboxV2ParamsToServer(
+  params: Pick<
+    GetMobileNotificationInboxV2Params,
+    'cursor' | 'limit' | 'supportedTypes'
+  >,
+): MobileSignedInnerParams<'notification_inbox_v2'> {
+  if (
+    params.supportedTypes?.some(
+      (type) => !MOBILE_NOTIFICATION_TYPE_IDS.includes(type),
+    )
+  ) {
+    throw new RangeError(
+      'supportedTypes contains a notification type not supported by this SDK.',
+    );
   }
-}
-
-function mapMobileTipNotificationCommon(
-  server: MobileServerTipNotificationCommon,
-) {
   return {
-    payloadVersion: server.payload_version,
-    notificationId: server.notification_id,
-    recipientWallet: server.recipient_wallet,
-    templateVersion: server.template_version,
-    title: server.title,
-    body: server.body,
+    cursor: params.cursor ?? null,
+    limit: params.limit ?? null,
+    ...(params.supportedTypes === undefined
+      ? {}
+      : { supported_types: [...params.supportedTypes] }),
   };
-}
-
-function checkMobileTipNotificationRoute(
-  actual: string,
-  expected: string,
-): void {
-  if (actual !== expected) {
-    throw new MobileUnsupportedNotificationRouteError(actual);
-  }
 }
 
 /** Maps a typed analytics interaction, nulling unused wire fields.

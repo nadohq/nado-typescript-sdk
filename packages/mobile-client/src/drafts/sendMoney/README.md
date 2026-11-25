@@ -68,11 +68,14 @@ Review/pending rows may retain verified principal while split amounts remain unk
 never describe recipient delivery and keep deposit total and ordinary amount `null`.
 
 The current testnet handoff specifies notification v2 Inbox/settings and `mark_notifications_seen`,
-separate from Tip read receipts. `MobileClient` provides their formal transports: v2 Inbox entries include
-`seenAt`, and its query accepts optional `supportedTypes` filters. Settings use schema 2 and an optional
-`likesAndReplies` write: omission preserves the saved preference, while an explicit false disables it.
-Retained notification v3 SDK methods do not imply deployment by this handoff. Notification operations
-remain outside this mock adapter; its decoded transport does not supply authentication.
+separate from Tip read receipts. `MobileClient` provides their formal transports. V2 Inbox entries may
+include `seenAt`: null means unread, a number is the first display acknowledgement in UTC milliseconds,
+and omission preserves an older response's unavailable read state rather than implying it was read.
+The optional `supportedTypes` filter accepts only types this SDK decodes, listed in
+`MOBILE_NOTIFICATION_TYPE_IDS`; it does not enable Tip-specific or unknown notification types.
+Settings use schema 2. Omit optional `likesAndReplies` to preserve the saved preference; explicit false
+disables it. Notification operations remain outside this mock adapter; its decoded transport does not
+supply authentication.
 
 Feed preview totals are also outside this adapter. The service counts only Tips to the original author
 that are public, currently credited, and satisfy Feed visibility. A credit later under review remains in

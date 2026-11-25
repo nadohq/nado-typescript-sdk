@@ -160,4 +160,28 @@ describe('v2 notification read-state signing', () => {
       getMobilePayloadHash(reversed),
     );
   });
+
+  it('preserves seen-ID order and duplicates for server-side deduplication', () => {
+    const inner: MobileSignedInnerByType<'mark_notifications_seen'> = {
+      type: 'mark_notifications_seen',
+      notification_ids: [
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+        '11111111-1111-4111-8111-111111111111',
+      ],
+    };
+    const canonical = canonicalizeMobileInner(inner);
+    expect(canonical).toEqual(inner);
+    if (canonical.type === 'mark_notifications_seen') {
+      expect(canonical.notification_ids).not.toBe(inner.notification_ids);
+    }
+    expect(getMobilePayloadHash(canonical)).not.toBe(
+      getMobilePayloadHash(
+        canonicalizeMobileInner({
+          ...inner,
+          notification_ids: [...new Set(inner.notification_ids)],
+        }),
+      ),
+    );
+  });
 });

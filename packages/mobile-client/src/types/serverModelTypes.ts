@@ -33,27 +33,30 @@ export interface MobileServerAvatarPreset {
  */
 export type MobileNotificationPlatform = 'ios' | 'android';
 
-/**
- * Notification types supported by the v2 payload protocol.
- */
+/** Notification types whose v2 payloads and routes this SDK can decode. */
+export const MOBILE_NOTIFICATION_TYPE_IDS = [
+  'new_follower',
+  'followed_you_back',
+  'order_fill',
+  'order_update',
+  'liquidation',
+  'near_liquidation',
+  'trader_opened',
+  'trader_closed',
+  'position_milestone',
+  'market_movement',
+  'market_daily_move',
+  'market_large_trade',
+  'notable_trader',
+  'trader_streak',
+  'account_drama',
+  'weekly_digest',
+  'deposit_completed',
+] as const;
+
+/** Notification types supported by the v2 payload protocol and this SDK's decoder. */
 export type MobileNotificationTypeId =
-  | 'new_follower'
-  | 'followed_you_back'
-  | 'order_fill'
-  | 'order_update'
-  | 'liquidation'
-  | 'near_liquidation'
-  | 'trader_opened'
-  | 'trader_closed'
-  | 'position_milestone'
-  | 'market_movement'
-  | 'market_daily_move'
-  | 'market_large_trade'
-  | 'notable_trader'
-  | 'trader_streak'
-  | 'account_drama'
-  | 'weekly_digest'
-  | 'deposit_completed';
+  (typeof MOBILE_NOTIFICATION_TYPE_IDS)[number];
 
 /**
  * Named navigation destinations supported by notification payloads.
@@ -323,12 +326,6 @@ export interface MobileServerNotificationSettings {
   likes_and_replies?: boolean;
 }
 
-/** Full v3 notification settings, including the wallet's saved social interaction preference. */
-export interface MobileServerNotificationSettingsV3 extends MobileServerNotificationSettings {
-  /** Like/reply push preference; the service returns true for an unset legacy value. */
-  likes_and_replies: boolean;
-}
-
 /**
  * Server-side allowlisted destination; notification data must never be interpreted as an arbitrary URL.
  */
@@ -380,85 +377,10 @@ export interface MobileServerNotificationInboxItem {
   data: MobileServerNotificationPayloadV2;
   /** Intent acceptance time in milliseconds. */
   created_at: number;
-  /** First acknowledgement in UTC milliseconds, or null while unread. */
-  seen_at: number | null;
+  /** First acknowledgement in UTC milliseconds; null is unread, omission means unavailable read state. */
+  seen_at?: number | null;
   /** Backend-computed trade attribution. */
   trade_within_24h: boolean;
-}
-
-/** Tip notification types understood by v3 inbox data, independent of device registration support. */
-export const MOBILE_TIP_NOTIFICATION_TYPE_IDS = [
-  'tip_received',
-  'tip_liked',
-  'tip_replied',
-] as const;
-
-/** Tip notification type returned in the v3 inbox contract. */
-export type MobileTipNotificationTypeId =
-  (typeof MOBILE_TIP_NOTIFICATION_TYPE_IDS)[number];
-
-/** Private receipt destination carried by Tip notification data. */
-export interface MobileServerTipReceiptNotificationRoute {
-  /** Opens a participant-authorized Tip receipt. */
-  name: 'tip';
-  /** Payment record UUID, distinct from a public Feed item UUID. */
-  tip_id: string;
-}
-
-/** Public Tip thread destination; callers must recheck current access before navigation. */
-export interface MobileServerTipThreadNotificationRoute {
-  /** Opens a public Tip thread. */
-  name: 'tip_thread';
-  /** Payment record UUID. */
-  tip_id: string;
-  /** Public Tip Feed item UUID used as the thread anchor. */
-  feed_item_id: string;
-  /** Original post UUID, or null when there is no readable original. */
-  origin_post_id: string | null;
-  /** Triggering reply UUID, or null for a like notification. */
-  reply_item_id: string | null;
-}
-
-/** Shared Tip notification data; existing v2 notification payload requirements stay unchanged. */
-export interface MobileServerTipNotificationCommon extends Omit<
-  MobileServerNotificationPayloadV2,
-  'type_id' | 'route'
-> {
-  /** Server-generated display title, shared with the push envelope. */
-  title: string;
-  /** Server-generated display body, shared with the push envelope. */
-  body: string;
-}
-
-/** V3 inbox Tip data; this declaration does not advertise Tip support for registered devices. */
-export type MobileServerTipNotificationData =
-  MobileServerTipNotificationCommon &
-    (
-      | {
-          /** Verified receipt notification. */
-          type_id: 'tip_received';
-          /** Private receipt destination. */
-          route: MobileServerTipReceiptNotificationRoute;
-        }
-      | {
-          /** Public interaction notification. */
-          type_id: 'tip_liked' | 'tip_replied';
-          /** Public Tip thread destination. */
-          route: MobileServerTipThreadNotificationRoute;
-        }
-    );
-
-/** Accepted v3 inbox notification, including its independent first-display acknowledgement. */
-export interface MobileServerNotificationInboxV3Item extends Omit<
-  MobileServerNotificationInboxItem,
-  'type_id' | 'data'
-> {
-  /** Existing notification type or a Tip notification type. */
-  type_id: MobileNotificationTypeId | MobileTipNotificationTypeId;
-  /** Existing v2 data remains unchanged; Tip data includes its display strings. */
-  data: MobileServerNotificationPayloadV2 | MobileServerTipNotificationData;
-  /** First display acknowledgement in UTC milliseconds, or null while unseen. */
-  seen_at: number | null;
 }
 
 /**

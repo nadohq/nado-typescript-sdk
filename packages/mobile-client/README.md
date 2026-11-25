@@ -48,8 +48,8 @@ await mobile.setUsername({
 
 The [25 November 2026 testnet deployment](https://github.com/nadohq/nado-mobile-be/actions/runs/45492386197)
 at `450684e` provides the six Tip operations and four notification v2 operations listed below. This
-deployment record does not establish availability on other environments. The SDK retains its notification
-v3 methods, but this testnet handoff guarantees the v2 routes and schema rather than their v3 counterparts.
+deployment record does not establish availability on other environments. Use the notification v2 routes
+and schema documented here for this testnet integration.
 
 `submitTip` authenticates an already owner-signed `WithdrawCollateralV2` through Mobile. The inner
 withdrawal requires the owner, while the outer Mobile authorization can use the current linked signer.
@@ -188,14 +188,15 @@ On this testnet, notification settings use `schemaVersion: 2` and include the ef
 `likesAndReplies` preference. The nine original settings are required on replacement; omit
 `likesAndReplies` to preserve its saved value, or send an explicit boolean to change it, including
 `false`. New wallets default to true. Re-read on 6203 conflicts instead of replaying a stale document.
-V2 Inbox entries preserve `createdAt` and nullable `seenAt`; existing notification data keeps its shape.
-The retained v3 SDK methods use their separate schema and request types and are not the routes specified
-by this testnet deployment record.
+V2 Inbox entries preserve `createdAt`; an included `seenAt` is null while unread or the first display
+acknowledgement time in UTC milliseconds. Older responses may omit `seenAt`; the SDK preserves that
+omission, which means read state is unavailable rather than already read. Existing notification data
+keeps its shape.
 
 PR6 Tip push generation and device additions, full PR7 public Tip Feed reads, and PR8 thread grouping
-are not deployed in this testnet environment. V3 Inbox types can represent the specified Tip notification
-data, but do not advertise new device capabilities. `MobileSendMoneyDraftClient` remains available for mock
-development with an injected decoded-business transport, without default HTTP or signing behavior.
+are not deployed in this testnet environment. Declare only notification types and routes this SDK supports.
+`MobileSendMoneyDraftClient` remains available for mock development with an injected decoded-business
+transport, without default HTTP or signing behavior.
 See [the draft adapter](src/drafts/sendMoney/README.md).
 
 ### Public Queries
@@ -206,7 +207,7 @@ See [the draft adapter](src/drafts/sendMoney/README.md).
 `getPositionLookup`, `getSelfFeedPositions`, `resolveFeedPosition`, `resolveFeedAction`, `getFeedChartDrawing`, `getFeedComments`,
 `getPositionHistory`, `getPositionHistoryAll`, `getPositionThoughts`, `getPositionChart`, `getPositionWatchers`.
 
-`getNotificationRegistrationV2`, `getNotificationSettingsV2`, and `getNotificationSettingsV3` use an active Expo token as their credential,
+`getNotificationRegistrationV2` and `getNotificationSettingsV2` use an active Expo token as their credential,
 not a wallet signature. Before displaying wallet settings, compare the wallet returned by `getRegisteredWallet`
 with the connected wallet (case-insensitively).
 
@@ -376,7 +377,7 @@ price when the new value is unavailable or null.
 
 ### Public Executes
 
-`unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`, `updateNotificationSettingsV3`. These are authenticated by possession of an active Expo
+`unregisterExpoToken`, `updateNotificationPreferences`, `updateNotificationSettingsV2`. These are authenticated by possession of an active Expo
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 `recordFeedViews` accepts `itemIds`, an array of 1–50 canonical lowercase UUIDs. Posts, trade cards,
@@ -489,7 +490,7 @@ without Mobile session headers.
 
 ### Signed Queries
 
-`getNotificationSubscriptions`, `getNotificationInboxV2`, `getNotificationInboxV3`, `getTipCollateralMappings`,
+`getNotificationSubscriptions`, `getNotificationInboxV2`, `getTipCollateralMappings`,
 `getTipDetail`, `getTipsHistory`, and `getReceivedTips` use wallet authentication on `/query`.
 They do not require an Expo token or system push permission. The configured linked signer is supported.
 
@@ -554,14 +555,17 @@ await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotifica
 - Enabling a bell requires following the target. Unfollowing clears its bell without advancing the subscription
   revision; refresh subscriptions after follow mutations. Bells are Identity-scoped; markets are wallet-scoped.
   Pass `traderBell.subaccount` as a `Subaccount` (`subaccountOwner` and `subaccountName`); the SDK encodes it for signing.
-- V2 Inbox pages contain accepted intents with `createdAt` and first-display `seenAt` in UTC milliseconds;
-  unseen entries have `seenAt: null`. Reading does not acknowledge them, and `markNotificationsSeen`
-  updates notification read state independently of Tip receipts. Push delivery remains separate.
+- V2 Inbox pages contain accepted intents with `createdAt` in UTC milliseconds. When included, `seenAt`
+  is null while unread or a first-display timestamp in UTC milliseconds. Older responses may omit it;
+  omission remains absent in the SDK model and must not be interpreted as read. Reading does not
+  acknowledge notifications. `markNotificationsSeen` updates notification read state independently of
+  Tip receipts. Push delivery remains separate.
   Existing notification data has no title/body, and these pages provide no unread count or delete operation.
   Do not use the unimplemented legacy `notification_history` route.
   An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`.
-- `supportedTypes` is optional: omission selects the existing v2 types and `[]` returns an empty page.
-  It accepts at most 64 names, each containing 1–64 lowercase ASCII letters, digits, or underscores.
+- `supportedTypes` accepts only notification types in `MOBILE_NOTIFICATION_TYPE_IDS`, which this SDK
+  can decode. Omission selects the existing v2 types and `[]` returns an empty page; at most 64 entries
+  are allowed. Tip-specific notification types and unknown types are not supported by this client.
   The canonical signed field order is `type`, `cursor`, `limit`, then `supported_types` only when supplied;
   omitted cursor and limit remain explicit null. Keep the same filters when paging.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,

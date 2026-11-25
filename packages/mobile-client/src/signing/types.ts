@@ -67,14 +67,6 @@ export type MobileSignedInner =
       tip_ids: string[];
     }
   | {
-      /** Wallet notification inbox including first-seen timestamps. */
-      type: 'notification_inbox_v3';
-      /** Opaque cursor, or null for the first page. */
-      cursor: string | null;
-      /** Page size, or null for the server default. */
-      limit: number | null;
-    }
-  | {
       /** Explicit notification acknowledgement; independent of Tip receipt state. */
       type: 'mark_notifications_seen';
       /** One to fifty notification UUIDs actually displayed. */

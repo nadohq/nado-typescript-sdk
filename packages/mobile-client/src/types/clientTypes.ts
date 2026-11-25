@@ -56,7 +56,6 @@ import {
   MobileTipFeeBasis,
   MobileTipGatewayStatus,
   MobileTipMappingState,
-  MobileTipNotificationTypeId,
   MobileTipOriginAvailability,
   MobileTipStatus,
   MobileTipVisibility,
@@ -386,22 +385,6 @@ export interface MobileNotificationSettingsV2 {
   settings: MobileNotificationSettings;
 }
 
-/** Complete v3 settings values; all ten fields are required on replacement. */
-export interface MobileNotificationSettingsV3Values extends MobileNotificationSettings {
-  /** Like/reply push preference; false is an explicit saved choice. */
-  likesAndReplies: boolean;
-}
-
-/** Versioned v3 settings document; the revision continues across a v2-to-v3 upgrade. */
-export interface MobileNotificationSettingsV3 {
-  /** Settings schema version, independent of the push payload version. */
-  schemaVersion: 3;
-  /** Current settings revision used for optimistic concurrency. */
-  revision: number;
-  /** Full saved settings, including the effective like/reply preference. */
-  settings: MobileNotificationSettingsV3Values;
-}
-
 /** Wallet market subscriptions and the signing Identity's enabled trader bells. */
 export interface MobileNotificationSubscriptions {
   /** Wallet-level subscription revision; refresh after every mutation. */
@@ -500,8 +483,8 @@ export interface MobileNotificationInboxItem {
   data: MobileNotificationPayloadV2;
   /** Intent acceptance time in milliseconds. */
   createdAt: number;
-  /** First acknowledgement in UTC milliseconds, or null while unread. */
-  seenAt: number | null;
+  /** First acknowledgement in UTC milliseconds; null is unread, omission means unavailable read state. */
+  seenAt?: number | null;
   /** Backend-computed trade attribution. */
   tradeWithin24h: boolean;
 }
@@ -511,77 +494,6 @@ export interface MobileNotificationInboxV2 {
   /** Accepted intents owned by the signing wallet. */
   notifications: MobileNotificationInboxItem[];
   /** Pass unchanged to the next request, or null when pagination is complete. */
-  nextCursor: string | null;
-}
-
-/** Private receipt destination in v3 inbox Tip data. */
-export interface MobileTipReceiptNotificationRoute {
-  /** Opens a participant-authorized receipt. */
-  name: 'tip';
-  /** Payment record UUID, distinct from the public Feed item UUID. */
-  tipId: string;
-}
-
-/** Public Tip thread destination; recheck current access when opening it. */
-export interface MobileTipThreadNotificationRoute {
-  /** Opens a public Tip thread. */
-  name: 'tip_thread';
-  /** Payment record UUID. */
-  tipId: string;
-  /** Public Tip Feed item UUID used as the thread anchor. */
-  feedItemId: string;
-  /** Original post UUID, or null when no readable original was available. */
-  originPostId: string | null;
-  /** Triggering reply UUID, or null for a like notification. */
-  replyItemId: string | null;
-}
-
-/** Shared display data for Tip notifications without changing existing v2 payloads. */
-export interface MobileTipNotificationCommon extends Omit<
-  MobileNotificationPayloadV2,
-  'typeId' | 'route'
-> {
-  /** Display title supplied by the service. */
-  title: string;
-  /** Display body supplied by the service. */
-  body: string;
-}
-
-/** Tip notification data accepted by the v3 inbox; device capabilities remain opt-in separately. */
-export type MobileTipNotificationData = MobileTipNotificationCommon &
-  (
-    | {
-        /** Verified receipt notification. */
-        typeId: 'tip_received';
-        /** Private receipt destination. */
-        route: MobileTipReceiptNotificationRoute;
-      }
-    | {
-        /** Public interaction notification. */
-        typeId: 'tip_liked' | 'tip_replied';
-        /** Public Tip thread destination. */
-        route: MobileTipThreadNotificationRoute;
-      }
-  );
-
-/** Accepted v3 notification with read state independent of any Tip receipt acknowledgement. */
-export interface MobileNotificationInboxV3Item extends Omit<
-  MobileNotificationInboxItem,
-  'typeId' | 'data'
-> {
-  /** Existing notification type or a Tip notification type. */
-  typeId: MobileNotificationTypeId | MobileTipNotificationTypeId;
-  /** Existing v2 data or server-rendered Tip notification data. */
-  data: MobileNotificationPayloadV2 | MobileTipNotificationData;
-  /** First display acknowledgement in UTC milliseconds, or null while unseen. */
-  seenAt: number | null;
-}
-
-/** Private newest-first v3 inbox page; reading never marks notifications as seen. */
-export interface MobileNotificationInboxV3 {
-  /** Notifications in server order, including their independent display acknowledgement. */
-  notifications: MobileNotificationInboxV3Item[];
-  /** Opaque next cursor, or explicit null when pagination is complete. */
   nextCursor: string | null;
 }
 
@@ -892,17 +804,6 @@ export interface MobileUpdateNotificationSettingsV2Params extends MobileWithExpo
   settings: MobileNotificationSettings;
 }
 
-/** Params for the token-authenticated v3 settings query. */
-export type GetMobileNotificationSettingsV3Params = MobileWithExpoTokenParams;
-
-/** Full v3 settings replacement guarded by the current wallet settings revision. */
-export interface MobileUpdateNotificationSettingsV3Params extends MobileWithExpoTokenParams {
-  /** Latest settings revision; conflicts return 6203 and require a fresh read. */
-  expectedRevision: number;
-  /** All ten settings fields, including the user's explicit like/reply preference. */
-  settings: MobileNotificationSettingsV3Values;
-}
-
 /**
  * Params for {@link MobileClient.getNotificationSubscriptions}; no Expo token is needed.
  */
@@ -926,19 +827,11 @@ export interface GetMobileNotificationInboxV2Params extends MobileSignedRequestP
   /** Page size from 1 to 50; omission/null uses the server default of 20. */
   limit?: number | null;
   /**
-   * Up to 64 type names, each 1–64 lowercase ASCII letters, digits, or underscores.
+   * Up to 64 types from MOBILE_NOTIFICATION_TYPE_IDS that this SDK can decode.
    * Omission uses the existing v2 types; an empty array returns no notifications.
    * Keep the same filter throughout pagination.
    */
-  supportedTypes?: string[];
-}
-
-/** Params for the wallet-scoped v3 inbox; no Expo token is needed. */
-export interface GetMobileNotificationInboxV3Params extends MobileSignedRequestParams {
-  /** Previous nextCursor; omission/null is signed as explicit null for the first page. */
-  cursor?: string | null;
-  /** One to fifty notifications; omission/null signs explicit null for the default of 20. */
-  limit?: number | null;
+  supportedTypes?: MobileNotificationTypeId[];
 }
 
 /** Explicit notification acknowledgement, separate from Tip receipt acknowledgement and analytics. */

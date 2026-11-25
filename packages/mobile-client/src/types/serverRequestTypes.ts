@@ -8,7 +8,6 @@ import {
   MobileServerNotificationDeviceMetadata,
   MobileServerNotificationPreferences,
   MobileServerNotificationSettings,
-  MobileServerNotificationSettingsV3,
   MobileServerSocialFeedChartRange,
   MobileSocialFeedChartInterval,
   MobileSocialFeedMarketCategory,
@@ -360,8 +359,6 @@ export interface MobileServerPublicQueryRequestByType {
   notification_registration_v2: MobileServerWithExpoTokenParams;
   /** Versioned notification settings. */
   notification_settings_v2: MobileServerWithExpoTokenParams;
-  /** Notification settings with likes-and-replies preferences. */
-  notification_settings_v3: MobileServerWithExpoTokenParams;
   registered_wallet: MobileServerWithExpoTokenParams;
 }
 
@@ -380,13 +377,6 @@ export type MobileServerPublicQueryRequestType =
  * notification writes use the backend's last-write-wins commit order, so callers must serialize them.
  */
 export interface MobileServerPublicExecuteRequestByType {
-  /** Full v3 settings replacement with optimistic concurrency control. */
-  update_notification_settings_v3: MobileServerWithExpoTokenParams & {
-    /** Latest settings revision, shared with older settings versions. */
-    expected_revision: number;
-    /** All ten settings fields, including likes_and_replies. */
-    settings: MobileServerNotificationSettingsV3;
-  };
   /** Full settings replacement with optimistic concurrency control. */
   update_notification_settings_v2: MobileServerWithExpoTokenParams & {
     /** Latest settings revision. */

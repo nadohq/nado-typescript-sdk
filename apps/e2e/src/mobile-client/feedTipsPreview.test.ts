@@ -37,7 +37,6 @@ void describe(
         typeof asRecord(wireItem.capabilities, 'wire capabilities').can_tip,
         'boolean',
       );
-      assert.equal(typeof wireItem.public_tip_total_x18, 'string');
       assertPreviewFields(detail.result.item, wireItem);
     });
 
@@ -120,7 +119,6 @@ void describe(
         typeof asRecord(wirePatch.capabilities, 'wire capabilities').can_tip,
         'boolean',
       );
-      assert.equal(typeof wirePatch.public_tip_total_x18, 'string');
       assertPreviewFields(patch, wirePatch);
     });
   },

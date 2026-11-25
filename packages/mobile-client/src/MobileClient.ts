@@ -18,14 +18,12 @@ import {
   mapMobileFollowMutationResult,
   mapMobileNotificationCapabilitiesToServer,
   mapMobileNotificationInboxV2,
-  mapMobileNotificationInboxV3,
+  mapMobileNotificationInboxV2ParamsToServer,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobileNotificationRegistrationV2,
   mapMobileNotificationSettingsToServer,
   mapMobileNotificationSettingsV2,
-  mapMobileNotificationSettingsV3,
-  mapMobileNotificationSettingsV3ToServer,
   mapMobileNotificationSubscriptions,
   mapMobileNotificationSubscriptionsUpdateToServer,
   mapMobilePositionLookup,
@@ -89,11 +87,9 @@ import {
   GetMobileFriendsFeedParams,
   GetMobileMarketFeedParams,
   GetMobileNotificationInboxV2Params,
-  GetMobileNotificationInboxV3Params,
   GetMobileNotificationPreferencesParams,
   GetMobileNotificationRegistrationV2Params,
   GetMobileNotificationSettingsV2Params,
-  GetMobileNotificationSettingsV3Params,
   GetMobileNotificationSubscriptionsParams,
   GetMobilePositionChartParams,
   GetMobilePositionFeedParams,
@@ -129,11 +125,9 @@ import {
   MobileMarkNotificationsSeenParams,
   MobileMarkTipsSeenParams,
   MobileNotificationInboxV2,
-  MobileNotificationInboxV3,
   MobileNotificationPreferences,
   MobileNotificationRegistrationV2,
   MobileNotificationSettingsV2,
-  MobileNotificationSettingsV3,
   MobileNotificationSubscriptions,
   MobilePositionLookup,
   MobilePositionPresenceParams,
@@ -181,7 +175,6 @@ import {
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUpdateNotificationSettingsV2Params,
-  MobileUpdateNotificationSettingsV3Params,
   MobileUpdateNotificationSubscriptionsParams,
   MobileUsernameAvailability,
   ResolveMobileFeedActionParams,
@@ -964,24 +957,6 @@ export class MobileClient {
     );
   }
 
-  /**
-   * Reads all ten notification settings using an active Expo token, without a wallet signature.
-   * The revision is shared with older settings APIs; likesAndReplies always has an effective boolean.
-   * The 450684e testnet deployment uses getNotificationSettingsV2 instead of this v3 route.
-   * @throws {MobileServerFailureError} If the token is invalid or unregistered, or the service is unavailable.
-   * @throws {Error} If a transport or malformed response error occurs outside a Mobile failure envelope.
-   */
-  async getNotificationSettingsV3(
-    params: GetMobileNotificationSettingsV3Params,
-  ): Promise<MobileNotificationSettingsV3> {
-    return mapMobileNotificationSettingsV3(
-      await this.publicQuery({
-        type: 'notification_settings_v3',
-        expo_token: params.expoToken,
-      }),
-    );
-  }
-
   /*
   Signed queries
    */
@@ -1103,12 +1078,14 @@ export class MobileClient {
   /**
    * Reads private accepted notifications and first-seen timestamps without acknowledging them.
    * Omitted supportedTypes uses the existing v2 types; an empty array returns no notifications.
+   * Explicit filters are limited to notification types this SDK can decode and are checked before signing.
    * Keep the same type filter for every page in a cursor chain.
    * @param params - Wallet authentication, optional type filter, and cursor/page size (1-50, default 20).
    * @returns A camelCase page; discard cached pages and cursors when switching wallets.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication or pagination validation fails.
    * @throws {MobileUnsupportedNotificationRouteError} If a notification has an unsupported route name.
+   * @throws {RangeError} If supportedTypes contains a type this SDK cannot decode.
    */
   async getNotificationInboxV2(
     params: GetMobileNotificationInboxV2Params,
@@ -1116,38 +1093,9 @@ export class MobileClient {
     const request = await this.getSignedRequest(
       'notification_inbox_v2',
       params,
-      {
-        cursor: params.cursor ?? null,
-        limit: params.limit ?? null,
-        ...(params.supportedTypes === undefined
-          ? {}
-          : { supported_types: [...params.supportedTypes] }),
-      },
+      mapMobileNotificationInboxV2ParamsToServer(params),
     );
     return mapMobileNotificationInboxV2(await this.query(request));
-  }
-
-  /**
-   * Reads newest-first wallet notifications including first-seen timestamps, without acknowledging them.
-   * Tip receipt read state is independent. The default page size is twenty and the maximum is fifty.
-   * The 450684e testnet deployment uses getNotificationInboxV2 instead of this v3 route.
-   * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
-   * @throws {MobileServerFailureError} If authentication, pagination, or service availability checks fail.
-   * @throws {MobileUnsupportedNotificationRouteError} If a notification contains an unsupported route.
-   * @throws {Error} If signing fails or a transport/malformed response error occurs.
-   */
-  async getNotificationInboxV3(
-    params: GetMobileNotificationInboxV3Params,
-  ): Promise<MobileNotificationInboxV3> {
-    const request = await this.getSignedRequest(
-      'notification_inbox_v3',
-      params,
-      {
-        cursor: params.cursor ?? null,
-        limit: params.limit ?? null,
-      },
-    );
-    return mapMobileNotificationInboxV3(await this.query(request));
   }
 
   /*
@@ -1215,27 +1163,6 @@ export class MobileClient {
         expo_token: params.expoToken,
         expected_revision: params.expectedRevision,
         settings: mapMobileNotificationSettingsToServer(params.settings),
-      }),
-    );
-  }
-
-  /**
-   * Replaces all ten v3 notification settings with the latest shared settings revision. On a conflict,
-   * re-read and merge the user's current change before retrying. Older settings writes preserve the
-   * saved likesAndReplies value. This method never retries or silently overwrites a newer revision.
-   * The 450684e testnet deployment uses updateNotificationSettingsV2 instead of this v3 route.
-   * @throws {MobileServerFailureError} If the token/settings are invalid or the revision conflicts (6203).
-   * @throws {Error} If a transport or malformed response error occurs outside a Mobile failure envelope.
-   */
-  async updateNotificationSettingsV3(
-    params: MobileUpdateNotificationSettingsV3Params,
-  ): Promise<MobileNotificationSettingsV3> {
-    return mapMobileNotificationSettingsV3(
-      await this.publicExecute({
-        type: 'update_notification_settings_v3',
-        expo_token: params.expoToken,
-        expected_revision: params.expectedRevision,
-        settings: mapMobileNotificationSettingsV3ToServer(params.settings),
       }),
     );
   }

@@ -7,10 +7,8 @@ import {
   MobileServerNotificationCapabilities,
   MobileServerNotificationDeviceMetadata,
   MobileServerNotificationInboxItem,
-  MobileServerNotificationInboxV3Item,
   MobileServerNotificationPreferences,
   MobileServerNotificationSettings,
-  MobileServerNotificationSettingsV3,
   MobileServerProfile,
   MobileServerReceivedTipCard,
   MobileServerSocialFeedActionCandidate,
@@ -60,8 +58,6 @@ export interface MobileServerSignedQueryResponseByType {
   tip_detail: MobileServerTipDetail;
   /** Unseen verified-credit cards, oldest first. */
   received_tips: MobileServerReceivedTipsResponse;
-  /** Wallet notifications including read timestamps. */
-  notification_inbox_v3: MobileServerNotificationInboxV3Response;
   /** Wallet subscriptions and the signing Identity's bells. */
   notification_subscriptions: MobileServerNotificationSubscriptionsResponse;
   /** Private notification page. */
@@ -86,24 +82,6 @@ export interface MobileServerTipsHistoryResponse {
 export interface MobileServerReceivedTipsResponse {
   /** Cards sorted by verified credit time and Tip UUID, both ascending. */
   tips: MobileServerReceivedTipCard[];
-  /** Opaque continuation cursor, or null at the end. */
-  next_cursor: string | null;
-}
-
-/** Complete v3 notification settings returned by both reads and updates. */
-export interface MobileServerNotificationSettingsV3Response {
-  /** Notification settings schema version. */
-  schema_version: 3;
-  /** Settings revision, shared with v2 and independent of subscriptions. */
-  revision: number;
-  /** All ten effective settings, including a non-null likes_and_replies flag. */
-  settings: MobileServerNotificationSettingsV3;
-}
-
-/** Newest-first notification inbox including first display acknowledgements. */
-export interface MobileServerNotificationInboxV3Response {
-  /** Accepted notification intents owned by the signing wallet. */
-  notifications: MobileServerNotificationInboxV3Item[];
   /** Opaque continuation cursor, or null at the end. */
   next_cursor: string | null;
 }
@@ -313,8 +291,6 @@ export interface MobileServerPublicQueryResponseByType {
   notification_registration_v2: MobileServerNotificationRegistrationV2Response;
   /** Full settings document with its revision. */
   notification_settings_v2: MobileServerNotificationSettingsV2Response;
-  /** Complete settings including likes-and-replies preferences. */
-  notification_settings_v3: MobileServerNotificationSettingsV3Response;
   /** Open position candidates. */
   self_feed_positions: MobileServerSocialFeedPositionsResponse;
   /** Position command resolution. */
