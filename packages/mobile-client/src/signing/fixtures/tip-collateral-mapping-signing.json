@@ -1,0 +1,19 @@
+{
+  "chain_id": 31337,
+  "endpoint": "0x0123456789012345678901234567890123456789",
+  "method": "mobile:query_tips_history",
+  "payload_hash": "0xd8da7d0220c67bb755820a9067faacfa10eedc77ca8eeadf635e8592aa829fcf",
+  "authentication_digest": "0xdfc2ae35a03c93950719d975c85eedfed48c37a88f6dfb3bc99f33d14d193590",
+  "signer": "0x17c5185167401eD00cF5F5b2fc97D9BBfDb7D025",
+  "request": {
+    "type": "tips_history",
+    "mode": "collateral_mapping",
+    "subaccount": "0x17c5185167401ed00cf5f5b2fc97d9bbfdb7d02574726164696e670000000000",
+    "product_id": 0,
+    "direction": "deposit",
+    "submission_indices": ["501", "9007199254740993", "18446744073709551615"],
+    "sender": "0x17c5185167401ed00cf5f5b2fc97d9bbfdb7d02564656661756c740000000000",
+    "nonce": "1795000000000000001",
+    "signature": "0x129d4e723253e32900b223239d0812a9186eba0f491547217312e899bb9f3a576e052a75a5301d3df587e8ba7d5ec392c426e018c59211077f766adb6ae0e0f81c"
+  }
+}

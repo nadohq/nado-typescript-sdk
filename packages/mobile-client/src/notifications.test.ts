@@ -612,6 +612,7 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
             notification_id: notificationId,
             type_id: 'new_follower',
             created_at: 1792886400000,
+            seen_at: null,
             data: {
               payload_version: 2,
               notification_id: notificationId,
@@ -638,6 +639,7 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
             notificationId,
             typeId: 'new_follower',
             createdAt: 1792886400000,
+            seenAt: null,
             tradeWithin24h,
             data: {
               payloadVersion: 2,
@@ -667,6 +669,7 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
           notification_id: notificationId,
           type_id: 'new_follower',
           created_at: 1792886400000,
+          seen_at: null,
           trade_within_24h: false,
           data: {
             payload_version: 2,
@@ -941,6 +944,7 @@ describe('[mobile-client]: notification v2 contracts', () => {
             notification_id: notificationId,
             type_id: 'new_follower',
             created_at: 123,
+            seen_at: null,
             trade_within_24h: true,
             data: {
               payload_version: 2,

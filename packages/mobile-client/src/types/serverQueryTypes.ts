@@ -10,6 +10,7 @@ import {
   MobileServerNotificationPreferences,
   MobileServerNotificationSettings,
   MobileServerProfile,
+  MobileServerReceivedTipCard,
   MobileServerSocialFeedActionCandidate,
   MobileServerSocialFeedActionMarker,
   MobileServerSocialFeedAuthor,
@@ -29,6 +30,9 @@ import {
   MobileServerSocialFeedReadSession,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
+  MobileServerTipCollateralMapping,
+  MobileServerTipDetail,
+  MobileServerTipHistoryRow,
   MobileSocialFeedActionResolution,
   MobileSocialFeedChartDataQuality,
   MobileSocialFeedHistoryQuality,
@@ -46,10 +50,40 @@ import {
  * Success payloads for each signed `query`, keyed by request `type`.
  */
 export interface MobileServerSignedQueryResponseByType {
+  /** Collateral attributions or participant history, selected by the request's mode. */
+  tips_history:
+    | MobileServerTipCollateralMappingsResponse
+    | MobileServerTipsHistoryResponse;
+  /** Participant-specific detail with sender-only costs or recipient read state. */
+  tip_detail: MobileServerTipDetail;
+  /** Unseen verified-credit cards, oldest first. */
+  received_tips: MobileServerReceivedTipsResponse;
   /** Wallet subscriptions and the signing Identity's bells. */
   notification_subscriptions: MobileServerNotificationSubscriptionsResponse;
   /** Private notification page. */
   notification_inbox_v2: MobileServerNotificationInboxV2Response;
+}
+
+/** Payload of the signed tips_history query in collateral_mapping mode. */
+export interface MobileServerTipCollateralMappingsResponse {
+  /** One result per requested index, preserving request order and unknown amounts. */
+  mappings: MobileServerTipCollateralMapping[];
+}
+
+/** Paginated activity in the server's merged sent/received order. */
+export interface MobileServerTipsHistoryResponse {
+  /** Role-specific history rows without detail-only fees. */
+  tips: MobileServerTipHistoryRow[];
+  /** Opaque continuation cursor, or null at the end. */
+  next_cursor: string | null;
+}
+
+/** Unseen verified-credit cards; reading does not acknowledge them. */
+export interface MobileServerReceivedTipsResponse {
+  /** Cards sorted by verified credit time and Tip UUID, both ascending. */
+  tips: MobileServerReceivedTipCard[];
+  /** Opaque continuation cursor, or null at the end. */
+  next_cursor: string | null;
 }
 
 /**
@@ -173,7 +207,7 @@ export interface MobileServerSocialFeedUpdatesResponse {
   new_items_count: number;
   /** Baseline to use for the next update call with the same viewport. */
   update_cursor: string;
-  /** Full snapshot of applicable mutable fields; currently always true. Apply author updates even when the item version is unchanged. */
+  /** Full snapshot of applicable mutable fields; currently always true. Apply author, capability, and Tip total updates even when the item version is unchanged. */
   reset: boolean;
   /** Echoed viewport revision. */
   viewport_revision: number;

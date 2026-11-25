@@ -44,6 +44,46 @@ await mobile.setUsername({
 
 ## API Surface
 
+### Send Money
+
+- `submitTip` submits an owner-signed `WithdrawCollateralV2` through Mobile. The outer Mobile
+  authorization supports linked signers; the inner withdrawal still requires the owner signature.
+- `getTipDetail` reads participant-visible detail, including sender fees and Gateway state or recipient
+  read state.
+- `getTipsHistory` reads paginated incoming and outgoing Tip activity in server order.
+- `getReceivedTips` reads unseen, verified-credit cards, oldest first.
+- `markTipsSeen` acknowledges displayed Tip IDs. Tip reads do not acknowledge them, and notification
+  read state is managed independently by `markNotificationsSeen`.
+- `getTipCollateralMappings` reads optional attribution for exact Indexer submission indices. Existing
+  Indexer deposit and withdrawal amounts remain unchanged.
+
+Build the inner withdrawal with `engine.payloadBuilder.buildWithdrawCollateralV2Payload(...)`, using
+product 0, the recipient DDA as `sendTo`, and appendix zero. Its amount uses native asset units
+(USDT0 has six decimals). Pass the resulting transaction and owner signature to Mobile:
+
+```ts
+const result = await mobile.submitTip({
+  subaccountOwner: walletClient.account.address,
+  subaccountName: 'default',
+  chainId,
+  verifyingAddr,
+  recipientSubaccount,
+  originPostId: null,
+  note: 'Nice call!',
+  backgroundId,
+  visibility: 'private',
+  withdrawal: withdrawalPayload.tx,
+  withdrawalSignature: withdrawalPayload.signature,
+  maxFeeX18: confirmedFeeX18,
+});
+```
+
+The `maxFeeX18` input is the user-confirmed fee cap in x18 units. Response amounts such as `netAmount`,
+`senderCost.maxFee`, and collateral mapping totals are `BigNumber` values that also retain x18 units.
+Use `removeDecimals` for display. Unknown amounts remain `null`; an explicit zero is a known amount.
+Versions and submission indices remain exact strings. See method and parameter JSDoc for status,
+retry, authorization, and pagination details.
+
 ### Public Queries
 
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
@@ -79,6 +119,34 @@ using the returned `viewerToken`. All are unsigned. Profile, position, and item 
 account's own hidden content under `account_view`; the viewing account is not proof of wallet ownership.
 Prices are decimal `BigNumber` values; quantities, notionals, and PnL retain x18 units. See method and
 parameter JSDoc for session and polling rules.
+
+Feed lists and item details expose `capabilities.canTip` using the existing request parameters. Show
+the tip button only when it is exactly `true` and the author wallet differs from the connected wallet
+(compare addresses case-insensitively). An omitted capability does not enable tipping.
+For a post or trade-card Tip, pass the item's `id` as `originPostId` and
+`subaccountFromHex(item.author.subaccount)` as `recipientSubaccount`.
+
+Original posts and trade cards can include `publicTipTotal`, a `BigNumber` in USDT0 x18 units.
+Omission hides the amount; an explicit zero means there are no qualifying Tips. Display the aggregate
+returned by the server. Updates can change the total; an omitted patch field leaves it unchanged.
+An omitted or false `canTip` disables tipping. For example, with an optional connected
+`currentWalletAddress`:
+
+```ts
+import { removeDecimals, subaccountFromHex } from '@nadohq/shared';
+
+const { item } = await mobile.getFeedItem({ itemId });
+const authorWallet = subaccountFromHex(item.author.subaccount).subaccountOwner;
+const showTipButton =
+  item.capabilities.canTip === true &&
+  currentWalletAddress !== undefined &&
+  authorWallet.toLowerCase() !== currentWalletAddress.toLowerCase();
+const publicTipAmount =
+  (item.kind === 'post' || item.kind === 'trade_card') &&
+  item.publicTipTotal !== undefined
+    ? removeDecimals(item.publicTipTotal).toFixed()
+    : undefined;
+```
 
 `getSelfFeedPositions`, `resolveFeedPosition`, and `resolveFeedAction` require `viewAs` and return eligibility
 hints for that account, not authenticated permissions. `getFeedComments` supports anchored, bidirectional
@@ -255,7 +323,7 @@ const source = isMobileSocialFeedUploadedImage(image)
 `setUsername`, `setBio`, `createAvatarUpload`, `setAvatar`, `setPrivateMode`, `registerExpoToken`, `setFollow`,
 `createFeedPost`, `createFeedComment`, `createFeedPostImageUpload`, `createFeedCommentImageUpload`,
 `createFeedChartDrawing`, `updateFeedChartDrawing`, `setFeedLike`, `registerExpoTokenV2`,
-`updateNotificationSubscriptions`, `recordProductEvents`.
+`updateNotificationSubscriptions`, `recordProductEvents`, `submitTip`, `markTipsSeen`, `markNotificationsSeen`.
 
 Upload images one at a time with the multipart helpers (≤ 2 MiB whole request), then pass ordered ready
 `imageIds` to `createFeedPost` / `createFeedComment`. The SDK throws `RangeError` before requesting a signature or sending a request
@@ -295,7 +363,8 @@ without Mobile session headers.
 
 ### Signed Queries
 
-`getNotificationSubscriptions` and `getNotificationInboxV2` use wallet authentication on `/query`.
+`getNotificationSubscriptions`, `getNotificationInboxV2`, `getTipCollateralMappings`,
+`getTipDetail`, `getTipsHistory`, and `getReceivedTips` use wallet authentication on `/query`.
 They do not require an Expo token or system push permission. The configured linked signer is supported.
 
 ### Notifications V2
@@ -339,21 +408,41 @@ await mobile.updateNotificationSubscriptions({
   },
 });
 const updatedSubscriptions = await mobile.getNotificationSubscriptions(auth);
-const inbox = await mobile.getNotificationInboxV2({ ...auth, limit: 20 });
+const inbox = await mobile.getNotificationInboxV2({
+  ...auth,
+  limit: 20,
+  supportedTypes: ['deposit_completed', 'new_follower'],
+});
+// Acknowledge only notification IDs that were actually displayed.
+await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotificationIds });
 ```
 
 - Declare only types/routes the application handles. Re-registration advances the generation and cancels
   old pending deliveries; calling legacy `registerExpoToken` resets capabilities to v1.
-- Settings replacement requires every field. Settings and subscription revisions are independent.
+- The deployed v2 settings document has `schemaVersion: 2`. Replacement requires the nine original fields;
+  optional `likesAndReplies` preserves its saved value when omitted, while explicit false disables it.
+  Copy the current document and change only the user's choice. Settings and subscription revisions are independent.
   On `MOBILE_ERROR_CODES.NOTIFICATION_REVISION_CONFLICT` (6203), re-read and merge only the current user change.
 - A subscription update selects exactly one operation; omit the other operations and the SDK sends them as `null`. Successful subscription
   updates return only status, so re-query even after repeated ON/OFF. Favorites import merges once, never replaces.
 - Enabling a bell requires following the target. Unfollowing clears its bell without advancing the subscription
   revision; refresh subscriptions after follow mutations. Bells are Identity-scoped; markets are wallet-scoped.
   Pass `traderBell.subaccount` as a `Subaccount` (`subaccountOwner` and `subaccountName`); the SDK encodes it for signing.
-- Inbox pages are accepted intents, not delivery/read receipts. There is no title/body, unread count, mark-read,
-  or delete operation. Do not use the unimplemented legacy `notification_history` route.
+- V2 Inbox pages contain accepted intents with `createdAt` in UTC milliseconds. When included, `seenAt`
+  is null while unread or a first-display timestamp in UTC milliseconds. Older responses may omit it;
+  omission remains absent in the SDK model and means read state is unavailable. Reading does not
+  acknowledge notifications. `markNotificationsSeen` updates notification read state independently of
+  Tip receipts. Push delivery remains separate.
+  Existing notification data has no title/body, and these pages provide no unread count or delete operation.
+  Do not use the unimplemented legacy `notification_history` route.
   An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`.
+- `supportedTypes` is typed to the current `MOBILE_NOTIFICATION_TYPE_IDS` subset that this SDK
+  can decode. Omission selects the server's default types and `[]` returns an empty page; at most 64
+  entries are allowed. Defaults may expand to routes this SDK cannot decode, causing the entire page
+  to reject with `MobileUnsupportedNotificationRouteError`. Pass an explicit supported subset for
+  stable decoding. Tip-specific notification types and unknown types are not supported by this client.
+  The canonical signed field order is `type`, `cursor`, `limit`, then `supported_types` only when supplied;
+  omitted cursor and limit remain explicit null. Keep the same filters when paging.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,
   actual millisecond timestamps, and stable `clientEventId` UUIDs across retries. The SDK fills unused wire fields with `null`. Supported
   names are `notif_opened`, `market_viewed`, `chart_opened`, and `search`; obtain analytics consent first.

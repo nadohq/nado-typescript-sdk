@@ -6,6 +6,10 @@ import {
   MobileServerProductEvent,
   MobileServerSocialFeedExternalImageDimensions,
   MobileSocialFeedMention,
+  type MobileServerTipWithdrawal,
+  type MobileTipCollateralDirection,
+  type MobileTipsHistoryDirection,
+  type MobileTipVisibility,
 } from '../types/serverModelTypes';
 import {
   MobileServerNotificationSubscriptionsUpdate,
@@ -22,12 +26,90 @@ import {
  * verification fails. This type only describes the shape; the authoritative runtime key order is enforced by
  * {@link canonicalizeMobileInner}, which is the source of truth. Keep the field order here in sync with it.
  *
- * Every bytes32 field must be lowercase hex. The backend decodes them case-insensitively but hashes its own
- * re-serialization, which is always lowercase, so a mixed-case value is accepted on the wire and then fails
- * authentication against a hash the client never reproduced. Build them with `subaccountToHex`, which
- * lowercases; unlike bytes32, string fields such as `display_name` are hashed as-is and keep their casing.
+ * Bytes32 fields represented by backend byte arrays must be lowercase hex. The backend decodes them
+ * case-insensitively but hashes its lowercase re-serialization. Build those fields with `subaccountToHex`.
+ * String fields such as `display_name` keep their original casing. `submit_tip` also represents recipient
+ * and withdrawal hex values as strings, so their exact original spelling participates in its payload hash.
  */
 export type MobileSignedInner =
+  | {
+      /** Participant-visible detail without changing receipt state. */
+      type: 'tip_detail';
+      /** Durable Tip UUID, distinct from a public Feed item UUID. */
+      tip_id: string;
+    }
+  | {
+      /** Participant activity, distinct from collateral attribution. */
+      type: 'tips_history';
+      /** Selects paginated Tip activity. */
+      mode: 'list';
+      /** Explicit activity direction; all merges sent and received records. */
+      direction: MobileTipsHistoryDirection;
+      /** Owned bytes32 identity, or null for the signer's default scope. */
+      subaccount: Hex | null;
+      /** Opaque cursor, or null for the first page. */
+      cursor: string | null;
+      /** Page size, or null for the server default. */
+      limit: number | null;
+    }
+  | {
+      /** Unseen cards with verified recipient credit. */
+      type: 'received_tips';
+      /** Opaque cursor, or null for the first page. */
+      cursor: string | null;
+      /** Page size, or null for the server default. */
+      limit: number | null;
+    }
+  | {
+      /** Explicit receipt acknowledgement; independent of notification read state. */
+      type: 'mark_tips_seen';
+      /** One to fifty Tip UUIDs actually displayed to the recipient. */
+      tip_ids: string[];
+    }
+  | {
+      /** Explicit notification acknowledgement; independent of Tip receipt state. */
+      type: 'mark_notifications_seen';
+      /** One to fifty notification UUIDs actually displayed. */
+      notification_ids: string[];
+    }
+  | {
+      /** Annotates exact Indexer collateral submissions without list pagination. */
+      type: 'tips_history';
+      /** Selects collateral attribution instead of participant history. */
+      mode: 'collateral_mapping';
+      /** Exact target identity, encoded as lowercase bytes32. */
+      subaccount: Hex;
+      /** Non-negative source asset product ID. */
+      product_id: number;
+      /** Source collateral direction. */
+      direction: MobileTipCollateralDirection;
+      /** Distinct unsigned 64-bit decimal indices, preserving request order. */
+      submission_indices: string[];
+    }
+  | {
+      /** Submits or recovers one owner-signed withdrawal through the Mobile Tip flow. */
+      type: 'submit_tip';
+      /** Deployment chain ID as an exact decimal integer string. */
+      chain_id: string;
+      /** Exact recipient subaccount; its original hex spelling is signed. */
+      recipient_subaccount: Hex;
+      /** Original authored post UUID, or null for a profile Tip. */
+      origin_post_id: string | null;
+      /** Unmodified optional note, at most 50 Unicode scalars, or null. */
+      note: string | null;
+      /** Configured card background ID. */
+      background_id: string;
+      /** Public Feed publication preference, independent of participant access. */
+      visibility: MobileTipVisibility;
+      /** Owner-signed Engine transaction, retained exactly for recovery and fee reconfirmation. */
+      withdrawal: MobileServerTipWithdrawal;
+      /** Owner signature for the inner withdrawal; the outer Mobile signer may be linked. */
+      withdrawal_signature: string;
+      /** User-confirmed maximum fee in x18 units; an explicit zero authorizes only a free withdrawal. */
+      max_fee_x18: string;
+      /** Failed Tip version explicitly reconfirmed after a fee rejection; omit for ordinary recovery. */
+      expected_version?: string;
+    }
   | ({
       /** Capability-aware device registration. */
       type: 'register_expo_token_v2';
@@ -47,6 +129,8 @@ export type MobileSignedInner =
       cursor: string | null;
       /** Page size, or nil for the server default. */
       limit: number | null;
+      /** Optional type filter appended when present; an empty array requests an empty page. */
+      supported_types?: string[];
     }
   | {
       /** Atomic product analytics batch. */
@@ -169,19 +253,23 @@ export type MobileSignedInner =
     };
 
 /**
- * The single {@link MobileSignedInner} member carrying the given `type` tag.
+ * The {@link MobileSignedInner} members carrying the given `type` tag. Payloads sharing a type, such as
+ * `tips_history`, remain discriminated by their mode.
  */
 export type MobileSignedInnerByType<T extends MobileSignedInner['type']> =
   Extract<MobileSignedInner, { type: T }>;
 
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
 /**
  * Type-specific payload fields for a signed inner request of a given `type` (the inner payload without its
- * `type` tag). Derived from {@link MobileSignedInner} so the two never drift apart.
+ * `type` tag). Each mode retains its own fields when multiple payloads share a type. Derived from
+ * {@link MobileSignedInner} so the two never drift apart.
  */
-export type MobileSignedInnerParams<T extends MobileSignedInner['type']> = Omit<
-  MobileSignedInnerByType<T>,
-  'type'
->;
+export type MobileSignedInnerParams<T extends MobileSignedInner['type']> =
+  DistributiveOmit<MobileSignedInnerByType<T>, 'type'>;
 
 /**
  * A signed mobile service API request body: the inner payload flattened with its signature, sender, and

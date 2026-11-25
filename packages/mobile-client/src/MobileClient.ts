@@ -18,6 +18,7 @@ import {
   mapMobileFollowMutationResult,
   mapMobileNotificationCapabilitiesToServer,
   mapMobileNotificationInboxV2,
+  mapMobileNotificationInboxV2ParamsToServer,
   mapMobileNotificationPreferences,
   mapMobileNotificationPreferencesToServer,
   mapMobileNotificationRegistrationV2,
@@ -31,6 +32,7 @@ import {
   mapMobileProfileSearchParamsToServer,
   mapMobileProfilesIncludeToServer,
   mapMobilePublicProfile,
+  mapMobileReceivedTipsPage,
   mapMobileRegisteredWallet,
   mapMobileSocialFeedActionResolutionResult,
   mapMobileSocialFeedCommentResult,
@@ -55,6 +57,13 @@ import {
   mapMobileSocialFeedUpdates,
   mapMobileSocialFeedUploadedImage,
   mapMobileSocialFeedWatchers,
+  mapMobileSubmitTipParamsToServer,
+  mapMobileSubmitTipResult,
+  mapMobileTipCollateralMappings,
+  mapMobileTipCollateralMappingsParamsToServer,
+  mapMobileTipDetail,
+  mapMobileTipsHistoryPage,
+  mapMobileTipsHistoryParamsToServer,
 } from './dataMappers';
 import {
   buildSignedMobileRequest,
@@ -91,8 +100,12 @@ import {
   GetMobilePositionWatchersParams,
   GetMobileProfileFeedParams,
   GetMobileProfilesParams,
+  GetMobileReceivedTipsParams,
   GetMobileRegisteredWalletParams,
   GetMobileSelfFeedPositionsParams,
+  GetMobileTipCollateralMappingsParams,
+  GetMobileTipDetailParams,
+  GetMobileTipsHistoryParams,
   GetMobileTopTradersFeedParams,
   GetMobileUsernameAvailabilityParams,
   MobileAttributeOrdersParams,
@@ -109,6 +122,8 @@ import {
   MobileFollowBatchResultItem,
   MobileFollowListPage,
   MobileFollowMutationResult,
+  MobileMarkNotificationsSeenParams,
+  MobileMarkTipsSeenParams,
   MobileNotificationInboxV2,
   MobileNotificationPreferences,
   MobileNotificationRegistrationV2,
@@ -118,6 +133,7 @@ import {
   MobilePositionPresenceParams,
   MobileProfileSearchPage,
   MobilePublicProfile,
+  MobileReceivedTipsPage,
   MobileRecordFeedViewsParams,
   MobileRecordProductEventsParams,
   MobileRegisteredWallet,
@@ -151,6 +167,11 @@ import {
   MobileSocialFeedUpdates,
   MobileSocialFeedUploadedImage,
   MobileSocialFeedWatchers,
+  MobileSubmitTipParams,
+  MobileSubmitTipResult,
+  MobileTipCollateralMappings,
+  MobileTipDetail,
+  MobileTipsHistoryPage,
   MobileUnregisterExpoTokenParams,
   MobileUpdateNotificationPreferencesParams,
   MobileUpdateNotificationSettingsV2Params,
@@ -172,6 +193,8 @@ import {
   MobileServerPublicQueryRequest,
   MobileServerPublicQuerySuccessResponse,
   MobileServerSignedQuerySuccessResponse,
+  MobileServerTipCollateralMappingsResponse,
+  MobileServerTipsHistoryResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerExecuteRequestType,
@@ -545,8 +568,9 @@ export class MobileClient {
    * Includes ROI bases even for sessions whose initial response omitted them.
    * Increment requestSeq across the entire session, including viewport changes; never reset it for a new viewport.
    * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
-   * Updates currently always return reset=true. Apply current author details, follow state, and badges even if the item version is unchanged.
-   * Null patches clear values;
+   * Updates currently always return reset=true. Apply author details, capabilities, and Tip totals even
+   * if the item version is unchanged.
+   * Null clears only fields whose types allow it; capabilities and publicTipTotal are never null.
    * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
    * @returns Item/position patches, revoked targets, and a new-content hint.
@@ -940,6 +964,95 @@ export class MobileClient {
    */
 
   /**
+   * Annotates exact Indexer collateral submissions, including partial pending results.
+   * Indices are sent unchanged; the server rejects duplicates and invalid batches.
+   * The target and outer sender must belong to the same wallet. A linked signer needs current
+   * authorization for both subaccounts; an owner can query any subaccount of their wallet.
+   *
+   * This optional attribution query does not change Activity amounts, which come from Indexer.
+   * Merge by submissionIdx within the same subaccount/product/direction, retain complete results, and
+   * requery only pending indices with fresh outer authentication. A complete ordinary deposit may have
+   * null deposit/ordinary amounts and a zero Tip total; it does not require retrying.
+   * This method performs one request and leaves unknown amounts as null.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} If authentication, authorization, or the attribution query fails.
+   * @throws {Error} If a subaccount cannot be encoded, wallet signing fails, or a transport or malformed
+   * response error occurs outside a Mobile failure envelope.
+   */
+  async getTipCollateralMappings(
+    params: GetMobileTipCollateralMappingsParams,
+  ): Promise<MobileTipCollateralMappings> {
+    const request = await this.getSignedRequest(
+      'tips_history',
+      params,
+      mapMobileTipCollateralMappingsParamsToServer(params),
+    );
+    const response = await this.query(request);
+    return mapMobileTipCollateralMappings(
+      response as MobileServerTipCollateralMappingsResponse,
+    );
+  }
+
+  /**
+   * Reads one participant-visible Tip without marking it seen. Sender detail includes fees and Gateway
+   * state; recipient detail includes seenAt and becomes readable after verified credit. A verified
+   * creditedAtMs remains meaningful if the current status later becomes review_required.
+   * For an uncredited sender, gateway.status accepted confirms sending even under review_required.
+   * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
+   * @throws {MobileServerFailureError} If authentication fails or the Tip is inaccessible (TIP_NOT_FOUND).
+   * @throws {Error} If a participant cannot be decoded, signing fails, or the transport/response is invalid.
+   */
+  async getTipDetail(
+    params: GetMobileTipDetailParams,
+  ): Promise<MobileTipDetail> {
+    const request = await this.getSignedRequest('tip_detail', params, {
+      tip_id: params.tipId,
+    });
+    return mapMobileTipDetail(await this.query(request));
+  }
+
+  /**
+   * Reads paginated Tip activity in server order: outgoing entries use submission time and incoming
+   * entries use verified-credit time. With no subaccount filter, owners read their wallet and linked
+   * signers read the outer sender's subaccount. Preserve the returned order and opaque cursor.
+   * History rows omit Gateway state; use participant detail for uncredited sender review_required rows.
+   * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
+   * @throws {MobileServerFailureError} If authentication, scope, pagination, or availability checks fail.
+   * @throws {Error} If a subaccount cannot be encoded/decoded, signing fails, or the response is invalid.
+   */
+  async getTipsHistory(
+    params: GetMobileTipsHistoryParams,
+  ): Promise<MobileTipsHistoryPage> {
+    const request = await this.getSignedRequest(
+      'tips_history',
+      params,
+      mapMobileTipsHistoryParamsToServer(params),
+    );
+    const response = await this.query(request);
+    return mapMobileTipsHistoryPage(
+      response as MobileServerTipsHistoryResponse,
+    );
+  }
+
+  /**
+   * Reads unseen verified-credit cards oldest first, including Tips subsequently placed under review.
+   * Reading never acknowledges cards; call markTipsSeen only for cards actually displayed. The default
+   * page size is ten and the maximum is fifty; a page length is not the total unseen count.
+   * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
+   * @throws {MobileServerFailureError} If authentication, pagination, or service availability checks fail.
+   * @throws {Error} If a participant cannot be decoded, signing fails, or the transport/response is invalid.
+   */
+  async getReceivedTips(
+    params: GetMobileReceivedTipsParams,
+  ): Promise<MobileReceivedTipsPage> {
+    const request = await this.getSignedRequest('received_tips', params, {
+      cursor: params.cursor ?? null,
+      limit: params.limit ?? null,
+    });
+    return mapMobileReceivedTipsPage(await this.query(request));
+  }
+
+  /**
    * Reads wallet market subscriptions and the signing Identity's enabled trader bells.
    * @param params - Wallet authentication context; no Expo token is needed.
    * @returns Subscriptions, import state, and the independent subscription revision.
@@ -958,8 +1071,13 @@ export class MobileClient {
   }
 
   /**
-   * Reads private accepted notification intents, not delivery receipts or read states.
-   * @param params - Wallet authentication and optional cursor/page size (1-50, default 20).
+   * Reads private accepted notifications and first-seen timestamps without acknowledging them.
+   * Omitted supportedTypes uses the server's default type set; an empty array returns no notifications.
+   * Server defaults may expand to unsupported routes and reject the whole page with
+   * MobileUnsupportedNotificationRouteError. Pass an explicit supported subset for stable decoding.
+   * Explicit filters are typed to notification types this SDK can decode.
+   * Keep the same type filter for every page in a cursor chain.
+   * @param params - Wallet authentication, optional type filter, and cursor/page size (1-50, default 20).
    * @returns A camelCase page; discard cached pages and cursors when switching wallets.
    * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
    * @throws {MobileServerFailureError} If authentication or pagination validation fails.
@@ -971,10 +1089,7 @@ export class MobileClient {
     const request = await this.getSignedRequest(
       'notification_inbox_v2',
       params,
-      {
-        cursor: params.cursor ?? null,
-        limit: params.limit ?? null,
-      },
+      mapMobileNotificationInboxV2ParamsToServer(params),
     );
     return mapMobileNotificationInboxV2(await this.query(request));
   }
@@ -1028,8 +1143,9 @@ export class MobileClient {
   }
 
   /**
-   * Replaces all v2 settings fields using optimistic concurrency; legacy overlapping preferences are synced.
-   * @param params - Active Expo token, latest settings revision, and complete replacement settings.
+   * Replaces the nine original v2 settings using optimistic concurrency; legacy preferences are synced.
+   * likesAndReplies is optional: omission preserves the saved value, while false explicitly disables it.
+   * @param params - Active Expo token, latest settings revision, and replacement settings.
    * @returns The saved settings document with its incremented revision.
    * @throws {MobileServerFailureError} On invalid token/settings or revision conflict (`NOTIFICATION_REVISION_CONFLICT`). Re-read and
    * merge only the user's current change before retrying; never blindly replay a stale document.
@@ -1194,6 +1310,73 @@ export class MobileClient {
       { private_mode: params.privateMode },
     );
     return this.execute(signedRequest);
+  }
+
+  /**
+   * Submits an owner-signed cash withdrawal through Mobile's Tip flow.
+   * Use getTipDetail for participant progress and getTipsHistory for activity.
+   * The outer Mobile authorization may use the linked signer, while the inner withdrawal must be signed
+   * by the owner of the same subaccount. This method never dispatches an Engine withdrawal directly.
+   *
+   * Preserve the original withdrawal, inner signature, and confirmed fee cap when recovering a lost
+   * response. Increase the cap only after an explicit user confirmation of a `failed` result whose
+   * processingReason is `FEE_TOO_LOW`, passing that result's version as expectedVersion.
+   * A sending result, or review_required with gateway.status accepted, confirms the sender's withdrawal.
+   * @param params - Mobile authorization, recipient, card details, owner-signed withdrawal, and confirmed cap.
+   * @returns Durable Tip identity and business state, including synchronous Gateway rejections.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} On pre-admission validation, authentication, balance, service, or
+   * submission conflicts. A rejected Gateway attempt after admission is returned as a business result.
+   * @throws {Error} If a subaccount cannot be encoded, wallet signing fails, or a transport or malformed
+   * response error occurs outside a Mobile failure envelope.
+   */
+  async submitTip(
+    params: MobileSubmitTipParams,
+  ): Promise<MobileSubmitTipResult> {
+    const request = await this.getSignedRequest(
+      'submit_tip',
+      params,
+      mapMobileSubmitTipParamsToServer(params),
+    );
+    return mapMobileSubmitTipResult(await this.execute(request));
+  }
+
+  /**
+   * Explicitly acknowledges one to fifty displayed Tip IDs as the recipient. The server deduplicates,
+   * validates the whole batch, and preserves the first seen timestamp. Missing/inaccessible/uncredited
+   * records fail with TIP_NOT_FOUND and leave the entire batch unchanged. No read calls this implicitly.
+   * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
+   * @throws {MobileServerFailureError} If the batch, authentication, recipient access, or service fails.
+   * @throws {Error} If signing fails or a transport/malformed response error occurs.
+   */
+  async markTipsSeen(
+    params: MobileMarkTipsSeenParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const request = await this.getSignedRequest('mark_tips_seen', params, {
+      tip_ids: [...params.tipIds],
+    });
+    return this.execute(request);
+  }
+
+  /**
+   * Explicitly acknowledges one to fifty displayed notification IDs. The server deduplicates and records
+   * the first seen time atomically; any unknown, inaccessible, or unaccepted ID fails the batch with 6204.
+   * This is independent of markTipsSeen and product analytics events.
+   * @throws {WalletNotProvidedError} If neither an owner wallet nor a linked signer is configured.
+   * @throws {MobileServerFailureError} If the batch, authentication, access, or service fails.
+   * @throws {Error} If signing fails or a transport/malformed response error occurs.
+   */
+  async markNotificationsSeen(
+    params: MobileMarkNotificationsSeenParams,
+  ): Promise<MobileServerSuccessResponse> {
+    const request = await this.getSignedRequest(
+      'mark_notifications_seen',
+      params,
+      {
+        notification_ids: [...params.notificationIds],
+      },
+    );
+    return this.execute(request);
   }
 
   /**

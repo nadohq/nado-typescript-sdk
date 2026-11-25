@@ -4,8 +4,10 @@ import {
   MOBILE_NOTIFICATION_POSITION_THRESHOLDS,
   MobileClient,
   MobileNotificationCapabilities,
+  MobileNotificationInboxItem,
   MobileNotificationSettings,
   MobileNotificationSettingsV2,
+  MobileNotificationTypeId,
   MobileProductEvent,
   MobileRegisterExpoTokenV2Params,
   MobileSignedRequestParams,
@@ -46,11 +48,15 @@ void describe(
   () => {
     let mobile: MobileClient;
     let auth: MobileSignedRequestParams;
+    let existingWalletMobile: MobileClient;
+    let existingWalletAuth: MobileSignedRequestParams;
     let expoToken: string;
     let registered = false;
 
     before(() => {
       const context = createTestContext();
+      existingWalletMobile = context.mobile;
+      existingWalletAuth = getMobileSignedParams(context);
       const account = privateKeyToAccount(generatePrivateKey());
       mobile = new MobileClient({
         url: context.endpoints.mobile,
@@ -164,6 +170,67 @@ void describe(
       }
     });
 
+    void test('keeps schema v2 and preserves an explicit false preference when a later write omits it', async () => {
+      const original = await mobile.getNotificationSettingsV2({ expoToken });
+      assertNotificationSettingsShape(original);
+      assert.equal(original.settings.likesAndReplies, true);
+      try {
+        const saved = await mobile.updateNotificationSettingsV2({
+          expoToken,
+          expectedRevision: original.revision,
+          settings: { ...original.settings, likesAndReplies: false },
+        });
+        assertNotificationSettingsShape(saved);
+        assert.equal(saved.revision, original.revision + 1);
+        assert.equal(saved.settings.likesAndReplies, false);
+        const reloaded = await mobile.getNotificationSettingsV2({ expoToken });
+        assertNotificationSettingsShape(reloaded);
+        assert.equal(reloaded.settings.likesAndReplies, false);
+
+        const nineFieldSettings: MobileNotificationSettings = {
+          ...reloaded.settings,
+          myOrders: !reloaded.settings.myOrders,
+        };
+        delete nineFieldSettings.likesAndReplies;
+        assert.equal(
+          Object.hasOwn(nineFieldSettings, 'likesAndReplies'),
+          false,
+        );
+        const afterOmittedWrite = await mobile.updateNotificationSettingsV2({
+          expoToken,
+          expectedRevision: reloaded.revision,
+          settings: nineFieldSettings,
+        });
+        assertNotificationSettingsShape(afterOmittedWrite);
+        assert.equal(afterOmittedWrite.revision, reloaded.revision + 1);
+        assert.deepEqual(afterOmittedWrite.settings, {
+          ...nineFieldSettings,
+          likesAndReplies: false,
+        });
+        await assertRejectsWithMobileErrorCode(
+          () =>
+            mobile.updateNotificationSettingsV2({
+              expoToken,
+              expectedRevision: reloaded.revision,
+              settings: { ...nineFieldSettings, likesAndReplies: true },
+            }),
+          MOBILE_ERROR_CODES.NOTIFICATION_REVISION_CONFLICT,
+        );
+        const afterConflict = await mobile.getNotificationSettingsV2({
+          expoToken,
+        });
+        assert.equal(afterConflict.revision, afterOmittedWrite.revision);
+        assert.equal(afterConflict.settings.likesAndReplies, false);
+      } finally {
+        const current = await mobile.getNotificationSettingsV2({ expoToken });
+        await mobile.updateNotificationSettingsV2({
+          expoToken,
+          expectedRevision: current.revision,
+          settings: original.settings,
+        });
+      }
+    });
+
     void test('reads subscriptions, imports favorites once, and applies revision-guarded market changes', async () => {
       const productId = TEST_PRODUCT_IDS.PERP_BTC;
       const initial = await mobile.getNotificationSubscriptions(auth);
@@ -260,6 +327,155 @@ void describe(
       );
     });
 
+    void test('accepts supported-type filters and returns no notifications for an explicit empty list', async () => {
+      const page = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes: [],
+      });
+      assert.deepEqual(page.notifications, []);
+      assert.equal(page.nextCursor, null);
+      const supportedTypes: MobileNotificationTypeId[] = [
+        'deposit_completed',
+        'new_follower',
+      ];
+      const filtered = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes,
+      });
+      for (const entry of filtered.notifications) {
+        assert.ok(supportedTypes.includes(entry.typeId));
+        assertInboxReadState(entry);
+      }
+    });
+
+    void test('preserves read timestamps and filters the existing wallet Inbox by supported type', async (testContext) => {
+      const defaults = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+      });
+      for (const entry of defaults.notifications) {
+        assertNonNegativeInteger(entry.createdAt, 'createdAt');
+        assertBoolean(entry.tradeWithin24h, 'tradeWithin24h');
+        assertInboxReadState(entry);
+      }
+      const notification = defaults.notifications[0];
+      if (!notification) {
+        testContext.skip(
+          'The test wallet has no accepted v2 Inbox notifications.',
+        );
+        return;
+      }
+      const supportedTypes = [notification.typeId];
+      const page = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes,
+      });
+      assert.ok(page.notifications.length > 0);
+      for (const entry of page.notifications) {
+        assert.ok(supportedTypes.includes(entry.typeId));
+        assertInboxReadState(entry);
+      }
+      if (page.nextCursor !== null) {
+        const next = await existingWalletMobile.getNotificationInboxV2({
+          ...existingWalletAuth,
+          cursor: page.nextCursor,
+          limit: 20,
+          supportedTypes,
+        });
+        const firstPageIds = new Set(
+          page.notifications.map((entry) => entry.notificationId),
+        );
+        for (const entry of next.notifications) {
+          assert.ok(supportedTypes.includes(entry.typeId));
+          assert.ok(!firstPageIds.has(entry.notificationId));
+        }
+      }
+    });
+
+    void test('rejects repeated missing notification IDs with INVALID_NOTIFICATION_REQUEST', async () => {
+      const notificationId = randomUUID();
+      await assertRejectsWithMobileErrorCode(
+        () =>
+          mobile.markNotificationsSeen({
+            ...auth,
+            notificationIds: [notificationId, notificationId],
+          }),
+        MOBILE_ERROR_CODES.INVALID_NOTIFICATION_REQUEST,
+      );
+    });
+
+    void test('acknowledges an accepted notification and preserves its first-seen timestamp on retry', async (testContext) => {
+      const initial = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 50,
+      });
+      const notification =
+        initial.notifications.find((entry) => entry.seenAt === null) ??
+        initial.notifications[0];
+      if (!notification) {
+        testContext.skip(
+          'The test wallet has no accepted v2 Inbox notifications.',
+        );
+        return;
+      }
+
+      assert.equal(
+        (
+          await existingWalletMobile.markNotificationsSeen({
+            ...existingWalletAuth,
+            notificationIds: [notification.notificationId],
+          })
+        ).status,
+        'success',
+      );
+      const acknowledged = await findInboxNotification(
+        existingWalletMobile,
+        existingWalletAuth,
+        notification.notificationId,
+        notification.typeId,
+      );
+      assert.ok(
+        acknowledged,
+        'Acknowledged notifications remain in the accepted Inbox.',
+      );
+      assertNonNegativeInteger(acknowledged.seenAt, 'seenAt');
+      if (notification.seenAt !== undefined && notification.seenAt !== null) {
+        assert.equal(acknowledged.seenAt, notification.seenAt);
+      }
+
+      assert.equal(
+        (
+          await existingWalletMobile.markNotificationsSeen({
+            ...existingWalletAuth,
+            notificationIds: [
+              notification.notificationId,
+              notification.notificationId,
+            ],
+          })
+        ).status,
+        'success',
+      );
+      const repeated = await findInboxNotification(
+        existingWalletMobile,
+        existingWalletAuth,
+        notification.notificationId,
+        notification.typeId,
+      );
+      assert.ok(
+        repeated,
+        'Repeated acknowledgement must not remove the notification.',
+      );
+      assert.equal(repeated.seenAt, acknowledged.seenAt);
+    });
+
     void test('records product events, accepts stable-ID retries, and rejects invalid batches/ownership', async () => {
       const events: MobileProductEvent[] = [
         {
@@ -338,6 +554,42 @@ void describe(
   },
 );
 
+async function findInboxNotification(
+  mobile: MobileClient,
+  auth: MobileSignedRequestParams,
+  notificationId: string,
+  typeId: MobileNotificationTypeId,
+): Promise<MobileNotificationInboxItem | undefined> {
+  let cursor: string | null = null;
+  const visitedCursors = new Set<string>();
+  for (;;) {
+    const page = await mobile.getNotificationInboxV2({
+      ...auth,
+      cursor,
+      limit: 50,
+      supportedTypes: [typeId],
+    });
+    const notification = page.notifications.find(
+      (entry) => entry.notificationId === notificationId,
+    );
+    if (notification || page.nextCursor === null) return notification;
+    assert.ok(
+      !visitedCursors.has(page.nextCursor),
+      'Inbox pagination must advance.',
+    );
+    visitedCursors.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+}
+
+function assertInboxReadState(item: MobileNotificationInboxItem): void {
+  if (item.seenAt === undefined) {
+    assert.equal(Object.hasOwn(item, 'seenAt'), false);
+  } else if (item.seenAt !== null) {
+    assertNonNegativeInteger(item.seenAt, 'seenAt');
+  }
+}
+
 /**
  * Asserts the v2 settings document's schema, revision, and required field shapes.
  * @param document - Settings document returned by a notification query or update.
@@ -347,7 +599,6 @@ function assertNotificationSettingsShape(
 ): void {
   assert.equal(document.schemaVersion, 2);
   assertNonNegativeInteger(document.revision, 'revision');
-  assert.equal(Object.keys(document.settings).length, 9);
   assert.ok(document.settings.positionThresholds.length >= 1);
   for (const threshold of document.settings.positionThresholds) {
     assert.ok(MOBILE_NOTIFICATION_POSITION_THRESHOLDS.includes(threshold));
@@ -358,6 +609,12 @@ function assertNotificationSettingsShape(
     ),
   );
   assert.equal('status' in document, false);
+  if (Object.hasOwn(document.settings, 'likesAndReplies')) {
+    assertBoolean(
+      document.settings.likesAndReplies,
+      'settings.likesAndReplies',
+    );
+  }
   for (const field of [
     'myPositions',
     'myOrders',

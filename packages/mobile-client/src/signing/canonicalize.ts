@@ -10,11 +10,69 @@ import { MobileSignedInner } from './types';
  * order and the payload hash must be reproducible regardless of how the caller constructed the object, so
  * every inner payload — and each of its sub-types — is canonicalized here before hashing. This function is
  * the source of truth for that order.
+ * @throws {Error} If the payload has an unsupported operation type.
  */
 export function canonicalizeMobileInner(
   inner: MobileSignedInner,
 ): MobileSignedInner {
   switch (inner.type) {
+    case 'tip_detail':
+      return { type: inner.type, tip_id: inner.tip_id };
+    case 'tips_history':
+      if (inner.mode === 'list') {
+        return {
+          type: inner.type,
+          mode: inner.mode,
+          direction: inner.direction,
+          subaccount: inner.subaccount ?? null,
+          cursor: inner.cursor ?? null,
+          limit: inner.limit ?? null,
+        };
+      }
+      return {
+        type: inner.type,
+        mode: inner.mode,
+        subaccount: inner.subaccount,
+        product_id: inner.product_id,
+        direction: inner.direction,
+        submission_indices: [...inner.submission_indices],
+      };
+    case 'received_tips':
+      return {
+        type: inner.type,
+        cursor: inner.cursor ?? null,
+        limit: inner.limit ?? null,
+      };
+    case 'mark_tips_seen':
+      return { type: inner.type, tip_ids: [...inner.tip_ids] };
+    case 'mark_notifications_seen':
+      return {
+        type: inner.type,
+        notification_ids: [...inner.notification_ids],
+      };
+    case 'submit_tip':
+      return {
+        type: inner.type,
+        chain_id: inner.chain_id,
+        recipient_subaccount: inner.recipient_subaccount,
+        origin_post_id: inner.origin_post_id,
+        note: inner.note,
+        background_id: inner.background_id,
+        visibility: inner.visibility,
+        withdrawal: {
+          sender: inner.withdrawal.sender,
+          productId: inner.withdrawal.productId,
+          amount: inner.withdrawal.amount,
+          nonce: inner.withdrawal.nonce,
+          sendTo: inner.withdrawal.sendTo,
+          appendix: inner.withdrawal.appendix,
+        },
+        withdrawal_signature: inner.withdrawal_signature,
+        max_fee_x18: inner.max_fee_x18,
+        ...(inner.expected_version === undefined
+          ? {}
+          : { expected_version: inner.expected_version }),
+      };
     case 'register_expo_token_v2':
       return {
         type: inner.type,
@@ -56,6 +114,9 @@ export function canonicalizeMobileInner(
         type: inner.type,
         cursor: inner.cursor,
         limit: inner.limit,
+        ...(inner.supported_types === undefined
+          ? {}
+          : { supported_types: [...inner.supported_types] }),
       };
     case 'record_product_events':
       return {
