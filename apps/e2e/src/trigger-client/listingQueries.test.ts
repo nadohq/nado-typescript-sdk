@@ -3,12 +3,13 @@ import {
   getOrderVerifyingAddress,
   packOrderAppendix,
 } from '@nadohq/shared';
-import { TriggerPlaceOrderParams } from '@nadohq/trigger-client';
+import { TriggerClient, TriggerPlaceOrderParams } from '@nadohq/trigger-client';
 import { after, before, beforeEach, describe, test } from 'node:test';
 import {
   assertArray,
   assertArrayElements,
   assertDefined,
+  assertNonEmptyArray,
 } from '../utils/assertions';
 import { cleanupTestState } from '../utils/cleanup';
 import { debugPrint } from '../utils/debugPrint';
@@ -215,6 +216,44 @@ void describe(
         result.orders,
         assertTriggerOrderInfoShape,
         'pendingListOrdersForProductResult.orders',
+      );
+    });
+
+    void test('lists pending orders without a signature', async () => {
+      const result = await tc.trigger.listOrdersUnsigned({
+        statusTypes: PENDING_TRIGGER_STATUS_TYPES,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountOwner: tc.walletClientAddress,
+      });
+      debugPrint('Pending unsigned list orders result', result);
+
+      assertDefined(result, 'unsignedListOrdersResult');
+      assertArray(result.orders, 'unsignedListOrdersResult.orders');
+      assertArrayElements(
+        result.orders,
+        assertTriggerOrderInfoShape,
+        'unsignedListOrdersResult.orders',
+      );
+    });
+
+    void test('lists a subaccount pending orders from a wallet-less client', async () => {
+      const walletlessTrigger = new TriggerClient({
+        url: tc.endpoints.trigger,
+      });
+
+      const result = await walletlessTrigger.listOrdersUnsigned({
+        statusTypes: PENDING_TRIGGER_STATUS_TYPES,
+        subaccountName: TEST_SUBACCOUNT_NAME,
+        subaccountOwner: tc.walletClientAddress,
+      });
+      debugPrint('Wallet-less unsigned list orders result', result);
+
+      assertDefined(result, 'walletlessListOrdersResult');
+      assertNonEmptyArray(result.orders, 'walletlessListOrdersResult.orders');
+      assertArrayElements(
+        result.orders,
+        assertTriggerOrderInfoShape,
+        'walletlessListOrdersResult.orders',
       );
     });
   },
