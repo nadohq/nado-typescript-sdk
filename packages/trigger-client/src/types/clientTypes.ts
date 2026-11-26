@@ -80,6 +80,14 @@ export interface TriggerListOrdersParams extends Subaccount, SignatureParams {
   reduceOnly?: boolean;
 }
 
+/**
+ * Same as TriggerListOrdersParams without the signing fields and recvTime, which the service ignores when unsigned.
+ */
+export type TriggerListOrdersUnsignedParams = Omit<
+  TriggerListOrdersParams,
+  keyof SignatureParams | 'recvTime'
+>;
+
 export interface TriggerOrder {
   productId: number;
   triggerCriteria: TriggerCriteria;

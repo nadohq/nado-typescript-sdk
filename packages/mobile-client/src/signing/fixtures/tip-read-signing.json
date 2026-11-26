@@ -1,0 +1,68 @@
+{
+  "provenance": "Offline examples generated with @nadohq/mobile-client and @nadohq/shared 0.78.0, @msgpack/msgpack 3.1.3 and viem. Operation fields follow the canonical order in docs/api/submit-tip.md.",
+  "chain_id": 31337,
+  "endpoint": "0x0123456789012345678901234567890123456789",
+  "signer": "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
+  "vectors": [
+    {
+      "method": "mobile:query_tip_detail",
+      "payload_msgpack_hex": "0x82a474797065aa7469705f64657461696ca67469705f6964d92431303030303030302d303030302d343030302d383030302d303030303030303030303031",
+      "payload_hash": "0xf8b30e73fda16ee8cfe480ca7efef7ba3da4154dab918281246eef83da8990a2",
+      "authentication_digest": "0xc9d2eb3a6750f50dcca32528a6dcfd56200763f88b0a008323cd14f79a1fd48b",
+      "request": {
+        "type": "tip_detail",
+        "tip_id": "10000000-0000-4000-8000-000000000001",
+        "sender": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0xd09b55d71ade1fe5ddc013858b8751e7fe4abbad0601ca066afdb68aa296e12172229610ed0ced64cbac3cea4ec38a762c25054a16149a3e6b9533b82a980bea1b"
+      }
+    },
+    {
+      "method": "mobile:query_tips_history",
+      "payload_msgpack_hex": "0x86a474797065ac746970735f686973746f7279a46d6f6465a46c697374a9646972656374696f6ea3616c6caa7375626163636f756e74c0a6637572736f72c0a56c696d6974c0",
+      "payload_hash": "0xe324a20419148d5c3d3354d739756e001e3b9e0e41148dbb2861326f3340d8e2",
+      "authentication_digest": "0x8813eb248450b031d9052ff864a0a522d52eb4e7f20a567882f27d9d6c234e5a",
+      "request": {
+        "type": "tips_history",
+        "mode": "list",
+        "direction": "all",
+        "subaccount": null,
+        "cursor": null,
+        "limit": null,
+        "sender": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf64656661756c740000000000",
+        "nonce": "1795000000000000002",
+        "signature": "0xb12cfc15ca6cf53c5e55fb021a01127b76e438fec68f745851086350727264213eafb07f2cacca4b1bfd8166c449b951af5d4cf0d2146771583300d450abaf471c"
+      }
+    },
+    {
+      "method": "mobile:query_received_tips",
+      "payload_msgpack_hex": "0x83a474797065ad72656365697665645f74697073a6637572736f72c0a56c696d69740a",
+      "payload_hash": "0x82879bdb337c5117a0a5b208c6f7397ce30324d0aa83763a2f0dd01f1b0df391",
+      "authentication_digest": "0x7ef7c16e2a26b8502235bc93f73e4a2798eb83f0097ed14641cb9561ea4acd00",
+      "request": {
+        "type": "received_tips",
+        "cursor": null,
+        "limit": 10,
+        "sender": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf64656661756c740000000000",
+        "nonce": "1795000000000000003",
+        "signature": "0x24f068fdeb659a270f7cfdbd004739069c15ea1c491c7d53dd532cfda5c0a6cd60868fcb131e7783074b4788fc76185eb3325bd71d1b166531c58f522f54afa41b"
+      }
+    },
+    {
+      "method": "mobile:execute_mark_tips_seen",
+      "payload_msgpack_hex": "0x82a474797065ae6d61726b5f746970735f7365656ea77469705f69647392d92431303030303030302d303030302d343030302d383030302d303030303030303030303031d92431303030303030302d303030302d343030302d383030302d303030303030303030303032",
+      "payload_hash": "0xb9a68fba6c54870452cd91d31bab0126847d60e8fec1455fd3a2297db88c8b04",
+      "authentication_digest": "0x78502bd7e310d0db60c022c940915019c03acb9e70aec3eb270560264c6afeac",
+      "request": {
+        "type": "mark_tips_seen",
+        "tip_ids": [
+          "10000000-0000-4000-8000-000000000001",
+          "10000000-0000-4000-8000-000000000002"
+        ],
+        "sender": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf64656661756c740000000000",
+        "nonce": "1795000000000000004",
+        "signature": "0xf8a40ffd31c899b4ad6f2c63fda038590b71283b205deaf1dd0e8d75f5bdb9073c9d92a3f0537124c7df7478b0a2aa90ab801ce133bf79177b802795ef92d1c11b"
+      }
+    }
+  ]
+}

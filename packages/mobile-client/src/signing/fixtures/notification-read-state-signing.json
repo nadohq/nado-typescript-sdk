@@ -1,0 +1,68 @@
+{
+  "provenance": "App SDK 0.78.0 canonicalization for legacy inbox requests, MessagePack hashing and EIP-712 signing with disposable wallet 2. Capability-aware clients append supported_types only when present.",
+  "chain_id": 1,
+  "endpoint": "0x0101010101010101010101010101010101010101",
+  "signer": "0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF",
+  "vectors": [
+    {
+      "operation": "query",
+      "method": "mobile:query_notification_inbox_v2",
+      "payload_hash": "0x2774e4d19871c25befc663da909552209b19c2547fe2d286159a065d3d41db6b",
+      "authentication_digest": "0x93eb191ec64d75b7f5536284c42dc6b4523713e21e3874f51043acfb9d47c4ae",
+      "request": {
+        "type": "notification_inbox_v2",
+        "cursor": null,
+        "limit": 20,
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0x5919b5144911736e8552a0d3489d187b042cf995f5431be0d1137afe96b8370b2671ee89be61eb574262766be3817b54bd5073b4bdd7588f96c353a19c622da31c"
+      }
+    },
+    {
+      "operation": "query",
+      "method": "mobile:query_notification_inbox_v2",
+      "payload_hash": "0x595c63848f79141299fc7b924871c7fc05a957eb38da388652749aa95fbcee88",
+      "authentication_digest": "0xb4131159594c5aeffe1efbb7443f84ad4f42da6a682e9a75b023fbf49ee7b7c0",
+      "request": {
+        "type": "notification_inbox_v2",
+        "cursor": "11111111-1111-4111-8111-111111111111",
+        "limit": 20,
+        "supported_types": ["new_follower", "tip_received"],
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0xad3a537b08afe06c7d29df75e7031e60c810b885697c1c4821c6901c7f363de25a1152c35dd533ef9d61a4a7bf6c480ec0c23192100260645f72eed76d602d911c"
+      }
+    },
+    {
+      "operation": "query",
+      "method": "mobile:query_notification_inbox_v2",
+      "payload_hash": "0xea65cc962352ec82b2ca43693d1d3bc8671cbe0bd64efb99f10f2a37bc579952",
+      "authentication_digest": "0xef4d06e1a0e91bce84638afc978e558a45bdd0040535531aac99429caadb393e",
+      "request": {
+        "type": "notification_inbox_v2",
+        "cursor": null,
+        "limit": 20,
+        "supported_types": [],
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0xc093d3a967128129c202b571248ddbe304ab17de0cd670ee63ca16d78703e8222231c3d592a8303f7421814de964cb80895adac7b57a31203409c488ceb6b49a1c"
+      }
+    },
+    {
+      "operation": "execute",
+      "method": "mobile:execute_mark_notifications_seen",
+      "payload_hash": "0x740b3881e9c5f5d91547606b9ca6eca513b78b8e926fbd71727c36e9641e8269",
+      "authentication_digest": "0x1213b7b2bdf19152ffdc643cd9ec170654f083f8d38cf0eee71f5f5ac79082d3",
+      "request": {
+        "type": "mark_notifications_seen",
+        "notification_ids": [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222"
+        ],
+        "sender": "0x2b5ad5c4795c026514f8317c7a215e218dccd6cf64656661756c740000000000",
+        "nonce": "1795000000000000001",
+        "signature": "0xa093f448c9dc8322ffe3ef6608e4f3f3ba6e05f48537fb3c79d91095023ab31e63fd46c6a2a21deff0ee265db4c15dea16c228125f45ce7db61908f0f5d1abf91c"
+      }
+    }
+  ]
+}

@@ -1,6 +1,21 @@
-import { removeDecimals, subaccountToHex, toBigNumber } from '@nadohq/shared';
+import {
+  EIP712WithdrawCollateralV2Values,
+  removeDecimals,
+  subaccountFromHex,
+  subaccountToHex,
+  toBigNumber,
+  toIntegerString,
+} from '@nadohq/shared';
+import type BigNumber from 'bignumber.js';
+import type {
+  MobileSignedInnerByType,
+  MobileSignedInnerParams,
+} from './signing/types';
 import {
   GetMobileFollowListParams,
+  GetMobileNotificationInboxV2Params,
+  GetMobileTipCollateralMappingsParams,
+  GetMobileTipsHistoryParams,
   MobileAttributeOrdersResult,
   MobileAvatarPreset,
   MobileAvatarSelection,
@@ -29,12 +44,14 @@ import {
   MobileProfileSearchPage,
   MobileProfilesInclude,
   MobilePublicProfile,
+  MobileReceivedTipsPage,
   MobileRegisteredWallet,
   MobileSocialFeedActionCandidate,
   MobileSocialFeedActionMarker,
   MobileSocialFeedActionResolutionResult,
   MobileSocialFeedAuthor,
   MobileSocialFeedCandle,
+  MobileSocialFeedCapabilities,
   MobileSocialFeedCommentGroup,
   MobileSocialFeedCommentResult,
   MobileSocialFeedCommentsPage,
@@ -85,6 +102,17 @@ import {
   MobileSocialFeedUpdates,
   MobileSocialFeedUploadedImage,
   MobileSocialFeedWatchers,
+  MobileSubmitTipParams,
+  MobileSubmitTipResult,
+  MobileTipCollateralMappings,
+  MobileTipDetail,
+  MobileTipDetailCommon,
+  MobileTipGatewayResult,
+  MobileTipHistoryCommon,
+  MobileTipHistoryRow,
+  MobileTipParticipant,
+  MobileTipSenderCost,
+  MobileTipsHistoryPage,
   SearchMobileProfilesParams,
 } from './types/clientTypes';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
@@ -98,6 +126,7 @@ import {
   MobileServerSocialFeedDrawingMutationResponse,
   MobileServerSocialFeedLikeResponse,
   MobileServerSocialFeedPresenceResponse,
+  MobileServerSubmitTipResponse,
 } from './types/serverExecuteTypes';
 import {
   MobileServerAvatarPreset,
@@ -116,6 +145,7 @@ import {
   MobileServerSocialFeedActionMarker,
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
+  MobileServerSocialFeedCapabilities,
   MobileServerSocialFeedCommentGroup,
   MobileServerSocialFeedCompactCard,
   MobileServerSocialFeedContentBase,
@@ -145,6 +175,14 @@ import {
   MobileServerSocialFeedTradingContext,
   MobileServerSocialFeedTradingTarget,
   MobileServerSocialFeedUploadedImage,
+  MobileServerTipDetail,
+  MobileServerTipDetailCommon,
+  MobileServerTipGatewayResult,
+  MobileServerTipHistoryCommon,
+  MobileServerTipHistoryRow,
+  MobileServerTipParticipant,
+  MobileServerTipSenderCost,
+  MobileServerTipWithdrawal,
   MobileSocialFeedMention,
 } from './types/serverModelTypes';
 import {
@@ -156,6 +194,7 @@ import {
   MobileServerNotificationSettingsV2Response,
   MobileServerNotificationSubscriptionsResponse,
   MobileServerPositionLookupResponse,
+  MobileServerReceivedTipsResponse,
   MobileServerRegisteredWalletResponse,
   MobileServerSearchProfilesResponse,
   MobileServerSocialFeedActionResolutionResponse,
@@ -173,6 +212,8 @@ import {
   MobileServerSocialFeedTopTradersResponse,
   MobileServerSocialFeedUpdatesResponse,
   MobileServerSocialFeedWatchersResponse,
+  MobileServerTipCollateralMappingsResponse,
+  MobileServerTipsHistoryResponse,
 } from './types/serverQueryTypes';
 import {
   MobileServerFollowListRequest,
@@ -262,6 +303,9 @@ export function mapMobileNotificationSettings(
     newFollowers: server.new_followers,
     announcements: server.announcements,
     discovery: server.discovery,
+    ...(server.likes_and_replies === undefined
+      ? {}
+      : { likesAndReplies: server.likes_and_replies }),
   };
 }
 
@@ -282,6 +326,9 @@ export function mapMobileNotificationSettingsToServer(
     new_followers: settings.newFollowers,
     announcements: settings.announcements,
     discovery: settings.discovery,
+    ...(settings.likesAndReplies === undefined
+      ? {}
+      : { likes_and_replies: settings.likesAndReplies }),
   };
 }
 
@@ -411,9 +458,29 @@ export function mapMobileNotificationInboxV2(
       typeId: item.type_id,
       data: mapMobileNotificationPayloadV2(item.data),
       createdAt: item.created_at,
+      ...(item.seen_at === undefined ? {} : { seenAt: item.seen_at }),
       tradeWithin24h: item.trade_within_24h,
     })),
     nextCursor: server.next_cursor,
+  };
+}
+
+/**
+ * Maps typed Inbox filters, preserving omission separately from an explicit empty filter.
+ * Omission uses the server's default type set, which may expand beyond this SDK's supported routes.
+ */
+export function mapMobileNotificationInboxV2ParamsToServer(
+  params: Pick<
+    GetMobileNotificationInboxV2Params,
+    'cursor' | 'limit' | 'supportedTypes'
+  >,
+): MobileSignedInnerParams<'notification_inbox_v2'> {
+  return {
+    cursor: params.cursor ?? null,
+    limit: params.limit ?? null,
+    ...(params.supportedTypes === undefined
+      ? {}
+      : { supported_types: params.supportedTypes }),
   };
 }
 
@@ -893,6 +960,17 @@ export function mapMobileSocialFeedImage(
   };
 }
 
+function mapMobileSocialFeedCapabilities(
+  server: MobileServerSocialFeedCapabilities,
+): MobileSocialFeedCapabilities {
+  return {
+    canLike: server.can_like,
+    canComment: server.can_comment,
+    canRecordView: server.can_record_view,
+    ...(server.can_tip === undefined ? {} : { canTip: server.can_tip }),
+  };
+}
+
 /**
  * Maps common item metadata and server capabilities.
  * @param server - The service response.
@@ -913,11 +991,7 @@ export function mapMobileSocialFeedItemBase(
     displayAtMs: server.display_at_ms,
     version: server.version,
     market: mapMobileSocialFeedMarket(server.market),
-    capabilities: {
-      canLike: server.capabilities.can_like,
-      canComment: server.capabilities.can_comment,
-      canRecordView: server.capabilities.can_record_view,
-    },
+    capabilities: mapMobileSocialFeedCapabilities(server.capabilities),
   };
 }
 
@@ -941,6 +1015,9 @@ export function mapMobileSocialFeedContentBase(
       totalCount: server.comment_preview.total_count,
       nextCursor: server.comment_preview.next_cursor,
     },
+    ...(server.public_tip_total_x18 === undefined
+      ? {}
+      : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
   };
 }
 
@@ -1129,7 +1206,7 @@ export function mapMobileSocialFeedItemResponse(
 }
 
 /**
- * Maps item deltas, preserving omitted fields and explicit null clears.
+ * Maps item deltas, preserving omitted fields and null clears on nullable fields.
  * @param server - The service response.
  * @returns The mapped feed item patch.
  */
@@ -1155,6 +1232,12 @@ export function mapMobileSocialFeedItemPatch(
     ...(server.interaction === undefined
       ? {}
       : { interaction: mapMobileSocialFeedInteraction(server.interaction) }),
+    ...(server.capabilities === undefined
+      ? {}
+      : { capabilities: mapMobileSocialFeedCapabilities(server.capabilities) }),
+    ...(server.public_tip_total_x18 === undefined
+      ? {}
+      : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
     ...(server.trade_count === undefined
       ? {}
       : { tradeCount: server.trade_count }),
@@ -1867,4 +1950,265 @@ export function mapMobileSocialFeedPositionThoughts(
     nextCursor: server.next_cursor,
     readSession: mapMobileSocialFeedReadSession(server.read_session),
   };
+}
+
+/**
+ * Converts Engine payload-builder values to Tip wire fields without executing or re-signing a withdrawal.
+ * Amount and appendix use integer-string encoding; hex spellings and the withdrawal nonce pass through.
+ */
+export function mapMobileTipWithdrawalToServer(
+  withdrawal: EIP712WithdrawCollateralV2Values,
+): MobileServerTipWithdrawal {
+  return {
+    sender: withdrawal.sender,
+    productId: withdrawal.productId,
+    amount: toIntegerString(withdrawal.amount),
+    nonce: withdrawal.nonce,
+    sendTo: withdrawal.sendTo,
+    appendix: toIntegerString(withdrawal.appendix),
+  };
+}
+
+/**
+ * Maps explicitly confirmed Tip inputs while preserving the inner owner signature and withdrawal nonce.
+ * Ordinary recovery omits expected_version; it never increases the confirmed cap or authorizes a retry.
+ * @throws {Error} If the recipient subaccount cannot be encoded as bytes32.
+ */
+export function mapMobileSubmitTipParamsToServer(
+  params: MobileSubmitTipParams,
+): MobileSignedInnerParams<'submit_tip'> {
+  return {
+    chain_id: params.chainId.toString(),
+    recipient_subaccount: subaccountToHex(params.recipientSubaccount),
+    origin_post_id: params.originPostId ?? null,
+    note: params.note ?? null,
+    background_id: params.backgroundId,
+    visibility: params.visibility,
+    withdrawal: mapMobileTipWithdrawalToServer(params.withdrawal),
+    withdrawal_signature: params.withdrawalSignature,
+    max_fee_x18: toIntegerString(params.maxFeeX18),
+    ...(params.expectedVersion === undefined
+      ? {}
+      : { expected_version: params.expectedVersion }),
+  };
+}
+
+/** Maps durable Tip state without treating an admitted Gateway rejection as a transport failure. */
+export function mapMobileSubmitTipResult(
+  server: MobileServerSubmitTipResponse,
+): MobileSubmitTipResult {
+  return {
+    tipId: server.tip_id,
+    tipStatus: server.tip_status,
+    version: server.version,
+    submittedAtMs: server.submitted_at_ms,
+    gateway: mapTipGatewayResult(server.gateway),
+    processingReason: server.processing_reason,
+  };
+}
+
+/**
+ * Maps one attribution request without changing its exact Indexer indices or their order.
+ * @throws {Error} If the target subaccount cannot be encoded as bytes32.
+ */
+export function mapMobileTipCollateralMappingsParamsToServer(
+  params: GetMobileTipCollateralMappingsParams,
+): Omit<
+  Extract<
+    MobileSignedInnerByType<'tips_history'>,
+    { mode: 'collateral_mapping' }
+  >,
+  'type'
+> {
+  return {
+    mode: 'collateral_mapping',
+    subaccount: subaccountToHex(params.subaccount),
+    product_id: params.productId,
+    direction: params.direction,
+    submission_indices: params.submissionIndices,
+  };
+}
+
+/**
+ * Maps partial attribution results, preserving unknown amounts and source order.
+ * Subaccounts retain their exact bytes32 Hex identity for collateral-attribution correlation keys.
+ */
+export function mapMobileTipCollateralMappings(
+  server: MobileServerTipCollateralMappingsResponse,
+): MobileTipCollateralMappings {
+  return {
+    mappings: server.mappings.map((mapping) => ({
+      subaccount: mapping.subaccount,
+      productId: mapping.product_id,
+      direction: mapping.direction,
+      submissionIdx: mapping.submission_idx,
+      mappingState: mapping.mapping_state,
+      classification: mapping.classification,
+      depositTotal: mapTipNullableAmount(mapping.deposit_total_x18),
+      tipTotal: mapTipNullableAmount(mapping.tip_total_x18),
+      ordinaryAmount: mapTipNullableAmount(mapping.ordinary_amount_x18),
+    })),
+  };
+}
+
+/**
+ * Maps participant history filters to their canonical signed shape, retaining explicit null defaults.
+ * @throws {Error} If a supplied participant subaccount cannot be encoded as bytes32.
+ */
+export function mapMobileTipsHistoryParamsToServer(
+  params: GetMobileTipsHistoryParams,
+): Omit<
+  Extract<MobileSignedInnerByType<'tips_history'>, { mode: 'list' }>,
+  'type'
+> {
+  return {
+    mode: 'list',
+    direction: params.direction ?? 'all',
+    subaccount:
+      params.subaccount == null ? null : subaccountToHex(params.subaccount),
+    cursor: params.cursor ?? null,
+    limit: params.limit ?? null,
+  };
+}
+
+/**
+ * Decodes a required participant identity while preserving missing public profile fields as null.
+ * @throws {Error} If the server returns an invalid bytes32 subaccount.
+ */
+export function mapMobileTipParticipant(
+  participant: MobileServerTipParticipant,
+): MobileTipParticipant {
+  return {
+    subaccount: subaccountFromHex(participant.subaccount),
+    displayName: participant.display_name,
+    avatarUrl: participant.avatar_url,
+  };
+}
+
+/**
+ * Maps role-specific Tip detail without changing read state or exposing fields from the other role.
+ * Verified credit time and exact source indices remain intact when a credited Tip enters review.
+ * @throws {Error} If a participant identity cannot be decoded.
+ */
+export function mapMobileTipDetail(
+  detail: MobileServerTipDetail,
+): MobileTipDetail {
+  const common = mapTipDetailCommon(detail);
+  if (detail.role === 'sender') {
+    return {
+      ...common,
+      role: detail.role,
+      senderCost: mapTipSenderCost(detail.sender_cost),
+      gateway: mapTipGatewayResult(detail.gateway),
+      processingReason: detail.processing_reason,
+    };
+  }
+  return {
+    ...common,
+    role: detail.role,
+    seenAt: detail.seen_at,
+  };
+}
+
+/**
+ * Maps mixed participant activity in server order, retaining exact indices and recipient-only read state.
+ * @throws {Error} If a participant identity cannot be decoded.
+ */
+export function mapMobileTipsHistoryPage(
+  page: MobileServerTipsHistoryResponse,
+): MobileTipsHistoryPage {
+  return {
+    tips: page.tips.map(mapTipHistoryRow),
+    nextCursor: page.next_cursor,
+  };
+}
+
+/**
+ * Maps unread verified receipt cards in server order; this read never acknowledges a receipt.
+ * Amounts retain integer x18 units and catalog versions remain opaque strings.
+ * @throws {Error} If a sender identity cannot be decoded.
+ */
+export function mapMobileReceivedTipsPage(
+  page: MobileServerReceivedTipsResponse,
+): MobileReceivedTipsPage {
+  return {
+    tips: page.tips.map((tip) => ({
+      tipId: tip.tip_id,
+      sender: mapMobileTipParticipant(tip.sender),
+      netAmount: toBigNumber(tip.net_amount_x18),
+      note: tip.note,
+      backgroundId: tip.background_id,
+      backgroundVersion: tip.background_version,
+      creditedAtMs: tip.credited_at_ms,
+      seenAt: tip.seen_at,
+    })),
+    nextCursor: page.next_cursor,
+  };
+}
+
+function mapTipDetailCommon(
+  detail: MobileServerTipDetailCommon,
+): MobileTipDetailCommon {
+  return {
+    ...mapTipHistoryCommon(detail),
+    version: detail.version,
+    backgroundId: detail.background_id,
+    backgroundVersion: detail.background_version,
+    originPostId: detail.origin_post_id,
+    originAvailability: detail.origin_availability,
+    feedItemId: detail.feed_item_id,
+  };
+}
+
+function mapTipGatewayResult(
+  gateway: MobileServerTipGatewayResult,
+): MobileTipGatewayResult {
+  return {
+    status: gateway.status,
+    errorCode: gateway.error_code,
+    errorName: gateway.error_name,
+  };
+}
+
+function mapTipSenderCost(
+  cost: MobileServerTipSenderCost,
+): MobileTipSenderCost {
+  return {
+    maxFee: toBigNumber(cost.max_fee_x18),
+    actualFee: mapTipNullableAmount(cost.actual_fee_x18),
+    actualTotal: mapTipNullableAmount(cost.actual_total_x18),
+    displayFee: toBigNumber(cost.display_fee_x18),
+    displayTotal: toBigNumber(cost.display_total_x18),
+    feeBasis: cost.fee_basis,
+  };
+}
+
+function mapTipHistoryRow(row: MobileServerTipHistoryRow): MobileTipHistoryRow {
+  const common = mapTipHistoryCommon(row);
+  return row.role === 'sender'
+    ? { ...common, role: row.role }
+    : { ...common, role: row.role, seenAt: row.seen_at };
+}
+
+function mapTipHistoryCommon(
+  row: MobileServerTipHistoryCommon,
+): MobileTipHistoryCommon {
+  return {
+    tipId: row.tip_id,
+    tipStatus: row.tip_status,
+    sender: mapMobileTipParticipant(row.sender),
+    recipient: mapMobileTipParticipant(row.recipient),
+    productId: row.product_id,
+    netAmount: toBigNumber(row.net_amount_x18),
+    visibility: row.visibility,
+    note: row.note,
+    submittedAtMs: row.submitted_at_ms,
+    creditedAtMs: row.credited_at_ms,
+    withdrawalSubmissionIdx: row.withdrawal_submission_idx,
+    depositSubmissionIdx: row.deposit_submission_idx,
+  };
+}
+
+function mapTipNullableAmount(value: string | null): BigNumber | null {
+  return value === null ? null : toBigNumber(value);
 }
