@@ -367,6 +367,14 @@ without Mobile session headers.
 `getTipDetail`, `getTipsHistory`, and `getReceivedTips` use wallet authentication on `/query`.
 They do not require an Expo token or system push permission. The configured linked signer is supported.
 
+`getCreatorEarningsSummary` returns the signing Identity's Creator Rate and its lifetime and claimable
+creator earnings in x18 units. The sender must be an Identity Subaccount; isolated subaccounts are rejected.
+
+```ts
+const summary = await mobile.getCreatorEarningsSummary(auth);
+const lifetimeUsd = removeDecimals(summary.lifetime);
+```
+
 ### Notifications V2
 
 The notification v2 operations are available on `MobileClient`, including `client.context.mobileClient` from

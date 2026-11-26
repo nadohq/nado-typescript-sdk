@@ -1,6 +1,7 @@
 import { Hex } from 'viem';
 import { MobileServerSuccessResponse } from './serverBaseTypes';
 import {
+  MobileCreatorRateSource,
   MobileServerAvatarPreset,
   MobileServerFeedTrade,
   MobileServerFollowListAccount,
@@ -62,6 +63,8 @@ export interface MobileServerSignedQueryResponseByType {
   notification_subscriptions: MobileServerNotificationSubscriptionsResponse;
   /** Private notification page. */
   notification_inbox_v2: MobileServerNotificationInboxV2Response;
+  /** The signing Identity's Creator Rate and earnings. */
+  creator_earnings_summary: MobileServerCreatorEarningsSummaryResponse;
 }
 
 /** Payload of the signed tips_history query in collateral_mapping mode. */
@@ -266,6 +269,24 @@ export interface MobileServerNotificationInboxV2Response {
   notifications: MobileServerNotificationInboxItem[];
   /** Pass unchanged to the next request, or null when pagination is complete. */
   next_cursor: string | null;
+}
+
+/**
+ * Payload of the `creator_earnings_summary` signed query.
+ */
+export interface MobileServerCreatorEarningsSummaryResponse {
+  /** Rate that prices the next attributed fill, 0 to 10,000 bps of the net fee. */
+  creator_rate_bps: number;
+  /** `assigned` while an operator-assigned rate is active, otherwise the service-wide `default`. */
+  creator_rate_source: MobileCreatorRateSource;
+  /** Label of the assigned rate, such as `Founding`; always null for `default`. */
+  creator_rate_label: string | null;
+  /** End of the assigned rate in Unix milliseconds; null when open-ended and for `default`. */
+  creator_rate_ends_at_ms: number | null;
+  /** Earnings not yet paid out, as an x18 integer string. Equals `lifetime_x18` until payouts ship. */
+  claimable_x18: string;
+  /** Sum of every creator earning on this network, as an x18 integer string. */
+  lifetime_x18: string;
 }
 
 /**

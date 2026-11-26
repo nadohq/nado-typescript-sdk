@@ -29,6 +29,11 @@ export interface MobileServerAvatarPreset {
 }
 
 /**
+ * Where a Creator Rate comes from: an active operator assignment, or the service-wide default.
+ */
+export type MobileCreatorRateSource = 'assigned' | 'default';
+
+/**
  * Platform of a device registered for push notifications.
  */
 export type MobileNotificationPlatform = 'ios' | 'android';
