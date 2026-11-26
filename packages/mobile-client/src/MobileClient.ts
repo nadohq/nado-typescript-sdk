@@ -1,5 +1,4 @@
 import {
-  getNadoClientTypeHeaders,
   subaccountToHex,
   WalletClientWithAccount,
   WalletNotProvidedError,
@@ -208,6 +207,7 @@ import {
   MobileServerSignedQueryRequestType,
 } from './types/serverRequestTypes';
 import { buildMobileFeedImageMultipart } from './utils/buildMobileFeedImageMultipart';
+import { getMobileClientHeaders } from './utils/clientHeaders';
 import { MOBILE_FEED_IMAGE_MAX_REQUEST_BYTES } from './utils/feed';
 import {
   isMobileServerFailureResponse,
@@ -234,6 +234,16 @@ export interface MobileClientOpts {
    * If provided, identifies the calling client, sent as a header with every request.
    */
   clientType?: string;
+  /**
+   * If provided, identifies the calling app platform (e.g. `ios` or `android`), sent as the
+   * `x-nado-platform` header with every request. Omitted when blank.
+   */
+  clientPlatform?: string;
+  /**
+   * If provided, identifies the calling app version (e.g. `v1.2.0 b67`), sent as the
+   * `x-nado-app-version` header with every request. Omitted when blank.
+   */
+  clientAppVersion?: string;
 }
 
 /**
@@ -251,7 +261,7 @@ export class MobileClient {
       withCredentials: true,
       // We have custom logic to validate response status and create an appropriate error
       validateStatus: () => true,
-      headers: getNadoClientTypeHeaders(opts.clientType),
+      headers: getMobileClientHeaders(opts),
     });
   }
 

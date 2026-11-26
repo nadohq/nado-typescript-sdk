@@ -55,6 +55,8 @@ export class NadoClient {
         nuanzeEndpoint: this.context.nuanzeClient.opts.url,
         otcEndpoint: this.context.otcClient.opts.url,
         clientType: this.context.clientType,
+        clientPlatform: this.context.clientPlatform,
+        clientAppVersion: this.context.clientAppVersion,
       },
       {
         walletClient,

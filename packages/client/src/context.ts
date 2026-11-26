@@ -40,6 +40,10 @@ export interface NadoClientContext {
   otcClient: OtcClient;
   // If provided, identifies the calling client, sent as a header with every request made by the Nado service clients above (Nuanze excluded)
   clientType?: string;
+  // If provided, identifies the calling app platform (ex. `ios`), sent as a header with every mobile service request only
+  clientPlatform?: string;
+  // If provided, identifies the calling app version (ex. `v1.2.0 b67`), sent as a header with every mobile service request only
+  clientAppVersion?: string;
 }
 
 /**
@@ -57,6 +61,8 @@ interface NadoClientContextOpts {
   nuanzeEndpoint: string;
   otcEndpoint: string;
   clientType?: string;
+  clientPlatform?: string;
+  clientAppVersion?: string;
 }
 
 /**
@@ -65,6 +71,8 @@ interface NadoClientContextOpts {
 interface NadoClientContextChainEnvOpts {
   chainEnv: ChainEnv;
   clientType?: string;
+  clientPlatform?: string;
+  clientAppVersion?: string;
 }
 
 /**
@@ -102,13 +110,15 @@ export function createClientContext(
     nuanzeEndpoint,
     otcEndpoint,
     clientType,
+    clientPlatform,
+    clientAppVersion,
   } = ((): NadoClientContextOpts => {
     // Custom endpoint options
     if (!('chainEnv' in opts)) {
       return opts;
     }
 
-    const { chainEnv, clientType } = opts;
+    const { chainEnv, clientType, clientPlatform, clientAppVersion } = opts;
     return {
       contractAddresses: NADO_DEPLOYMENTS[chainEnv],
       engineEndpoint: ENGINE_CLIENT_ENDPOINTS[chainEnv],
@@ -119,6 +129,8 @@ export function createClientContext(
       nuanzeEndpoint: NUANZE_CLIENT_ENDPOINTS[chainEnv],
       otcEndpoint: OTC_CLIENT_ENDPOINTS[chainEnv],
       clientType,
+      clientPlatform,
+      clientAppVersion,
     };
   })();
   const { publicClient, walletClient, linkedSignerWalletClient } = accountOpts;
@@ -167,6 +179,8 @@ export function createClientContext(
     },
     contractAddresses,
     clientType,
+    clientPlatform,
+    clientAppVersion,
     engineClient: new EngineClient({
       url: engineEndpoint,
       walletClient,
@@ -191,6 +205,8 @@ export function createClientContext(
       walletClient,
       linkedSignerWalletClient,
       clientType,
+      clientPlatform,
+      clientAppVersion,
     }),
     // Nuanze is read-only and credential-free, so it takes no signer or client type
     nuanzeClient: new NuanzeClient({
