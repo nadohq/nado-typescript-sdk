@@ -38,6 +38,7 @@ const capabilities: MobileNotificationCapabilities = {
     'market_daily_move',
     'market_large_trade',
     'notable_trader',
+    'campaign_announcement',
   ],
   routes: ['profile', 'market', 'portfolio'],
 };
@@ -339,6 +340,7 @@ void describe(
       const supportedTypes: MobileNotificationTypeId[] = [
         'deposit_completed',
         'new_follower',
+        'campaign_announcement',
       ];
       const filtered = await existingWalletMobile.getNotificationInboxV2({
         ...existingWalletAuth,

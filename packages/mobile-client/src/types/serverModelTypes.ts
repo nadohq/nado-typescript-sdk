@@ -52,6 +52,7 @@ export const MOBILE_NOTIFICATION_TYPE_IDS = [
   'account_drama',
   'weekly_digest',
   'deposit_completed',
+  'campaign_announcement',
 ] as const;
 
 /** Notification types supported by the v2 payload protocol and this SDK's decoder. */
