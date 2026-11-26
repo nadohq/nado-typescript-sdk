@@ -185,7 +185,8 @@ registering presence. Watching account previews are self-reported, not proof of 
 Enable public Tips with `includeTips: true` on a new `getForYouFeed`, `getFriendsFeed`, `getFeedItem`,
 or `getFeedComments` session. The option is omitted by default. Later pages may omit it to inherit the
 session capability; changing it requires a new session and cursors. `getFeedUpdates` inherits the
-capability from its session. Friends requires the full `viewAs` subaccount.
+capability from its session. Friends requires the full `viewAs` subaccount and includes a public Tip
+when either its sender or recipient is followed, without duplicating Tips that qualify through both.
 
 ```ts
 const feed = await mobile.getForYouFeed({ includeTips: true, feedTypes: ['tips'], limit: 20 });

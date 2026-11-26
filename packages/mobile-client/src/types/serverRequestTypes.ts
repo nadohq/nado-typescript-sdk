@@ -309,7 +309,7 @@ export interface MobileServerPublicQueryRequestByType {
   /** Public content from qualified authors. */
   top_traders_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerSocialFeedReadParams;
-  /** Public content from authors followed by view_as. */
+  /** Content from followed authors; public Tips also qualify when their recipient is followed. */
   friends_feed: MobileServerSocialFeedTipEnabledParams &
     MobileServerSocialFeedReadParams & {
       /** Complete non-isolated identity subaccount; required on every request. */
