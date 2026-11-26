@@ -1308,7 +1308,7 @@ export interface MobileServerSocialFeedDrawing {
   updated_at_ms: number;
 }
 
-/** Nonrecursive root-post preview carried by replies. */
+/** Nonrecursive root-item preview carried by replies; Tip roots have a null position. */
 export interface MobileServerSocialFeedCompactCard {
   /** Root item UUID. */
   id: string;
@@ -1332,9 +1332,14 @@ export interface MobileServerSocialFeedPost extends MobileServerSocialFeedConten
 }
 
 /** Reply with independently permissioned position attachment and nonrecursive root preview. */
-export interface MobileServerSocialFeedReply extends MobileServerSocialFeedItemBase {
+export interface MobileServerSocialFeedReply extends Omit<
+  MobileServerSocialFeedItemBase,
+  'market'
+> {
   /** Reply discriminant. */
   kind: 'reply';
+  /** Root market metadata; null for replies beneath a public Tip. */
+  market: MobileServerSocialFeedMarket | null;
   /** Bound images in display order; empty when none. */
   images: MobileServerSocialFeedImage[];
   /** Original text. */

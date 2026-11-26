@@ -3,6 +3,7 @@ import {
   MobileClient,
   MobileServerFailureError,
   MobileSocialFeedCommentsPage,
+  MobileSocialFeedReply,
   MobileSocialFeedTip,
 } from '@nadohq/mobile-client';
 import { Subaccount, subaccountToHex } from '@nadohq/shared';
@@ -129,7 +130,12 @@ void describe(
       });
       assertCommentPage(page, detail.item.id);
       assert.equal(page.anchorTipItemId, null);
-      for (const group of page.comments) assert.equal(group.kind, 'reply');
+      for (const group of page.comments) {
+        assert.ok(group.kind === 'reply');
+        assertTipReply(group, detail.item.id);
+        for (const reply of group.replies)
+          assertTipReply(reply, detail.item.id);
+      }
       if (page.nextCursor !== null) {
         const next = await mobile.getFeedComments({
           rootItemId: detail.item.id,
@@ -366,6 +372,7 @@ function assertPublicTip(
     assertNonNegativeInteger(timestamp, 'Tip timestamp');
   assertBoolean(tip.capabilities.canLike, 'Tip canLike');
   assertBoolean(tip.capabilities.canComment, 'Tip canComment');
+  for (const reply of tip.commentPreview.items) assertTipReply(reply, tip.id);
   if (wire) {
     assert.equal(tip.netAmount.toFixed(), wire.net_amount_x18);
     assert.equal(tip.tipId, wire.tip_id);
@@ -375,7 +382,27 @@ function assertPublicTip(
       tip.original?.id ?? null,
       wire.original === null ? null : asRecord(wire.original).id,
     );
+    const wirePreview = asRecord(wire.comment_preview);
+    assertArray(wirePreview.items, 'wire Tip reply preview');
+    assert.equal(tip.commentPreview.items.length, wirePreview.items.length);
+    for (const [index, reply] of tip.commentPreview.items.entries()) {
+      const wireReply = asRecord(wirePreview.items[index]);
+      assert.equal(reply.id, wireReply.id);
+      assert.equal(reply.market, wireReply.market);
+      const wireOriginal = asRecord(wireReply.original);
+      assert.equal(reply.original.id, wireOriginal.id);
+      assert.equal(reply.original.position, wireOriginal.position);
+      assert.equal(reply.original.textExcerpt, wireOriginal.text_excerpt);
+    }
   }
+}
+
+function assertTipReply(reply: MobileSocialFeedReply, tipItemId: string): void {
+  assert.equal(reply.kind, 'reply');
+  assert.equal(reply.market, null);
+  assert.equal(reply.rootItemId, tipItemId);
+  assert.equal(reply.original.id, tipItemId);
+  assert.equal(reply.original.position, null);
 }
 
 function assertCommentPage(
@@ -407,6 +434,7 @@ function assertCommentPage(
         reply.rootItemId,
         group.kind === 'tip' ? group.id : rootItemId,
       );
+      if (group.kind === 'tip') assertTipReply(reply, group.id);
       assert.equal(Object.hasOwn(reply, 'replies'), false);
       assert.ok(!ids.has(reply.id));
       ids.add(reply.id);

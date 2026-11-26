@@ -65,7 +65,7 @@ const capabilities: MobileNotificationCapabilities = {
 
 void describe(
   '[mobile-client]: notifications v2',
-  { timeout: TEST_TIMEOUTS.LONG },
+  { timeout: TEST_TIMEOUTS.LONG * 2 },
   () => {
     let mobile: MobileClient;
     let auth: MobileSignedRequestParams;

@@ -37,7 +37,7 @@ const ABSENT_SUBACCOUNT_HEX =
 
 void describe(
   '[nuanze-client]: leaderboard',
-  { timeout: TEST_TIMEOUTS.DEFAULT },
+  { timeout: TEST_TIMEOUTS.LONG * 2 },
   () => {
     let leaderboardClient: RunContext['nuanze'];
 

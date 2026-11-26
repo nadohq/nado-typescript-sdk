@@ -195,7 +195,8 @@ const detail = await mobile.getFeedItem({ includeTips: true, tipId });
 `getFeedItem` accepts exactly one of `itemId` (public Feed UUID) and `tipId` (payment UUID). A public
 Tip has `kind: 'tip'`, sender/recipient profiles, `netAmount` in x18 units, background metadata, and a
 nullable `original` preview. Its author is the sender; `market` and `drawing` are null and it has no
-position. Explicit old-only feed filters, `marketCategory`, or `minimumNotional` exclude Tips.
+position. Replies beneath a Tip may also have `market: null`. Explicit old-only feed filters,
+`marketCategory`, or `minimumNotional` exclude Tips.
 Tip patches refresh participants, interactions, original previews, and availability while preserving
 the complete item's existing amount and payment identifiers.
 

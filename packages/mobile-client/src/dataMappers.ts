@@ -1045,6 +1045,16 @@ export function mapMobileSocialFeedItemBase(
   server: MobileServerSocialFeedItemBase,
 ): MobileSocialFeedItemBase {
   return {
+    ...mapMobileSocialFeedItemMetadata(server),
+    market: mapMobileSocialFeedMarket(server.market),
+  };
+}
+
+/** Maps shared metadata for market-backed items and marketless Tip replies. */
+function mapMobileSocialFeedItemMetadata(
+  server: Omit<MobileServerSocialFeedItemBase, 'market'>,
+): Omit<MobileSocialFeedItemBase, 'market'> {
+  return {
     id: server.id,
     hasAnalysis: server.has_analysis,
     drawing:
@@ -1055,7 +1065,6 @@ export function mapMobileSocialFeedItemBase(
     createdAtMs: server.created_at_ms,
     displayAtMs: server.display_at_ms,
     version: server.version,
-    market: mapMobileSocialFeedMarket(server.market),
     capabilities: mapMobileSocialFeedCapabilities(server.capabilities),
   };
 }
@@ -1556,8 +1565,10 @@ export function mapMobileSocialFeedReply(
   server: MobileServerSocialFeedReply,
 ): MobileSocialFeedReply {
   return {
-    ...mapMobileSocialFeedItemBase(server),
+    ...mapMobileSocialFeedItemMetadata(server),
     kind: server.kind,
+    market:
+      server.market === null ? null : mapMobileSocialFeedMarket(server.market),
     images: server.images.map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,

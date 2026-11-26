@@ -349,19 +349,23 @@ function assertPage(page: MobileSocialFeedPage) {
     );
     assert.ok(item.kind !== 'tip', 'Legacy Feed sessions must omit Tips.');
     assertFeedAuthor(item.author);
-    if (item.market.category !== null) {
-      assertEnumMember(
-        item.market.category,
-        MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
-        'item.market.category',
-      );
-    }
-    for (const category of item.market.sourceCategories) {
-      assertEnumMember(
-        category,
-        MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
-        'item.market.sourceCategories',
-      );
+    if (item.market === null) {
+      assert.equal(item.kind, 'reply');
+    } else {
+      if (item.market.category !== null) {
+        assertEnumMember(
+          item.market.category,
+          MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
+          'item.market.category',
+        );
+      }
+      for (const category of item.market.sourceCategories) {
+        assertEnumMember(
+          category,
+          MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
+          'item.market.sourceCategories',
+        );
+      }
     }
     assert.ok(BigInt(item.version) > 0n);
     if (item.kind !== 'trade_row' && item.interaction.likedByMe !== null) {
