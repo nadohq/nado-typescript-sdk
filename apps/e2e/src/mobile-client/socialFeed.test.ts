@@ -53,8 +53,9 @@ void describe(
       mobile = new MobileClient({ url: tc.endpoints.mobile });
     });
 
-    void test('accepts every exported social feed type as a public filter', async () => {
+    void test('accepts legacy social feed types without the public Tip capability', async () => {
       for (const feedType of MOBILE_SOCIAL_FEED_TYPES) {
+        if (feedType === 'tips') continue;
         const page = await mobile.getForYouFeed({
           feedTypes: [feedType],
           limit: 1,
@@ -71,6 +72,7 @@ void describe(
         });
         assertPage(page);
         for (const item of page.items) {
+          assert.ok(item.market);
           assert.equal(item.market.category, marketCategory);
         }
       }
@@ -256,13 +258,17 @@ void describe(
         limit: 2,
       });
       assertPage(page);
-      for (const item of page.items)
+      for (const item of page.items) {
+        assert.ok(item.market);
         assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
+      }
     });
 
     void test('reads a real author, position, and direct item session', async (context) => {
       const page = await mobile.getForYouFeed({ limit: 2 });
-      const item = page.items.find((candidate) => candidate.kind !== 'reply');
+      const item = page.items.find(
+        (candidate) => candidate.kind !== 'reply' && candidate.kind !== 'tip',
+      );
       if (!item) {
         context.skip(
           'No published feed item is available to select an author and position.',
@@ -341,6 +347,7 @@ function assertPage(page: MobileSocialFeedPage) {
       ['trade_card', 'trade_row', 'post', 'reply'],
       'item.kind',
     );
+    assert.ok(item.kind !== 'tip', 'Legacy Feed sessions must omit Tips.');
     assertFeedAuthor(item.author);
     if (item.market.category !== null) {
       assertEnumMember(

@@ -84,6 +84,11 @@ Use `removeDecimals` for display. Unknown amounts remain `null`; an explicit zer
 Versions and submission indices remain exact strings. See method and parameter JSDoc for status,
 retry, authorization, and pagination details.
 
+Use the withdrawal `getDynamicFeeQuote().requiredFee` for the confirmation quote. `feeCap` is the
+Gateway ceiling. `maxWithdrawable` is in x18 units and already accounts for the dynamic fee; do not
+subtract the fee again. `getTipDetail().feedItemId` identifies the currently readable public Tip, or is
+null when it has no readable public item. It differs from the payment `tipId`.
+
 ### Public Queries
 
 `getAvatarPresets`, `getUsernameAvailability`, `getProfiles`, `searchProfiles`, `getFollowers`, `getFollowing`, `getFeed`,
@@ -128,14 +133,16 @@ For a post or trade-card Tip, pass the item's `id` as `originPostId` and
 
 Original posts and trade cards can include `publicTipTotal`, a `BigNumber` in USDT0 x18 units.
 Omission hides the amount; an explicit zero means there are no qualifying Tips. Display the aggregate
-returned by the server. Updates can change the total; an omitted patch field leaves it unchanged.
+returned by the server. Tips must be enabled for eligible public published originals to expose this
+total. On a reset response, an omitted total clears the previously displayed amount. Ordinary deltas
+leave an omitted field unchanged; do not apply the reset rule to every optional patch field.
 An omitted or false `canTip` disables tipping. For example, with an optional connected
 `currentWalletAddress`:
 
 ```ts
 import { removeDecimals, subaccountFromHex } from '@nadohq/shared';
 
-const { item } = await mobile.getFeedItem({ itemId });
+const { item } = await mobile.getFeedItem({ itemId, includeTips: true });
 const authorWallet = subaccountFromHex(item.author.subaccount).subaccountOwner;
 const showTipButton =
   item.capabilities.canTip === true &&
@@ -172,6 +179,25 @@ requires no wallet signature or reading session.
 and a position-mode session for navigation and updates. `getPositionChart` returns candles and action markers,
 keeping execution and liquidation Oracle prices separate. `getPositionWatchers` reads visitor counts without
 registering presence. Watching account previews are self-reported, not proof of account ownership.
+
+### Public Tips
+
+Enable public Tips with `includeTips: true` on a new `getForYouFeed`, `getFriendsFeed`, `getFeedItem`,
+or `getFeedComments` session. The option is omitted by default. Later pages may omit it to inherit the
+session capability; changing it requires a new session and cursors. `getFeedUpdates` inherits the
+capability from its session. Friends requires the full `viewAs` subaccount.
+
+```ts
+const feed = await mobile.getForYouFeed({ includeTips: true, feedTypes: ['tips'], limit: 20 });
+const detail = await mobile.getFeedItem({ includeTips: true, tipId });
+```
+
+`getFeedItem` accepts exactly one of `itemId` (public Feed UUID) and `tipId` (payment UUID). A public
+Tip has `kind: 'tip'`, sender/recipient profiles, `netAmount` in x18 units, background metadata, and a
+nullable `original` preview. Its author is the sender; `market` and `drawing` are null and it has no
+position. Explicit old-only feed filters, `marketCategory`, or `minimumNotional` exclude Tips.
+Tip patches refresh participants, interactions, original previews, and availability while preserving
+the complete item's existing amount and payment identifiers.
 
 ### Social feed values
 
@@ -254,7 +280,7 @@ price when the new value is unavailable or null.
 push token rather than a wallet signature, so they still work at logout when a signature may be unobtainable.
 
 `recordFeedViews` accepts `itemIds`, an array of 1–50 canonical lowercase UUIDs. Posts, trade cards,
-comments, and replies can be mixed; only the supplied IDs increment, without incrementing their parents.
+public Tips, comments, and replies can be mixed; only the supplied IDs increment, without incrementing their parents.
 It sends only `type` and `item_ids` to `/public_execute`, without a wallet signature or reading session,
 and returns `{ status: 'success' }`. Same-request duplicates count once, but another request increments
 again. Missing, deleted, unpublished, excluded, and unsupported targets are skipped; even an entirely
@@ -279,14 +305,18 @@ require nor renew a reading session.
 `getFeedComments` returns top-level `comments`, each with a complete flat `replies` array containing all
 readable descendants in the thread snapshot. The `limit` (default 20, range 1–50) counts top-level groups;
 descendants do not consume the limit and do not have separate cursors or nested `replies` arrays.
-Top-level comments are newest first; descendants are oldest first with depth then UUID breaking timestamp
-ties. Original parent relationships remain in `replyToItemId` and `replyToAuthor`.
+With `includeTips: true`, each top-level group is a Reply or public Tip directly extended with `replies`.
+Preserve server order: eligible hot ordinary replies lead, while Tips are ranked by net amount and
+inserted at positions 2, 5, 8, 11, and so on. Children are oldest first. Ordinary replies retain their
+parent relationships in `replyToItemId` and `replyToAuthor`.
 
-`totalCount` counts all readable replies in the thread snapshot; `topLevelCount` counts only top-level
-comments. Neither is limited to the returned page. An `anchorReplyId` at any depth returns its top-level
-group and is echoed in the response. Forward/backward cursors never split a group. An unreadable ancestor
-also makes its descendants unreadable. New replies at any depth require refreshing; updates only modify
-already delivered content.
+`totalCount` counts all readable Tips and ordinary replies in the thread snapshot; `topLevelCount`
+counts top-level groups. Neither is limited to the returned page. `anchorTipItemId`, `anchorReplyId`,
+and `cursor` are mutually exclusive. The Tip anchor uses its public Feed UUID; the reply anchor returns
+the reply's top-level group. Legacy sessions omit `anchorTipItemId` in the response. Forward/backward
+cursors never split a group. An unreadable ancestor also makes its descendants unreadable. New group
+membership can invalidate the session; on 6312, discard the session and cursors and reopen. Like/view
+changes preserve session order.
 
 ```ts
 const page = await mobile.getFeedComments({ rootItemId, limit: 20 });
@@ -297,6 +327,13 @@ for (const group of page.comments) {
 
 Comment previews remain individual replies. A preview's `nextCursor` opens the first complete group page
 in the same snapshot; replace the preview with that page instead of prepending preview items.
+
+To reply directly to a Tip, pass its public Feed UUID as `rootItemId` and omit `replyToItemId`.
+To reply to one of its comments, also pass the comment UUID as `replyToItemId`. Like and view operations
+also use public Feed UUIDs. The signed write's `rootCommentCount` counts that root's replies and does
+not replace the mixed thread's `totalCount`. An app may temporarily pin its newest ordinary top-level
+reply only at the actual top of the current visit, deduplicated by ID, without changing server counts
+or cursors.
 
 ### Feed image reads
 
@@ -395,8 +432,8 @@ await mobile.registerExpoTokenV2({
   platform: 'ios',
   capabilities: {
     payloadVersions: [2],
-    typeIds: ['order_fill', 'new_follower'],
-    routes: ['portfolio', 'profile'],
+    typeIds: ['order_fill', 'new_follower', 'tip_received', 'tip_liked', 'tip_replied', 'feed_liked', 'feed_replied'],
+    routes: ['portfolio', 'profile', 'tip', 'tip_thread', 'feed_thread'],
   },
 });
 const registration = await mobile.getNotificationRegistrationV2({ expoToken });
@@ -419,7 +456,7 @@ const updatedSubscriptions = await mobile.getNotificationSubscriptions(auth);
 const inbox = await mobile.getNotificationInboxV2({
   ...auth,
   limit: 20,
-  supportedTypes: ['deposit_completed', 'new_follower'],
+  supportedTypes: ['deposit_completed', 'new_follower', 'tip_received', 'tip_liked', 'tip_replied', 'feed_liked', 'feed_replied'],
 });
 // Acknowledge only notification IDs that were actually displayed.
 await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotificationIds });
@@ -441,14 +478,15 @@ await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotifica
   omission remains absent in the SDK model and means read state is unavailable. Reading does not
   acknowledge notifications. `markNotificationsSeen` updates notification read state independently of
   Tip receipts. Push delivery remains separate.
-  Existing notification data has no title/body, and these pages provide no unread count or delete operation.
+  New Tip and Feed engagement notifications include server-provided `title` and `body`; older notification
+  data may omit them. These pages provide no unread count or delete operation.
   Do not use the unimplemented legacy `notification_history` route.
   An unknown destination rejects the page with `MobileUnsupportedNotificationRouteError`.
 - `supportedTypes` is typed to the current `MOBILE_NOTIFICATION_TYPE_IDS` subset that this SDK
   can decode. Omission selects the server's default types and `[]` returns an empty page; at most 64
-  entries are allowed. Defaults may expand to routes this SDK cannot decode, causing the entire page
-  to reject with `MobileUnsupportedNotificationRouteError`. Pass an explicit supported subset for
-  stable decoding. Tip-specific notification types and unknown types are not supported by this client.
+  entries are allowed. Pass an explicit supported subset for stable decoding. Omission selects legacy
+  types, so explicitly include supported Tip and Feed types
+  to receive the new notifications. Unknown types are not supported by this client.
   The canonical signed field order is `type`, `cursor`, `limit`, then `supported_types` only when supplied;
   omitted cursor and limit remain explicit null. Keep the same filters when paging.
 - `recordProductEvents({ ...auth, events })` accepts 1-50 events atomically. Provide the fields required by `eventName`,
@@ -456,6 +494,18 @@ await mobile.markNotificationsSeen({ ...auth, notificationIds: displayedNotifica
   names are `notif_opened`, `market_viewed`, `chart_opened`, and `search`; obtain analytics consent first.
 - Legacy preferences remain supported and synchronize overlapping v2 fields. Keep legacy push parsing because
   order notifications may use a v1 fallback even for v2 registrations.
+
+`tip_received` routes to `tip` with the payment `tipId` for participant detail. `tip_liked` and
+`tip_replied` route to `tip_thread`; `feed_liked` can route to either `feed_thread` or `tip_thread`,
+and `feed_replied` routes to `feed_thread`. New notification data uses payload version 2 and template
+version 1. Push eligibility requires both a declared type and route; Inbox filters only by type.
+
+For a `tip_thread` route with an `originPostId`, open that root with `includeTips: true` and
+`anchorTipItemId: route.feedItemId`, then find any `replyItemId` inside the group. On original 6313 or
+Tip anchor 6318, try an independent thread rooted at `feedItemId`, optionally with `anchorReplyId`.
+On 6312, first reopen the session and retry the original target. `feed_thread` uses `rootItemId` and
+optional `replyItemId` as `anchorReplyId`. Show unavailable content when the target cannot be read.
+Tip receipt read state, Inbox read state, and push delivery are independent.
 
 ### Linked Signers
 

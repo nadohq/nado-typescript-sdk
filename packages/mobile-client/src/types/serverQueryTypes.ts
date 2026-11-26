@@ -17,7 +17,6 @@ import {
   MobileServerSocialFeedAuthor,
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCohort,
-  MobileServerSocialFeedCommentGroup,
   MobileServerSocialFeedDrawing,
   MobileServerSocialFeedEstimatedLiquidationLine,
   MobileServerSocialFeedHistorySummary,
@@ -29,6 +28,7 @@ import {
   MobileServerSocialFeedPositionPatch,
   MobileServerSocialFeedPublishablePosition,
   MobileServerSocialFeedReadSession,
+  MobileServerSocialFeedThreadGroup,
   MobileServerSocialFeedTimelineEntry,
   MobileServerSocialFeedTradingContext,
   MobileServerTipCollateralMapping,
@@ -210,7 +210,10 @@ export interface MobileServerSocialFeedUpdatesResponse {
   new_items_count: number;
   /** Baseline to use for the next update call with the same viewport. */
   update_cursor: string;
-  /** Full snapshot of applicable mutable fields; currently always true. Apply author, capability, and Tip total updates even when the item version is unchanged. */
+  /**
+   * Full snapshot of applicable mutable fields; currently always true. An omitted public_tip_total_x18
+   * clears its prior display value; retain a Tip's payment identifiers and amount from the full item.
+   */
   reset: boolean;
   /** Echoed viewport revision. */
   viewport_revision: number;
@@ -422,11 +425,11 @@ export interface MobileServerSocialFeedDrawingResponse {
 
 /** Comment thread, including bidirectional pagination around an optional anchor. */
 export interface MobileServerSocialFeedCommentsResponse {
-  /** Top-level comments, newest first, each with all readable descendants in the snapshot. */
-  comments: MobileServerSocialFeedCommentGroup[];
-  /** All readable replies across the thread snapshot, including descendants. */
+  /** Complete groups in server rank/mixed order; never locally reorder or split a group. */
+  comments: MobileServerSocialFeedThreadGroup[];
+  /** All readable Tip items and replies across the thread snapshot, including descendants. */
   total_count: number;
-  /** All readable top-level comments across the thread snapshot. */
+  /** All readable top-level Reply and Tip groups across the thread snapshot. */
   top_level_count: number;
   /** Forward cursor. */
   next_cursor: string | null;
@@ -434,6 +437,8 @@ export interface MobileServerSocialFeedCommentsResponse {
   previous_cursor: string | null;
   /** Requested anchor, or null. */
   anchor_reply_id: string | null;
+  /** Requested public Tip anchor, or null. Omitted by legacy sessions without the Tip capability. */
+  anchor_tip_item_id?: string | null;
   /** Original or new session. */
   read_session: MobileServerSocialFeedReadSession;
 }

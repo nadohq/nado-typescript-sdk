@@ -61,7 +61,7 @@ void describe(
 
     void test('preserves optional capability and totals on live Friends Feed items', async (testContext) => {
       const page = await capturePublicQuery(mobile, () =>
-        mobile.getFriendsFeed({ viewAs, limit: 10 }),
+        mobile.getFriendsFeed({ viewAs, includeTips: true, limit: 10 }),
       );
       const wireItems = page.wire.items;
       assertArray(wireItems, 'wire Friends Feed items');
@@ -127,7 +127,11 @@ async function getLiveContentDetail(
   viewAs: Subaccount,
   testContext: TestContext,
 ) {
-  const page = await mobile.getForYouFeed({ viewAs, limit: 10 });
+  const page = await mobile.getForYouFeed({
+    viewAs,
+    includeTips: true,
+    limit: 10,
+  });
   const item = page.items.find(
     (candidate) => candidate.kind === 'post' || candidate.kind === 'trade_card',
   );
@@ -141,6 +145,7 @@ async function getLiveContentDetail(
     const detail = await capturePublicQuery(mobile, () =>
       mobile.getFeedItem({
         itemId: item.id,
+        includeTips: true,
         viewAs,
         commentPreviewLimit: 0,
         sessionId: page.readSession.sessionId,

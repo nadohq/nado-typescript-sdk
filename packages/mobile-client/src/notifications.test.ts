@@ -430,6 +430,66 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
       client: { name: 'profile', subaccount: target },
     },
     { server: { name: 'portfolio' }, client: { name: 'portfolio' } },
+    {
+      server: { name: 'tip', tip_id: notificationId },
+      client: { name: 'tip', tipId: notificationId },
+    },
+    {
+      server: {
+        name: 'tip_thread',
+        tip_id: notificationId,
+        feed_item_id: eventId,
+        origin_post_id: null,
+        reply_item_id: null,
+      },
+      client: {
+        name: 'tip_thread',
+        tipId: notificationId,
+        feedItemId: eventId,
+        originPostId: null,
+        replyItemId: null,
+      },
+    },
+    {
+      server: {
+        name: 'tip_thread',
+        tip_id: notificationId,
+        feed_item_id: eventId,
+        origin_post_id: notificationId,
+        reply_item_id: eventId,
+      },
+      client: {
+        name: 'tip_thread',
+        tipId: notificationId,
+        feedItemId: eventId,
+        originPostId: notificationId,
+        replyItemId: eventId,
+      },
+    },
+    {
+      server: {
+        name: 'feed_thread',
+        root_item_id: notificationId,
+        reply_item_id: null,
+      },
+      client: {
+        name: 'feed_thread',
+        rootItemId: notificationId,
+        replyItemId: null,
+      },
+    },
+    {
+      server: {
+        name: 'feed_thread',
+        root_item_id: notificationId,
+        reply_item_id: eventId,
+      },
+      client: {
+        name: 'feed_thread',
+        rootItemId: notificationId,
+        replyItemId: eventId,
+      },
+    },
   ])('maps the supported $server.name route', ({ server, client }) => {
     expect(mapMobileNotificationRoute(server)).toEqual(client);
   });
@@ -483,12 +543,22 @@ describe('[mobile-client]: notification v2 responses and failures', () => {
       'profile',
       'market',
       'portfolio',
+      'tip',
+      'tip_thread',
+      'feed_thread',
     ];
     const arbitraryRouteAccepted: IsAssignable<
       'url',
       MobileNotificationRouteName
     > = false;
-    expect(routes).toEqual(['profile', 'market', 'portfolio']);
+    expect(routes).toEqual([
+      'profile',
+      'market',
+      'portfolio',
+      'tip',
+      'tip_thread',
+      'feed_thread',
+    ]);
     expect(arbitraryRouteAccepted).toBe(false);
   });
 

@@ -419,6 +419,8 @@ export class MobileClient {
 
   /**
    * Fetches chronological For You recommendations with server-side author/thread constraints.
+   * Set includeTips for a new public-Tip session; pagination may omit it to inherit that capability.
+   * Changing the capability requires a new session and cursor. Market or minimum-notional filters exclude Tips.
    * Always public, with optional viewAs for relationship state. Preserve the session, viewAs, filters, and limit
    * when paging, including through empty pages with a nextCursor. A 6312 error requires a refresh.
    * @param params - Filters, pagination, optional viewing account, and browser credential; no signing identity.
@@ -431,6 +433,7 @@ export class MobileClient {
   ): Promise<MobileSocialFeedRankedPage> {
     const body: MobileServerPublicQueryRequest<'for_you_feed'> = {
       type: 'for_you_feed',
+      include_tips: params.includeTips,
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParamsToServer(params),
       ...mapMobileSocialFeedReadParamsToServer(params),
@@ -472,6 +475,7 @@ export class MobileClient {
   ): Promise<MobileSocialFeedRankedPage> {
     const body: MobileServerPublicQueryRequest<'friends_feed'> = {
       type: 'friends_feed',
+      include_tips: params.includeTips,
       market_category: params.marketCategory,
       ...mapMobileSocialFeedListParamsToServer(params),
       view_as: subaccountToHex(params.viewAs),
@@ -546,18 +550,29 @@ export class MobileClient {
   /**
    * Reads one item visible to viewAs, including that account's own hidden content.
    * Creates an item session directly when sessionId is omitted.
+   * Select exactly one public itemId or payment tipId. Public Tips require includeTips on a new session;
+   * reused sessions inherit their capability when the option is omitted.
    * Reading does not increment views; use {@link recordFeedViews} independently when reporting views.
-   * @param params - Item UUID, preview limit, and optional existing session/read identity.
+   * @param params - Public item or payment UUID, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
+   * @throws {Error} If the request does not select exactly one itemId or tipId.
    * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
    * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getFeedItem(
     params: GetMobileFeedItemParams,
   ): Promise<MobileSocialFeedItemResponse> {
+    if ((params.itemId === undefined) === (params.tipId === undefined)) {
+      throw new Error('Specify exactly one itemId or tipId.');
+    }
+    const selector =
+      params.tipId === undefined
+        ? { item_id: params.itemId }
+        : { tip_id: params.tipId };
     const body: MobileServerPublicQueryRequest<'feed_item'> = {
       type: 'feed_item',
-      item_id: params.itemId,
+      ...selector,
+      include_tips: params.includeTips,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
       ...mapMobileSocialFeedReadParamsToServer(params),
@@ -573,8 +588,9 @@ export class MobileClient {
    * Accept only the current session and viewportRevision's latest requestSeq; discard stale patches and cursors together.
    * Updates currently always return reset=true. Apply author details, capabilities, and Tip totals even
    * if the item version is unchanged.
-   * Null clears only fields whose types allow it; capabilities and publicTipTotal are never null.
-   * omitted fields leave them unchanged. Stop polling off-screen and refresh on error 6312.
+   * Null clears only nullable fields. On reset, an omitted publicTipTotal clears its prior display value;
+   * other omitted fields remain unchanged. Retain a Tip's immutable payment identifiers and amount.
+   * Tips inherit their capability from the session. Stop polling off-screen and refresh on error 6312.
    * @param params - Session, visible IDs, update baseline, sequence, and matching read identity.
    * @returns Item/position patches, revoked targets, and a new-content hint.
    * @throws {MobileServerFailureError} On invalid or unauthorized targets, session expiry, or unavailable data.
@@ -781,26 +797,44 @@ export class MobileClient {
   }
 
   /**
-   * Reads top-level comment groups with all readable descendants and bidirectional pagination.
-   * The limit counts groups, not descendants. Groups are newest first; their flat replies are oldest first,
-   * with depth then UUID breaking timestamp ties. An anchor at any depth selects its top-level group.
+   * Reads complete Reply or Tip groups in server order with bidirectional pagination; the limit counts groups.
+   * Ordinary hot replies may lead the thread; Tips rank by amount and occupy positions 2, 5, 8, and so on.
+   * Descendants and standalone-Tip replies remain oldest first. Never re-sort or split a returned group.
+   * Enable includeTips on a new session to read mixed threads. A Tip anchor is its public Feed UUID;
+   * to find a Tip descendant in an original-post thread, anchor the Tip group then inspect its replies.
    * Preview cursors open the first complete group page in the same snapshot; do not prepend preview items.
    * Independent reads create a public-only session; reused sessions retain their original scope.
-   * @param params - Root item, optional anchor or cursor (mutually exclusive), group limit, and read perspective.
+   * @param params - Public root item, at most one reply anchor, Tip anchor, or cursor, and read perspective.
    * Paging requires the original session and viewer token.
-   * @returns Complete comment groups, whole-thread reply and top-level counts, cursors, anchor, and session.
+   * @returns Complete groups, whole-thread counts including Tips, cursors, anchors, and session.
+   * @throws {Error} If more than one cursor, anchorReplyId, or anchorTipItemId is supplied.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or unavailable data. Restart pagination with a new session after expiry; do not reuse the old cursor.
    */
   async getFeedComments(
     params: GetMobileFeedCommentsParams,
   ): Promise<MobileSocialFeedCommentsPage> {
+    if (
+      [params.cursor, params.anchorReplyId, params.anchorTipItemId].filter(
+        (value) => value !== undefined,
+      ).length > 1
+    ) {
+      throw new Error(
+        'Specify at most one cursor, anchorReplyId, or anchorTipItemId.',
+      );
+    }
+    const navigation =
+      params.cursor !== undefined
+        ? { cursor: params.cursor }
+        : params.anchorTipItemId !== undefined
+          ? { anchor_tip_item_id: params.anchorTipItemId }
+          : { anchor_reply_id: params.anchorReplyId };
     const body: MobileServerPublicQueryRequest<'feed_comments'> = {
       type: 'feed_comments',
       root_item_id: params.rootItemId,
-      cursor: params.cursor,
+      ...navigation,
+      include_tips: params.includeTips,
       limit: params.limit,
-      anchor_reply_id: params.anchorReplyId,
       session_id: params.sessionId,
       ...mapMobileSocialFeedReadParamsToServer(params),
     };
@@ -1093,9 +1127,8 @@ export class MobileClient {
 
   /**
    * Reads private accepted notifications and first-seen timestamps without acknowledging them.
-   * Omitted supportedTypes uses the server's default type set; an empty array returns no notifications.
-   * Server defaults may expand to unsupported routes and reject the whole page with
-   * MobileUnsupportedNotificationRouteError. Pass an explicit supported subset for stable decoding.
+   * Omitted supportedTypes returns legacy types; an empty array returns no notifications.
+   * Include supported Tip and Feed types explicitly to receive their notifications.
    * Explicit filters are typed to notification types this SDK can decode.
    * Keep the same type filter for every page in a cursor chain.
    * @param params - Wallet authentication, optional type filter, and cursor/page size (1-50, default 20).

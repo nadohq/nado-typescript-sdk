@@ -1028,6 +1028,8 @@ describe('[mobile-client]: content mapping', () => {
       '66666666-6666-4666-8666-666666666666',
     ]);
     expect(mapped.comments[0]).not.toHaveProperty('replyToItemId');
+    if (mapped.comments[0].kind !== 'reply')
+      throw new Error('Expected ordinary reply group');
     expect(mapped.comments[0].replyToAuthor).toBeNull();
     expect(mapped.comments[0].replies.map((item) => item.id)).toEqual([
       child.id,
@@ -1217,7 +1219,7 @@ describe('[mobile-client]: position feed changes', () => {
     ];
     for (const item of [post, reply]) {
       const mapped = mapMobileSocialFeedItem({ ...item, images });
-      if (mapped.kind === 'trade_row')
+      if (mapped.kind === 'trade_row' || mapped.kind === 'tip')
         throw new Error('Expected authored content');
       expect(mapped.images[0]).toMatchObject({
         imageId: images[0].image_id,

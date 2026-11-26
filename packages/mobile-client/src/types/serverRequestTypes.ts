@@ -123,9 +123,11 @@ export interface MobileServerSearchProfilesRequest {
 }
 
 /** Common filters and pagination for social feed lists. */
-export interface MobileServerSocialFeedListParams {
+export interface MobileServerSocialFeedListParams<
+  FeedType extends MobileSocialFeedType = Exclude<MobileSocialFeedType, 'tips'>,
+> {
   /** OR-ed content filters; combined with other filters using AND. */
-  feed_types?: MobileSocialFeedType[];
+  feed_types?: FeedType[];
   /** Strict lower bound in whole dollars, 1 through Number.MAX_SAFE_INTEGER. */
   minimum_notional?: number;
   /** Page size, 1–50; defaults to 20. */
@@ -137,9 +139,17 @@ export interface MobileServerSocialFeedListParams {
 }
 
 /** List fields for main feeds and author feeds. */
-export interface MobileServerSocialFeedCategorizedParams extends MobileServerSocialFeedListParams {
+export interface MobileServerSocialFeedCategorizedParams<
+  FeedType extends MobileSocialFeedType = Exclude<MobileSocialFeedType, 'tips'>,
+> extends MobileServerSocialFeedListParams<FeedType> {
   /** Omit to read all market categories. */
   market_category?: MobileSocialFeedMarketCategory;
+}
+
+/** For You and Friends filters with an explicit public-Tip session capability. */
+export interface MobileServerSocialFeedTipEnabledParams extends MobileServerSocialFeedCategorizedParams<MobileSocialFeedType> {
+  /** Enable public Tips for a new session; omission on reuse inherits the capability. */
+  include_tips?: boolean;
 }
 
 /** Unsigned browsing context; the viewing account is not proof of wallet ownership. */
@@ -206,17 +216,40 @@ export interface MobileServerPublicQueryRequestByType {
   };
   /** Read or navigate a comment thread. */
   feed_comments: MobileServerSocialFeedReadParams & {
-    /** Root UUID. */
+    /** Root post or standalone Tip's public Feed UUID. */
     root_item_id: string;
-    /** Thread cursor. */
-    cursor?: string;
+    /** Enable public Tips; omission on reuse inherits the session's capability. */
+    include_tips?: boolean;
     /** Top-level group count, 1-50; descendants do not consume the limit. */
     limit?: number;
-    /** Anchor at any depth selecting its top-level group; mutually exclusive with cursor. */
-    anchor_reply_id?: string;
     /** Original reading session. */
     session_id?: string;
-  };
+  } & (
+      | {
+          /** Thread cursor. */
+          cursor?: string;
+          /** Reply anchors cannot accompany a cursor. */
+          anchor_reply_id?: never;
+          /** Tip anchors cannot accompany a cursor. */
+          anchor_tip_item_id?: never;
+        }
+      | {
+          /** An anchored or first page has no pagination cursor. */
+          cursor?: never;
+          /** Ordinary descendant or standalone-Tip reply selecting its complete top-level group. */
+          anchor_reply_id?: string;
+          /** A reply anchor cannot accompany a Tip anchor. */
+          anchor_tip_item_id?: never;
+        }
+      | {
+          /** A Tip-anchored page has no pagination cursor. */
+          cursor?: never;
+          /** A Tip anchor cannot accompany a reply anchor. */
+          anchor_reply_id?: never;
+          /** Public Tip Feed UUID in the original-post thread; requires a Tip-enabled session. */
+          anchor_tip_item_id: string;
+        }
+    );
   /** Full lifecycle history rather than published feed items alone. */
   position_history: MobileServerSocialFeedReadParams & {
     /** Lifecycle UUID. */
@@ -271,13 +304,13 @@ export interface MobileServerPublicQueryRequestByType {
   /** Ordered server-owned avatar catalogue. */
   avatar_presets: Record<never, never>;
   /** Public recommendations with optional relationship perspective. */
-  for_you_feed: MobileServerSocialFeedCategorizedParams &
+  for_you_feed: MobileServerSocialFeedTipEnabledParams &
     MobileServerSocialFeedReadParams;
   /** Public content from qualified authors. */
   top_traders_feed: MobileServerSocialFeedCategorizedParams &
     MobileServerSocialFeedReadParams;
   /** Public content from authors followed by view_as. */
-  friends_feed: MobileServerSocialFeedCategorizedParams &
+  friends_feed: MobileServerSocialFeedTipEnabledParams &
     MobileServerSocialFeedReadParams & {
       /** Complete non-isolated identity subaccount; required on every request. */
       view_as: Hex;
@@ -302,13 +335,26 @@ export interface MobileServerPublicQueryRequestByType {
     };
   /** Item details visible to view_as, optionally reusing a reading session. */
   feed_item: MobileServerSocialFeedReadParams & {
-    /** Target item UUID. */
-    item_id: string;
+    /** Enable public Tips; omission on reuse inherits the session's capability. */
+    include_tips?: boolean;
     /** Preview size, 0-3. */
     comment_preview_limit?: number;
     /** Omit to create a new reading session. */
     session_id?: string;
-  };
+  } & (
+      | {
+          /** Public Feed item UUID, distinct from a Tip's payment UUID. */
+          item_id: string;
+          /** Payment selector is not used with item_id. */
+          tip_id?: never;
+        }
+      | {
+          /** Payment UUID resolving a readable public Tip; requires a Tip-enabled session. */
+          tip_id: string;
+          /** Public item selector is not used with tip_id. */
+          item_id?: never;
+        }
+    );
   /** Updates inherit the original public session's viewing account. */
   feed_updates: {
     /** Original reading session. */
