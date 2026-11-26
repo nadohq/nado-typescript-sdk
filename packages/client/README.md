@@ -65,9 +65,37 @@ The `NadoClient` exposes five domain APIs:
 | --- | --- |
 | `client.market` | Market data, order placement & cancellation, trigger orders, liquidity, prices, candlesticks |
 | `client.subaccount` | Subaccount summaries, isolated positions, fee rates, linked signers, referrals, liquidation |
-| `client.spot` | Deposits, withdrawals, token allowances, quote transfers, NLP mint/burn |
+| `client.spot` | Deposits, withdrawals, token allowances, quote transfers, Tips, NLP mint/burn |
 | `client.perp` | Perp-specific price queries |
 | `client.ws` | WebSocket query, execute, and subscription message builders |
+
+## Sending a Tip
+
+`client.spot.sendTip` resolves the recipient DDA, signs the owner's withdrawal and submits it through Mobile.
+`amount` is the net recipient amount in native USDT0 units (six decimals); `maxFeeX18` is the separately confirmed
+fee ceiling in x18 units. The connected owner wallet signs the withdrawal even when a linked signer is configured.
+
+```ts
+import { addDecimals } from '@nadohq/client';
+
+await client.spot.sendTip({
+  subaccountName: 'default',
+  recipientSubaccount,
+  amount: addDecimals('5', 6),
+  backgroundId: 'tip-plain',
+  visibility: 'private',
+  maxFeeX18: confirmedFeeX18,
+});
+```
+
+After an uncertain submission, an explicit retry must use `client.spot.sendTip(error.retryRequest)` rather than
+creating another withdrawal. Replay preserves the original inner nonce, signature and fee cap while renewing outer
+Mobile authentication. A new Tip's known pre-admission rejection remains the original `MobileServerFailureError`
+so the user can correct the input. Owner-signing and DDA failures also propagate unchanged.
+
+`SendTipError.cause` is the original failure for user-cancellation and server-error handling. Both it and
+`retryRequest` are non-enumerable, but can still contain signed data: never log or persist them. The SDK retains no
+hidden pending state and never retries or raises a fee cap automatically.
 
 ## Re-exports
 

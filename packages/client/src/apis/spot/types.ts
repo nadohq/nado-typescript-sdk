@@ -6,6 +6,7 @@ import {
   EngineWithdrawCollateralParams,
   EngineWithdrawCollateralV2Params,
 } from '@nadohq/engine-client';
+import { MobileSubmitTipParams } from '@nadohq/mobile-client';
 import { BigNumberish } from '@nadohq/shared';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
@@ -45,6 +46,19 @@ export type TransferQuoteParams = OptionalSignatureParams<
 export type TransferQuoteV2Params = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineTransferQuoteV2Params>
 >;
+
+/** Fresh Tip inputs; replay a SendTipError.retryRequest instead after an uncertain submission. */
+export type SendTipParams = OptionalSignatureParams<
+  OptionalSubaccountOwner<
+    Omit<
+      MobileSubmitTipParams,
+      'withdrawal' | 'withdrawalSignature' | 'nonce' | 'expectedVersion'
+    >
+  >
+> & {
+  /** Net recipient amount in native USDT0 units (six decimals), excluding the separately approved fee. */
+  amount: BigNumberish;
+};
 
 export type MintNlpParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineMintNlpParams>
