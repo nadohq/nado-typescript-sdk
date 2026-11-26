@@ -36,8 +36,10 @@ import {
   assertMarketWithProductShape,
   assertProductSnapshotShape,
   assertSubaccountSummaryShape,
+  assertTriggerOrderInfoShape,
 } from '../utils/shapeAssertions';
 import {
+  PENDING_TRIGGER_STATUS_TYPES,
   TEST_DELAYS,
   TEST_PRODUCT_IDS,
   TEST_SUBACCOUNT_NAME,
@@ -334,6 +336,23 @@ void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
         'multiProductOrders SPOT_BTC orders',
       );
     });
+  });
+
+  void test('getTriggerOrdersUnsigned returns trigger orders without a signature', async () => {
+    const result = await nadoClient.market.getTriggerOrdersUnsigned({
+      subaccountOwner: walletClientAddress,
+      subaccountName: TEST_SUBACCOUNT_NAME,
+      statusTypes: PENDING_TRIGGER_STATUS_TYPES,
+    });
+
+    debugPrint('Unsigned trigger orders', result);
+    assertDefined(result, 'unsignedTriggerOrders');
+    assertArray(result.orders, 'unsignedTriggerOrders.orders');
+    assertArrayElements(
+      result.orders,
+      assertTriggerOrderInfoShape,
+      'unsignedTriggerOrders.orders',
+    );
   });
 
   void describe('spot token queries', () => {

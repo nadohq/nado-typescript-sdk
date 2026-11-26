@@ -24,7 +24,10 @@ import {
   GetIndexerProductSnapshotsParams,
 } from '@nadohq/indexer-client';
 import { BaseNadoAPI } from '../base';
-import { GetTriggerOrdersParams } from './types';
+import {
+  GetTriggerOrdersParams,
+  GetTriggerOrdersUnsignedParams,
+} from './types';
 
 export class MarketQueryAPI extends BaseNadoAPI {
   /**
@@ -138,6 +141,15 @@ export class MarketQueryAPI extends BaseNadoAPI {
       chainId: this.getWalletClientChainIdIfNeeded(params),
       verifyingAddr: params.verifyingAddr ?? this.getEndpointAddress(),
     });
+  }
+
+  /**
+   * Queries the offchain trigger service to list trigger orders without a signature. Only succeeds where the trigger
+   * service has list-order signatures disabled (currently testnet), otherwise throws a TriggerServerFailureError.
+   * @param params
+   */
+  async getTriggerOrdersUnsigned(params: GetTriggerOrdersUnsignedParams) {
+    return this.context.triggerClient.listOrdersUnsigned(params);
   }
 
   /**

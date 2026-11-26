@@ -11,6 +11,7 @@ import {
   mapMobileAvatarPreset,
   mapMobileAvatarSelectionToServer,
   mapMobileAvatarUpload,
+  mapMobileCreatorEarningsSummary,
   mapMobileFeedPage,
   mapMobileFollowBatchResult,
   mapMobileFollowListPage,
@@ -74,6 +75,7 @@ import {
   MobileSignedRequest,
 } from './signing';
 import {
+  GetMobileCreatorEarningsSummaryParams,
   GetMobileFeedChartDrawingParams,
   GetMobileFeedCommentsParams,
   GetMobileFeedImageBytesParams,
@@ -116,6 +118,7 @@ import {
   MobileCreateFeedCommentParams,
   MobileCreateFeedImageUploadParams,
   MobileCreateFeedPostParams,
+  MobileCreatorEarningsSummary,
   MobileFeedChartDrawingParams,
   MobileFeedImageRequest,
   MobileFeedPage,
@@ -1068,6 +1071,24 @@ export class MobileClient {
       {},
     );
     return mapMobileNotificationSubscriptions(await this.query(request));
+  }
+
+  /**
+   * Reads the signing Identity's Creator Rate and lifetime and claimable creator earnings.
+   * @param params - Wallet authentication for an Identity Subaccount; isolated subaccounts are rejected.
+   * @returns The active rate and x18 amounts; a new Creator gets the `default` rate and zero amounts.
+   * @throws {WalletNotProvidedError} If neither a linked signer nor a default wallet is configured.
+   * @throws {MobileServerFailureError} If authentication fails or the sender is an isolated subaccount.
+   */
+  async getCreatorEarningsSummary(
+    params: GetMobileCreatorEarningsSummaryParams,
+  ): Promise<MobileCreatorEarningsSummary> {
+    const request = await this.getSignedRequest(
+      'creator_earnings_summary',
+      params,
+      {},
+    );
+    return mapMobileCreatorEarningsSummary(await this.query(request));
   }
 
   /**

@@ -18,6 +18,7 @@ export const MOBILE_EIP712_METHOD_BY_TYPE: Record<
   update_notification_subscriptions:
     'mobile:execute_update_notification_subscriptions',
   notification_inbox_v2: 'mobile:query_notification_inbox_v2',
+  creator_earnings_summary: 'mobile:query_creator_earnings_summary',
   record_product_events: 'mobile:execute_record_product_events',
   create_feed_post: 'mobile:execute_create_feed_post',
   create_feed_comment: 'mobile:execute_create_feed_comment',

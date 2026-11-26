@@ -41,6 +41,6 @@
   "gitHead": "6d0f498829ddaf01a11d2f46f960811428b370f5",
   "devDependencies": {
     "@types/node": "24.12.4",
-    "axios": "1.16.1"
+    "axios": "1.21.1"
   }
 }

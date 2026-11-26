@@ -26,6 +26,7 @@ import {
   TriggerCancelProductOrdersParams,
   TriggerListOrdersParams,
   TriggerListOrdersResponse,
+  TriggerListOrdersUnsignedParams,
   TriggerListTwapExecutionsParams,
   TriggerListTwapExecutionsResponse,
   TriggerOrderInfo,
@@ -194,7 +195,6 @@ export class TriggerClient {
       subaccountOwner: params.subaccountOwner,
     };
 
-    const tx = getNadoEIP712Values('list_trigger_orders', signatureParams);
     const signature = await this.sign(
       'list_trigger_orders',
       params.verifyingAddr,
@@ -202,27 +202,25 @@ export class TriggerClient {
       signatureParams,
     );
 
-    const queryParams: TriggerServerQueryRequestByType['list_trigger_orders'] =
-      {
-        limit: params.limit,
-        max_update_time: params.maxUpdateTimeInclusive,
-        status_types: params.statusTypes,
-        product_ids: params.productIds,
-        digests: params.digests,
-        trigger_types: params.triggerTypes,
-        reduce_only: params.reduceOnly,
-        signature,
-        tx,
-      };
+    return this.queryListOrders(params, signatureParams, signature);
+  }
 
-    const baseResponse = await this.query('list_trigger_orders', queryParams);
-
-    const orders: TriggerOrderInfo[] =
-      baseResponse.orders.map(mapServerOrderInfo);
-
-    return {
-      orders,
+  /**
+   * Lists trigger orders for any subaccount without a signature. Needs no wallet. Only succeeds where the trigger
+   * service has list-order signatures disabled (currently testnet), otherwise throws a TriggerServerFailureError
+   *
+   * @param params
+   */
+  async listOrdersUnsigned(
+    params: TriggerListOrdersUnsignedParams,
+  ): Promise<TriggerListOrdersResponse> {
+    const signatureParams: EIP712ListTriggerOrdersParams = {
+      recvTime: toIntegerString(getDefaultRecvTime()),
+      subaccountName: params.subaccountName,
+      subaccountOwner: params.subaccountOwner,
     };
+
+    return this.queryListOrders(params, signatureParams);
   }
 
   async listTwapExecutions(
@@ -283,6 +281,35 @@ export class TriggerClient {
       borrow_margin: params.borrowMargin ?? null,
       // The service rejects an explicit null here, so the key is left out entirely
       ...(params.routingMode ? { routing_mode: params.routingMode } : {}),
+    };
+  }
+
+  protected async queryListOrders(
+    params: TriggerListOrdersUnsignedParams,
+    signatureParams: EIP712ListTriggerOrdersParams,
+    signature?: string,
+  ): Promise<TriggerListOrdersResponse> {
+    const queryParams: TriggerServerQueryRequestByType['list_trigger_orders'] =
+      {
+        limit: params.limit,
+        max_update_time: params.maxUpdateTimeInclusive,
+        status_types: params.statusTypes,
+        product_ids: params.productIds,
+        digests: params.digests,
+        trigger_types: params.triggerTypes,
+        reduce_only: params.reduceOnly,
+        // Omitted when unsigned; the service treats a missing signature as empty
+        ...(signature !== undefined ? { signature } : {}),
+        tx: getNadoEIP712Values('list_trigger_orders', signatureParams),
+      };
+
+    const baseResponse = await this.query('list_trigger_orders', queryParams);
+
+    const orders: TriggerOrderInfo[] =
+      baseResponse.orders.map(mapServerOrderInfo);
+
+    return {
+      orders,
     };
   }
 

@@ -44,7 +44,9 @@ await trigger.cancelTriggerOrders({ ... });
 
 ### Queries
 
-`listOrders`, `listTwapExecutions`.
+`listOrders`, `listOrdersUnsigned`, `listTwapExecutions`.
+
+`listOrdersUnsigned` sends no signature, so it only works where the trigger service has list-order signatures disabled (currently testnet).
 
 A fired Prime trigger reports `otc_pending_resolution` with its deal ID while the deal settles. That is not proof of a fill: check the archive by the order digest before treating it as executed.
 
