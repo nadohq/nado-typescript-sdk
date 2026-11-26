@@ -1,10 +1,12 @@
 import {
   MOBILE_ERROR_CODES,
+  MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES,
   MobileClient,
   MobileServerFailureError,
   MobileSocialFeedCommentsPage,
   MobileSocialFeedReply,
   MobileSocialFeedTip,
+  MobileSocialFeedTipEnabledType,
 } from '@nadohq/mobile-client';
 import { Subaccount, subaccountToHex } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
@@ -22,6 +24,12 @@ import { delay } from '../utils/delay';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
+
+const tipEnabledFeedTypes: MobileSocialFeedTipEnabledType[] = [
+  ...MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES,
+];
+const tipOnlyFeedTypes: MobileSocialFeedTipEnabledType[] =
+  MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES.filter((type) => type === 'tips');
 
 void describe(
   '[mobile-client]: public Tips and mixed threads',
@@ -42,8 +50,20 @@ void describe(
 
     void test('reads mixed For You and Friends feeds with the public Tip capability', async () => {
       for (const request of [
-        () => mobile.getForYouFeed({ viewAs, includeTips: true, limit: 20 }),
-        () => mobile.getFriendsFeed({ viewAs, includeTips: true, limit: 20 }),
+        () =>
+          mobile.getForYouFeed({
+            viewAs,
+            includeTips: true,
+            feedTypes: tipEnabledFeedTypes,
+            limit: 20,
+          }),
+        () =>
+          mobile.getFriendsFeed({
+            viewAs,
+            includeTips: true,
+            feedTypes: tipEnabledFeedTypes,
+            limit: 20,
+          }),
       ]) {
         const page = await capturePublicQuery(mobile, request);
         const wireItems = page.wire.items;
@@ -64,7 +84,7 @@ void describe(
         mobile.getForYouFeed({
           viewAs,
           includeTips: true,
-          feedTypes: ['tips'],
+          feedTypes: tipOnlyFeedTypes,
           limit: 20,
         }),
       );
@@ -81,7 +101,7 @@ void describe(
       if (page.result.nextCursor !== null) {
         const next = await mobile.getForYouFeed({
           viewAs,
-          feedTypes: ['tips'],
+          feedTypes: tipOnlyFeedTypes,
           limit: 20,
           cursor: page.result.nextCursor,
           sessionId: page.result.readSession.sessionId,
@@ -94,7 +114,7 @@ void describe(
         for (const item of next.items) assert.equal(item.kind, 'tip');
       }
       await assertRejectsWithMobileErrorCode(
-        () => mobile.getForYouFeed({ feedTypes: ['tips'], limit: 1 }),
+        () => mobile.getForYouFeed({ feedTypes: tipOnlyFeedTypes, limit: 1 }),
         MOBILE_ERROR_CODES.INVALID_FEED_FILTER,
       );
     });
@@ -297,7 +317,7 @@ async function getLiveTipDetail(
   const page = await mobile.getForYouFeed({
     viewAs,
     includeTips: true,
-    feedTypes: ['tips'],
+    feedTypes: tipOnlyFeedTypes,
     limit: 50,
   });
   const tip = page.items.find(

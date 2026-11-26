@@ -45,6 +45,7 @@ import {
   MobileSocialFeedRoiBasisQuality,
   MobileSocialFeedRoiBasisType,
   MobileSocialFeedSourceCategory,
+  MobileSocialFeedTipEnabledType,
   MobileSocialFeedTradeCardAction,
   MobileSocialFeedTradeSizeChangeAction,
   MobileSocialFeedTraderBadgeCode,
@@ -1464,7 +1465,7 @@ export interface MobileSocialFeedReadParams {
 
 /** Filters and fixed-session pagination common to all six social feed lists. */
 export interface MobileSocialFeedListParams<
-  FeedType extends MobileSocialFeedType = Exclude<MobileSocialFeedType, 'tips'>,
+  FeedType extends MobileSocialFeedTipEnabledType = MobileSocialFeedType,
 > {
   /** OR-ed content filters; empty or omitted means all. */
   feedTypes?: FeedType[];
@@ -1480,7 +1481,7 @@ export interface MobileSocialFeedListParams<
 
 /** Common filters and viewing context for main feeds and author feeds. */
 export interface MobileSocialFeedCategorizedParams<
-  FeedType extends MobileSocialFeedType = Exclude<MobileSocialFeedType, 'tips'>,
+  FeedType extends MobileSocialFeedTipEnabledType = MobileSocialFeedType,
 >
   extends MobileSocialFeedListParams<FeedType>, MobileSocialFeedReadParams {
   /** Omit to include all market categories. */
@@ -1488,7 +1489,7 @@ export interface MobileSocialFeedCategorizedParams<
 }
 
 /** For You and Friends filters with an explicit public-Tip session capability. */
-export interface MobileSocialFeedTipEnabledParams extends MobileSocialFeedCategorizedParams<MobileSocialFeedType> {
+export interface MobileSocialFeedTipEnabledParams extends MobileSocialFeedCategorizedParams<MobileSocialFeedTipEnabledType> {
   /**
    * Enable public Tips in a new session. Omit on pagination to inherit the session's capability;
    * changing it requires a new session and cursor. Explicit old-only feedTypes, marketCategory,

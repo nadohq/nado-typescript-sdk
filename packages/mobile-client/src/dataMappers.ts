@@ -188,7 +188,7 @@ import {
   MobileServerTipSenderCost,
   MobileServerTipWithdrawal,
   MobileSocialFeedMention,
-  MobileSocialFeedType,
+  MobileSocialFeedTipEnabledType,
 } from './types/serverModelTypes';
 import {
   MobileServerCreatorEarningsSummaryResponse,
@@ -1456,7 +1456,7 @@ export function mapMobileSocialFeedUpdates(
  * @returns Wire fields; undefined options are omitted when serialized to JSON.
  */
 export function mapMobileSocialFeedListParamsToServer<
-  FeedType extends MobileSocialFeedType,
+  FeedType extends MobileSocialFeedTipEnabledType,
 >(
   params: MobileSocialFeedListParams<FeedType>,
 ): MobileServerSocialFeedListParams<FeedType> {

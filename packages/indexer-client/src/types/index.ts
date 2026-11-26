@@ -3,6 +3,7 @@ export * from './clientTypes';
 export * from './collateralEventType';
 export * from './indexerErrorCodes';
 export * from './IndexerEventType';
+export * from './IndexerInvalidSubaccountDDAError';
 export * from './IndexerLeaderboardType';
 export * from './IndexerServerFailureError';
 export * from './NadoTx';

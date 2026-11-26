@@ -12,6 +12,7 @@ import {
   MobileSocialFeedChartInterval,
   MobileSocialFeedMarketCategory,
   MobileSocialFeedPresenceState,
+  MobileSocialFeedTipEnabledType,
   MobileSocialFeedType,
 } from './serverModelTypes';
 import type { MobileServerSignedQueryResponseByType } from './serverQueryTypes';
@@ -124,7 +125,7 @@ export interface MobileServerSearchProfilesRequest {
 
 /** Common filters and pagination for social feed lists. */
 export interface MobileServerSocialFeedListParams<
-  FeedType extends MobileSocialFeedType = Exclude<MobileSocialFeedType, 'tips'>,
+  FeedType extends MobileSocialFeedTipEnabledType = MobileSocialFeedType,
 > {
   /** OR-ed content filters; combined with other filters using AND. */
   feed_types?: FeedType[];
@@ -140,14 +141,14 @@ export interface MobileServerSocialFeedListParams<
 
 /** List fields for main feeds and author feeds. */
 export interface MobileServerSocialFeedCategorizedParams<
-  FeedType extends MobileSocialFeedType = Exclude<MobileSocialFeedType, 'tips'>,
+  FeedType extends MobileSocialFeedTipEnabledType = MobileSocialFeedType,
 > extends MobileServerSocialFeedListParams<FeedType> {
   /** Omit to read all market categories. */
   market_category?: MobileSocialFeedMarketCategory;
 }
 
 /** For You and Friends filters with an explicit public-Tip session capability. */
-export interface MobileServerSocialFeedTipEnabledParams extends MobileServerSocialFeedCategorizedParams<MobileSocialFeedType> {
+export interface MobileServerSocialFeedTipEnabledParams extends MobileServerSocialFeedCategorizedParams<MobileSocialFeedTipEnabledType> {
   /** Enable public Tips for a new session; omission on reuse inherits the capability. */
   include_tips?: boolean;
 }

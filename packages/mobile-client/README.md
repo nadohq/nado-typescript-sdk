@@ -220,6 +220,11 @@ import {
 The same pattern covers cohort and trader data statuses, PnL and funding bases and qualities,
 position and history states, actions, resolutions, reading sessions, attachments, and presence.
 
+`MOBILE_SOCIAL_FEED_TYPES` and `MobileSocialFeedType` contain the six filters shared by all feed lists.
+For For You or Friends sessions with `includeTips: true`, use `MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES`
+and `MobileSocialFeedTipEnabledType`, which also include `tips`. Keep the legacy list for filter UIs
+that serve other feeds or sessions without public Tips enabled.
+
 ### Position history and thoughts
 
 `getPositionHistory` and `getPositionHistoryAll` return `owner`, the current position owner's full profile,

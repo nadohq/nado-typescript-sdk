@@ -508,11 +508,20 @@ export const MOBILE_SOCIAL_FEED_TYPES = [
   'thoughts',
   'analysis',
   'comments',
+] as const;
+
+/** Legacy content filters accepted by all six social feed lists. Empty or omitted means all. */
+export type MobileSocialFeedType = (typeof MOBILE_SOCIAL_FEED_TYPES)[number];
+
+/** Filters for For You and Friends sessions with public Tips enabled. */
+export const MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES = [
+  ...MOBILE_SOCIAL_FEED_TYPES,
   'tips',
 ] as const;
 
-/** Content filters; tips require a Tip-enabled For You or Friends session. Empty or omitted means all. */
-export type MobileSocialFeedType = (typeof MOBILE_SOCIAL_FEED_TYPES)[number];
+/** Content filters for Tip-enabled For You and Friends sessions, including the legacy filters. */
+export type MobileSocialFeedTipEnabledType =
+  (typeof MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES)[number];
 
 /** Every {@link MobileSocialFeedMarketCategory} for feed filters and runtime validation. */
 export const MOBILE_SOCIAL_FEED_MARKET_CATEGORIES = [

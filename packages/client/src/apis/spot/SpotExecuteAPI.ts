@@ -1,3 +1,4 @@
+import { IndexerInvalidSubaccountDDAError } from '@nadohq/indexer-client';
 import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
@@ -14,7 +15,7 @@ import {
   toBigNumber,
   WalletNotProvidedError,
 } from '@nadohq/shared';
-import { isAddress, zeroAddress } from 'viem';
+import { Address, zeroAddress } from 'viem';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import { SendTipError } from './SendTipError';
 import {
@@ -179,10 +180,21 @@ export class SpotExecuteAPI extends BaseSpotAPI {
           SEND_TIP_VALIDATION_REASONS.INVALID_AMOUNT,
         );
       }
-      const { address } = await this.context.indexerClient.getSubaccountDDA({
-        subaccount: params.recipientSubaccount,
-      });
-      if (!isAddress(address) || address === zeroAddress) {
+      let recipientDda: Address;
+      try {
+        const { address } = await this.context.indexerClient.getSubaccountDDA({
+          subaccount: params.recipientSubaccount,
+        });
+        recipientDda = address;
+      } catch (error: unknown) {
+        if (error instanceof IndexerInvalidSubaccountDDAError) {
+          throw new SendTipValidationError(
+            SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
+          );
+        }
+        throw error;
+      }
+      if (recipientDda === zeroAddress) {
         throw new SendTipValidationError(
           SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
         );
@@ -194,7 +206,7 @@ export class SpotExecuteAPI extends BaseSpotAPI {
             subaccountName: params.subaccountName,
             productId: QUOTE_PRODUCT_ID,
             amount: nativeAmount,
-            sendTo: address,
+            sendTo: recipientDda,
             appendix: 0,
             spotLeverage: false,
             maxFeeX18: params.maxFeeX18,

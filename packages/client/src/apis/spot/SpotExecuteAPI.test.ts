@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { GetIndexerSubaccountDDAResponse } from '@nadohq/indexer-client';
+import {
+  INDEXER_ERROR_CODES,
+  IndexerServerFailureError,
+} from '@nadohq/indexer-client';
 import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
@@ -12,7 +15,6 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import {
-  Address,
   createPublicClient,
   createWalletClient,
   http,
@@ -271,11 +273,41 @@ describe('SpotExecuteAPI.sendTip', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it('preserves a failed DDA lookup without creating replay authorization or prompting the owner', async () => {
+  it.each([
+    new Error('Indexer unavailable'),
+    new Error('Invalid address: upstream request failed'),
+  ])(
+    'preserves a DDA transport failure without prompting the owner: %s',
+    async (failure) => {
+      const { client, params, dda, build, submit } = createFixture();
+      dda.mockRestore();
+      jest
+        .spyOn(client.context.indexerClient.axiosInstance, 'post')
+        .mockRejectedValue(failure);
+      await expect(client.spot.sendTip(params)).rejects.toBe(failure);
+      expect(build).not.toHaveBeenCalled();
+      expect(submit).not.toHaveBeenCalled();
+    },
+  );
+
+  it('preserves an Indexer server failure without misclassifying it as an unavailable DDA', async () => {
     const { client, params, dda, build, submit } = createFixture();
-    const failure = new Error('Indexer unavailable');
-    dda.mockRejectedValue(failure);
-    await expect(client.spot.sendTip(params)).rejects.toBe(failure);
+    dda.mockRestore();
+    const response = {
+      status: 'failure',
+      error: 'Indexer unavailable',
+      error_code: INDEXER_ERROR_CODES.SERVICE_UNAVAILABLE,
+      request_type: 'direct_deposit_address',
+    };
+    jest
+      .spyOn(client.context.indexerClient.axiosInstance, 'post')
+      .mockResolvedValue({ data: response, status: 503 });
+    const operation = client.spot.sendTip(params);
+    await expect(operation).rejects.toBeInstanceOf(IndexerServerFailureError);
+    await expect(operation).rejects.toMatchObject({
+      responseData: response,
+      httpStatus: 503,
+    });
     expect(build).not.toHaveBeenCalled();
     expect(submit).not.toHaveBeenCalled();
   });
@@ -362,15 +394,24 @@ describe('SpotExecuteAPI.sendTip', () => {
   });
 
   it.each([
-    ['missing', {} as GetIndexerSubaccountDDAResponse],
-    ['zero', { address: zeroAddress }],
-    ['short hex', { address: '0x' }],
-    ['invalid', { address: 'not-an-address' as Address }],
+    ['missing', {}],
+    ['null', { v1_address: null }],
+    ['wrong type', { v1_address: 42 }],
+    ['zero', { v1_address: zeroAddress }],
+    ['short hex', { v1_address: '0x' }],
+    ['invalid', { v1_address: 'not-an-address' }],
+    [
+      'invalid checksum',
+      { v1_address: '0x52908400098527886E0F7030069857D2E4169Ee7' },
+    ],
   ] as const)(
     'rejects a %s DDA with a stable reason before signing',
     async (_name, response) => {
       const { client, params, dda, build, submit } = createFixture();
-      dda.mockResolvedValue(response);
+      dda.mockRestore();
+      jest
+        .spyOn(client.context.indexerClient.axiosInstance, 'post')
+        .mockResolvedValue({ data: response, status: 200 });
       await expectValidationFailure(
         () => client.spot.sendTip(params),
         SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
