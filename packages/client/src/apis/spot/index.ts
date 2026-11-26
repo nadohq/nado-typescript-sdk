@@ -8,4 +8,5 @@ import { SpotQueryAPI } from './SpotQueryAPI';
 export class SpotAPI extends Mixin(SpotExecuteAPI, SpotQueryAPI) {}
 
 export * from './SendTipError';
+export * from './SendTipValidationError';
 export * from './types';

@@ -2,13 +2,11 @@ import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
   MobileSubmitTipParams,
-  MobileSubmitTipResult,
 } from '@nadohq/mobile-client';
 import {
   approveDepositAllowance,
   depositCollateral,
   DepositCollateralParams,
-  getValidatedAddress,
   isWriteableContract,
   MOCK_ERC20_ABI,
   QUOTE_PRODUCT_ID,
@@ -16,15 +14,20 @@ import {
   toBigNumber,
   WalletNotProvidedError,
 } from '@nadohq/shared';
-import { zeroAddress } from 'viem';
+import { isAddress, zeroAddress } from 'viem';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import { SendTipError } from './SendTipError';
+import {
+  SEND_TIP_VALIDATION_REASONS,
+  SendTipValidationError,
+} from './SendTipValidationError';
 import {
   ApproveAllowanceParams,
   BurnNlpParams,
   MintMockERC20Params,
   MintNlpParams,
   SendTipParams,
+  SendTipResult,
   TransferQuoteParams,
   TransferQuoteV2Params,
   WithdrawCollateralParams,
@@ -123,31 +126,39 @@ export class SpotExecuteAPI extends BaseSpotAPI {
 
   /**
    * Signs a net USDT0 withdrawal to the recipient's DDA and submits it through Mobile.
-   * After SendTipError, pass its retryRequest to replay the same authorization with fresh outer authentication.
+   * Every result retains a non-enumerable retryRequest, as does SendTipError after an uncertain result.
+   * Replay it to reuse the original withdrawal with fresh outer authentication. For failed/FEE_TOO_LOW,
+   * reconfirm the quoted fee explicitly before changing maxFeeX18 and passing the receipt's version
+   * as expectedVersion. Signed requests must never be logged or persisted.
    * Never raise the confirmed fee cap automatically or create a fresh Tip after an uncertain submission.
    *
    * @throws {WalletNotProvidedError} If the owner wallet is unavailable.
-   * @throws {Error} If sender context, native amount, DDA lookup or owner signing is invalid or fails.
+   * @throws {SendTipValidationError} If the owner, signing context, native amount or recipient DDA is invalid.
+   * @throws {Error} If DDA lookup or owner signing fails.
    * @throws {MobileServerFailureError} For a new Tip's known pre-admission rejection.
    * @throws {SendTipError} If Mobile submission fails and the signed request must remain available for retry.
    */
   async sendTip(
     params: SendTipParams | MobileSubmitTipParams,
-  ): Promise<MobileSubmitTipResult> {
+  ): Promise<SendTipResult> {
     const isReplay = 'withdrawal' in params;
     const walletOwner = this.getWalletClientAddress();
     const subaccountOwner = this.getSubaccountOwnerIfNeeded(params);
     if (walletOwner.toLowerCase() !== subaccountOwner.toLowerCase()) {
-      throw new Error("Connect the Tip sender's owner wallet.");
+      throw new SendTipValidationError(
+        SEND_TIP_VALIDATION_REASONS.OWNER_WALLET_REQUIRED,
+      );
     }
+    const walletChainId = this.getWalletClientChainIdIfNeeded({});
+    const endpointAddress = this.getEndpointAddress();
+    const chainId = params.chainId ?? walletChainId;
+    const verifyingAddr = params.verifyingAddr ?? endpointAddress;
     if (
-      isReplay &&
-      (params.chainId !== this.getWalletClientChainIdIfNeeded({}) ||
-        params.verifyingAddr.toLowerCase() !==
-          this.getEndpointAddress().toLowerCase())
+      chainId !== walletChainId ||
+      verifyingAddr.toLowerCase() !== endpointAddress.toLowerCase()
     ) {
-      throw new Error(
-        'Switch to the original Tip chain and endpoint to retry.',
+      throw new SendTipValidationError(
+        SEND_TIP_VALIDATION_REASONS.SIGNING_CONTEXT_MISMATCH,
       );
     }
 
@@ -164,18 +175,17 @@ export class SpotExecuteAPI extends BaseSpotAPI {
         nativeAmount.isInteger() &&
         nativeAmount.isGreaterThan(0);
       if (!isAmountValid) {
-        throw new Error(
-          'Tip amount must be a positive integer in native token units.',
+        throw new SendTipValidationError(
+          SEND_TIP_VALIDATION_REASONS.INVALID_AMOUNT,
         );
       }
-      const chainId = this.getWalletClientChainIdIfNeeded(params);
-      const verifyingAddr = params.verifyingAddr ?? this.getEndpointAddress();
       const { address } = await this.context.indexerClient.getSubaccountDDA({
         subaccount: params.recipientSubaccount,
       });
-      const recipientDda = getValidatedAddress(address);
-      if (recipientDda === zeroAddress) {
-        throw new Error('The Tip recipient deposit address is unavailable.');
+      if (!isAddress(address) || address === zeroAddress) {
+        throw new SendTipValidationError(
+          SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
+        );
       }
       const { tx, signature } =
         await this.context.engineClient.payloadBuilder.buildWithdrawCollateralV2Payload(
@@ -184,7 +194,7 @@ export class SpotExecuteAPI extends BaseSpotAPI {
             subaccountName: params.subaccountName,
             productId: QUOTE_PRODUCT_ID,
             amount: nativeAmount,
-            sendTo: recipientDda,
+            sendTo: address,
             appendix: 0,
             spotLeverage: false,
             maxFeeX18: params.maxFeeX18,
@@ -203,7 +213,13 @@ export class SpotExecuteAPI extends BaseSpotAPI {
     }
 
     try {
-      return await this.context.mobileClient.submitTip(request);
+      const receipt = await this.context.mobileClient.submitTip(request);
+      return Object.defineProperty({ ...receipt }, 'retryRequest', {
+        value: request,
+        enumerable: false,
+        writable: false,
+        configurable: false,
+      }) as SendTipResult;
     } catch (error) {
       const isKnownInitialRejection =
         !isReplay &&

@@ -78,7 +78,7 @@ fee ceiling in x18 units. The connected owner wallet signs the withdrawal even w
 ```ts
 import { addDecimals } from '@nadohq/client';
 
-await client.spot.sendTip({
+const result = await client.spot.sendTip({
   subaccountName: 'default',
   recipientSubaccount,
   amount: addDecimals('5', 6),
@@ -88,14 +88,31 @@ await client.spot.sendTip({
 });
 ```
 
+The returned `SendTipResult` keeps the receipt fields and adds `retryRequest` with the original withdrawal and
+inner signature. If it resolves with `tipStatus: 'failed'` and `processingReason: 'FEE_TOO_LOW'`, obtain a fresh fee
+quote and explicit user confirmation before reconfirming that same Tip:
+
+```ts
+await client.spot.sendTip({
+  ...result.retryRequest,
+  maxFeeX18: confirmedNewFeeX18,
+  expectedVersion: result.version,
+});
+```
+
 After an uncertain submission, an explicit retry must use `client.spot.sendTip(error.retryRequest)` rather than
 creating another withdrawal. Replay preserves the original inner nonce, signature and fee cap while renewing outer
 Mobile authentication. A new Tip's known pre-admission rejection remains the original `MobileServerFailureError`
-so the user can correct the input. Owner-signing and DDA failures also propagate unchanged.
+so the user can correct the input. Wallet-signing and DDA transport errors also propagate unchanged.
 
-`SendTipError.cause` is the original failure for user-cancellation and server-error handling. Both it and
-`retryRequest` are non-enumerable, but can still contain signed data: never log or persist them. The SDK retains no
-hidden pending state and never retries or raises a fee cap automatically.
+Explicit `chainId` and `verifyingAddr` must match the connected wallet's chain and the client's endpoint; mismatches
+reject before signing. Local guards expose `SendTipValidationError.reason` for handling without parsing messages.
+The exported `SEND_TIP_VALIDATION_REASONS` values are `owner_wallet_required`, `signing_context_mismatch`,
+`invalid_amount`, and `recipient_dda_unavailable`.
+
+`SendTipError.cause` is the original failure for user-cancellation and server-error handling. It and the readonly
+`retryRequest` on both results and errors are non-enumerable, but can contain signed data: never log or persist them.
+The SDK retains no hidden pending state and never retries or raises a fee cap automatically.
 
 ## Re-exports
 
