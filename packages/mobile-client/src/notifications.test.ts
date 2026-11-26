@@ -79,6 +79,7 @@ const capabilities: MobileNotificationCapabilities = {
     'market_daily_move',
     'market_large_trade',
     'notable_trader',
+    'campaign_announcement',
   ],
   payloadVersions: [2],
 };
@@ -178,6 +179,7 @@ const signedCases: {
           'market_daily_move',
           'market_large_trade',
           'notable_trader',
+          'campaign_announcement',
         ],
         routes: ['portfolio', 'profile', 'market'],
       },
