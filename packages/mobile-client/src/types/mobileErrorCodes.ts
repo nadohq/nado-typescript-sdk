@@ -50,7 +50,7 @@ export const MOBILE_ERROR_CODES = {
   INVALID_NOTIFICATION_REQUEST: 6204,
   /** Wallet already has the maximum number of active device registrations. */
   NOTIFICATION_DEVICE_LIMIT: 6205,
-  /** Feed `minimumNotional` or `limit` is outside its allowed domain. Fix the request; do not retry unchanged. */
+  /** Feed filters are invalid, including a Tips-only filter without Tips enabled. Fix the request before retrying. */
   INVALID_FEED_FILTER: 6300,
   /** Feed cursor is malformed or bound to a different filter. Discard it and restart from the first page. */
   INVALID_FEED_CURSOR: 6301,
@@ -64,11 +64,11 @@ export const MOBILE_ERROR_CODES = {
   SOCIAL_FEED_DRAWING_EXISTS: 6305,
   /** Drawing nonce is stale or reused for different content. Re-read before retrying. */
   STALE_SOCIAL_FEED_DRAWING_UPDATE: 6306,
-  /** Invalid social feed parameters, including missing fields, invalid types/formats, filters, or Content-Type. */
+  /** Invalid social feed parameters, selectors, mutually exclusive anchors, or Tip targets without Tips enabled. */
   INVALID_SOCIAL_FEED_PARAMS: 6310,
-  /** Session, credential, viewing account, cursor, source, or viewport mismatch; also a request sequence or viewport revision rollback. */
+  /** Session, credential, viewing account, cursor, source, Tips capability, or viewport mismatch; also a request sequence or viewport revision rollback. */
   SOCIAL_FEED_SESSION_MISMATCH: 6311,
-  /** Reading session or browsing credential is expired, missing, or incompatible; create a new session. */
+  /** Reading session expired or invalidated, including changed thread group membership; discard the session and cursors. */
   SOCIAL_FEED_SESSION_EXPIRED: 6312,
   /** Content does not exist or is not currently accessible. */
   SOCIAL_FEED_CONTENT_UNAVAILABLE: 6313,
@@ -80,7 +80,7 @@ export const MOBILE_ERROR_CODES = {
   INVALID_SOCIAL_FEED_OPERATION: 6316,
   /** Published body cannot be edited; existing drawings may still be updated. */
   SOCIAL_FEED_CONTENT_ALREADY_PUBLISHED: 6317,
-  /** Mention offsets, mentioned identity, or reply relationship is invalid. */
+  /** Invalid mention/reply relationship, or an unavailable/cross-thread anchor, including a payment UUID used as a public Tip Feed ID. */
   INVALID_SOCIAL_FEED_MENTION: 6318,
   /** Author-scoped request ID was already used with different content. */
   SOCIAL_FEED_REQUEST_CONFLICT: 6319,

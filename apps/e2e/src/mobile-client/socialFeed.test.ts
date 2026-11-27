@@ -9,6 +9,7 @@ import {
   MobileClient,
   MobileSocialFeedAuthor,
   MobileSocialFeedPage,
+  MobileSocialFeedType,
 } from '@nadohq/mobile-client';
 import { Subaccount, subaccountFromHex } from '@nadohq/shared';
 import assert from 'node:assert/strict';
@@ -35,6 +36,8 @@ import {
 } from '../utils/testConstants';
 import { RunContext } from '../utils/types';
 
+const legacyFeedTypes: MobileSocialFeedType[] = [...MOBILE_SOCIAL_FEED_TYPES];
+
 void describe(
   '[mobile-client]: social feed',
   { timeout: TEST_TIMEOUTS.LONG },
@@ -53,7 +56,7 @@ void describe(
       mobile = new MobileClient({ url: tc.endpoints.mobile });
     });
 
-    void test('accepts every exported social feed type as a public filter', async () => {
+    void test('accepts legacy social feed types without the public Tip capability', async () => {
       for (const feedType of MOBILE_SOCIAL_FEED_TYPES) {
         const page = await mobile.getForYouFeed({
           feedTypes: [feedType],
@@ -71,6 +74,7 @@ void describe(
         });
         assertPage(page);
         for (const item of page.items) {
+          assert.ok(item.market);
           assert.equal(item.market.category, marketCategory);
         }
       }
@@ -171,7 +175,10 @@ void describe(
     });
 
     void test('reads Top Traders and its shared qualification cohort', async () => {
-      const page = await mobile.getTopTradersFeed({ viewAs, limit: 2 });
+      const page = await mobile.getTopTradersFeed({
+        viewAs,
+        limit: 2,
+      });
       assertPage(page);
       assert.equal(page.rankingVersion, 'chronological-v1');
       assert.equal(page.cohort.coverage.complete, true);
@@ -187,6 +194,13 @@ void describe(
           assert.equal(badge.snapshotId, page.cohort.snapshotId);
         }
       }
+      assertPage(
+        await mobile.getTopTradersFeed({
+          viewAs,
+          feedTypes: legacyFeedTypes,
+          limit: 2,
+        }),
+      );
     });
 
     void test('reads Friends and updates without a wallet, including an unregistered account', async () => {
@@ -200,7 +214,11 @@ void describe(
       });
       assertPage(empty);
       assert.equal(empty.items.length, 0);
-      const friends = await mobile.getFriendsFeed({ viewAs, limit: 2 });
+      const friends = await mobile.getFriendsFeed({
+        viewAs,
+        feedTypes: legacyFeedTypes,
+        limit: 2,
+      });
       assertPage(friends);
       assert.equal(friends.rankingVersion, 'chronological-v1');
       const { viewerToken, sessionId } = friends.readSession;
@@ -210,6 +228,7 @@ void describe(
       if (friends.nextCursor !== null) {
         const next = await mobile.getFriendsFeed({
           viewAs,
+          feedTypes: legacyFeedTypes,
           limit: 2,
           sessionId,
           viewerToken,
@@ -233,6 +252,7 @@ void describe(
       const page = await mobile.getProfileFeed({
         subaccount: viewAs,
         viewAs,
+        feedTypes: legacyFeedTypes,
         limit: 2,
       });
       assertPage(page);
@@ -250,19 +270,31 @@ void describe(
     });
 
     void test('reads market content', async () => {
-      const page = await mobile.getMarketFeed({
+      const params = {
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         viewAs,
         limit: 2,
-      });
-      assertPage(page);
-      for (const item of page.items)
-        assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
+      };
+      for (const page of [
+        await mobile.getMarketFeed(params),
+        await mobile.getMarketFeed({ ...params, feedTypes: legacyFeedTypes }),
+      ]) {
+        assertPage(page);
+        for (const item of page.items) {
+          assert.ok(item.market);
+          assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
+        }
+      }
     });
 
     void test('reads a real author, position, and direct item session', async (context) => {
-      const page = await mobile.getForYouFeed({ limit: 2 });
-      const item = page.items.find((candidate) => candidate.kind !== 'reply');
+      const page = await mobile.getForYouFeed({
+        feedTypes: legacyFeedTypes,
+        limit: 2,
+      });
+      const item = page.items.find(
+        (candidate) => candidate.kind !== 'reply' && candidate.kind !== 'tip',
+      );
       if (!item) {
         context.skip(
           'No published feed item is available to select an author and position.',
@@ -277,9 +309,16 @@ void describe(
       assertPage(authorPage);
       const positionId =
         item.kind === 'trade_row' ? item.positionId : item.position.positionId;
-      assertPage(
-        await mobile.getPositionFeed({ positionId, viewAs, limit: 2 }),
-      );
+      const positionParams = { positionId, viewAs, limit: 2 };
+      for (const positionPage of [
+        await mobile.getPositionFeed(positionParams),
+        await mobile.getPositionFeed({
+          ...positionParams,
+          feedTypes: legacyFeedTypes,
+        }),
+      ]) {
+        assertPage(positionPage);
+      }
       const detail = await mobile.getFeedItem({
         itemId: item.id,
         commentPreviewLimit: 0,
@@ -341,20 +380,25 @@ function assertPage(page: MobileSocialFeedPage) {
       ['trade_card', 'trade_row', 'post', 'reply'],
       'item.kind',
     );
+    assert.ok(item.kind !== 'tip', 'Legacy Feed sessions must omit Tips.');
     assertFeedAuthor(item.author);
-    if (item.market.category !== null) {
-      assertEnumMember(
-        item.market.category,
-        MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
-        'item.market.category',
-      );
-    }
-    for (const category of item.market.sourceCategories) {
-      assertEnumMember(
-        category,
-        MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
-        'item.market.sourceCategories',
-      );
+    if (item.market === null) {
+      assert.equal(item.kind, 'reply');
+    } else {
+      if (item.market.category !== null) {
+        assertEnumMember(
+          item.market.category,
+          MOBILE_SOCIAL_FEED_MARKET_CATEGORIES,
+          'item.market.category',
+        );
+      }
+      for (const category of item.market.sourceCategories) {
+        assertEnumMember(
+          category,
+          MOBILE_SOCIAL_FEED_SOURCE_CATEGORIES,
+          'item.market.sourceCategories',
+        );
+      }
     }
     assert.ok(BigInt(item.version) > 0n);
     if (item.kind !== 'trade_row' && item.interaction.likedByMe !== null) {

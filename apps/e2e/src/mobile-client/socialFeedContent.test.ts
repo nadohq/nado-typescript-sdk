@@ -197,7 +197,8 @@ void describe(
       await waitForRateLimitWindow();
       const page = await mobile.getForYouFeed({ viewAs, limit: 20 });
       const item = page.items.find(
-        (candidate) => candidate.kind !== 'trade_row',
+        (candidate) =>
+          candidate.kind !== 'trade_row' && candidate.kind !== 'tip',
       );
       if (!item) {
         context.skip(
@@ -229,7 +230,7 @@ void describe(
       assert.ok(comments.comments.length <= 1);
       assert.ok(comments.totalCount >= comments.topLevelCount);
       for (const comment of comments.comments) {
-        assert.equal(comment.kind, 'reply');
+        assert.ok(comment.kind === 'reply');
         assert.equal(comment.rootItemId, rootItemId);
         assert.equal(comment.replyToItemId, undefined);
         assert.equal(comment.replyToAuthor, null);
@@ -985,6 +986,7 @@ void describe(
       });
       assert.equal(grouped.anchorReplyId, grandchild.comment.id);
       assert.equal(grouped.comments.length, 1);
+      assert.ok(grouped.comments[0].kind === 'reply');
       assert.equal(grouped.comments[0].id, comment.comment.id);
       assert.deepEqual(
         grouped.comments[0].images.slice(1),
@@ -1153,6 +1155,7 @@ function isFeedDataUnavailable(error: unknown): boolean {
 }
 
 function getPositionId(item: MobileSocialFeedItem): string | undefined {
+  if (item.kind === 'tip') return undefined;
   if (item.kind === 'trade_row') return item.positionId;
   if (item.kind === 'reply')
     return (

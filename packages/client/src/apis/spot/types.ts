@@ -6,6 +6,10 @@ import {
   EngineWithdrawCollateralParams,
   EngineWithdrawCollateralV2Params,
 } from '@nadohq/engine-client';
+import {
+  MobileSubmitTipParams,
+  MobileSubmitTipResult,
+} from '@nadohq/mobile-client';
 import { BigNumberish } from '@nadohq/shared';
 import { OptionalSignatureParams, OptionalSubaccountOwner } from '../types';
 
@@ -45,6 +49,32 @@ export type TransferQuoteParams = OptionalSignatureParams<
 export type TransferQuoteV2Params = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineTransferQuoteV2Params>
 >;
+
+/**
+ * Fresh Tip inputs; replay the retained retryRequest after submission or an uncertain result.
+ * Optional sender and signing fields use the same defaults as withdrawV2.
+ */
+export type SendTipParams = OptionalSignatureParams<
+  OptionalSubaccountOwner<
+    Omit<
+      MobileSubmitTipParams,
+      'withdrawal' | 'withdrawalSignature' | 'nonce' | 'expectedVersion'
+    >
+  >
+> & {
+  /** Net recipient amount in native USDT0 units (six decimals), excluding the separately approved fee. */
+  amount: BigNumberish;
+};
+
+/** Business receipt with the original signed request retained for explicit recovery or fee reconfirmation. */
+export interface SendTipResult extends MobileSubmitTipResult {
+  /**
+   * Non-enumerable signature-bearing request; never log or persist it. Reuse its withdrawal and
+   * signature for recovery. Change maxFeeX18 and expectedVersion only after explicit fee confirmation
+   * for a failed result whose processingReason is FEE_TOO_LOW.
+   */
+  readonly retryRequest: MobileSubmitTipParams;
+}
 
 export type MintNlpParams = OptionalSignatureParams<
   OptionalSubaccountOwner<EngineMintNlpParams>

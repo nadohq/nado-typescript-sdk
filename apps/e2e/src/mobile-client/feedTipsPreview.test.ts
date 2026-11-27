@@ -7,7 +7,9 @@ import { Subaccount } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { before, describe, test, TestContext } from 'node:test';
+import { asRecord } from '../utils/asRecord';
 import { assertArray } from '../utils/assertions';
+import { capturePublicQuery } from '../utils/capturePublicQuery';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
@@ -61,7 +63,7 @@ void describe(
 
     void test('preserves optional capability and totals on live Friends Feed items', async (testContext) => {
       const page = await capturePublicQuery(mobile, () =>
-        mobile.getFriendsFeed({ viewAs, limit: 10 }),
+        mobile.getFriendsFeed({ viewAs, includeTips: true, limit: 10 }),
       );
       const wireItems = page.wire.items;
       assertArray(wireItems, 'wire Friends Feed items');
@@ -127,7 +129,11 @@ async function getLiveContentDetail(
   viewAs: Subaccount,
   testContext: TestContext,
 ) {
-  const page = await mobile.getForYouFeed({ viewAs, limit: 10 });
+  const page = await mobile.getForYouFeed({
+    viewAs,
+    includeTips: true,
+    limit: 10,
+  });
   const item = page.items.find(
     (candidate) => candidate.kind === 'post' || candidate.kind === 'trade_card',
   );
@@ -141,6 +147,7 @@ async function getLiveContentDetail(
     const detail = await capturePublicQuery(mobile, () =>
       mobile.getFeedItem({
         itemId: item.id,
+        includeTips: true,
         viewAs,
         commentPreviewLimit: 0,
         sessionId: page.readSession.sessionId,
@@ -165,32 +172,6 @@ async function getLiveContentDetail(
       return undefined;
     }
     throw error;
-  }
-}
-
-async function capturePublicQuery<T>(
-  mobile: MobileClient,
-  request: () => Promise<T>,
-): Promise<{ result: T; wire: Record<string, unknown> }> {
-  let responseData: unknown;
-  let responseCount = 0;
-  // Observe the actual live response so a concurrent Tip cannot change a separately fetched reference.
-  const interceptor = mobile.axiosInstance.interceptors.response.use(
-    (response) => {
-      responseData = response.data;
-      responseCount += 1;
-      assert.ok(response.config.url?.endsWith('/public_query'));
-      return response;
-    },
-  );
-  try {
-    const result = await request();
-    assert.equal(responseCount, 1);
-    const wire = asRecord(responseData, 'released response');
-    assert.equal(wire.status, 'success');
-    return { result, wire };
-  } finally {
-    mobile.axiosInstance.interceptors.response.eject(interceptor);
   }
 }
 
@@ -233,12 +214,4 @@ function assertPreviewFields(
     assert.ok(total.isFinite() && total.isInteger() && total.gte(0));
     assert.equal(total.toFixed(), wire.public_tip_total_x18);
   }
-}
-
-function asRecord(value: unknown, label: string): Record<string, unknown> {
-  assert.ok(
-    value !== null && typeof value === 'object' && !Array.isArray(value),
-    `${label} must be an object.`,
-  );
-  return value as Record<string, unknown>;
 }

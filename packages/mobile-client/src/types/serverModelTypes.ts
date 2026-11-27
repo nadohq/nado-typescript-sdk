@@ -58,6 +58,11 @@ export const MOBILE_NOTIFICATION_TYPE_IDS = [
   'weekly_digest',
   'deposit_completed',
   'campaign_announcement',
+  'tip_received',
+  'tip_liked',
+  'tip_replied',
+  'feed_liked',
+  'feed_replied',
 ] as const;
 
 /** Notification types supported by the v2 payload protocol and this SDK's decoder. */
@@ -351,11 +356,35 @@ export type MobileServerNotificationRoute =
   | {
       /** Own portfolio destination. */
       name: 'portfolio';
+    }
+  | {
+      /** Private receipt destination, loaded through signed tip_detail. */
+      name: 'tip';
+      /** Payment record UUID. */
+      tip_id: string;
+    }
+  | {
+      /** Public Tip thread, optionally anchored to a reply. */
+      name: 'tip_thread';
+      /** Payment record UUID. */
+      tip_id: string;
+      /** Public Feed UUID of the Tip, also used as its standalone thread root. */
+      feed_item_id: string;
+      /** Original post root; null for a standalone Tip. */
+      origin_post_id: string | null;
+      /** Target reply UUID; null when opening the Tip itself. */
+      reply_item_id: string | null;
+    }
+  | {
+      /** Ordinary Feed thread, optionally anchored to a reply. */
+      name: 'feed_thread';
+      /** Public Feed UUID of the thread root. */
+      root_item_id: string;
+      /** Target reply UUID; null when opening the root itself. */
+      reply_item_id: string | null;
     };
 
-/**
- * Server-side v2 push/inbox navigation data, not a complete historical trade or notification body.
- */
+/** V2 push/Inbox navigation data; older notifications may omit rendered text. */
 export interface MobileServerNotificationPayloadV2 {
   /** Payload protocol version. */
   payload_version: 2;
@@ -369,6 +398,10 @@ export interface MobileServerNotificationPayloadV2 {
   template_version: 1;
   /** Named destination and its parameters. */
   route: MobileServerNotificationRoute;
+  /** Server-rendered title when supplied by the notification type. */
+  title?: string;
+  /** Server-rendered body when supplied by the notification type. */
+  body?: string;
 }
 
 /**
@@ -379,7 +412,7 @@ export interface MobileServerNotificationInboxItem {
   notification_id: string;
   /** Registered notification type. */
   type_id: MobileNotificationTypeId;
-  /** Navigation data, without title or body. */
+  /** Navigation data, including rendered title/body for Tip and Feed notifications. */
   data: MobileServerNotificationPayloadV2;
   /** Intent acceptance time in milliseconds. */
   created_at: number;
@@ -417,8 +450,18 @@ export const MOBILE_SOCIAL_FEED_TYPES = [
   'comments',
 ] as const;
 
-/** Content filters accepted by the six social feed lists. Empty or omitted means all. */
+/** Legacy content filters accepted by all six social feed lists. Empty or omitted means all. */
 export type MobileSocialFeedType = (typeof MOBILE_SOCIAL_FEED_TYPES)[number];
+
+/** Filters for For You and Friends sessions with public Tips enabled. */
+export const MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES = [
+  ...MOBILE_SOCIAL_FEED_TYPES,
+  'tips',
+] as const;
+
+/** Content filters for Tip-enabled For You and Friends sessions, including the legacy filters. */
+export type MobileSocialFeedTipEnabledType =
+  (typeof MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES)[number];
 
 /** Every {@link MobileSocialFeedMarketCategory} for feed filters and runtime validation. */
 export const MOBILE_SOCIAL_FEED_MARKET_CATEGORIES = [
@@ -853,7 +896,7 @@ export interface MobileServerSocialFeedContentBase extends MobileServerSocialFee
   interaction: MobileServerSocialFeedInteraction;
   /** Readable comment preview. */
   comment_preview: MobileServerSocialFeedCommentPreview;
-  /** Public Tip total in USDT0 x18 units; never null. "0" means none, omission hides the amount. */
+  /** Public Tip total in USDT0 x18 units when enabled; never null. "0" means none, omission hides it. */
   public_tip_total_x18?: string;
 }
 
@@ -918,7 +961,55 @@ export type MobileServerSocialFeedItem =
   | MobileServerSocialFeedTradeCard
   | MobileServerSocialFeedTradeRow
   | MobileServerSocialFeedPost
-  | MobileServerSocialFeedReply;
+  | MobileServerSocialFeedReply
+  | MobileServerSocialFeedTip;
+
+/** Public, verified-credit Tip, independent of any market or linked position. */
+export interface MobileServerSocialFeedTip extends Omit<
+  MobileServerSocialFeedItemBase,
+  'has_analysis' | 'drawing' | 'market'
+> {
+  /** Public Tip discriminant. */
+  kind: 'tip';
+  /** Tips do not carry authored analysis. */
+  has_analysis: false;
+  /** Tips do not carry a drawing. */
+  drawing: null;
+  /** Tips do not belong to a market. */
+  market: null;
+  /** Payment record UUID, distinct from this item's public id. */
+  tip_id: string;
+  /** Sending participant; also represented by author. */
+  sender: MobileServerTipParticipant;
+  /** Receiving participant. */
+  recipient: MobileServerTipParticipant;
+  /** Cash asset product ID. */
+  product_id: 0;
+  /** Verified net recipient amount in integer x18 units. */
+  net_amount_x18: string;
+  /** Only public Tips produce a public Feed item. */
+  visibility: 'public';
+  /** Original message, or null. */
+  note: string | null;
+  /** Background identifier fixed at admission. */
+  background_id: string;
+  /** Opaque background version fixed at admission. */
+  background_version: string;
+  /** Saved original-post UUID, or null for a profile Tip. */
+  origin_post_id: string | null;
+  /** Current original-post readability, or null when no reference exists. */
+  origin_availability: MobileTipOriginAvailability | null;
+  /** Readable original-post summary, or null. */
+  original: MobileServerSocialFeedCompactCard | null;
+  /** Original admission time in UTC milliseconds. */
+  submitted_at_ms: number;
+  /** Verified recipient credit time in UTC milliseconds. */
+  credited_at_ms: number;
+  /** This Tip item's own interaction state. */
+  interaction: MobileServerSocialFeedInteraction;
+  /** Readable replies to this Tip. */
+  comment_preview: MobileServerSocialFeedCommentPreview;
+}
 
 /** Idle-renewed social feed reading session. Credentials and cursors must be returned unchanged. */
 export interface MobileServerSocialFeedReadSession {
@@ -934,7 +1025,7 @@ export interface MobileServerSocialFeedReadSession {
   viewer_token: string;
 }
 
-/** Item delta: omitted means unchanged; null clears only fields whose types explicitly allow null. */
+/** Mutable item fields. On reset, an omitted public_tip_total_x18 clears its prior display value. */
 export interface MobileServerSocialFeedItemPatch {
   /** Updated reply attachment; null clears it, omission leaves it unchanged. */
   attached_position?: MobileServerSocialFeedPositionCard | null;
@@ -950,8 +1041,18 @@ export interface MobileServerSocialFeedItemPatch {
   interaction?: MobileServerSocialFeedInteraction;
   /** Updated capability object; never null. Omission leaves the existing flags unchanged. */
   capabilities?: MobileServerSocialFeedCapabilities;
-  /** Updated USDT0 x18 total; never null. "0" means none, omission leaves it unchanged. */
+  /** Updated USDT0 x18 total; never null. "0" means none; omission clears it when reset is true. */
   public_tip_total_x18?: string;
+  /** Updated Tip sender profile; retain the full item's payment identifiers and amount. */
+  sender?: MobileServerTipParticipant;
+  /** Updated Tip recipient profile. */
+  recipient?: MobileServerTipParticipant;
+  /** Saved original-post UUID for a Tip, or null when no reference exists. */
+  origin_post_id?: string | null;
+  /** Current original-post readability, or null when no reference exists. */
+  origin_availability?: MobileTipOriginAvailability | null;
+  /** Updated original-post summary for a Tip; null clears an unreadable or absent reference. */
+  original?: MobileServerSocialFeedCompactCard | null;
   /** Updated display timestamp; does not reorder the current list. */
   display_at_ms: number;
   /** Updated aggregate count. */
@@ -1156,7 +1257,7 @@ export interface MobileServerSocialFeedDrawing {
   updated_at_ms: number;
 }
 
-/** Nonrecursive root-post preview carried by replies. */
+/** Nonrecursive root-item preview carried by replies; Tip roots have a null position. */
 export interface MobileServerSocialFeedCompactCard {
   /** Root item UUID. */
   id: string;
@@ -1180,9 +1281,14 @@ export interface MobileServerSocialFeedPost extends MobileServerSocialFeedConten
 }
 
 /** Reply with independently permissioned position attachment and nonrecursive root preview. */
-export interface MobileServerSocialFeedReply extends MobileServerSocialFeedItemBase {
+export interface MobileServerSocialFeedReply extends Omit<
+  MobileServerSocialFeedItemBase,
+  'market'
+> {
   /** Reply discriminant. */
   kind: 'reply';
+  /** Root market metadata; null for replies beneath a public Tip. */
+  market: MobileServerSocialFeedMarket | null;
   /** Bound images in display order; empty when none. */
   images: MobileServerSocialFeedImage[];
   /** Original text. */
@@ -1210,6 +1316,17 @@ export interface MobileServerSocialFeedCommentGroup extends MobileServerSocialFe
   /** Flat descendants in creation-time, depth, then UUID order; empty when none. */
   replies: MobileServerSocialFeedReply[];
 }
+
+/** Public Tip and its complete readable descendants within an original-post thread. */
+export interface MobileServerSocialFeedTipCommentGroup extends MobileServerSocialFeedTip {
+  /** Flat descendants in server order; groups never split across pages. */
+  replies: MobileServerSocialFeedReply[];
+}
+
+/** Top-level Reply or Tip carrying its complete flat replies array, without an outer wrapper. */
+export type MobileServerSocialFeedThreadGroup =
+  | MobileServerSocialFeedCommentGroup
+  | MobileServerSocialFeedTipCommentGroup;
 
 /** Current eligibility hints; actual writes still recheck the signed author. */
 export interface MobileServerSocialFeedPublishablePosition {

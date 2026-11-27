@@ -65,9 +65,52 @@ The `NadoClient` exposes five domain APIs:
 | --- | --- |
 | `client.market` | Market data, order placement & cancellation, trigger orders, liquidity, prices, candlesticks |
 | `client.subaccount` | Subaccount summaries, isolated positions, fee rates, linked signers, referrals, liquidation |
-| `client.spot` | Deposits, withdrawals, token allowances, quote transfers, NLP mint/burn |
+| `client.spot` | Deposits, withdrawals, token allowances, quote transfers, Tips, NLP mint/burn |
 | `client.perp` | Perp-specific price queries |
 | `client.ws` | WebSocket query, execute, and subscription message builders |
+
+## Sending a Tip
+
+`client.spot.sendTip` resolves the recipient DDA, signs the owner's withdrawal and submits it through Mobile.
+`amount` is the net recipient amount in native USDT0 units (six decimals); `maxFeeX18` is the separately confirmed
+fee ceiling in x18 units. The connected owner wallet signs the withdrawal even when a linked signer is configured.
+
+```ts
+import { addDecimals } from '@nadohq/client';
+
+const result = await client.spot.sendTip({
+  subaccountName: 'default',
+  recipientSubaccount,
+  amount: addDecimals('5', 6),
+  backgroundId: 'tip-plain',
+  visibility: 'private',
+  maxFeeX18: confirmedFeeX18,
+});
+```
+
+The returned `SendTipResult` keeps the receipt fields and adds `retryRequest` with the original withdrawal and
+inner signature. If it resolves with `tipStatus: 'failed'` and `processingReason: 'FEE_TOO_LOW'`, obtain a fresh fee
+quote and explicit user confirmation before reconfirming that same Tip:
+
+```ts
+await client.spot.sendTip({
+  ...result.retryRequest,
+  maxFeeX18: confirmedNewFeeX18,
+  expectedVersion: result.version,
+});
+```
+
+After an uncertain submission, an explicit retry must use `client.spot.sendTip(error.retryRequest)` rather than
+creating another withdrawal. Replay preserves the original inner nonce, signature and fee cap while renewing outer
+Mobile authentication. A new Tip's known pre-admission rejection remains the original `MobileServerFailureError`
+so the user can correct the input. Wallet-signing and DDA transport/server errors also propagate unchanged.
+
+Optional sender and signing fields use the same defaults as `withdrawV2`; explicit overrides are passed through.
+A zero recipient DDA is rejected before owner signing because a zero withdrawal destination sends funds to the owner.
+
+`SendTipError.cause` is the original failure for user-cancellation and server-error handling. It and the readonly
+`retryRequest` on both results and errors are non-enumerable, but can contain signed data: never log or persist them.
+The SDK retains no hidden pending state and never retries or raises a fee cap automatically.
 
 ## Re-exports
 

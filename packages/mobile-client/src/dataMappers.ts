@@ -53,6 +53,7 @@ import {
   MobileSocialFeedCandle,
   MobileSocialFeedCapabilities,
   MobileSocialFeedCommentGroup,
+  MobileSocialFeedCommentPreview,
   MobileSocialFeedCommentResult,
   MobileSocialFeedCommentsPage,
   MobileSocialFeedCompactCard,
@@ -91,7 +92,9 @@ import {
   MobileSocialFeedReadSession,
   MobileSocialFeedReply,
   MobileSocialFeedRoiBasis,
+  MobileSocialFeedThreadGroup,
   MobileSocialFeedTimelineEntry,
+  MobileSocialFeedTip,
   MobileSocialFeedTopTradersPage,
   MobileSocialFeedTradeCard,
   MobileSocialFeedTradeRow,
@@ -147,6 +150,7 @@ import {
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCapabilities,
   MobileServerSocialFeedCommentGroup,
+  MobileServerSocialFeedCommentPreview,
   MobileServerSocialFeedCompactCard,
   MobileServerSocialFeedContentBase,
   MobileServerSocialFeedDrawing,
@@ -167,7 +171,9 @@ import {
   MobileServerSocialFeedReadSession,
   MobileServerSocialFeedReply,
   MobileServerSocialFeedRoiBasis,
+  MobileServerSocialFeedThreadGroup,
   MobileServerSocialFeedTimelineEntry,
+  MobileServerSocialFeedTip,
   MobileServerSocialFeedTradeCard,
   MobileServerSocialFeedTradeRow,
   MobileServerSocialFeedTradeRowBase,
@@ -184,6 +190,7 @@ import {
   MobileServerTipSenderCost,
   MobileServerTipWithdrawal,
   MobileSocialFeedMention,
+  MobileSocialFeedTipEnabledType,
 } from './types/serverModelTypes';
 import {
   MobileServerCreatorEarningsSummaryResponse,
@@ -404,6 +411,22 @@ export function mapMobileNotificationRoute(
       return { name: server.name, subaccount: server.subaccount };
     case 'portfolio':
       return { name: server.name };
+    case 'tip':
+      return { name: server.name, tipId: server.tip_id };
+    case 'tip_thread':
+      return {
+        name: server.name,
+        tipId: server.tip_id,
+        feedItemId: server.feed_item_id,
+        originPostId: server.origin_post_id,
+        replyItemId: server.reply_item_id,
+      };
+    case 'feed_thread':
+      return {
+        name: server.name,
+        rootItemId: server.root_item_id,
+        replyItemId: server.reply_item_id,
+      };
     default:
       throw new MobileUnsupportedNotificationRouteError(name satisfies never);
   }
@@ -424,6 +447,8 @@ export function mapMobileNotificationPayloadV2(
     typeId: server.type_id,
     templateVersion: server.template_version,
     route: mapMobileNotificationRoute(server.route),
+    ...(server.title === undefined ? {} : { title: server.title }),
+    ...(server.body === undefined ? {} : { body: server.body }),
   };
 }
 
@@ -467,7 +492,7 @@ export function mapMobileNotificationInboxV2(
 
 /**
  * Maps typed Inbox filters, preserving omission separately from an explicit empty filter.
- * Omission uses the server's default type set, which may expand beyond this SDK's supported routes.
+ * Omission returns the legacy types; Tip and Feed notifications require an explicit filter.
  */
 export function mapMobileNotificationInboxV2ParamsToServer(
   params: Pick<
@@ -980,6 +1005,16 @@ export function mapMobileSocialFeedItemBase(
   server: MobileServerSocialFeedItemBase,
 ): MobileSocialFeedItemBase {
   return {
+    ...mapMobileSocialFeedItemMetadata(server),
+    market: mapMobileSocialFeedMarket(server.market),
+  };
+}
+
+/** Maps item metadata independently of its market. */
+function mapMobileSocialFeedItemMetadata(
+  server: Omit<MobileServerSocialFeedItemBase, 'market'>,
+): Omit<MobileSocialFeedItemBase, 'market'> {
+  return {
     id: server.id,
     hasAnalysis: server.has_analysis,
     drawing:
@@ -990,8 +1025,18 @@ export function mapMobileSocialFeedItemBase(
     createdAtMs: server.created_at_ms,
     displayAtMs: server.display_at_ms,
     version: server.version,
-    market: mapMobileSocialFeedMarket(server.market),
     capabilities: mapMobileSocialFeedCapabilities(server.capabilities),
+  };
+}
+
+/** Maps readable reply previews without changing their server order or pagination cursor. */
+export function mapMobileSocialFeedCommentPreview(
+  server: MobileServerSocialFeedCommentPreview,
+): MobileSocialFeedCommentPreview {
+  return {
+    items: server.items.map(mapMobileSocialFeedReply),
+    totalCount: server.total_count,
+    nextCursor: server.next_cursor,
   };
 }
 
@@ -1010,11 +1055,7 @@ export function mapMobileSocialFeedContentBase(
     mentions: server.mentions,
     position: mapMobileSocialFeedPositionCard(server.position),
     interaction: mapMobileSocialFeedInteraction(server.interaction),
-    commentPreview: {
-      items: server.comment_preview.items.map(mapMobileSocialFeedReply),
-      totalCount: server.comment_preview.total_count,
-      nextCursor: server.comment_preview.next_cursor,
-    },
+    commentPreview: mapMobileSocialFeedCommentPreview(server.comment_preview),
     ...(server.public_tip_total_x18 === undefined
       ? {}
       : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
@@ -1112,9 +1153,43 @@ export function mapMobileSocialFeedItem(
       return mapMobileSocialFeedPost(server);
     case 'reply':
       return mapMobileSocialFeedReply(server);
+    case 'tip':
+      return mapMobileSocialFeedTip(server);
     default:
       throw new MobileUnsupportedFeedItemError(kind satisfies never);
   }
+}
+
+/** Maps a public Tip without requiring a market or position, retaining its exact x18 amount and IDs. */
+export function mapMobileSocialFeedTip(
+  server: MobileServerSocialFeedTip,
+): MobileSocialFeedTip {
+  return {
+    ...mapMobileSocialFeedItemMetadata(server),
+    kind: server.kind,
+    hasAnalysis: server.has_analysis,
+    drawing: server.drawing,
+    market: server.market,
+    tipId: server.tip_id,
+    sender: mapMobileTipParticipant(server.sender),
+    recipient: mapMobileTipParticipant(server.recipient),
+    productId: server.product_id,
+    netAmount: toBigNumber(server.net_amount_x18),
+    visibility: server.visibility,
+    note: server.note,
+    backgroundId: server.background_id,
+    backgroundVersion: server.background_version,
+    originPostId: server.origin_post_id,
+    originAvailability: server.origin_availability,
+    original:
+      server.original === null
+        ? null
+        : mapMobileSocialFeedCompactCard(server.original),
+    submittedAtMs: server.submitted_at_ms,
+    creditedAtMs: server.credited_at_ms,
+    interaction: mapMobileSocialFeedInteraction(server.interaction),
+    commentPreview: mapMobileSocialFeedCommentPreview(server.comment_preview),
+  };
 }
 
 /**
@@ -1206,7 +1281,7 @@ export function mapMobileSocialFeedItemResponse(
 }
 
 /**
- * Maps item deltas, preserving omitted fields and null clears on nullable fields.
+ * Maps mutable item fields without fabricating omitted values; on reset an omitted Tip total clears it.
  * @param server - The service response.
  * @returns The mapped feed item patch.
  */
@@ -1238,6 +1313,26 @@ export function mapMobileSocialFeedItemPatch(
     ...(server.public_tip_total_x18 === undefined
       ? {}
       : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
+    ...(server.sender === undefined
+      ? {}
+      : { sender: mapMobileTipParticipant(server.sender) }),
+    ...(server.recipient === undefined
+      ? {}
+      : { recipient: mapMobileTipParticipant(server.recipient) }),
+    ...(server.origin_post_id === undefined
+      ? {}
+      : { originPostId: server.origin_post_id }),
+    ...(server.origin_availability === undefined
+      ? {}
+      : { originAvailability: server.origin_availability }),
+    ...(server.original === undefined
+      ? {}
+      : {
+          original:
+            server.original === null
+              ? null
+              : mapMobileSocialFeedCompactCard(server.original),
+        }),
     ...(server.trade_count === undefined
       ? {}
       : { tradeCount: server.trade_count }),
@@ -1318,9 +1413,11 @@ export function mapMobileSocialFeedUpdates(
  * @param params - Client filters and session pagination.
  * @returns Wire fields; undefined options are omitted when serialized to JSON.
  */
-export function mapMobileSocialFeedListParamsToServer(
-  params: MobileSocialFeedListParams,
-): MobileServerSocialFeedListParams {
+export function mapMobileSocialFeedListParamsToServer<
+  FeedType extends MobileSocialFeedTipEnabledType,
+>(
+  params: MobileSocialFeedListParams<FeedType>,
+): MobileServerSocialFeedListParams<FeedType> {
   return {
     feed_types: params.feedTypes,
     minimum_notional: params.minimumNotional,
@@ -1426,8 +1523,10 @@ export function mapMobileSocialFeedReply(
   server: MobileServerSocialFeedReply,
 ): MobileSocialFeedReply {
   return {
-    ...mapMobileSocialFeedItemBase(server),
+    ...mapMobileSocialFeedItemMetadata(server),
     kind: server.kind,
+    market:
+      server.market === null ? null : mapMobileSocialFeedMarket(server.market),
     images: server.images.map(mapMobileSocialFeedImage),
     text: server.text,
     mentions: server.mentions,
@@ -1721,6 +1820,19 @@ export function mapMobileSocialFeedCommentGroup(
   };
 }
 
+/** Maps a complete Reply or Tip group in server order without adding an outer group wrapper. */
+export function mapMobileSocialFeedThreadGroup(
+  server: MobileServerSocialFeedThreadGroup,
+): MobileSocialFeedThreadGroup {
+  if (server.kind === 'tip') {
+    return {
+      ...mapMobileSocialFeedTip(server),
+      replies: server.replies.map(mapMobileSocialFeedReply),
+    };
+  }
+  return mapMobileSocialFeedCommentGroup(server);
+}
+
 /**
  * Maps complete comment groups in server order and the actual returned session.
  * @param server - Service payload with its original wire fields.
@@ -1730,12 +1842,15 @@ export function mapMobileSocialFeedCommentsPage(
   server: MobileServerSocialFeedCommentsResponse,
 ): MobileSocialFeedCommentsPage {
   return {
-    comments: server.comments.map(mapMobileSocialFeedCommentGroup),
+    comments: server.comments.map(mapMobileSocialFeedThreadGroup),
     totalCount: server.total_count,
     topLevelCount: server.top_level_count,
     nextCursor: server.next_cursor,
     previousCursor: server.previous_cursor,
     anchorReplyId: server.anchor_reply_id,
+    ...(server.anchor_tip_item_id === undefined
+      ? {}
+      : { anchorTipItemId: server.anchor_tip_item_id }),
     readSession: mapMobileSocialFeedReadSession(server.read_session),
   };
 }

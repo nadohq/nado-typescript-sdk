@@ -18,7 +18,11 @@ import { after, before, beforeEach, describe, test } from 'node:test';
 import { createWalletClient, http } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
-import { assertBoolean, assertNonNegativeInteger } from '../utils/assertions';
+import {
+  assertBoolean,
+  assertNonEmptyString,
+  assertNonNegativeInteger,
+} from '../utils/assertions';
 import { delay } from '../utils/delay';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
@@ -27,6 +31,14 @@ import {
   TEST_PRODUCT_IDS,
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
+
+const tipAndFeedTypes: MobileNotificationTypeId[] = [
+  'tip_received',
+  'tip_liked',
+  'tip_replied',
+  'feed_liked',
+  'feed_replied',
+];
 
 const capabilities: MobileNotificationCapabilities = {
   payloadVersions: [2],
@@ -39,8 +51,16 @@ const capabilities: MobileNotificationCapabilities = {
     'market_large_trade',
     'notable_trader',
     'campaign_announcement',
+    ...tipAndFeedTypes,
   ],
-  routes: ['profile', 'market', 'portfolio'],
+  routes: [
+    'profile',
+    'market',
+    'portfolio',
+    'tip',
+    'tip_thread',
+    'feed_thread',
+  ],
 };
 
 void describe(
@@ -354,6 +374,36 @@ void describe(
       }
     });
 
+    void test('accepts Tip and Feed notification filters and decodes available text and destinations', async () => {
+      const page = await existingWalletMobile.getNotificationInboxV2({
+        ...existingWalletAuth,
+        cursor: null,
+        limit: 20,
+        supportedTypes: tipAndFeedTypes,
+      });
+      for (const entry of page.notifications) {
+        assertTipAndFeedNotification(entry, existingWalletAuth.subaccountOwner);
+      }
+      if (page.nextCursor !== null) {
+        const next = await existingWalletMobile.getNotificationInboxV2({
+          ...existingWalletAuth,
+          cursor: page.nextCursor,
+          limit: 20,
+          supportedTypes: tipAndFeedTypes,
+        });
+        const firstIds = new Set(
+          page.notifications.map((entry) => entry.notificationId),
+        );
+        for (const entry of next.notifications) {
+          assertTipAndFeedNotification(
+            entry,
+            existingWalletAuth.subaccountOwner,
+          );
+          assert.ok(!firstIds.has(entry.notificationId));
+        }
+      }
+    });
+
     void test('preserves read timestamps and filters the existing wallet Inbox by supported type', async (testContext) => {
       const defaults = await existingWalletMobile.getNotificationInboxV2({
         ...existingWalletAuth,
@@ -589,6 +639,72 @@ function assertInboxReadState(item: MobileNotificationInboxItem): void {
     assert.equal(Object.hasOwn(item, 'seenAt'), false);
   } else if (item.seenAt !== null) {
     assertNonNegativeInteger(item.seenAt, 'seenAt');
+  }
+}
+
+function assertTipAndFeedNotification(
+  item: MobileNotificationInboxItem,
+  wallet: string,
+): void {
+  assert.ok(tipAndFeedTypes.includes(item.typeId));
+  assertInboxReadState(item);
+  assertNonNegativeInteger(item.createdAt, 'createdAt');
+  assertBoolean(item.tradeWithin24h, 'tradeWithin24h');
+  const data = item.data;
+  assert.equal(data.payloadVersion, 2);
+  assert.equal(data.templateVersion, 1);
+  assert.equal(data.notificationId, item.notificationId);
+  assert.equal(data.typeId, item.typeId);
+  assert.equal(data.recipientWallet.toLowerCase(), wallet.toLowerCase());
+  switch (data.typeId) {
+    case 'tip_received':
+      assert.ok(data.route.name === 'tip');
+      break;
+    case 'tip_liked':
+      assert.ok(data.route.name === 'tip_thread');
+      assert.equal(data.route.replyItemId, null);
+      break;
+    case 'tip_replied':
+      assert.ok(data.route.name === 'tip_thread');
+      assertNonEmptyString(data.route.replyItemId, 'replyItemId');
+      break;
+    case 'feed_liked':
+      assert.ok(
+        data.route.name === 'feed_thread' || data.route.name === 'tip_thread',
+      );
+      break;
+    case 'feed_replied':
+      assert.ok(data.route.name === 'feed_thread');
+      assertNonEmptyString(data.route.replyItemId, 'replyItemId');
+      break;
+    default:
+      assert.fail(
+        'The new-type Inbox filter must exclude legacy notification types.',
+      );
+  }
+  assertNonEmptyString(data.title, 'notification title');
+  assertNonEmptyString(data.body, 'notification body');
+  switch (data.route.name) {
+    case 'tip':
+      assertNonEmptyString(data.route.tipId, 'tipId');
+      break;
+    case 'tip_thread':
+      assertNonEmptyString(data.route.tipId, 'tipId');
+      assertNonEmptyString(data.route.feedItemId, 'feedItemId');
+      if (data.route.originPostId !== null)
+        assertNonEmptyString(data.route.originPostId, 'originPostId');
+      if (data.route.replyItemId !== null)
+        assertNonEmptyString(data.route.replyItemId, 'replyItemId');
+      break;
+    case 'feed_thread':
+      assertNonEmptyString(data.route.rootItemId, 'rootItemId');
+      if (data.route.replyItemId !== null)
+        assertNonEmptyString(data.route.replyItemId, 'replyItemId');
+      break;
+    default:
+      assert.fail(
+        'Tip and Feed notifications must use their supported thread or receipt routes.',
+      );
   }
 }
 
