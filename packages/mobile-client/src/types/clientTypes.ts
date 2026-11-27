@@ -53,7 +53,6 @@ import {
   MobileSocialFeedTradingResolution,
   MobileSocialFeedType,
   MobileSocialFeedUnavailableTarget,
-  MobileTipAndFeedNotificationTypeId,
   MobileTipCollateralClassification,
   MobileTipCollateralDirection,
   MobileTipFeeBasis,
@@ -486,72 +485,25 @@ export type MobileNotificationRoute =
       replyItemId: string | null;
     };
 
-/** Shared v2 notification metadata; older notifications may omit rendered text. */
-interface MobileNotificationPayloadV2Base {
+/** V2 push/Inbox navigation data; older notifications may omit rendered text. */
+export interface MobileNotificationPayloadV2 {
   /** Payload protocol version. */
   payloadVersion: 2;
   /** Logical notification UUID for click deduplication. */
   notificationId: string;
   /** Intended wallet; private navigation must wait for this wallet to connect. */
   recipientWallet: Hex;
+  /** Registered notification type. */
+  typeId: MobileNotificationTypeId;
   /** Supported template version. */
   templateVersion: 1;
+  /** Named destination and its parameters. */
+  route: MobileNotificationRoute;
   /** Server-rendered title when supplied by the notification type. */
   title?: string;
   /** Server-rendered body when supplied by the notification type. */
   body?: string;
 }
-
-/** V2 push/Inbox data, with type-specific Tip and Feed destinations and rendered text. */
-export type MobileNotificationPayloadV2 = MobileNotificationPayloadV2Base &
-  (
-    | {
-        /** Existing notification types retain their original destinations. */
-        typeId: Exclude<
-          MobileNotificationTypeId,
-          MobileTipAndFeedNotificationTypeId
-        >;
-        /** Existing named destination and its parameters. */
-        route: Extract<
-          MobileNotificationRoute,
-          { name: 'profile' | 'market' | 'portfolio' }
-        >;
-      }
-    | ({
-        /** Text shared by Inbox and device push. */
-        title: string;
-        /** Text shared by Inbox and device push. */
-        body: string;
-      } & (
-        | {
-            /** Confirmed receipt delivered to the recipient wallet. */
-            typeId: 'tip_received';
-            /** Signed Tip detail destination. */
-            route: Extract<MobileNotificationRoute, { name: 'tip' }>;
-          }
-        | {
-            /** Like or reply on a public Tip. */
-            typeId: 'tip_liked' | 'tip_replied';
-            /** Public Tip thread destination. */
-            route: Extract<MobileNotificationRoute, { name: 'tip_thread' }>;
-          }
-        | {
-            /** Like on a Feed object, including a reply beneath a Tip. */
-            typeId: 'feed_liked';
-            /** Tip replies use tip_thread; ordinary Feed objects use feed_thread. */
-            route: Extract<
-              MobileNotificationRoute,
-              { name: 'tip_thread' | 'feed_thread' }
-            >;
-          }
-        | {
-            /** Reply on an ordinary Feed thread. */
-            typeId: 'feed_replied';
-            /** Ordinary Feed thread destination. */
-            route: Extract<MobileNotificationRoute, { name: 'feed_thread' }>;
-          }
-      ))
-  );
 
 /** Accepted logical notification with its first-seen state; does not prove device delivery. */
 export interface MobileNotificationInboxItem {

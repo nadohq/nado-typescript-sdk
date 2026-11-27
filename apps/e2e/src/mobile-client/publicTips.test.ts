@@ -1,4 +1,6 @@
 import {
+  GetMobileFeedCommentsParams,
+  GetMobileFeedItemParams,
   MOBILE_ERROR_CODES,
   MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES,
   MobileClient,
@@ -11,7 +13,9 @@ import {
 import { Subaccount, subaccountToHex } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { before, beforeEach, describe, test, TestContext } from 'node:test';
+import { asRecord } from '../utils/asRecord';
 import { assertRejectsWithMobileErrorCode } from '../utils/assertRejectsWithMobileErrorCode';
 import {
   assertArray,
@@ -20,6 +24,7 @@ import {
   assertNonNegativeInteger,
   assertNullableString,
 } from '../utils/assertions';
+import { capturePublicQuery } from '../utils/capturePublicQuery';
 import { delay } from '../utils/delay';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
@@ -28,8 +33,7 @@ import { TEST_DELAYS, TEST_TIMEOUTS } from '../utils/testConstants';
 const tipEnabledFeedTypes: MobileSocialFeedTipEnabledType[] = [
   ...MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES,
 ];
-const tipOnlyFeedTypes: MobileSocialFeedTipEnabledType[] =
-  MOBILE_SOCIAL_FEED_TIP_ENABLED_TYPES.filter((type) => type === 'tips');
+const tipOnlyFeedTypes: MobileSocialFeedTipEnabledType[] = ['tips'];
 
 void describe(
   '[mobile-client]: public Tips and mixed threads',
@@ -117,6 +121,41 @@ void describe(
         () => mobile.getForYouFeed({ feedTypes: tipOnlyFeedTypes, limit: 1 }),
         MOBILE_ERROR_CODES.INVALID_FEED_FILTER,
       );
+    });
+
+    void test('returns typed service validation errors for missing or conflicting item selectors', async () => {
+      for (const params of [
+        { includeTips: true },
+        { includeTips: true, itemId: randomUUID(), tipId: randomUUID() },
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          // Simulate JavaScript callers that cannot rely on the client selector union.
+          () =>
+            mobile.getFeedItem(params as unknown as GetMobileFeedItemParams),
+          MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+        );
+      }
+    });
+
+    void test('returns typed service validation errors for conflicting comment anchors and cursors', async () => {
+      const rootItemId = randomUUID();
+      const anchorReplyId = randomUUID();
+      const anchorTipItemId = randomUUID();
+      for (const selectors of [
+        { anchorReplyId, anchorTipItemId },
+        { cursor: 'invalid-cursor', anchorReplyId },
+        { cursor: 'invalid-cursor', anchorTipItemId },
+      ]) {
+        await assertRejectsWithMobileErrorCode(
+          () =>
+            mobile.getFeedComments({
+              rootItemId,
+              includeTips: true,
+              ...selectors,
+            } as unknown as GetMobileFeedCommentsParams),
+          MOBILE_ERROR_CODES.INVALID_SOCIAL_FEED_PARAMS,
+        );
+      }
     });
 
     void test('resolves a live Tip by payment ID and public Feed ID with inherited capability', async (testContext) => {
@@ -259,7 +298,7 @@ void describe(
       const wirePatches = updates.wire.item_patches;
       assertArray(wirePatches, 'wire Tip patches');
       const wirePatch = wirePatches
-        .map(asRecord)
+        .map((patch) => asRecord(patch, 'wire Tip patch'))
         .find((patch) => patch.item_id === detail.item.id);
       const patch = updates.result.itemPatches.find(
         (candidate) => candidate.itemId === detail.item.id,
@@ -467,32 +506,4 @@ function isContentUnavailable(error: unknown): boolean {
     error instanceof MobileServerFailureError &&
     error.errorCode === MOBILE_ERROR_CODES.SOCIAL_FEED_CONTENT_UNAVAILABLE
   );
-}
-
-async function capturePublicQuery<T>(
-  mobile: MobileClient,
-  request: () => Promise<T>,
-): Promise<{ result: T; wire: Record<string, unknown> }> {
-  let responseData: unknown;
-  const interceptor = mobile.axiosInstance.interceptors.response.use(
-    (response) => {
-      responseData = response.data;
-      return response;
-    },
-  );
-  try {
-    const result = await request();
-    const wire = asRecord(responseData);
-    assert.equal(wire.status, 'success');
-    return { result, wire };
-  } finally {
-    mobile.axiosInstance.interceptors.response.eject(interceptor);
-  }
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  assert.ok(
-    value !== null && typeof value === 'object' && !Array.isArray(value),
-  );
-  return value as Record<string, unknown>;
 }

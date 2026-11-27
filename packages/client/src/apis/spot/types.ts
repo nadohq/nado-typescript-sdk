@@ -52,7 +52,7 @@ export type TransferQuoteV2Params = OptionalSignatureParams<
 
 /**
  * Fresh Tip inputs; replay the retained retryRequest after submission or an uncertain result.
- * Explicit chainId and verifyingAddr must match the connected wallet chain and client endpoint.
+ * Optional sender and signing fields use the same defaults as withdrawV2.
  */
 export type SendTipParams = OptionalSignatureParams<
   OptionalSubaccountOwner<

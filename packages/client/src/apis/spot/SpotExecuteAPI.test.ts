@@ -23,11 +23,6 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import { createNadoClient } from '../../createNadoClient';
 import { SendTipError } from './SendTipError';
-import {
-  SEND_TIP_VALIDATION_REASONS,
-  SendTipValidationError,
-  SendTipValidationReason,
-} from './SendTipValidationError';
 import { SendTipParams } from './types';
 
 const account = privateKeyToAccount(`0x${'11'.repeat(32)}`);
@@ -110,21 +105,6 @@ function preAdmissionError(errorCode: number) {
   );
 }
 
-async function expectValidationFailure(
-  operation: () => Promise<unknown>,
-  reason: SendTipValidationReason,
-): Promise<void> {
-  try {
-    await operation();
-  } catch (error: unknown) {
-    expect(error).toBeInstanceOf(SendTipValidationError);
-    if (!(error instanceof SendTipValidationError)) throw error;
-    expect(error.reason).toBe(reason);
-    return;
-  }
-  throw new Error('Expected SendTipValidationError.');
-}
-
 describe('SpotExecuteAPI.sendTip', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -150,15 +130,45 @@ describe('SpotExecuteAPI.sendTip', () => {
       subaccountOwner: account.address,
       subaccountName: 'default',
       productId: 0,
+      amount: params.amount,
       sendTo: recipientDda,
       appendix: 0,
       spotLeverage: false,
       maxFeeX18: '0',
+      chainId: chain.id,
+      verifyingAddr: client.context.contractAddresses.endpoint,
     });
     expect(submit.mock.calls[0]?.[0].withdrawal).toBe(payload.tx);
     expect(submit.mock.calls[0]?.[0].withdrawalSignature).toBe(
       payload.signature,
     );
+  });
+
+  it('signs the inner withdrawal with the owner wallet even when a linked signer is configured', async () => {
+    const { client, params, payload, build, submit } = createFixture();
+    build.mockRestore();
+    jest
+      .spyOn(
+        client.context.engineClient.payloadBuilder.engineClient,
+        'getTxNonce',
+      )
+      .mockResolvedValue(payload.tx.nonce);
+    const ownerWallet = client.context.walletClient;
+    if (!ownerWallet) throw new Error('Expected owner wallet fixture');
+    const ownerSign = jest.spyOn(ownerWallet, 'signTypedData');
+    const linkedWallet = createWalletClient({
+      account: privateKeyToAccount(`0x${'22'.repeat(32)}`),
+      chain,
+      transport: http(),
+    });
+    const linkedSign = jest.spyOn(linkedWallet, 'signTypedData');
+    client.setLinkedSigner(linkedWallet);
+
+    await client.spot.sendTip(params);
+
+    expect(ownerSign).toHaveBeenCalledTimes(1);
+    expect(linkedSign).not.toHaveBeenCalled();
+    expect(submit.mock.calls[0]?.[0].withdrawal).toEqual(payload.tx);
   });
 
   it('retains a fee-rejected receipt for an explicitly confirmed cap replay without rebuilding authorization', async () => {
@@ -273,70 +283,28 @@ describe('SpotExecuteAPI.sendTip', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it.each([
-    new Error('Indexer unavailable'),
-    new Error('Invalid address: upstream request failed'),
-  ])(
-    'preserves a DDA transport failure without prompting the owner: %s',
-    async (failure) => {
-      const { client, params, dda, build, submit } = createFixture();
-      dda.mockRestore();
-      jest
-        .spyOn(client.context.indexerClient.axiosInstance, 'post')
-        .mockRejectedValue(failure);
-      await expect(client.spot.sendTip(params)).rejects.toBe(failure);
-      expect(build).not.toHaveBeenCalled();
-      expect(submit).not.toHaveBeenCalled();
-    },
-  );
-
-  it('preserves an Indexer server failure without misclassifying it as an unavailable DDA', async () => {
+  it('preserves a DDA lookup failure without prompting the owner', async () => {
     const { client, params, dda, build, submit } = createFixture();
-    dda.mockRestore();
-    const response = {
-      status: 'failure',
-      error: 'Indexer unavailable',
-      error_code: INDEXER_ERROR_CODES.SERVICE_UNAVAILABLE,
-      request_type: 'direct_deposit_address',
-    };
-    jest
-      .spyOn(client.context.indexerClient.axiosInstance, 'post')
-      .mockResolvedValue({ data: response, status: 503 });
-    const operation = client.spot.sendTip(params);
-    await expect(operation).rejects.toBeInstanceOf(IndexerServerFailureError);
-    await expect(operation).rejects.toMatchObject({
-      responseData: response,
-      httpStatus: 503,
-    });
+    const failure = new Error('Indexer unavailable');
+    dda.mockRejectedValue(failure);
+    await expect(client.spot.sendTip(params)).rejects.toBe(failure);
     expect(build).not.toHaveBeenCalled();
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it.each(['0', '-1', '0.5', 'NaN', 'Infinity'])(
-    'rejects invalid native amount %s before resolving a DDA or signing',
-    async (amount) => {
-      const { client, params, dda, build, submit } = createFixture();
-      await expectValidationFailure(
-        () => client.spot.sendTip({ ...params, amount }),
-        SEND_TIP_VALIDATION_REASONS.INVALID_AMOUNT,
-      );
-      expect(dda).not.toHaveBeenCalled();
-      expect(build).not.toHaveBeenCalled();
-      expect(submit).not.toHaveBeenCalled();
-    },
-  );
-
-  it('rejects a different owner before lookup or signing', async () => {
+  it('preserves an Indexer server failure without creating replay authorization', async () => {
     const { client, params, dda, build, submit } = createFixture();
-    await expectValidationFailure(
-      () =>
-        client.spot.sendTip({
-          ...params,
-          subaccountOwner: params.recipientSubaccount.subaccountOwner,
-        }),
-      SEND_TIP_VALIDATION_REASONS.OWNER_WALLET_REQUIRED,
+    const failure = new IndexerServerFailureError(
+      {
+        status: 'failure',
+        error: 'Indexer unavailable',
+        error_code: INDEXER_ERROR_CODES.SERVICE_UNAVAILABLE,
+        request_type: 'direct_deposit_address',
+      },
+      503,
     );
-    expect(dda).not.toHaveBeenCalled();
+    dda.mockRejectedValue(failure);
+    await expect(client.spot.sendTip(params)).rejects.toBe(failure);
     expect(build).not.toHaveBeenCalled();
     expect(submit).not.toHaveBeenCalled();
   });
@@ -353,91 +321,53 @@ describe('SpotExecuteAPI.sendTip', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ['different chain', { chainId: 1 }],
-    ['zero chain', { chainId: 0 }],
-    ['different endpoint', { verifyingAddr: recipientDda }],
-  ] as const)(
-    'rejects fresh inputs with %s before lookup or signing',
-    async (_name, overrides) => {
-      const { client, params, dda, build, submit } = createFixture();
-      await expectValidationFailure(
-        () => client.spot.sendTip({ ...params, ...overrides }),
-        SEND_TIP_VALIDATION_REASONS.SIGNING_CONTEXT_MISMATCH,
-      );
-      expect(dda).not.toHaveBeenCalled();
-      expect(build).not.toHaveBeenCalled();
-      expect(submit).not.toHaveBeenCalled();
-    },
-  );
-
-  it('accepts an explicitly matching owner, chain and case-insensitive endpoint', async () => {
+  it('passes explicit sender and signing overrides through like withdrawV2', async () => {
     const { client, params, dda, build, submit } = createFixture();
-    const endpoint = client.context.contractAddresses.endpoint;
-    const explicitEndpoint = `0x${endpoint.slice(2).toUpperCase()}`;
+    const overrides = {
+      subaccountOwner: params.recipientSubaccount.subaccountOwner,
+      chainId: 1,
+      verifyingAddr: recipientDda,
+    };
     await client.spot.sendTip({
       ...params,
-      subaccountOwner: account.address.toLowerCase(),
-      chainId: chain.id,
-      verifyingAddr: explicitEndpoint,
+      ...overrides,
     });
     expect(dda).toHaveBeenCalledTimes(1);
     expect(build).toHaveBeenCalledTimes(1);
     expect(submit).toHaveBeenCalledTimes(1);
-    expect(build.mock.calls[0]?.[0]).toMatchObject({
-      chainId: chain.id,
-      verifyingAddr: explicitEndpoint,
-    });
-    expect(submit.mock.calls[0]?.[0].verifyingAddr.toLowerCase()).toBe(
-      endpoint.toLowerCase(),
-    );
+    expect(build.mock.calls[0]?.[0]).toMatchObject(overrides);
+    expect(submit.mock.calls[0]?.[0]).toMatchObject(overrides);
   });
 
-  it.each([
-    ['missing', {}],
-    ['null', { v1_address: null }],
-    ['wrong type', { v1_address: 42 }],
-    ['zero', { v1_address: zeroAddress }],
-    ['short hex', { v1_address: '0x' }],
-    ['invalid', { v1_address: 'not-an-address' }],
-    [
-      'invalid checksum',
-      { v1_address: '0x52908400098527886E0F7030069857D2E4169Ee7' },
-    ],
-  ] as const)(
-    'rejects a %s DDA with a stable reason before signing',
-    async (_name, response) => {
-      const { client, params, dda, build, submit } = createFixture();
-      dda.mockRestore();
-      jest
-        .spyOn(client.context.indexerClient.axiosInstance, 'post')
-        .mockResolvedValue({ data: response, status: 200 });
-      await expectValidationFailure(
-        () => client.spot.sendTip(params),
-        SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
-      );
-      expect(build).not.toHaveBeenCalled();
-      expect(submit).not.toHaveBeenCalled();
-    },
-  );
+  it('rejects a zero recipient DDA before signing an owner-directed withdrawal', async () => {
+    const { client, params, dda, build, submit } = createFixture();
+    dda.mockResolvedValue({ address: zeroAddress });
+    await expect(client.spot.sendTip(params)).rejects.toThrow(
+      'The Tip recipient deposit address is unavailable.',
+    );
+    expect(build).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+  });
 
-  it('rejects replay on a different chain or endpoint without submitting', async () => {
+  it('retains the original signing context on replay after the client context changes', async () => {
     const { client, params, dda, build, submit } = createFixture();
     const result = await client.spot.sendTip(params);
     const request = result.retryRequest;
     dda.mockClear();
     build.mockClear();
     submit.mockClear();
-    await expectValidationFailure(
-      () => client.spot.sendTip({ ...request, chainId: 1 }),
-      SEND_TIP_VALIDATION_REASONS.SIGNING_CONTEXT_MISMATCH,
-    );
-    await expectValidationFailure(
-      () => client.spot.sendTip({ ...request, verifyingAddr: recipientDda }),
-      SEND_TIP_VALIDATION_REASONS.SIGNING_CONTEXT_MISMATCH,
-    );
+    client.context.contractAddresses = {
+      ...client.context.contractAddresses,
+      endpoint: recipientDda,
+    };
+    client.context.walletClient = createWalletClient({
+      account,
+      chain: { ...chain, id: 1 },
+      transport: http(),
+    });
+    await client.spot.sendTip(request);
     expect(dda).not.toHaveBeenCalled();
     expect(build).not.toHaveBeenCalled();
-    expect(submit).not.toHaveBeenCalled();
+    expect(submit).toHaveBeenCalledWith(request);
   });
 });

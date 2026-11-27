@@ -53,6 +53,7 @@ import {
   MobileSocialFeedCandle,
   MobileSocialFeedCapabilities,
   MobileSocialFeedCommentGroup,
+  MobileSocialFeedCommentPreview,
   MobileSocialFeedCommentResult,
   MobileSocialFeedCommentsPage,
   MobileSocialFeedCompactCard,
@@ -149,6 +150,7 @@ import {
   MobileServerSocialFeedCandle,
   MobileServerSocialFeedCapabilities,
   MobileServerSocialFeedCommentGroup,
+  MobileServerSocialFeedCommentPreview,
   MobileServerSocialFeedCompactCard,
   MobileServerSocialFeedContentBase,
   MobileServerSocialFeedDrawing,
@@ -398,9 +400,6 @@ export function mapMobileNotificationSubscriptionsUpdateToServer(
  * @returns Client navigation data, never an arbitrary URL.
  * @throws {MobileUnsupportedNotificationRouteError} If the service returns an unsupported route name.
  */
-export function mapMobileNotificationRoute<
-  TRoute extends MobileServerNotificationRoute,
->(server: TRoute): Extract<MobileNotificationRoute, { name: TRoute['name'] }>;
 export function mapMobileNotificationRoute(
   server: MobileServerNotificationRoute,
 ): MobileNotificationRoute {
@@ -441,55 +440,16 @@ export function mapMobileNotificationRoute(
 export function mapMobileNotificationPayloadV2(
   server: MobileServerNotificationPayloadV2,
 ): MobileNotificationPayloadV2 {
-  const common = {
+  return {
     payloadVersion: server.payload_version,
     notificationId: server.notification_id,
     recipientWallet: server.recipient_wallet,
+    typeId: server.type_id,
     templateVersion: server.template_version,
+    route: mapMobileNotificationRoute(server.route),
     ...(server.title === undefined ? {} : { title: server.title }),
     ...(server.body === undefined ? {} : { body: server.body }),
   };
-  switch (server.type_id) {
-    case 'tip_received':
-      return {
-        ...common,
-        typeId: server.type_id,
-        title: server.title,
-        body: server.body,
-        route: mapMobileNotificationRoute(server.route),
-      };
-    case 'tip_liked':
-    case 'tip_replied':
-      return {
-        ...common,
-        typeId: server.type_id,
-        title: server.title,
-        body: server.body,
-        route: mapMobileNotificationRoute(server.route),
-      };
-    case 'feed_liked':
-      return {
-        ...common,
-        typeId: server.type_id,
-        title: server.title,
-        body: server.body,
-        route: mapMobileNotificationRoute(server.route),
-      };
-    case 'feed_replied':
-      return {
-        ...common,
-        typeId: server.type_id,
-        title: server.title,
-        body: server.body,
-        route: mapMobileNotificationRoute(server.route),
-      };
-    default:
-      return {
-        ...common,
-        typeId: server.type_id,
-        route: mapMobileNotificationRoute(server.route),
-      };
-  }
 }
 
 /** Maps the Creator Rate and earnings, retaining x18 amount units.
@@ -1050,7 +1010,7 @@ export function mapMobileSocialFeedItemBase(
   };
 }
 
-/** Maps shared metadata for market-backed items and marketless Tip replies. */
+/** Maps item metadata independently of its market. */
 function mapMobileSocialFeedItemMetadata(
   server: Omit<MobileServerSocialFeedItemBase, 'market'>,
 ): Omit<MobileSocialFeedItemBase, 'market'> {
@@ -1069,6 +1029,17 @@ function mapMobileSocialFeedItemMetadata(
   };
 }
 
+/** Maps readable reply previews without changing their server order or pagination cursor. */
+export function mapMobileSocialFeedCommentPreview(
+  server: MobileServerSocialFeedCommentPreview,
+): MobileSocialFeedCommentPreview {
+  return {
+    items: server.items.map(mapMobileSocialFeedReply),
+    totalCount: server.total_count,
+    nextCursor: server.next_cursor,
+  };
+}
+
 /**
  * Maps the content, position, interaction, and comment preview shared by posts and trade cards.
  * @param server - The service response.
@@ -1084,11 +1055,7 @@ export function mapMobileSocialFeedContentBase(
     mentions: server.mentions,
     position: mapMobileSocialFeedPositionCard(server.position),
     interaction: mapMobileSocialFeedInteraction(server.interaction),
-    commentPreview: {
-      items: server.comment_preview.items.map(mapMobileSocialFeedReply),
-      totalCount: server.comment_preview.total_count,
-      nextCursor: server.comment_preview.next_cursor,
-    },
+    commentPreview: mapMobileSocialFeedCommentPreview(server.comment_preview),
     ...(server.public_tip_total_x18 === undefined
       ? {}
       : { publicTipTotal: toBigNumber(server.public_tip_total_x18) }),
@@ -1198,16 +1165,11 @@ export function mapMobileSocialFeedTip(
   server: MobileServerSocialFeedTip,
 ): MobileSocialFeedTip {
   return {
+    ...mapMobileSocialFeedItemMetadata(server),
     kind: server.kind,
-    id: server.id,
     hasAnalysis: server.has_analysis,
     drawing: server.drawing,
     market: server.market,
-    author: mapMobileSocialFeedAuthor(server.author),
-    createdAtMs: server.created_at_ms,
-    displayAtMs: server.display_at_ms,
-    version: server.version,
-    capabilities: mapMobileSocialFeedCapabilities(server.capabilities),
     tipId: server.tip_id,
     sender: mapMobileTipParticipant(server.sender),
     recipient: mapMobileTipParticipant(server.recipient),
@@ -1226,11 +1188,7 @@ export function mapMobileSocialFeedTip(
     submittedAtMs: server.submitted_at_ms,
     creditedAtMs: server.credited_at_ms,
     interaction: mapMobileSocialFeedInteraction(server.interaction),
-    commentPreview: {
-      items: server.comment_preview.items.map(mapMobileSocialFeedReply),
-      totalCount: server.comment_preview.total_count,
-      nextCursor: server.comment_preview.next_cursor,
-    },
+    commentPreview: mapMobileSocialFeedCommentPreview(server.comment_preview),
   };
 }
 

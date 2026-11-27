@@ -23,7 +23,6 @@ import {
   WalletNotProvidedError,
 } from '@nadohq/shared';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { isAddress } from 'viem';
 import {
   mapIndexerCandlesticks,
   mapIndexerEvent,
@@ -127,7 +126,6 @@ import {
   GetIndexerXPointsParams,
   GetIndexerXPointsResponse,
   IndexerEventWithTx,
-  IndexerInvalidSubaccountDDAError,
   IndexerMatchEvent,
   IndexerOraclePrice,
   IndexerServerEventsParams,
@@ -989,9 +987,6 @@ export class IndexerBaseClient {
   /**
    * Retrieves the subaccount's DDA (Direct Deposit Address)
    * @param params
-   * @throws {IndexerInvalidSubaccountDDAError} If a successful response has no valid DDA address.
-   * @throws {IndexerServerFailureError} If the Indexer rejects the query.
-   * @throws {Error} If subaccount encoding or the query transport fails.
    */
   async getSubaccountDDA(
     params: GetIndexerSubaccountDDAParams,
@@ -999,13 +994,9 @@ export class IndexerBaseClient {
     const baseResponse = await this.query('direct_deposit_address', {
       subaccount: subaccountToHex(params.subaccount),
     });
-    const rawAddress: unknown = baseResponse.v1_address;
-    if (typeof rawAddress !== 'string' || !isAddress(rawAddress)) {
-      throw new IndexerInvalidSubaccountDDAError(rawAddress);
-    }
 
     return {
-      address: rawAddress,
+      address: getValidatedAddress(baseResponse.v1_address),
     };
   }
 

@@ -1,9 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
+import { subaccountToHex } from '@nadohq/shared';
 import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ink } from 'viem/chains';
 import {
   mapMobileAttributeOrdersResult,
+  mapMobileNotificationPayloadV2,
   mapMobileSocialFeedActionCandidate,
   mapMobileSocialFeedCommentsPage,
   mapMobileSocialFeedDrawingMutationResult,
@@ -20,16 +22,24 @@ import {
   mapMobileSocialFeedPositionThoughts,
   mapMobileSocialFeedPresence,
   mapMobileSocialFeedRoiBasis,
+  mapMobileSocialFeedThreadGroup,
+  mapMobileSocialFeedTip,
   mapMobileSocialFeedTradeCard,
   mapMobileSocialFeedUpdates,
 } from './dataMappers';
 import { MobileClient } from './MobileClient';
+import { MobileNotificationRoute } from './types/clientTypes';
 import { MobileUnsupportedFeedItemError } from './types/MobileUnsupportedFeedItemError';
 import {
+  MobileNotificationTypeId,
+  MobileServerNotificationPayloadV2,
+  MobileServerNotificationRoute,
   MobileServerSocialFeedItem,
+  MobileServerSocialFeedItemPatch,
   MobileServerSocialFeedPost,
   MobileServerSocialFeedReply,
   MobileServerSocialFeedRoiBasis,
+  MobileServerSocialFeedTip,
 } from './types/serverModelTypes';
 import {
   MobileServerSocialFeedPositionHistoryResponse,
@@ -194,6 +204,68 @@ const reply: MobileServerSocialFeedReply = {
   },
   drawing: null,
 };
+
+function makePublicTip(
+  overrides: Partial<MobileServerSocialFeedTip> = {},
+): MobileServerSocialFeedTip {
+  return {
+    id: '55555555-5555-4555-8555-555555555555',
+    kind: 'tip',
+    has_analysis: false,
+    drawing: null,
+    author: post.author,
+    created_at_ms: 1791072200000,
+    display_at_ms: 1791072199000,
+    version: '7',
+    market: null,
+    capabilities: { ...post.capabilities, can_tip: false },
+    tip_id: '66666666-6666-4666-8666-666666666666',
+    sender: {
+      subaccount: post.author.subaccount,
+      display_name: null,
+      avatar_url: null,
+    },
+    recipient: {
+      subaccount: reply.author.subaccount,
+      display_name: 'Bob',
+      avatar_url: null,
+    },
+    product_id: 0,
+    net_amount_x18: '900719925474099312345678901',
+    visibility: 'public',
+    note: null,
+    background_id: 'tip-16',
+    background_version: 'v1',
+    origin_post_id: null,
+    origin_availability: null,
+    original: null,
+    submitted_at_ms: 1791072180000,
+    credited_at_ms: 1791072199000,
+    interaction: { ...post.interaction, liked_by_me: null },
+    comment_preview: { items: [], total_count: 0, next_cursor: null },
+    ...overrides,
+  };
+}
+
+function makeTipReply(
+  tipItemId: string,
+  overrides: Partial<MobileServerSocialFeedReply> = {},
+): MobileServerSocialFeedReply {
+  return {
+    ...reply,
+    market: null,
+    root_item_id: tipItemId,
+    original: {
+      id: tipItemId,
+      author: post.author,
+      text_excerpt: 'Thank you 🙌',
+      position: null,
+      has_analysis: false,
+    },
+    ...overrides,
+  };
+}
+
 const history: MobileServerSocialFeedPositionHistoryResponse = {
   owner: post.author,
   position: {
@@ -1087,6 +1159,419 @@ describe('[mobile-client]: content mapping', () => {
     expect(result).toMatchObject({ start: 2, end: 8, label: '@Alice' });
     expect(result.subaccount).toMatch(/^0x[0-9a-f]{64}$/);
   });
+});
+
+describe('[mobile-client]: public Tip mapping', () => {
+  describe('mapMobileSocialFeedTip', () => {
+    it('retains exact x18 amounts, payment identity, and nullable profile and origin fields', () => {
+      const server = makePublicTip();
+      const original = JSON.stringify(server);
+      const mapped = mapMobileSocialFeedTip(server);
+
+      expect(mapped.netAmount.toFixed()).toBe(server.net_amount_x18);
+      expect(mapped.tipId).toBe(server.tip_id);
+      expect(mapped.id).toBe(server.id);
+      expect(mapped.tipId).not.toBe(mapped.id);
+      expect(subaccountToHex(mapped.sender.subaccount)).toBe(
+        server.sender.subaccount,
+      );
+      expect(subaccountToHex(mapped.recipient.subaccount)).toBe(
+        server.recipient.subaccount,
+      );
+      expect(mapped).toMatchObject({
+        kind: 'tip',
+        hasAnalysis: false,
+        drawing: null,
+        market: null,
+        author: { subaccount: server.author.subaccount, displayName: 'Alice' },
+        createdAtMs: server.created_at_ms,
+        displayAtMs: server.display_at_ms,
+        version: server.version,
+        capabilities: { canLike: true, canComment: true, canTip: false },
+        sender: { displayName: null, avatarUrl: null },
+        recipient: { displayName: 'Bob', avatarUrl: null },
+        productId: 0,
+        visibility: 'public',
+        note: null,
+        backgroundId: 'tip-16',
+        backgroundVersion: 'v1',
+        originPostId: null,
+        originAvailability: null,
+        original: null,
+        submittedAtMs: server.submitted_at_ms,
+        creditedAtMs: server.credited_at_ms,
+        interaction: { likedByMe: null },
+        commentPreview: { items: [], totalCount: 0, nextCursor: null },
+      });
+      expect(mapped).not.toHaveProperty('position');
+      expect(mapMobileSocialFeedItem(server)).toEqual(mapped);
+      expect(JSON.stringify(server)).toBe(original);
+    });
+
+    it('maps a readable origin and marketless reply previews without changing their order', () => {
+      const tip = makePublicTip();
+      const first = makeTipReply(tip.id);
+      const second = makeTipReply(tip.id, {
+        id: '77777777-7777-4777-8777-777777777777',
+        reply_to_item_id: first.id,
+        reply_to_author: first.author,
+      });
+      const server = makePublicTip({
+        note: 'Thanks for sharing 💸',
+        origin_post_id: post.id,
+        origin_availability: 'available',
+        original: { ...reply.original, id: post.id },
+        comment_preview: {
+          items: [second, first],
+          total_count: 12,
+          next_cursor: 'OpaquePreviewCursor',
+        },
+      });
+      const mapped = mapMobileSocialFeedTip(server);
+
+      expect(mapped.note).toBe(server.note);
+      expect(mapped.originPostId).toBe(post.id);
+      expect(mapped.originAvailability).toBe('available');
+      expect(mapped.original?.id).toBe(post.id);
+      expect(mapped.original?.position?.notional.toFixed()).toBe(
+        '10200000000000000000000',
+      );
+      expect(mapped.commentPreview.items.map((item) => item.id)).toEqual([
+        second.id,
+        first.id,
+      ]);
+      expect(mapped.commentPreview).toMatchObject({
+        totalCount: 12,
+        nextCursor: 'OpaquePreviewCursor',
+      });
+      for (const item of mapped.commentPreview.items) {
+        expect(item.market).toBeNull();
+        expect(item.rootItemId).toBe(tip.id);
+        expect(item.original).toMatchObject({
+          id: tip.id,
+          textExcerpt: 'Thank you 🙌',
+          position: null,
+        });
+        expect(item.attachedPosition).toBeNull();
+      }
+      expect(mapped.commentPreview.items[0].replyToItemId).toBe(first.id);
+      expect(mapped.commentPreview.items[1]).not.toHaveProperty(
+        'replyToItemId',
+      );
+    });
+
+    it('keeps an unreadable origin reference independently of its absent summary', () => {
+      const mapped = mapMobileSocialFeedTip(
+        makePublicTip({
+          origin_post_id: post.id,
+          origin_availability: 'unavailable',
+          original: null,
+        }),
+      );
+      expect(mapped.originPostId).toBe(post.id);
+      expect(mapped.originAvailability).toBe('unavailable');
+      expect(mapped.original).toBeNull();
+    });
+  });
+
+  describe('mapMobileSocialFeedThreadGroup', () => {
+    it('keeps a Tip and its flat descendants together without adding a wrapper', () => {
+      const tip = makePublicTip();
+      const child = makeTipReply(tip.id);
+      const descendant = makeTipReply(tip.id, {
+        id: '77777777-7777-4777-8777-777777777777',
+        reply_to_item_id: child.id,
+      });
+      const mapped = mapMobileSocialFeedThreadGroup({
+        ...tip,
+        replies: [descendant, child],
+      });
+      if (mapped.kind !== 'tip') throw new Error('Expected public Tip group');
+
+      expect(mapped.tipId).toBe(tip.tip_id);
+      expect(mapped.netAmount.toFixed()).toBe(tip.net_amount_x18);
+      expect(mapped.replies.map((item) => item.id)).toEqual([
+        descendant.id,
+        child.id,
+      ]);
+      expect(mapped.replies[0].replyToItemId).toBe(child.id);
+      expect(mapped.replies.every((item) => item.market === null)).toBe(true);
+      expect(mapped).not.toHaveProperty('item');
+      expect(mapped).not.toHaveProperty('tip');
+      for (const item of mapped.replies)
+        expect(item).not.toHaveProperty('replies');
+    });
+
+    it.each<{
+      name: string;
+      wire: { anchor_tip_item_id?: string | null };
+      expected: string | null | undefined;
+    }>([
+      { name: 'legacy omission', wire: {}, expected: undefined },
+      {
+        name: 'no Tip anchor',
+        wire: { anchor_tip_item_id: null },
+        expected: null,
+      },
+      {
+        name: 'public Tip anchor',
+        wire: { anchor_tip_item_id: '55555555-5555-4555-8555-555555555555' },
+        expected: '55555555-5555-4555-8555-555555555555',
+      },
+    ])(
+      'preserves $name and whole-snapshot mixed-thread metadata',
+      ({ wire, expected }) => {
+        const tip = makePublicTip();
+        const mapped = mapMobileSocialFeedCommentsPage({
+          comments: [
+            { ...tip, replies: [makeTipReply(tip.id)] },
+            { ...reply, replies: [] },
+          ],
+          total_count: 18,
+          top_level_count: 7,
+          next_cursor: 'NextGroup',
+          previous_cursor: 'PreviousGroup',
+          anchor_reply_id: null,
+          read_session: history.read_session,
+          ...wire,
+        });
+
+        expect(mapped.comments.map((group) => group.kind)).toEqual([
+          'tip',
+          'reply',
+        ]);
+        expect(mapped.totalCount).toBe(18);
+        expect(mapped.topLevelCount).toBe(7);
+        expect(mapped.nextCursor).toBe('NextGroup');
+        expect(mapped.previousCursor).toBe('PreviousGroup');
+        expect(mapped.anchorReplyId).toBeNull();
+        expect(mapped.anchorTipItemId).toBe(expected);
+        expect(Object.hasOwn(mapped, 'anchorTipItemId')).toBe(
+          expected !== undefined,
+        );
+      },
+    );
+  });
+
+  describe('mapMobileSocialFeedItemPatch', () => {
+    const base: MobileServerSocialFeedItemPatch = {
+      item_id: '55555555-5555-4555-8555-555555555555',
+      author: post.author,
+      version: '8',
+      display_at_ms: 1791072200000,
+    };
+
+    it('preserves omission separately from nullable origin clears and zero totals', () => {
+      const omitted = mapMobileSocialFeedItemPatch(base);
+      for (const field of [
+        'sender',
+        'recipient',
+        'originPostId',
+        'originAvailability',
+        'original',
+        'publicTipTotal',
+      ])
+        expect(omitted).not.toHaveProperty(field);
+
+      const cleared = mapMobileSocialFeedItemPatch({
+        ...base,
+        origin_post_id: null,
+        origin_availability: null,
+        original: null,
+        public_tip_total_x18: '0',
+      });
+      expect(cleared).toHaveProperty('originPostId', null);
+      expect(cleared).toHaveProperty('originAvailability', null);
+      expect(cleared).toHaveProperty('original', null);
+      expect(cleared.publicTipTotal?.toFixed()).toBe('0');
+    });
+
+    it('maps mutable Tip profiles and summaries without introducing payment identifiers or amounts', () => {
+      const tip = makePublicTip();
+      const source = {
+        ...tip,
+        ...base,
+        origin_post_id: post.id,
+        origin_availability: 'available' as const,
+        original: reply.original,
+        public_tip_total_x18: '900719925474099312345678901',
+      };
+      const snapshot = JSON.stringify(source);
+      const mapped = mapMobileSocialFeedItemPatch(source);
+
+      expect(mapped.itemId).toBe(tip.id);
+      expect(mapped.publicTipTotal?.toFixed()).toBe(
+        source.public_tip_total_x18,
+      );
+      expect(mapped.sender).toMatchObject({
+        displayName: null,
+        avatarUrl: null,
+      });
+      expect(mapped.recipient?.displayName).toBe('Bob');
+      expect(mapped.originPostId).toBe(post.id);
+      expect(mapped.originAvailability).toBe('available');
+      expect(mapped.original?.position?.notional.toFixed()).toBe(
+        '10200000000000000000000',
+      );
+      for (const field of [
+        'id',
+        'tipId',
+        'netAmount',
+        'productId',
+        'backgroundId',
+        'submittedAtMs',
+        'creditedAtMs',
+      ])
+        expect(mapped).not.toHaveProperty(field);
+      expect(JSON.stringify(source)).toBe(snapshot);
+    });
+  });
+});
+
+describe('[mobile-client]: Tip and Feed notification payload mapping', () => {
+  const tip = makePublicTip();
+  const cases: {
+    typeId: MobileNotificationTypeId;
+    wireRoute: MobileServerNotificationRoute;
+    clientRoute: MobileNotificationRoute;
+  }[] = [
+    {
+      typeId: 'tip_received',
+      wireRoute: { name: 'tip', tip_id: tip.tip_id },
+      clientRoute: { name: 'tip', tipId: tip.tip_id },
+    },
+    {
+      typeId: 'tip_liked',
+      wireRoute: {
+        name: 'tip_thread',
+        tip_id: tip.tip_id,
+        feed_item_id: tip.id,
+        origin_post_id: null,
+        reply_item_id: null,
+      },
+      clientRoute: {
+        name: 'tip_thread',
+        tipId: tip.tip_id,
+        feedItemId: tip.id,
+        originPostId: null,
+        replyItemId: null,
+      },
+    },
+    {
+      typeId: 'tip_replied',
+      wireRoute: {
+        name: 'tip_thread',
+        tip_id: tip.tip_id,
+        feed_item_id: tip.id,
+        origin_post_id: post.id,
+        reply_item_id: reply.id,
+      },
+      clientRoute: {
+        name: 'tip_thread',
+        tipId: tip.tip_id,
+        feedItemId: tip.id,
+        originPostId: post.id,
+        replyItemId: reply.id,
+      },
+    },
+    {
+      typeId: 'feed_liked',
+      wireRoute: {
+        name: 'feed_thread',
+        root_item_id: post.id,
+        reply_item_id: null,
+      },
+      clientRoute: {
+        name: 'feed_thread',
+        rootItemId: post.id,
+        replyItemId: null,
+      },
+    },
+    {
+      typeId: 'feed_liked',
+      wireRoute: {
+        name: 'tip_thread',
+        tip_id: tip.tip_id,
+        feed_item_id: tip.id,
+        origin_post_id: null,
+        reply_item_id: reply.id,
+      },
+      clientRoute: {
+        name: 'tip_thread',
+        tipId: tip.tip_id,
+        feedItemId: tip.id,
+        originPostId: null,
+        replyItemId: reply.id,
+      },
+    },
+    {
+      typeId: 'feed_replied',
+      wireRoute: {
+        name: 'feed_thread',
+        root_item_id: post.id,
+        reply_item_id: reply.id,
+      },
+      clientRoute: {
+        name: 'feed_thread',
+        rootItemId: post.id,
+        replyItemId: reply.id,
+      },
+    },
+  ];
+
+  it.each(cases)(
+    'preserves $typeId text and its $wireRoute.name destination',
+    ({ typeId, wireRoute, clientRoute }) => {
+      const source: MobileServerNotificationPayloadV2 = {
+        payload_version: 2,
+        notification_id: '99999999-9999-4999-8999-999999999999',
+        recipient_wallet: '0x1111111111111111111111111111111111111111',
+        type_id: typeId,
+        template_version: 1,
+        title: 'Alice sent you a Tip 💸',
+        body: '已到账 5 USDT0\nTap to open.',
+        route: wireRoute,
+      };
+      const snapshot = JSON.stringify(source);
+      expect(mapMobileNotificationPayloadV2(source)).toEqual({
+        payloadVersion: 2,
+        notificationId: source.notification_id,
+        recipientWallet: source.recipient_wallet,
+        typeId,
+        templateVersion: 1,
+        title: source.title,
+        body: source.body,
+        route: clientRoute,
+      });
+      expect(JSON.stringify(source)).toBe(snapshot);
+    },
+  );
+
+  it.each<Pick<MobileServerNotificationPayloadV2, 'title' | 'body'>>([
+    {},
+    { title: undefined, body: undefined },
+    { title: '', body: '' },
+    { title: 'Only a title' },
+    { body: 'Only a body' },
+  ])(
+    'preserves optional legacy text without inventing absent fields: %j',
+    (text) => {
+      const mapped = mapMobileNotificationPayloadV2({
+        payload_version: 2,
+        notification_id: '99999999-9999-4999-8999-999999999999',
+        recipient_wallet: '0x1111111111111111111111111111111111111111',
+        type_id: 'new_follower',
+        template_version: 1,
+        route: { name: 'portfolio' },
+        ...text,
+      });
+      expect(mapped.title).toBe(text.title);
+      expect(mapped.body).toBe(text.body);
+      expect(Object.hasOwn(mapped, 'title')).toBe(text.title !== undefined);
+      expect(Object.hasOwn(mapped, 'body')).toBe(text.body !== undefined);
+      expect(mapped.route).toEqual({ name: 'portfolio' });
+    },
+  );
 });
 
 describe('[mobile-client]: position feed changes', () => {

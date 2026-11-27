@@ -555,23 +555,16 @@ export class MobileClient {
    * Reading does not increment views; use {@link recordFeedViews} independently when reporting views.
    * @param params - Public item or payment UUID, preview limit, and optional existing session/read identity.
    * @returns The complete item and authorized reading session.
-   * @throws {Error} If the request does not select exactly one itemId or tipId.
-   * @throws {MobileServerFailureError} On inaccessible content or session mismatch/expiry.
+   * @throws {MobileServerFailureError} On invalid selectors, inaccessible content, or session mismatch/expiry.
    * @throws {MobileUnsupportedFeedItemError} If the service returns an unsupported item kind.
    */
   async getFeedItem(
     params: GetMobileFeedItemParams,
   ): Promise<MobileSocialFeedItemResponse> {
-    if ((params.itemId === undefined) === (params.tipId === undefined)) {
-      throw new Error('Specify exactly one itemId or tipId.');
-    }
-    const selector =
-      params.tipId === undefined
-        ? { item_id: params.itemId }
-        : { tip_id: params.tipId };
     const body: MobileServerPublicQueryRequest<'feed_item'> = {
       type: 'feed_item',
-      ...selector,
+      item_id: params.itemId,
+      tip_id: params.tipId,
       include_tips: params.includeTips,
       comment_preview_limit: params.commentPreviewLimit,
       session_id: params.sessionId,
@@ -807,32 +800,18 @@ export class MobileClient {
    * @param params - Public root item, at most one reply anchor, Tip anchor, or cursor, and read perspective.
    * Paging requires the original session and viewer token.
    * @returns Complete groups, whole-thread counts including Tips, cursors, anchors, and session.
-   * @throws {Error} If more than one cursor, anchorReplyId, or anchorTipItemId is supplied.
    * @throws {MobileServerFailureError} On invalid parameters, session mismatch or expiry, inaccessible content,
    * or unavailable data. Restart pagination with a new session after expiry; do not reuse the old cursor.
    */
   async getFeedComments(
     params: GetMobileFeedCommentsParams,
   ): Promise<MobileSocialFeedCommentsPage> {
-    if (
-      [params.cursor, params.anchorReplyId, params.anchorTipItemId].filter(
-        (value) => value !== undefined,
-      ).length > 1
-    ) {
-      throw new Error(
-        'Specify at most one cursor, anchorReplyId, or anchorTipItemId.',
-      );
-    }
-    const navigation =
-      params.cursor !== undefined
-        ? { cursor: params.cursor }
-        : params.anchorTipItemId !== undefined
-          ? { anchor_tip_item_id: params.anchorTipItemId }
-          : { anchor_reply_id: params.anchorReplyId };
     const body: MobileServerPublicQueryRequest<'feed_comments'> = {
       type: 'feed_comments',
       root_item_id: params.rootItemId,
-      ...navigation,
+      cursor: params.cursor,
+      anchor_reply_id: params.anchorReplyId,
+      anchor_tip_item_id: params.anchorTipItemId,
       include_tips: params.includeTips,
       limit: params.limit,
       session_id: params.sessionId,

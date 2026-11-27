@@ -221,36 +221,17 @@ export interface MobileServerPublicQueryRequestByType {
     root_item_id: string;
     /** Enable public Tips; omission on reuse inherits the session's capability. */
     include_tips?: boolean;
+    /** Thread cursor; mutually exclusive with both anchors. */
+    cursor?: string;
     /** Top-level group count, 1-50; descendants do not consume the limit. */
     limit?: number;
+    /** Reply anchor selecting its top-level group; mutually exclusive with cursor and the Tip anchor. */
+    anchor_reply_id?: string;
+    /** Public Tip Feed UUID; requires Tips enabled and is mutually exclusive with cursor and the reply anchor. */
+    anchor_tip_item_id?: string;
     /** Original reading session. */
     session_id?: string;
-  } & (
-      | {
-          /** Thread cursor. */
-          cursor?: string;
-          /** Reply anchors cannot accompany a cursor. */
-          anchor_reply_id?: never;
-          /** Tip anchors cannot accompany a cursor. */
-          anchor_tip_item_id?: never;
-        }
-      | {
-          /** An anchored or first page has no pagination cursor. */
-          cursor?: never;
-          /** Ordinary descendant or standalone-Tip reply selecting its complete top-level group. */
-          anchor_reply_id?: string;
-          /** A reply anchor cannot accompany a Tip anchor. */
-          anchor_tip_item_id?: never;
-        }
-      | {
-          /** A Tip-anchored page has no pagination cursor. */
-          cursor?: never;
-          /** A Tip anchor cannot accompany a reply anchor. */
-          anchor_reply_id?: never;
-          /** Public Tip Feed UUID in the original-post thread; requires a Tip-enabled session. */
-          anchor_tip_item_id: string;
-        }
-    );
+  };
   /** Full lifecycle history rather than published feed items alone. */
   position_history: MobileServerSocialFeedReadParams & {
     /** Lifecycle UUID. */
@@ -336,26 +317,17 @@ export interface MobileServerPublicQueryRequestByType {
     };
   /** Item details visible to view_as, optionally reusing a reading session. */
   feed_item: MobileServerSocialFeedReadParams & {
+    /** Public Feed UUID; exactly one of item_id or tip_id must be supplied. */
+    item_id?: string;
+    /** Payment UUID resolving a public Tip; requires Tips enabled and excludes item_id. */
+    tip_id?: string;
     /** Enable public Tips; omission on reuse inherits the session's capability. */
     include_tips?: boolean;
     /** Preview size, 0-3. */
     comment_preview_limit?: number;
     /** Omit to create a new reading session. */
     session_id?: string;
-  } & (
-      | {
-          /** Public Feed item UUID, distinct from a Tip's payment UUID. */
-          item_id: string;
-          /** Payment selector is not used with item_id. */
-          tip_id?: never;
-        }
-      | {
-          /** Payment UUID resolving a readable public Tip; requires a Tip-enabled session. */
-          tip_id: string;
-          /** Public item selector is not used with tip_id. */
-          item_id?: never;
-        }
-    );
+  };
   /** Updates inherit the original public session's viewing account. */
   feed_updates: {
     /** Original reading session. */

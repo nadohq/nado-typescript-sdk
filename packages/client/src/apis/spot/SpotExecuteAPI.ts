@@ -1,4 +1,3 @@
-import { IndexerInvalidSubaccountDDAError } from '@nadohq/indexer-client';
 import {
   MOBILE_ERROR_CODES,
   MobileServerFailureError,
@@ -12,16 +11,11 @@ import {
   MOCK_ERC20_ABI,
   QUOTE_PRODUCT_ID,
   toBigInt,
-  toBigNumber,
   WalletNotProvidedError,
 } from '@nadohq/shared';
-import { Address, zeroAddress } from 'viem';
+import { zeroAddress } from 'viem';
 import { BaseSpotAPI } from './BaseSpotAPI';
 import { SendTipError } from './SendTipError';
-import {
-  SEND_TIP_VALIDATION_REASONS,
-  SendTipValidationError,
-} from './SendTipValidationError';
 import {
   ApproveAllowanceParams,
   BurnNlpParams,
@@ -133,9 +127,8 @@ export class SpotExecuteAPI extends BaseSpotAPI {
    * as expectedVersion. Signed requests must never be logged or persisted.
    * Never raise the confirmed fee cap automatically or create a fresh Tip after an uncertain submission.
    *
-   * @throws {WalletNotProvidedError} If the owner wallet is unavailable.
-   * @throws {SendTipValidationError} If the owner, signing context, native amount or recipient DDA is invalid.
-   * @throws {Error} If DDA lookup or owner signing fails.
+   * @throws {WalletNotProvidedError} If default signing fields or owner signing require an unavailable wallet.
+   * @throws {Error} If the recipient DDA is zero, DDA lookup fails, or owner signing fails.
    * @throws {MobileServerFailureError} For a new Tip's known pre-admission rejection.
    * @throws {SendTipError} If Mobile submission fails and the signed request must remain available for retry.
    */
@@ -143,25 +136,6 @@ export class SpotExecuteAPI extends BaseSpotAPI {
     params: SendTipParams | MobileSubmitTipParams,
   ): Promise<SendTipResult> {
     const isReplay = 'withdrawal' in params;
-    const walletOwner = this.getWalletClientAddress();
-    const subaccountOwner = this.getSubaccountOwnerIfNeeded(params);
-    if (walletOwner.toLowerCase() !== subaccountOwner.toLowerCase()) {
-      throw new SendTipValidationError(
-        SEND_TIP_VALIDATION_REASONS.OWNER_WALLET_REQUIRED,
-      );
-    }
-    const walletChainId = this.getWalletClientChainIdIfNeeded({});
-    const endpointAddress = this.getEndpointAddress();
-    const chainId = params.chainId ?? walletChainId;
-    const verifyingAddr = params.verifyingAddr ?? endpointAddress;
-    if (
-      chainId !== walletChainId ||
-      verifyingAddr.toLowerCase() !== endpointAddress.toLowerCase()
-    ) {
-      throw new SendTipValidationError(
-        SEND_TIP_VALIDATION_REASONS.SIGNING_CONTEXT_MISMATCH,
-      );
-    }
 
     let request: MobileSubmitTipParams;
     if ('withdrawal' in params) {
@@ -170,34 +144,16 @@ export class SpotExecuteAPI extends BaseSpotAPI {
       delete request.nonce;
     } else {
       const { amount, ...tipParams } = params;
-      const nativeAmount = toBigNumber(amount);
-      const isAmountValid =
-        nativeAmount.isFinite() &&
-        nativeAmount.isInteger() &&
-        nativeAmount.isGreaterThan(0);
-      if (!isAmountValid) {
-        throw new SendTipValidationError(
-          SEND_TIP_VALIDATION_REASONS.INVALID_AMOUNT,
-        );
-      }
-      let recipientDda: Address;
-      try {
-        const { address } = await this.context.indexerClient.getSubaccountDDA({
+      const subaccountOwner = this.getSubaccountOwnerIfNeeded(params);
+      const chainId = this.getWalletClientChainIdIfNeeded(params);
+      const verifyingAddr = params.verifyingAddr ?? this.getEndpointAddress();
+      const { address: recipientDda } =
+        await this.context.indexerClient.getSubaccountDDA({
           subaccount: params.recipientSubaccount,
         });
-        recipientDda = address;
-      } catch (error: unknown) {
-        if (error instanceof IndexerInvalidSubaccountDDAError) {
-          throw new SendTipValidationError(
-            SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
-          );
-        }
-        throw error;
-      }
       if (recipientDda === zeroAddress) {
-        throw new SendTipValidationError(
-          SEND_TIP_VALIDATION_REASONS.RECIPIENT_DDA_UNAVAILABLE,
-        );
+        // A zero sendTo withdraws to the owner instead of the intended Tip recipient.
+        throw new Error('The Tip recipient deposit address is unavailable.');
       }
       const { tx, signature } =
         await this.context.engineClient.payloadBuilder.buildWithdrawCollateralV2Payload(
@@ -205,7 +161,7 @@ export class SpotExecuteAPI extends BaseSpotAPI {
             subaccountOwner,
             subaccountName: params.subaccountName,
             productId: QUOTE_PRODUCT_ID,
-            amount: nativeAmount,
+            amount,
             sendTo: recipientDda,
             appendix: 0,
             spotLeverage: false,

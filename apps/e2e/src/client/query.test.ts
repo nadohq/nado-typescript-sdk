@@ -46,7 +46,7 @@ import {
   TEST_TIMEOUTS,
 } from '../utils/testConstants';
 
-void describe('[client]: queries', { timeout: TEST_TIMEOUTS.LONG }, () => {
+void describe('[client]: queries', { timeout: TEST_TIMEOUTS.DEFAULT }, () => {
   let nadoClient: NadoClient;
   let walletClientAddress: string;
   let chainId: number;

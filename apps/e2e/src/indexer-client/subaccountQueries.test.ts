@@ -43,7 +43,7 @@ import {
 
 void describe(
   '[indexer-client]: subaccount queries',
-  { timeout: TEST_TIMEOUTS.LONG },
+  { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let client: IndexerClient;
     let subaccount: Subaccount;

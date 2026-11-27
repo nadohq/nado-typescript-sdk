@@ -36,7 +36,7 @@ const LATEST_TICKER_SORT_KEYS = [
 
 void describe(
   '[nuanze-client]: markets',
-  { timeout: TEST_TIMEOUTS.LONG },
+  { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
     let tc: RunContext;
 

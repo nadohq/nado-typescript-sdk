@@ -7,7 +7,9 @@ import { Subaccount } from '@nadohq/shared';
 import BigNumber from 'bignumber.js';
 import assert from 'node:assert/strict';
 import { before, describe, test, TestContext } from 'node:test';
+import { asRecord } from '../utils/asRecord';
 import { assertArray } from '../utils/assertions';
+import { capturePublicQuery } from '../utils/capturePublicQuery';
 import { getMobileSignedParams } from '../utils/getMobileSignedParams';
 import { createTestContext } from '../utils/runWithContext';
 import { TEST_TIMEOUTS } from '../utils/testConstants';
@@ -173,32 +175,6 @@ async function getLiveContentDetail(
   }
 }
 
-async function capturePublicQuery<T>(
-  mobile: MobileClient,
-  request: () => Promise<T>,
-): Promise<{ result: T; wire: Record<string, unknown> }> {
-  let responseData: unknown;
-  let responseCount = 0;
-  // Observe the actual live response so a concurrent Tip cannot change a separately fetched reference.
-  const interceptor = mobile.axiosInstance.interceptors.response.use(
-    (response) => {
-      responseData = response.data;
-      responseCount += 1;
-      assert.ok(response.config.url?.endsWith('/public_query'));
-      return response;
-    },
-  );
-  try {
-    const result = await request();
-    assert.equal(responseCount, 1);
-    const wire = asRecord(responseData, 'released response');
-    assert.equal(wire.status, 'success');
-    return { result, wire };
-  } finally {
-    mobile.axiosInstance.interceptors.response.eject(interceptor);
-  }
-}
-
 function assertPreviewFields(
   mapped: unknown,
   wire: Record<string, unknown>,
@@ -238,12 +214,4 @@ function assertPreviewFields(
     assert.ok(total.isFinite() && total.isInteger() && total.gte(0));
     assert.equal(total.toFixed(), wire.public_tip_total_x18);
   }
-}
-
-function asRecord(value: unknown, label: string): Record<string, unknown> {
-  assert.ok(
-    value !== null && typeof value === 'object' && !Array.isArray(value),
-    `${label} must be an object.`,
-  );
-  return value as Record<string, unknown>;
 }

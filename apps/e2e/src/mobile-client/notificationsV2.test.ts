@@ -65,7 +65,7 @@ const capabilities: MobileNotificationCapabilities = {
 
 void describe(
   '[mobile-client]: notifications v2',
-  { timeout: TEST_TIMEOUTS.LONG * 2 },
+  { timeout: TEST_TIMEOUTS.LONG },
   () => {
     let mobile: MobileClient;
     let auth: MobileSignedRequestParams;
@@ -658,14 +658,14 @@ function assertTipAndFeedNotification(
   assert.equal(data.recipientWallet.toLowerCase(), wallet.toLowerCase());
   switch (data.typeId) {
     case 'tip_received':
-      assert.equal(data.route.name, 'tip');
+      assert.ok(data.route.name === 'tip');
       break;
     case 'tip_liked':
-      assert.equal(data.route.name, 'tip_thread');
+      assert.ok(data.route.name === 'tip_thread');
       assert.equal(data.route.replyItemId, null);
       break;
     case 'tip_replied':
-      assert.equal(data.route.name, 'tip_thread');
+      assert.ok(data.route.name === 'tip_thread');
       assertNonEmptyString(data.route.replyItemId, 'replyItemId');
       break;
     case 'feed_liked':
@@ -674,7 +674,7 @@ function assertTipAndFeedNotification(
       );
       break;
     case 'feed_replied':
-      assert.equal(data.route.name, 'feed_thread');
+      assert.ok(data.route.name === 'feed_thread');
       assertNonEmptyString(data.route.replyItemId, 'replyItemId');
       break;
     default:
@@ -701,6 +701,10 @@ function assertTipAndFeedNotification(
       if (data.route.replyItemId !== null)
         assertNonEmptyString(data.route.replyItemId, 'replyItemId');
       break;
+    default:
+      assert.fail(
+        'Tip and Feed notifications must use their supported thread or receipt routes.',
+      );
   }
 }
 

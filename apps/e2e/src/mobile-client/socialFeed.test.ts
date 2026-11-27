@@ -177,7 +177,6 @@ void describe(
     void test('reads Top Traders and its shared qualification cohort', async () => {
       const page = await mobile.getTopTradersFeed({
         viewAs,
-        feedTypes: legacyFeedTypes,
         limit: 2,
       });
       assertPage(page);
@@ -195,6 +194,13 @@ void describe(
           assert.equal(badge.snapshotId, page.cohort.snapshotId);
         }
       }
+      assertPage(
+        await mobile.getTopTradersFeed({
+          viewAs,
+          feedTypes: legacyFeedTypes,
+          limit: 2,
+        }),
+      );
     });
 
     void test('reads Friends and updates without a wallet, including an unregistered account', async () => {
@@ -264,16 +270,20 @@ void describe(
     });
 
     void test('reads market content', async () => {
-      const page = await mobile.getMarketFeed({
+      const params = {
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         viewAs,
-        feedTypes: legacyFeedTypes,
         limit: 2,
-      });
-      assertPage(page);
-      for (const item of page.items) {
-        assert.ok(item.market);
-        assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
+      };
+      for (const page of [
+        await mobile.getMarketFeed(params),
+        await mobile.getMarketFeed({ ...params, feedTypes: legacyFeedTypes }),
+      ]) {
+        assertPage(page);
+        for (const item of page.items) {
+          assert.ok(item.market);
+          assert.equal(item.market.productId, TEST_PRODUCT_IDS.PERP_BTC);
+        }
       }
     });
 
@@ -299,14 +309,16 @@ void describe(
       assertPage(authorPage);
       const positionId =
         item.kind === 'trade_row' ? item.positionId : item.position.positionId;
-      assertPage(
+      const positionParams = { positionId, viewAs, limit: 2 };
+      for (const positionPage of [
+        await mobile.getPositionFeed(positionParams),
         await mobile.getPositionFeed({
-          positionId,
-          viewAs,
+          ...positionParams,
           feedTypes: legacyFeedTypes,
-          limit: 2,
         }),
-      );
+      ]) {
+        assertPage(positionPage);
+      }
       const detail = await mobile.getFeedItem({
         itemId: item.id,
         commentPreviewLimit: 0,
