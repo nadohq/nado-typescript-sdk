@@ -38,11 +38,11 @@ await engine.cancelOrders({ ... });
 
 ### Queries
 
-`getStatus`, `getContracts`, `getSubaccountSummary`, `getEstimatedSubaccountSummary`, `getIsolatedPositions`, `getSymbols`, `getAllMarkets`, `getHealthGroups`, `getOrder`, `getSubaccountOrders`, `getSubaccountFeeRates`, `getMarketLiquidity`, `getMarketPrice`, `getMarketPrices`, `getMaxOrderSize`, `getMaxWithdrawable`, `getMaxMintNlpAmount`, `getMaxBurnNlpAmount`, `getLinkedSigner`, `getInsurance`, `getNlpPoolInfo`, and more.
+`getStatus`, `getContracts`, `getSubaccountSummary`, `getEstimatedSubaccountSummary`, `getIsolatedPositions`, `getSymbols`, `getAllMarkets`, `getHealthGroups`, `getOrder`, `getSubaccountOrders`, `getSubaccountFeeRates`, `getMarketLiquidity`, `getMarketPrice`, `getMarketPrices`, `getMaxOrderSize`, `getMaxWithdrawable`, `getMaxMintNlpAmount`, `getMaxBurnNlpAmount`, `getLinkedSigner`, `getOrderSigners`, `getInsurance`, `getNlpPoolInfo`, and more.
 
 ### Executes
 
-`placeOrder`, `placeOrders`, `cancelOrders`, `cancelAndPlace`, `cancelProductOrders`, `liquidateSubaccount`, `withdrawCollateral`, `linkSigner`, `transferQuote`, `mintNlp`, `burnNlp`.
+`placeOrder`, `placeOrders`, `cancelOrders`, `cancelAndPlace`, `cancelProductOrders`, `liquidateSubaccount`, `withdrawCollateral`, `linkSigner`, `addOrderSigner`, `deleteOrderSigner`, `transferQuote`, `mintNlp`, `burnNlp`.
 
 ### Linked Signers
 

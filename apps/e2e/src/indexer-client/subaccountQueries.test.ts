@@ -17,6 +17,7 @@ import {
   assertArrayElements,
   assertBigNumberFinite,
   assertBigNumberNonNegative,
+  assertBoolean,
   assertDefined,
   assertEnumMember,
   assertHexString,
@@ -33,6 +34,7 @@ import {
   assertIndexerPositionShape,
   assertLinkedSignerShape,
   assertMatchEventShape,
+  assertOrderSignerRateLimitShape,
 } from '../utils/shapeAssertions';
 import {
   TEST_DELAYS,
@@ -206,6 +208,36 @@ void describe(
       debugPrint('Linked Signer', linkedSigner);
       assertDefined(linkedSigner, 'linkedSigner');
       assertLinkedSignerShape(linkedSigner, 'linkedSigner');
+    });
+
+    void test('getOrderSignerRateLimit returns order signer info', async () => {
+      const rateLimit = await client.getOrderSignerRateLimit({ subaccount });
+
+      debugPrint('Order signer rate limit', rateLimit);
+      assertDefined(rateLimit, 'orderSignerRateLimit');
+      assertOrderSignerRateLimitShape(rateLimit, 'orderSignerRateLimit');
+    });
+
+    void test('getOrderSignerEvents returns events for the subaccount', async () => {
+      const events = await client.getOrderSignerEvents({
+        subaccount,
+        limit: 5,
+      });
+
+      debugPrint('Order signer events', events);
+      assertArray(events, 'orderSignerEvents');
+      events.forEach((event, idx) => {
+        assertHexString(event.signer, `orderSignerEvents[${idx}].signer`);
+        assertNumber(
+          event.submissionIndex,
+          `orderSignerEvents[${idx}].submissionIndex`,
+        );
+        assertBoolean(event.added, `orderSignerEvents[${idx}].added`);
+        assertBigNumberFinite(
+          event.updateTime,
+          `orderSignerEvents[${idx}].updateTime`,
+        );
+      });
     });
 
     void test('getSubaccountDDA returns DDA info', async () => {

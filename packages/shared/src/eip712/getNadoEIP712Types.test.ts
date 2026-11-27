@@ -5,6 +5,26 @@ import { getNadoEIP712Values } from './getNadoEIP712Values';
 const TEST_ADDRESS = '0xb92EFcF519EDC2f1FE60b4491Ef51d97Ed4d7685';
 
 describe('getNadoEIP712Types', () => {
+  it.each([
+    { requestType: 'add_order_signer', primaryType: 'AddOrderSigner' },
+    { requestType: 'delete_order_signer', primaryType: 'DeleteOrderSigner' },
+  ] as const)(
+    'matches the $primaryType struct, which shares the LinkSigner fields',
+    ({ requestType, primaryType }) => {
+      const contractTypeString = `${primaryType}(bytes32 sender,bytes32 signer,uint64 nonce)`;
+
+      const fields = getNadoEIP712Types(requestType)[primaryType];
+      const typeString = `${primaryType}(${fields
+        .map(({ type, name }) => `${type} ${name}`)
+        .join(',')})`;
+
+      expect(typeString).toBe(contractTypeString);
+      expect(fields).toStrictEqual(
+        getNadoEIP712Types('link_signer').LinkSigner,
+      );
+    },
+  );
+
   it('matches the LiquidateSubaccount struct verified on chain', () => {
     // From `Verifier.sol` in nado-contracts
     const contractTypeString =

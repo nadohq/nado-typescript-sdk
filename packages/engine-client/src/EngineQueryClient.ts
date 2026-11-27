@@ -46,6 +46,8 @@ import {
   GetEngineNlpPoolInfoResponse,
   GetEngineOrderParams,
   GetEngineOrderResponse,
+  GetEngineOrderSignersParams,
+  GetEngineOrderSignersResponse,
   GetEngineSubaccountFeeRatesParams,
   GetEngineSubaccountFeeRatesResponse,
   GetEngineSubaccountOrdersParams,
@@ -611,6 +613,27 @@ export class EngineQueryClient extends EngineBaseClient {
 
     return {
       signer: baseResponse.linked_signer,
+    };
+  }
+
+  /**
+   * Gets the order signers for the subaccount. Live engine state, unlike the indexer's
+   * `order_signer_rate_limit`, so it reflects adds / deletes immediately.
+   * @param params
+   * @returns
+   */
+  public async getOrderSigners(
+    params: GetEngineOrderSignersParams,
+  ): Promise<GetEngineOrderSignersResponse> {
+    const baseResponse = await this.query('order_signers', {
+      subaccount: subaccountToHex({
+        subaccountOwner: params.subaccountOwner,
+        subaccountName: params.subaccountName,
+      }),
+    });
+
+    return {
+      orderSigners: baseResponse.order_signers,
     };
   }
 

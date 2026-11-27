@@ -9,6 +9,7 @@ import {
   EIP712MintNlpValues,
   EIP712NadoAuthenticationValues,
   EIP712OrderCancellationValues,
+  EIP712OrderSignerValues,
   EIP712OrderValues,
   EIP712ProductOrdersCancellationValues,
   EIP712SocialAuthenticationValues,
@@ -33,6 +34,7 @@ import {
   EIP712MintNlpParams,
   EIP712NadoAuthenticationParams,
   EIP712OrderParams,
+  EIP712OrderSignerParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712UpdateDependencyParams,
@@ -93,6 +95,10 @@ export function getNadoEIP712Values<TReqType extends SignableRequestType>(
       break;
     case 'link_signer':
       values = getLinkSignerValues(params as EIP712LinkSignerParams);
+      break;
+    case 'add_order_signer':
+    case 'delete_order_signer':
+      values = getOrderSignerValues(params as EIP712OrderSignerParams);
       break;
     case 'transfer_quote':
       values = getTransferQuoteValues(params as EIP712TransferQuoteParams);
@@ -244,6 +250,19 @@ function getLiquidateSubaccountValues(
 function getLinkSignerValues(
   params: EIP712LinkSignerParams,
 ): EIP712LinkSignerValues {
+  return {
+    sender: subaccountToHex({
+      subaccountOwner: params.subaccountOwner,
+      subaccountName: params.subaccountName,
+    }),
+    signer: params.signer,
+    nonce: params.nonce,
+  };
+}
+
+function getOrderSignerValues(
+  params: EIP712OrderSignerParams,
+): EIP712OrderSignerValues {
   return {
     sender: subaccountToHex({
       subaccountOwner: params.subaccountOwner,

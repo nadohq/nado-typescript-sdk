@@ -98,6 +98,10 @@ import {
   GetIndexerNlpSnapshotsResponse,
   GetIndexerOraclePricesParams,
   GetIndexerOraclePricesResponse,
+  GetIndexerOrderSignerEventsParams,
+  GetIndexerOrderSignerEventsResponse,
+  GetIndexerOrderSignerRateLimitParams,
+  GetIndexerOrderSignerRateLimitResponse,
   GetIndexerOrdersParams,
   GetIndexerOrdersResponse,
   GetIndexerPerpPricesParams,
@@ -771,6 +775,45 @@ export class IndexerBaseClient {
       signer: baseResponse.signer,
       waitTimeUntilNextTx: toBigNumber(baseResponse.wait_time),
     };
+  }
+
+  /**
+   * Fetches the indexed order signers with the remaining weekly adds allowed for the subaccount
+   */
+  async getOrderSignerRateLimit(
+    params: GetIndexerOrderSignerRateLimitParams,
+  ): Promise<GetIndexerOrderSignerRateLimitResponse> {
+    const baseResponse = await this.query('order_signer_rate_limit', {
+      subaccount: subaccountToHex(params.subaccount),
+    });
+    return {
+      totalTxLimit: toBigNumber(baseResponse.total_tx_limit),
+      remainingTxs: toBigNumber(baseResponse.remaining_tx),
+      waitTimeUntilNextTx: toBigNumber(baseResponse.wait_time),
+      orderSigners: baseResponse.order_signers,
+    };
+  }
+
+  /**
+   * Fetches order signer add / delete events
+   */
+  async getOrderSignerEvents(
+    params: GetIndexerOrderSignerEventsParams,
+  ): Promise<GetIndexerOrderSignerEventsResponse> {
+    const baseResponse = await this.query('order_signer_events', {
+      subaccount: params.subaccount
+        ? subaccountToHex(params.subaccount)
+        : undefined,
+      start_idx: params.startIdx,
+      limit: params.limit,
+    });
+    return baseResponse.events.map((event) => ({
+      subaccount: subaccountFromHex(event.subaccount),
+      signer: event.signer,
+      submissionIndex: event.submission_idx,
+      added: event.added,
+      updateTime: toBigNumber(event.update_time),
+    }));
   }
 
   /**

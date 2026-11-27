@@ -103,6 +103,36 @@ export class EngineExecuteClient extends EngineBaseClient {
     );
   }
 
+  /**
+   * Adds an order signer, a key that can only place and cancel orders for the subaccount. Signed
+   * by the subaccount owner or its linked signer.
+   *
+   * @param params
+   */
+  async addOrderSigner(
+    params: EngineExecuteRequestParamsByType['add_order_signer'],
+  ) {
+    return this.execute(
+      'add_order_signer',
+      await this.payloadBuilder.buildAddOrderSignerPayload(params),
+    );
+  }
+
+  /**
+   * Deletes an order signer and cancels the open orders it placed. Signed by the subaccount owner
+   * or its linked signer.
+   *
+   * @param params
+   */
+  async deleteOrderSigner(
+    params: EngineExecuteRequestParamsByType['delete_order_signer'],
+  ) {
+    return this.execute(
+      'delete_order_signer',
+      await this.payloadBuilder.buildDeleteOrderSignerPayload(params),
+    );
+  }
+
   async transferQuote(
     params: EngineExecuteRequestParamsByType['transfer_quote'],
   ) {

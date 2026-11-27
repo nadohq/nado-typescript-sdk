@@ -7,6 +7,7 @@ import {
   EIP712LiquidateSubaccountParams,
   EIP712MintNlpParams,
   EIP712OrderParams,
+  EIP712OrderSignerParams,
   EIP712TransferQuoteParams,
   EIP712WithdrawCollateralParams,
   EIP712WithdrawCollateralV2Params,
@@ -104,6 +105,13 @@ export type EngineCancelProductOrdersParams =
 export type EngineLinkSignerParams =
   WithBaseEngineExecuteParams<EIP712LinkSignerParams>;
 
+/**
+ * Params for the `add_order_signer` / `delete_order_signer` executes. Signed by the subaccount
+ * owner or its linked signer; an order signer cannot manage order signers.
+ */
+export type EngineOrderSignerParams =
+  WithBaseEngineExecuteParams<EIP712OrderSignerParams>;
+
 export type EngineTransferQuoteParams =
   WithBaseEngineExecuteParams<EIP712TransferQuoteParams>;
 
@@ -144,6 +152,8 @@ export interface EngineExecuteRequestParamsByType {
   cancel_orders: EngineCancelOrdersParams;
   cancel_product_orders: EngineCancelProductOrdersParams;
   link_signer: EngineLinkSignerParams;
+  add_order_signer: EngineOrderSignerParams;
+  delete_order_signer: EngineOrderSignerParams;
   liquidate_subaccount: EngineLiquidateSubaccountParams;
   mint_nlp: EngineMintNlpParams;
   place_order: EnginePlaceOrderParams;

@@ -137,6 +137,10 @@ export interface EngineServerLinkedSignerParams {
   subaccount: string;
 }
 
+export interface EngineServerOrderSignersParams {
+  subaccount: string;
+}
+
 export interface EngineServerMaxMintNlpQueryParams {
   sender: string;
   // If not given, engine defaults to true (leverage/borrow enabled)
@@ -162,6 +166,7 @@ export interface EngineServerQueryRequestByType {
   insurance: Record<string, never>;
   isolated_positions: EngineServerIsolatedPositionsQueryParams;
   linked_signer: EngineServerLinkedSignerParams;
+  order_signers: EngineServerOrderSignersParams;
   market_liquidity: EngineServerMarketLiquidityQueryParams;
   market_price: EngineServerMarketPriceQueryParams;
   market_prices: EngineServerMarketPricesQueryParams;
@@ -398,6 +403,11 @@ export interface EngineServerLinkedSignerResponse {
   linked_signer: string;
 }
 
+export interface EngineServerOrderSignersResponse {
+  // 20-byte addresses
+  order_signers: string[];
+}
+
 export interface EngineInsuranceResponse {
   insurance: string;
 }
@@ -445,6 +455,7 @@ export interface EngineServerQueryResponseByType {
   insurance: EngineInsuranceResponse;
   isolated_positions: EngineServerIsolatedPositionsResponse;
   linked_signer: EngineServerLinkedSignerResponse;
+  order_signers: EngineServerOrderSignersResponse;
   market_liquidity: EngineServerMarketLiquidityResponse;
   market_price: EngineServerMarketPriceResponse;
   market_prices: EngineServerMarketPricesResponse;

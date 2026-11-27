@@ -11,6 +11,7 @@ import {
   EIP712MintNlpParams,
   EIP712NadoAuthenticationParams,
   EIP712OrderParams,
+  EIP712OrderSignerParams,
   EIP712SocialAuthenticationParams,
   EIP712TransferQuoteParams,
   EIP712UpdateDependencyParams,
@@ -60,6 +61,8 @@ export type EIP712ProductOrdersCancellationValues =
 
 export type EIP712LinkSignerValues = WithEIP712Sender<EIP712LinkSignerParams>;
 
+export type EIP712OrderSignerValues = WithEIP712Sender<EIP712OrderSignerParams>;
+
 export type EIP712TransferQuoteValues = Omit<
   WithEIP712Sender<EIP712TransferQuoteParams>,
   'recipientSubaccountName'
@@ -85,9 +88,11 @@ export type EIP712NadoAuthenticationValues =
  * All possible requests to be signed, to the EIP712 value interface
  */
 export interface SignableRequestTypeToEIP712Values {
+  add_order_signer: EIP712OrderSignerValues;
   burn_nlp: EIP712BurnNlpValues;
   cancel_orders: EIP712OrderCancellationValues;
   cancel_product_orders: EIP712ProductOrdersCancellationValues;
+  delete_order_signer: EIP712OrderSignerValues;
   leaderboard_authentication: EIP712LeaderboardAuthenticationValues;
   link_signer: EIP712LinkSignerValues;
   liquidate_subaccount: EIP712LiquidateSubaccountValues;

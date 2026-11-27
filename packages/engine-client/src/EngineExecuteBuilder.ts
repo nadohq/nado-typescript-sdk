@@ -1,14 +1,17 @@
 import {
   EIP712OrderParams,
+  EIP712OrderSignerValues,
   getNadoEIP712Values,
   getOrderNonce,
   SignableRequestType,
   SignableRequestTypeToParams,
+  SignedTx,
   toIntegerString,
 } from '@nadohq/shared';
 import { EngineBaseClient } from './EngineBaseClient';
 import {
   EngineExecuteRequestParamsByType,
+  EngineOrderSignerParams,
   EngineServerExecutePlaceOrderPayload,
   EngineServerExecuteRequestByType,
   SignatureParamsOrSignature,
@@ -271,6 +274,30 @@ export class EngineExecuteBuilder {
   }
 
   /**
+   * Builds server payload for the `add_order_signer` execute action.
+   *
+   * @param clientParams Client OrderSigner params.
+   * @returns `add_order_signer` payload
+   */
+  async buildAddOrderSignerPayload(
+    clientParams: EngineExecuteRequestParamsByType['add_order_signer'],
+  ): Promise<EngineServerExecuteRequestByType['add_order_signer']> {
+    return this.buildOrderSignerPayload('add_order_signer', clientParams);
+  }
+
+  /**
+   * Builds server payload for the `delete_order_signer` execute action.
+   *
+   * @param clientParams Client OrderSigner params.
+   * @returns `delete_order_signer` payload
+   */
+  async buildDeleteOrderSignerPayload(
+    clientParams: EngineExecuteRequestParamsByType['delete_order_signer'],
+  ): Promise<EngineServerExecuteRequestByType['delete_order_signer']> {
+    return this.buildOrderSignerPayload('delete_order_signer', clientParams);
+  }
+
+  /**
    * Builds server payload for the `transfer_quote` execute action.
    *
    * @param clientParams Client TransferQuote params.
@@ -375,6 +402,28 @@ export class EngineExecuteBuilder {
       paramsWithNonce.chainId,
       paramsWithNonce,
     );
+  }
+
+  /**
+   * Add and delete share the `LinkSigner` tx shape; only the EIP712 primary type differs.
+   */
+  private async buildOrderSignerPayload(
+    requestType: 'add_order_signer' | 'delete_order_signer',
+    clientParams: EngineOrderSignerParams,
+  ): Promise<SignedTx<EIP712OrderSignerValues>> {
+    const nonce = await this.getTxNonceIfNeeded(clientParams);
+    const paramsWithNonce = { ...clientParams, nonce };
+
+    const tx = getNadoEIP712Values(requestType, paramsWithNonce);
+    const signature = await this.getSignatureIfNeeded(
+      requestType,
+      paramsWithNonce,
+    );
+
+    return {
+      tx,
+      signature,
+    };
   }
 
   protected async getTxNonceIfNeeded(

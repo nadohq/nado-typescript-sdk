@@ -78,6 +78,15 @@ export interface EIP712LinkSignerParams extends Subaccount {
   nonce: string;
 }
 
+/**
+ * Params for the `AddOrderSigner` / `DeleteOrderSigner` executes. Same struct as `LinkSigner`.
+ */
+export interface EIP712OrderSignerParams extends Subaccount {
+  // 20-byte order signer address right-padded with 12 zero bytes, same encoding as `LinkSigner.signer`
+  signer: Hex;
+  nonce: string;
+}
+
 export interface EIP712TransferQuoteParams extends Subaccount {
   recipientSubaccountName: string;
   amount: BigNumberish;
