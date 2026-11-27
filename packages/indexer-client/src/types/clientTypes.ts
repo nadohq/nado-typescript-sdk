@@ -185,6 +185,9 @@ export interface GetIndexerFundingRateParams {
 export interface IndexerFundingRate {
   productId: number;
   fundingRate: BigNumber;
+  // Premium index underlying `fundingRate`, in the same 24hr terms, but not subject to its daily cap.
+  // Undefined for markets that do not use the premium-index funding formula
+  premium?: BigNumber;
   // Seconds
   updateTime: BigNumber;
 }
