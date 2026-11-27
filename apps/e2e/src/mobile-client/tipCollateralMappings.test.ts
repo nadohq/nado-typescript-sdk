@@ -16,16 +16,16 @@ void describe(
   '[mobile-client]: tip collateral mappings',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     for (const direction of ['deposit', 'withdrawal'] as const) {
       void test(`annotates a real ${direction} Indexer submission`, async (context) => {
-        const auth = getMobileSignedParams(tc);
-        const page = await tc.indexer.getPaginatedSubaccountCollateralEvents({
+        const auth = getMobileSignedParams(ctx);
+        const page = await ctx.indexer.getPaginatedSubaccountCollateralEvents({
           ...auth,
           isolated: false,
           limit: 1,
@@ -42,7 +42,7 @@ void describe(
           return;
         }
         const productId = event.snapshot.postBalance.productId;
-        const { mappings } = await tc.mobile.getTipCollateralMappings({
+        const { mappings } = await ctx.mobile.getTipCollateralMappings({
           ...auth,
           subaccount: auth,
           productId,
@@ -104,10 +104,10 @@ void describe(
     }
 
     void test('returns the backend invalid-request error for duplicate submission indices', async () => {
-      const auth = getMobileSignedParams(tc);
+      const auth = getMobileSignedParams(ctx);
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getTipCollateralMappings({
+          ctx.mobile.getTipCollateralMappings({
             ...auth,
             subaccount: auth,
             productId: 0,

@@ -19,10 +19,10 @@ void describe(
   '[otc-client]: readiness and execution status',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     beforeEach(async () => {
@@ -30,7 +30,7 @@ void describe(
     });
 
     void test('getReady reports route coverage', async () => {
-      const result = await tc.otc.getReady();
+      const result = await ctx.otc.getReady();
       debugPrint('OTC ready', result);
 
       assertNonNegativeInteger(result.httpStatus, 'httpStatus');
@@ -39,14 +39,14 @@ void describe(
     });
 
     void test('getReady accepts an explicit pricer', async () => {
-      const result = await tc.otc.getReady({ pricerId: TEST_OTC_PRICER_ID });
+      const result = await ctx.otc.getReady({ pricerId: TEST_OTC_PRICER_ID });
       debugPrint('OTC ready (awr)', result);
 
       assertBoolean(result.ready, 'ready');
     });
 
     void test('getExecutionStatus returns a failure body for an unknown deal', async () => {
-      const result = await tc.otc.getExecutionStatus({
+      const result = await ctx.otc.getExecutionStatus({
         dealId: `e2e-unknown-${Date.now()}`,
         takerDigest: `0x${'0'.repeat(64)}`,
       });

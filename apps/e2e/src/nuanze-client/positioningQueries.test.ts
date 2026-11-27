@@ -32,14 +32,14 @@ void describe(
   '[nuanze-client]: positioning',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let ticker: string;
     let productId: number;
     let venue: 'perp';
 
     before(async () => {
-      tc = createTestContext();
-      const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      ctx = createTestContext();
+      const [first] = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
       ticker = first.ticker;
       productId = first.productId;
@@ -47,11 +47,11 @@ void describe(
     });
 
     void test('resolves the same market positioning by ticker or productId', async () => {
-      const byTicker = await tc.nuanze.getMarketPositioning({
+      const byTicker = await ctx.nuanze.getMarketPositioning({
         ticker,
         venue,
       });
-      const byProductId = await tc.nuanze.getMarketPositioning({
+      const byProductId = await ctx.nuanze.getMarketPositioning({
         productId,
         venue,
       });
@@ -74,12 +74,12 @@ void describe(
     });
 
     void test('resolves the same market positions by ticker or productId', async () => {
-      const byTicker = await tc.nuanze.getMarketPositions({
+      const byTicker = await ctx.nuanze.getMarketPositions({
         ticker,
         venue,
         limit: 20,
       });
-      const byProductId = await tc.nuanze.getMarketPositions({
+      const byProductId = await ctx.nuanze.getMarketPositions({
         productId,
         venue,
         limit: 20,
@@ -111,7 +111,7 @@ void describe(
     });
 
     void test('returns side-grouped aggregate positioning without identities', async () => {
-      const response = await tc.nuanze.getMarketPositioning({
+      const response = await ctx.nuanze.getMarketPositioning({
         ticker,
         venue: 'perp',
       });
@@ -145,7 +145,7 @@ void describe(
     });
 
     void test('lists per-trader market positions with addresses', async () => {
-      const response = await tc.nuanze.getMarketPositions({
+      const response = await ctx.nuanze.getMarketPositions({
         ticker,
         venue: 'perp',
         limit: 20,
@@ -171,7 +171,7 @@ void describe(
     });
 
     void test('lists top PnL market positions', async () => {
-      const response = await tc.nuanze.getMarketPositions({
+      const response = await ctx.nuanze.getMarketPositions({
         ticker,
         venue: 'perp',
         limit: 20,
@@ -194,7 +194,7 @@ void describe(
     });
 
     void test('lists private-inclusive market positions with the same shape', async () => {
-      const response = await tc.nuanze.getMarketPositions({
+      const response = await ctx.nuanze.getMarketPositions({
         ticker,
         venue,
         limit: 20,
@@ -225,8 +225,8 @@ void describe(
       // Global open positions already honor includePrivate, so they locate a market holding a
       // known Private Mode leg.
       const [globalPublic, globalWithPrivate] = await Promise.all([
-        tc.nuanze.getOpenPositions({ limit }),
-        tc.nuanze.getOpenPositions({ limit, includePrivate: true }),
+        ctx.nuanze.getOpenPositions({ limit }),
+        ctx.nuanze.getOpenPositions({ limit, includePrivate: true }),
       ]);
       const [privateLeg] = privateOnlyLegs(
         globalPublic.positions,
@@ -244,12 +244,12 @@ void describe(
       }
 
       const [publicOnly, withPrivate] = await Promise.all([
-        tc.nuanze.getMarketPositions({
+        ctx.nuanze.getMarketPositions({
           productId: privateLeg.productId,
           venue,
           limit,
         }),
-        tc.nuanze.getMarketPositions({
+        ctx.nuanze.getMarketPositions({
           productId: privateLeg.productId,
           venue,
           limit,
@@ -297,7 +297,7 @@ void describe(
     });
 
     void test('binds market-position cursors to private visibility', async () => {
-      const first = await tc.nuanze.getMarketPositions({
+      const first = await ctx.nuanze.getMarketPositions({
         ticker,
         venue,
         limit: 2,
@@ -309,7 +309,7 @@ void describe(
 
       try {
         // Omitting includePrivate falls back to the default `false`.
-        await tc.nuanze.getMarketPositions({
+        await ctx.nuanze.getMarketPositions({
           ticker,
           venue,
           limit: 2,
@@ -329,7 +329,7 @@ void describe(
 
     void test('lists globally ranked current open positions in both directions', async () => {
       for (const sortDirection of NUANZE_OPEN_POSITION_SORT_DIRECTIONS) {
-        const response = await tc.nuanze.getOpenPositions({
+        const response = await ctx.nuanze.getOpenPositions({
           limit: 20,
           sortDirection,
         });
@@ -359,7 +359,7 @@ void describe(
     });
 
     void test('lists global open positions by absolute notional, descending by default', async () => {
-      const response = await tc.nuanze.getOpenPositions({
+      const response = await ctx.nuanze.getOpenPositions({
         limit: 20,
         sortBy: 'notional',
       });
@@ -378,7 +378,7 @@ void describe(
     });
 
     void test('lists global open positions by absolute notional ascending', async () => {
-      const response = await tc.nuanze.getOpenPositions({
+      const response = await ctx.nuanze.getOpenPositions({
         limit: 20,
         sortBy: 'notional',
         sortDirection: 'asc',
@@ -398,7 +398,7 @@ void describe(
     });
 
     void test('continues notional-ordered global open positions with a cursor', async () => {
-      const first = await tc.nuanze.getOpenPositions({
+      const first = await ctx.nuanze.getOpenPositions({
         limit: 5,
         sortBy: 'notional',
       });
@@ -406,7 +406,7 @@ void describe(
       assertNonEmptyString(nextCursor, 'first.nextCursor');
       assert.ok(nextCursor !== null);
 
-      const second = await tc.nuanze.getOpenPositions({
+      const second = await ctx.nuanze.getOpenPositions({
         limit: 5,
         sortBy: 'notional',
         cursor: nextCursor,
@@ -426,7 +426,7 @@ void describe(
     });
 
     void test('binds global open-position cursors to a non-default sortBy', async () => {
-      const first = await tc.nuanze.getOpenPositions({
+      const first = await ctx.nuanze.getOpenPositions({
         limit: 2,
         sortBy: 'notional',
       });
@@ -436,7 +436,7 @@ void describe(
 
       try {
         // Omitting sortBy falls back to the default `pnl`, which the cursor was not minted for.
-        await tc.nuanze.getOpenPositions({ limit: 2, cursor: nextCursor });
+        await ctx.nuanze.getOpenPositions({ limit: 2, cursor: nextCursor });
         assert.fail('expected CURSOR_FILTER_MISMATCH for a changed sortBy');
       } catch (error) {
         assert.ok(
@@ -450,7 +450,7 @@ void describe(
     });
 
     void test('binds global open-position cursors to private visibility', async () => {
-      const first = await tc.nuanze.getOpenPositions({
+      const first = await ctx.nuanze.getOpenPositions({
         limit: 2,
         includePrivate: false,
       });
@@ -459,7 +459,7 @@ void describe(
       assert.ok(nextCursor !== null);
 
       try {
-        await tc.nuanze.getOpenPositions({
+        await ctx.nuanze.getOpenPositions({
           limit: 2,
           includePrivate: true,
           cursor: nextCursor,
@@ -477,7 +477,7 @@ void describe(
     });
 
     void test('lists private-inclusive global open positions with the same shape', async () => {
-      const response = await tc.nuanze.getOpenPositions({
+      const response = await ctx.nuanze.getOpenPositions({
         limit: 20,
         includePrivate: true,
       });
@@ -503,8 +503,8 @@ void describe(
     void test('excludes Private Mode legs from global open positions by default', async (context) => {
       const limit = 200;
       const [publicOnly, withPrivate] = await Promise.all([
-        tc.nuanze.getOpenPositions({ limit }),
-        tc.nuanze.getOpenPositions({ limit, includePrivate: true }),
+        ctx.nuanze.getOpenPositions({ limit }),
+        ctx.nuanze.getOpenPositions({ limit, includePrivate: true }),
       ]);
       debugPrint('Default global open positions', publicOnly);
       debugPrint('Private-inclusive global open positions', withPrivate);
@@ -528,7 +528,7 @@ void describe(
     });
 
     void test('rejects a private-inclusive open-position cursor reused without includePrivate', async () => {
-      const first = await tc.nuanze.getOpenPositions({
+      const first = await ctx.nuanze.getOpenPositions({
         limit: 2,
         includePrivate: true,
       });
@@ -537,7 +537,7 @@ void describe(
       assert.ok(nextCursor !== null);
 
       try {
-        await tc.nuanze.getOpenPositions({ limit: 2, cursor: nextCursor });
+        await ctx.nuanze.getOpenPositions({ limit: 2, cursor: nextCursor });
         assert.fail('expected CURSOR_FILTER_MISMATCH for changed filters');
       } catch (error) {
         assert.ok(
@@ -552,7 +552,7 @@ void describe(
 
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
-        await tc.nuanze.getMarketPositioning({ ticker: 'NOTAREALTICKERXYZ' });
+        await ctx.nuanze.getMarketPositioning({ ticker: 'NOTAREALTICKERXYZ' });
         assert.fail('expected MARKET_NOT_FOUND for an unknown ticker');
       } catch (error) {
         assert.ok(

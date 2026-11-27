@@ -39,18 +39,18 @@ void describe(
   '[mobile-client]: social feed',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let viewAs: Subaccount;
     let mobile: MobileClient;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
       viewAs = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
-      mobile = new MobileClient({ url: tc.endpoints.mobile });
+      mobile = new MobileClient({ url: ctx.endpoints.mobile });
     });
 
     void test('accepts every exported social feed type as a public filter', async () => {

@@ -24,14 +24,14 @@ void describe(
   '[nuanze-client]: funding',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('lists latest perpetual funding rates', async () => {
-      const response = await tc.nuanze.getFundingRates();
+      const response = await ctx.nuanze.getFundingRates();
       debugPrint('Funding rates', response);
 
       assert.match(
@@ -50,7 +50,7 @@ void describe(
 
     void test('rejects a spot venue with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getFundingRates({
+        await ctx.nuanze.getFundingRates({
           venue: 'spot' as 'perp',
         });
         assert.fail('expected BAD_REQUEST for a spot venue');

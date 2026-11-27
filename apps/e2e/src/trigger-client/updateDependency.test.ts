@@ -35,7 +35,7 @@ void describe(
   '[trigger-client]: update dependency',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     // Digests captured during setup: `oldDigest` is the order the dependent
     // trigger initially depends on; `newDigest` is the replacement order.
@@ -48,9 +48,9 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      tc = createTestContext();
+      ctx = createTestContext();
 
-      const marketPrice = await tc.engine.getMarketPrice({
+      const marketPrice = await ctx.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
       const midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
@@ -64,7 +64,7 @@ void describe(
         expiration: getExpiration(),
         price,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         appendix: packOrderAppendix({
           orderExecutionType: 'default',
           triggerType: orderKind === 'priceTriggered' ? 'price' : undefined,
@@ -78,7 +78,7 @@ void describe(
       const dependencyOrderOld: EnginePlaceOrderParams = {
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         verifyingAddr,
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         spotLeverage: true,
         nonce: getOrderNonce(),
         id: 6000,
@@ -90,7 +90,7 @@ void describe(
       const dependencyOrderNew: EnginePlaceOrderParams = {
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         verifyingAddr,
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         spotLeverage: true,
         nonce: getOrderNonce(),
         id: 6001,
@@ -98,8 +98,8 @@ void describe(
       };
 
       const [dependencyOldResult, dependencyNewResult] = await Promise.all([
-        tc.engine.placeOrder(dependencyOrderOld),
-        tc.engine.placeOrder(dependencyOrderNew),
+        ctx.engine.placeOrder(dependencyOrderOld),
+        ctx.engine.placeOrder(dependencyOrderNew),
       ]);
 
       oldDigest = dependencyOldResult.data.digest;
@@ -107,7 +107,7 @@ void describe(
 
       // Dependent trigger order that waits on `dependencyOrderOld`'s fill.
       const dependentTriggerOrder: TriggerPlaceOrderParams = {
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         order: makeOrder(midPrice.multipliedBy(1.05).dp(0), 'priceTriggered'),
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         spotLeverage: true,
@@ -127,7 +127,7 @@ void describe(
         id: 6002,
       };
 
-      const dependentTriggerResult = await tc.trigger.placeTriggerOrder(
+      const dependentTriggerResult = await ctx.trigger.placeTriggerOrder(
         dependentTriggerOrder,
       );
       dependentDigest = dependentTriggerResult.data.digest;
@@ -138,11 +138,11 @@ void describe(
 
     after(async () => {
       await cleanupTestState(
-        { engine: tc.engine, trigger: tc.trigger },
+        { engine: ctx.engine, trigger: ctx.trigger },
         {
-          subaccountOwner: tc.walletClientAddress,
-          endpointAddr: tc.endpointAddr,
-          chainId: tc.chainId,
+          subaccountOwner: ctx.walletClientAddress,
+          endpointAddr: ctx.endpointAddr,
+          chainId: ctx.chainId,
         },
       );
     });
@@ -152,13 +152,13 @@ void describe(
     });
 
     void test('re-points dependent trigger orders to a new digest', async () => {
-      const result = await tc.trigger.updateTriggerDependency({
+      const result = await ctx.trigger.updateTriggerDependency({
         oldDigest,
         newDigest,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
       debugPrint('Update dependency result', result);
 
@@ -183,11 +183,11 @@ void describe(
     });
 
     void test('dependent order remains in waiting_dependency after re-point', async () => {
-      const listResult = await tc.trigger.listOrders({
-        chainId: tc.chainId,
-        verifyingAddr: tc.endpointAddr,
+      const listResult = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
+        verifyingAddr: ctx.endpointAddr,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         digests: [dependentDigest],
         statusTypes: ['waiting_dependency'],
       });

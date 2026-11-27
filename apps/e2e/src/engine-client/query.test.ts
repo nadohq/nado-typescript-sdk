@@ -47,12 +47,12 @@ void describe(
   '[engine-client]: queries',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     beforeEach(async () => {
@@ -60,7 +60,7 @@ void describe(
     });
 
     void test('getSymbols returns market symbols', async () => {
-      const result = await tc.engine.getSymbols({});
+      const result = await ctx.engine.getSymbols({});
 
       debugPrint('Symbols', result);
       assertDefined(result, 'symbolsResult');
@@ -88,14 +88,14 @@ void describe(
     });
 
     void test('getInsurance returns a finite insurance balance', async () => {
-      const insurance = await tc.engine.getInsurance();
+      const insurance = await ctx.engine.getInsurance();
 
       debugPrint('Insurance', insurance);
       assertBigNumberFinite(insurance, 'insurance');
     });
 
     void test('getContracts returns chain and endpoint', async () => {
-      const contracts = await tc.engine.getContracts();
+      const contracts = await ctx.engine.getContracts();
 
       debugPrint('Contracts', contracts);
       assertDefined(contracts, 'contracts');
@@ -104,7 +104,7 @@ void describe(
     });
 
     void test('getStatus returns engine status', async () => {
-      const status = await tc.engine.getStatus();
+      const status = await ctx.engine.getStatus();
 
       debugPrint('Engine status', status);
       assertDefined(status, 'status');
@@ -112,8 +112,8 @@ void describe(
     });
 
     void test('getOrder returns order when digest exists', async () => {
-      const openOrders = await tc.engine.getSubaccountOrders({
-        subaccountOwner: tc.walletClientAddress,
+      const openOrders = await ctx.engine.getSubaccountOrders({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
@@ -123,7 +123,7 @@ void describe(
       }
 
       const firstOrder = openOrders.orders[0];
-      const order = await tc.engine.getOrder({
+      const order = await ctx.engine.getOrder({
         digest: firstOrder.digest,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
@@ -140,7 +140,7 @@ void describe(
     });
 
     void test.skip('validateSignedOrderParams validates a signed order', async () => {
-      const products = await tc.engine.getAllMarkets();
+      const products = await ctx.engine.getAllMarkets();
       const spotBtc = products.find(
         (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
       );
@@ -150,7 +150,7 @@ void describe(
         .multipliedBy(1.05)
         .decimalPlaces(0);
       const order = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         price,
         amount: addDecimals(0.001),
@@ -159,14 +159,14 @@ void describe(
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       };
 
-      const signature = await tc.engine.sign(
+      const signature = await ctx.engine.sign(
         'place_order',
         getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
-        tc.chainId,
+        ctx.chainId,
         order,
       );
 
-      const result = await tc.engine.validateSignedOrderParams({
+      const result = await ctx.engine.validateSignedOrderParams({
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         signedOrder: { order, signature },
       });
@@ -182,7 +182,7 @@ void describe(
     });
 
     void test('getEdgeAllMarkets returns markets grouped by chain id', async () => {
-      const edgeMarkets = await tc.engine.getEdgeAllMarkets();
+      const edgeMarkets = await ctx.engine.getEdgeAllMarkets();
 
       debugPrint('Edge all markets', edgeMarkets);
       assertDefined(edgeMarkets, 'edgeMarkets');
@@ -199,8 +199,8 @@ void describe(
     });
 
     void test('getEstimatedSubaccountSummary returns pre-state when requested', async () => {
-      const result = await tc.engine.getEstimatedSubaccountSummary({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getEstimatedSubaccountSummary({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         preState: true,
         txs: [
@@ -221,7 +221,7 @@ void describe(
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
-      const result = await tc.engine.getMarketPrices({
+      const result = await ctx.engine.getMarketPrices({
         productIds: [
           TEST_PRODUCT_IDS.SPOT_BTC,
           TEST_PRODUCT_IDS.PERP_BTC,
@@ -249,7 +249,7 @@ void describe(
     // ---------------------------------------------------------------
 
     void test('getCachedMarketPrices returns cached prices', async () => {
-      const result = await tc.engine.getCachedMarketPrices({
+      const result = await ctx.engine.getCachedMarketPrices({
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC, TEST_PRODUCT_IDS.PERP_BTC],
       });
 
@@ -264,7 +264,7 @@ void describe(
     });
 
     void test('getCachedSymbols returns cached symbols', async () => {
-      const result = await tc.engine.getCachedSymbols({});
+      const result = await ctx.engine.getCachedSymbols({});
 
       debugPrint('Cached symbols', result);
       assertDefined(result, 'cachedSymbols');
@@ -283,7 +283,7 @@ void describe(
     });
 
     void test('getCachedAllMarkets returns market shapes', async () => {
-      const result = await tc.engine.getCachedAllMarkets();
+      const result = await ctx.engine.getCachedAllMarkets();
 
       debugPrint('Cached all markets', result);
       assertNonEmptyArray(result, 'cachedAllMarkets');
@@ -295,7 +295,7 @@ void describe(
     });
 
     void test('getCachedEdgeAllMarkets returns markets grouped by chain id', async () => {
-      const result = await tc.engine.getCachedEdgeAllMarkets();
+      const result = await ctx.engine.getCachedEdgeAllMarkets();
 
       debugPrint('Cached edge all markets', result);
       assertRecord(result, 'cachedEdgeAllMarkets');
@@ -310,14 +310,14 @@ void describe(
     });
 
     void test('getCachedStatus returns engine status', async () => {
-      const status = await tc.engine.getCachedStatus();
+      const status = await ctx.engine.getCachedStatus();
 
       debugPrint('Cached engine status', status);
       assertEnumMember(status, ENGINE_SERVER_STATUS_VALUES, 'cachedStatus');
     });
 
     void test('getCachedBboHistory returns ascending BBO samples', async () => {
-      const result = await tc.engine.getCachedBboHistory({
+      const result = await ctx.engine.getCachedBboHistory({
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
         intervalMs: 1000,
         limit: 10,
@@ -341,7 +341,7 @@ void describe(
 
     void test('ping returns finite server and client times', async () => {
       const clientTime = Date.now();
-      const result = await tc.engine.ping({ id: 1, clientTime });
+      const result = await ctx.engine.ping({ id: 1, clientTime });
 
       debugPrint('Edge ping', result);
       assertDefined(result, 'ping');
@@ -351,7 +351,7 @@ void describe(
     });
 
     void test('getEdgeControlTime returns a finite epoch-ms server time', async () => {
-      const serverTime = await tc.engine.getEdgeControlTime();
+      const serverTime = await ctx.engine.getEdgeControlTime();
 
       debugPrint('Edge time', serverTime);
       assertNumber(serverTime, 'edgeControlTime');
@@ -359,8 +359,8 @@ void describe(
     });
 
     void test('getDynamicFeeQuote returns the current withdrawal fee', async () => {
-      const result = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         kind: 'withdrawal',
         productId: QUOTE_PRODUCT_ID,
@@ -371,8 +371,8 @@ void describe(
     });
 
     void test('getDynamicFeeQuote returns the current transfer fee', async () => {
-      const result = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         kind: 'transfer_quote',
         recipientSubaccountName: TEST_SUBACCOUNT_NAME,
@@ -383,8 +383,8 @@ void describe(
     });
 
     void test('getMaxWithdrawable reserves the dynamic fee', async () => {
-      const result = await tc.engine.getMaxWithdrawable({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxWithdrawable({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
       });
@@ -395,8 +395,8 @@ void describe(
     });
 
     void test('getMaxWithdrawable returns the max transfer to a subaccount', async () => {
-      const result = await tc.engine.getMaxWithdrawable({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxWithdrawable({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
         recipientSubaccountName: TEST_SUBACCOUNT_NAME,

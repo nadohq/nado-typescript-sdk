@@ -66,16 +66,16 @@ void describe(
   '[mobile-client]: social content and position history',
   { timeout: TEST_TIMEOUTS.LONG * 5 },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let mobile: MobileClient;
     let viewAs: Subaccount;
 
     before(async () => {
       await waitForRateLimitWindow();
-      tc = createTestContext();
-      mobile = new MobileClient({ url: tc.endpoints.mobile });
+      ctx = createTestContext();
+      mobile = new MobileClient({ url: ctx.endpoints.mobile });
       viewAs = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
     });
@@ -596,10 +596,10 @@ void describe(
       const fileBytes = new Uint8Array(
         await readFile(new URL('./fixtures/avatar.jpg', import.meta.url)),
       );
-      const signed = getMobileSignedParams(tc);
+      const signed = getMobileSignedParams(ctx);
       for (const upload of [
-        tc.mobile.createFeedPostImageUpload.bind(tc.mobile),
-        tc.mobile.createFeedCommentImageUpload.bind(tc.mobile),
+        ctx.mobile.createFeedPostImageUpload.bind(ctx.mobile),
+        ctx.mobile.createFeedCommentImageUpload.bind(ctx.mobile),
       ]) {
         const image = await upload({
           ...signed,
@@ -620,10 +620,10 @@ void describe(
     });
 
     void test('rejects oversized image upload requests locally', async () => {
-      const signed = getMobileSignedParams(tc);
+      const signed = getMobileSignedParams(ctx);
       for (const upload of [
-        tc.mobile.createFeedPostImageUpload.bind(tc.mobile),
-        tc.mobile.createFeedCommentImageUpload.bind(tc.mobile),
+        ctx.mobile.createFeedPostImageUpload.bind(ctx.mobile),
+        ctx.mobile.createFeedCommentImageUpload.bind(ctx.mobile),
       ]) {
         await assert.rejects(
           () =>
@@ -668,10 +668,10 @@ void describe(
     });
 
     void test('rejects invalid image uploads and preserves protected image errors', async () => {
-      const signed = getMobileSignedParams(tc);
+      const signed = getMobileSignedParams(ctx);
       for (const upload of [
-        tc.mobile.createFeedPostImageUpload.bind(tc.mobile),
-        tc.mobile.createFeedCommentImageUpload.bind(tc.mobile),
+        ctx.mobile.createFeedPostImageUpload.bind(ctx.mobile),
+        ctx.mobile.createFeedCommentImageUpload.bind(ctx.mobile),
       ]) {
         await assertRejectsWithMobileErrorCode(
           () => upload({ ...signed, fileBytes: new Uint8Array([1, 2, 3]) }),
@@ -701,23 +701,23 @@ void describe(
     void test('publishes images idempotently, reads originals and thumbnails, updates drawings, comments, likes, and records exposures', async (context) => {
       context.after(async () => {
         await cleanupTestState(
-          { engine: tc.engine, trigger: tc.trigger },
+          { engine: ctx.engine, trigger: ctx.trigger },
           {
-            subaccountOwner: tc.walletClientAddress,
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SUBACCOUNT_NAME,
-            endpointAddr: tc.endpointAddr,
-            chainId: tc.chainId,
+            endpointAddr: ctx.endpointAddr,
+            chainId: ctx.chainId,
           },
         );
       });
       await waitForRateLimitWindow();
-      const candidate = await openPublishablePosition(tc, mobile, viewAs);
+      const candidate = await openPublishablePosition(ctx, mobile, viewAs);
       await waitForRateLimitWindow();
-      const signed = getMobileSignedParams(tc);
+      const signed = getMobileSignedParams(ctx);
       const fileBytes = new Uint8Array(
         await readFile(new URL('./fixtures/avatar.jpg', import.meta.url)),
       );
-      const postImage = await tc.mobile.createFeedPostImageUpload({
+      const postImage = await ctx.mobile.createFeedPostImageUpload({
         ...signed,
         fileBytes,
       });
@@ -746,7 +746,7 @@ void describe(
           url: 'https://static.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/a8/6a/QmXfWRrn.gif',
         },
       ];
-      const post = await tc.mobile.createFeedPost(params);
+      const post = await ctx.mobile.createFeedPost(params);
       assert.ok(post.kind === 'post');
       assert.deepEqual(post.images.slice(1), postExternalImages);
       assert.deepEqual(
@@ -755,13 +755,13 @@ void describe(
           .map((image) => image.imageId),
         params.imageIds,
       );
-      const retriedPost = await tc.mobile.createFeedPost(params);
+      const retriedPost = await ctx.mobile.createFeedPost(params);
       assert.equal(retriedPost.id, post.id);
       assert.ok(retriedPost.kind === 'post');
       assert.deepEqual(retriedPost.images, post.images);
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.createFeedPost({
+          ctx.mobile.createFeedPost({
             ...params,
             text: 'Different retry content',
           }),
@@ -773,7 +773,7 @@ void describe(
       ]) {
         await assertRejectsWithMobileErrorCode(
           () =>
-            tc.mobile.createFeedPost({ ...params, externalImageDimensions }),
+            ctx.mobile.createFeedPost({ ...params, externalImageDimensions }),
           MOBILE_ERROR_CODES.SOCIAL_FEED_REQUEST_CONFLICT,
         );
       }
@@ -784,13 +784,13 @@ void describe(
         dataJson: 'false',
         nonce: getMobileNonce(),
       };
-      const created = await tc.mobile.createFeedChartDrawing(drawingParams);
+      const created = await ctx.mobile.createFeedChartDrawing(drawingParams);
       assert.equal(created.drawing.data, false);
       assert.deepEqual(
-        await tc.mobile.createFeedChartDrawing(drawingParams),
+        await ctx.mobile.createFeedChartDrawing(drawingParams),
         created,
       );
-      const updated = await tc.mobile.updateFeedChartDrawing({
+      const updated = await ctx.mobile.updateFeedChartDrawing({
         ...signed,
         itemId: post.id,
         dataJson: '0',
@@ -813,7 +813,7 @@ void describe(
           ?.data,
         0,
       );
-      const commentImage = await tc.mobile.createFeedCommentImageUpload({
+      const commentImage = await ctx.mobile.createFeedCommentImageUpload({
         ...signed,
         fileBytes,
       });
@@ -840,7 +840,7 @@ void describe(
           url: 'https://static.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f1/31/x9qnwc1d.gif',
         },
       ];
-      const comment = await tc.mobile.createFeedComment(commentParams);
+      const comment = await ctx.mobile.createFeedComment(commentParams);
       assert.equal(comment.comment.rootItemId, post.id);
       assert.deepEqual(comment.comment.images.slice(1), commentExternalImages);
       assert.deepEqual(
@@ -849,7 +849,7 @@ void describe(
           .map((image) => image.imageId),
         commentParams.imageIds,
       );
-      const retriedComment = await tc.mobile.createFeedComment(commentParams);
+      const retriedComment = await ctx.mobile.createFeedComment(commentParams);
       assert.equal(retriedComment.comment.id, comment.comment.id);
       assert.deepEqual(retriedComment.comment.images, comment.comment.images);
       for (const externalImageDimensions of [
@@ -858,7 +858,7 @@ void describe(
       ]) {
         await assertRejectsWithMobileErrorCode(
           () =>
-            tc.mobile.createFeedComment({
+            ctx.mobile.createFeedComment({
               ...commentParams,
               externalImageDimensions,
             }),
@@ -866,19 +866,19 @@ void describe(
         );
       }
       await waitForRateLimitWindow();
-      const liked = await tc.mobile.setFeedLike({
+      const liked = await ctx.mobile.setFeedLike({
         ...signed,
         itemId: post.id,
         isLiked: true,
       });
       assert.equal(liked.isLiked, true);
-      const retriedLike = await tc.mobile.setFeedLike({
+      const retriedLike = await ctx.mobile.setFeedLike({
         ...signed,
         itemId: post.id,
         isLiked: true,
       });
       assert.deepEqual(retriedLike, liked);
-      const unliked = await tc.mobile.setFeedLike({
+      const unliked = await ctx.mobile.setFeedLike({
         ...signed,
         itemId: post.id,
         isLiked: false,
@@ -957,7 +957,7 @@ void describe(
           })
         ).byteLength > 0,
       );
-      const child = await tc.mobile.createFeedComment({
+      const child = await ctx.mobile.createFeedComment({
         ...signed,
         clientRequestId: randomUUID(),
         rootItemId: post.id,
@@ -969,7 +969,7 @@ void describe(
         ],
         externalImageDimensions: [{ width: 220, height: 220 }],
       });
-      const grandchild = await tc.mobile.createFeedComment({
+      const grandchild = await ctx.mobile.createFeedComment({
         ...signed,
         clientRequestId: randomUUID(),
         rootItemId: post.id,

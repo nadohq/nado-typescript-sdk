@@ -29,12 +29,12 @@ void describe(
   '[nuanze-client]: wallets',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let address: string;
 
     before(async () => {
-      tc = createTestContext();
-      const board = await tc.nuanze.getLeaderboard({ limit: 10 });
+      ctx = createTestContext();
+      const board = await ctx.nuanze.getLeaderboard({ limit: 10 });
       // Prefer a wallet with recorded fills. Unbounded trades against some
       // leaderboard wallets 500 as INTERNAL_ERROR.
       const fixture =
@@ -48,7 +48,7 @@ void describe(
     });
 
     void test('returns a replica-backed wallet summary', async () => {
-      const response = await tc.nuanze.getWalletSummary({ address });
+      const response = await ctx.nuanze.getWalletSummary({ address });
       debugPrint('Wallet summary', response);
 
       assert.match(
@@ -70,7 +70,7 @@ void describe(
     });
 
     void test('lists wallet position snapshots', async () => {
-      const response = await tc.nuanze.getWalletPositions({ address });
+      const response = await ctx.nuanze.getWalletPositions({ address });
       debugPrint('Wallet positions', response);
 
       assert.equal(response.address, address);
@@ -86,7 +86,7 @@ void describe(
     void test('lists wallet trades newest first', async () => {
       // Bound the scan: unbounded history on some wallets 500s as INTERNAL_ERROR.
       const from = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const response = await tc.nuanze.getWalletTrades({
+      const response = await ctx.nuanze.getWalletTrades({
         address,
         from,
         limit: 20,
@@ -107,7 +107,7 @@ void describe(
     });
 
     void test('returns wallet account PnL', async () => {
-      const response = await tc.nuanze.getWalletPnl({
+      const response = await ctx.nuanze.getWalletPnl({
         address,
         window: '30d',
       });
@@ -122,7 +122,7 @@ void describe(
     });
 
     void test('returns a sampled wallet series', async () => {
-      const response = await tc.nuanze.getWalletPnlSeries({
+      const response = await ctx.nuanze.getWalletPnlSeries({
         address,
         metric: 'pnl',
         window: '30d',
@@ -145,7 +145,7 @@ void describe(
 
     void test('rejects an invalid address with INVALID_ADDRESS', async () => {
       try {
-        await tc.nuanze.getWalletSummary({ address: 'not-an-address' });
+        await ctx.nuanze.getWalletSummary({ address: 'not-an-address' });
         assert.fail('expected INVALID_ADDRESS for a malformed address');
       } catch (error) {
         assert.ok(

@@ -29,14 +29,14 @@ void describe(
   '[nuanze-client]: cohorts',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('returns all six lifetime-PnL cohorts in order', async () => {
-      const response = await tc.nuanze.getCohorts();
+      const response = await ctx.nuanze.getCohorts();
       debugPrint('Cohorts', response);
 
       assert.match(
@@ -53,7 +53,7 @@ void describe(
     });
 
     void test('tiles lifetime PnL with contiguous cohort bounds', async () => {
-      const { items } = await tc.nuanze.getCohorts();
+      const { items } = await ctx.nuanze.getCohorts();
 
       assert.equal(items[0]?.pnlMax, null, 'top cohort should be unbounded');
       assert.equal(

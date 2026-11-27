@@ -33,22 +33,22 @@ void describe(
   '[nuanze-client]: subaccount stats',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('returns stat cards consistent with the subaccount leaderboard', async () => {
       const timeframe = '7d' as const;
-      const collection = await tc.nuanze.getSubaccountLeaderboard({
+      const collection = await ctx.nuanze.getSubaccountLeaderboard({
         timeframe,
         limit: 1,
       });
       const ranked = collection.items[0];
       assert.ok(ranked, 'subaccount leaderboard should contain an item');
 
-      const response = await tc.nuanze.getSubaccountStats({
+      const response = await ctx.nuanze.getSubaccountStats({
         subaccountHex: ranked.subaccountHex,
         timeframe,
       });
@@ -78,7 +78,7 @@ void describe(
 
     void test('rejects malformed and unknown subaccount identifiers', async () => {
       try {
-        await tc.nuanze.getSubaccountStats({
+        await ctx.nuanze.getSubaccountStats({
           subaccountHex: 'not-a-subaccount',
         });
         assert.fail(
@@ -95,7 +95,7 @@ void describe(
       }
 
       try {
-        await tc.nuanze.getSubaccountStats({
+        await ctx.nuanze.getSubaccountStats({
           subaccountHex: ABSENT_SUBACCOUNT_HEX,
         });
         assert.fail('expected WALLET_NOT_FOUND for an unknown subaccount hex');

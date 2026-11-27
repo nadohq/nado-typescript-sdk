@@ -30,15 +30,15 @@ import {
 import { RunContext } from '../utils/types';
 
 void describe('[trigger-client]: placement', () => {
-  let tc: RunContext;
+  let ctx: RunContext;
   let midPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.LONG);
 
-    tc = createTestContext();
+    ctx = createTestContext();
 
-    const marketPrice = await tc.engine.getMarketPrice({
+    const marketPrice = await ctx.engine.getMarketPrice({
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
     });
     midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
@@ -46,11 +46,11 @@ void describe('[trigger-client]: placement', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: tc.engine, trigger: tc.trigger },
+      { engine: ctx.engine, trigger: ctx.trigger },
       {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        endpointAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       },
     );
   });
@@ -68,7 +68,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: midPrice.multipliedBy(1.05).dp(0),
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'default',
         triggerType: 'price',
@@ -76,7 +76,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
       spotLeverage: true,
@@ -91,7 +91,7 @@ void describe('[trigger-client]: placement', () => {
       nonce,
     };
 
-    const result = await tc.trigger.placeTriggerOrder(params);
+    const result = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('Short stop order result', result.data);
 
     assertDefined(result, 'shortStopResult');
@@ -109,7 +109,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: 60000,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'ioc',
         triggerType: 'price',
@@ -117,7 +117,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.PERP_BTC,
       triggerCriteria: {
@@ -131,7 +131,7 @@ void describe('[trigger-client]: placement', () => {
       nonce,
     };
 
-    const result = await tc.trigger.placeTriggerOrder(params);
+    const result = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('Long stop order result', result);
 
     assertDefined(result, 'longStopResult');
@@ -149,7 +149,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: 60000,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'ioc',
         triggerType: 'price',
@@ -157,7 +157,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.PERP_BTC,
       triggerCriteria: {
@@ -173,7 +173,7 @@ void describe('[trigger-client]: placement', () => {
       nonce,
     };
 
-    const result = await tc.trigger.placeTriggerOrder(params);
+    const result = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('Routed stop order result', result);
 
     assertDefined(result, 'routedStopResult');
@@ -191,7 +191,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: 1000,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'default',
         triggerType: 'price',
@@ -199,7 +199,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
       spotLeverage: true,
@@ -215,7 +215,7 @@ void describe('[trigger-client]: placement', () => {
       id: 1000,
     };
 
-    const result = await tc.trigger.placeTriggerOrder(params);
+    const result = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('Short stop mid-book order result', result.data);
 
     assertDefined(result, 'shortStopMidBookResult');
@@ -232,7 +232,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: 1000,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         reduceOnly: true,
         orderExecutionType: 'default',
@@ -241,7 +241,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
       spotLeverage: true,
@@ -255,7 +255,7 @@ void describe('[trigger-client]: placement', () => {
       verifyingAddr,
     };
 
-    const result = await tc.trigger.placeTriggerOrder(params);
+    const result = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('Reduce-only order result', result.data);
 
     assertDefined(result, 'reduceOnlyResult');
@@ -272,7 +272,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: 3000,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'default',
         triggerType: 'price',
@@ -281,7 +281,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
       spotLeverage: true,
@@ -295,7 +295,7 @@ void describe('[trigger-client]: placement', () => {
       verifyingAddr,
     };
 
-    const result = await tc.trigger.placeTriggerOrder(params);
+    const result = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('Isolated order result', result.data);
 
     assertDefined(result, 'isolatedResult');
@@ -312,7 +312,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price: 950,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'ioc',
         triggerType: 'twap',
@@ -321,7 +321,7 @@ void describe('[trigger-client]: placement', () => {
     };
 
     const params: TriggerPlaceOrderParams = {
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId: TEST_PRODUCT_IDS.SPOT_ETH,
       spotLeverage: true,
@@ -333,7 +333,7 @@ void describe('[trigger-client]: placement', () => {
       id: 4000,
     };
 
-    const placeResult = await tc.trigger.placeTriggerOrder(params);
+    const placeResult = await ctx.trigger.placeTriggerOrder(params);
     debugPrint('TWAP order result', placeResult.data);
 
     assertDefined(placeResult, 'twapResult');
@@ -341,7 +341,7 @@ void describe('[trigger-client]: placement', () => {
     assertDefined(placeResult.data, 'twapResult.data');
     assertHexString(placeResult.data.digest, 'twapResult.data.digest');
 
-    const execResult = await tc.trigger.listTwapExecutions({
+    const execResult = await ctx.trigger.listTwapExecutions({
       digest: placeResult.data.digest,
     });
     debugPrint('TWAP executions result', execResult);
@@ -369,7 +369,7 @@ void describe('[trigger-client]: placement', () => {
       expiration: getExpiration(),
       price,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'default',
         triggerType: 'price',
@@ -378,7 +378,7 @@ void describe('[trigger-client]: placement', () => {
 
     const batchParams: TriggerPlaceOrderParams[] = [
       {
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         order: makeOrder(3100),
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         spotLeverage: true,
@@ -393,7 +393,7 @@ void describe('[trigger-client]: placement', () => {
         id: 5000,
       },
       {
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         order: makeOrder(3200),
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
         spotLeverage: true,
@@ -409,7 +409,7 @@ void describe('[trigger-client]: placement', () => {
       },
     ];
 
-    const result = await tc.trigger.placeTriggerOrders({
+    const result = await ctx.trigger.placeTriggerOrders({
       orders: batchParams,
       stopOnFailure: false,
     });

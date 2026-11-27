@@ -28,22 +28,22 @@ void describe(
   '[mobile-client]: feed',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('fetches an unfiltered page of the global feed', async () => {
-      const page = await tc.mobile.getFeed();
+      const page = await ctx.mobile.getFeed();
       debugPrint('Global feed page', page);
       assertFeedPageShape(page);
     });
 
     void test('honors a minimum notional and page limit', async () => {
       const limit = 5;
-      const page = await tc.mobile.getFeed({
+      const page = await ctx.mobile.getFeed({
         minimumNotional: MOBILE_FEED_MIN_NOTIONAL_FLOOR,
         limit,
       });
@@ -61,7 +61,7 @@ void describe(
 
     void test('rejects a malformed cursor with INVALID_FEED_CURSOR', async () => {
       try {
-        await tc.mobile.getFeed({ cursor: 'not-a-feed-cursor' });
+        await ctx.mobile.getFeed({ cursor: 'not-a-feed-cursor' });
         assert.fail('expected INVALID_FEED_CURSOR for a malformed cursor');
       } catch (error) {
         assert.ok(

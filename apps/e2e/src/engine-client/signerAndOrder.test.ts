@@ -38,15 +38,15 @@ import {
 import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: signer and orders', () => {
-  let tc: RunContext;
+  let ctx: RunContext;
   let shortLimitPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.LONG);
 
-    tc = createTestContext();
+    ctx = createTestContext();
 
-    const markets = await tc.engine.getAllMarkets();
+    const markets = await ctx.engine.getAllMarkets();
     const oraclePrice = markets.find(
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
     )!.product.oraclePrice;
@@ -55,11 +55,11 @@ void describe('[engine-client]: signer and orders', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: tc.engine, trigger: tc.trigger },
+      { engine: ctx.engine, trigger: ctx.trigger },
       {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        endpointAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       },
     );
   });
@@ -74,7 +74,7 @@ void describe('[engine-client]: signer and orders', () => {
   void describe('order placement and queries', () => {
     function makeSpotOrder(): EngineOrderParams {
       return {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.03),
         expiration: getExpiration(),
@@ -88,11 +88,11 @@ void describe('[engine-client]: signer and orders', () => {
       order: EngineOrderParams,
     ): Promise<{
       digest: string;
-      result: Awaited<ReturnType<typeof tc.engine.placeOrder>>;
+      result: Awaited<ReturnType<typeof ctx.engine.placeOrder>>;
     }> {
-      const result = await tc.engine.placeOrder({
+      const result = await ctx.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(productId),
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         productId,
         order,
         nonce: getOrderNonce(),
@@ -104,7 +104,7 @@ void describe('[engine-client]: signer and orders', () => {
 
     void test('places a spot limit order and verifies its digest', async () => {
       const spotOrder: EngineOrderParams = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.03),
         expiration: getExpiration(),
@@ -112,9 +112,9 @@ void describe('[engine-client]: signer and orders', () => {
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       };
 
-      const result = await tc.engine.placeOrder({
+      const result = await ctx.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         order: spotOrder,
         nonce: getOrderNonce(),
@@ -128,7 +128,7 @@ void describe('[engine-client]: signer and orders', () => {
       const computedDigest = getOrderDigest({
         order: result.orderParams,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
       });
       assert.equal(
         computedDigest,
@@ -139,7 +139,7 @@ void describe('[engine-client]: signer and orders', () => {
 
     void test('places an isolated perp order and verifies its digest', async () => {
       const isolatedOrder: EngineOrderParams = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.03),
         expiration: getExpiration(),
@@ -152,9 +152,9 @@ void describe('[engine-client]: signer and orders', () => {
         }),
       };
 
-      const result = await tc.engine.placeOrder({
+      const result = await ctx.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         order: isolatedOrder,
         nonce: getOrderNonce(),
@@ -168,7 +168,7 @@ void describe('[engine-client]: signer and orders', () => {
       const computedDigest = getOrderDigest({
         order: result.orderParams,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
       });
       assert.equal(
         computedDigest,
@@ -179,7 +179,7 @@ void describe('[engine-client]: signer and orders', () => {
 
     void test('getSubaccountOrders returns orders for the perp product', async () => {
       await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.01),
         expiration: getExpiration(),
@@ -187,10 +187,10 @@ void describe('[engine-client]: signer and orders', () => {
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       });
 
-      const result = await tc.engine.getSubaccountOrders({
+      const result = await ctx.engine.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
       });
 
       debugPrint('Subaccount orders', result);
@@ -205,7 +205,7 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMarketLiquidity returns bid and ask ticks', async () => {
-      const result = await tc.engine.getMarketLiquidity({
+      const result = await ctx.engine.getMarketLiquidity({
         depth: 10,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
@@ -227,7 +227,7 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMarketPrice returns bid and ask prices', async () => {
-      const result = await tc.engine.getMarketPrice({
+      const result = await ctx.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
 
@@ -237,7 +237,7 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMarketPrices returns prices for multiple products', async () => {
-      const result = await tc.engine.getMarketPrices({
+      const result = await ctx.engine.getMarketPrices({
         productIds: [
           TEST_PRODUCT_IDS.SPOT_BTC,
           TEST_PRODUCT_IDS.PERP_BTC,
@@ -256,9 +256,9 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getSubaccountFeeRates returns fee information', async () => {
-      const result = await tc.engine.getSubaccountFeeRates({
+      const result = await ctx.engine.getSubaccountFeeRates({
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
       });
 
       debugPrint('Fee rates', result);
@@ -272,12 +272,12 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxOrderSize returns a valid order size', async () => {
-      const marketPrice = await tc.engine.getMarketPrice({
+      const marketPrice = await ctx.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
 
-      const result = await tc.engine.getMaxOrderSize({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxOrderSize({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         price: marketPrice.ask,
@@ -290,12 +290,12 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxOrderSize supports reduce-only mode', async () => {
-      const marketPrice = await tc.engine.getMarketPrice({
+      const marketPrice = await ctx.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
 
-      const result = await tc.engine.getMaxOrderSize({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxOrderSize({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         price: marketPrice.ask,
@@ -309,8 +309,8 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxWithdrawable returns a valid amount', async () => {
-      const result = await tc.engine.getMaxWithdrawable({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxWithdrawable({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
       });
@@ -320,8 +320,8 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxWithdrawable supports no-spot-leverage mode', async () => {
-      const result = await tc.engine.getMaxWithdrawable({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxWithdrawable({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
         spotLeverage: false,
@@ -340,7 +340,7 @@ void describe('[engine-client]: signer and orders', () => {
         makeSpotOrder(),
       );
 
-      const result = await tc.engine.getOrder({
+      const result = await ctx.engine.getOrder({
         digest,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
       });
@@ -353,7 +353,7 @@ void describe('[engine-client]: signer and orders', () => {
 
     void test('getOrder retrieves the placed isolated perp order by digest', async () => {
       const { digest } = await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.03),
         expiration: getExpiration(),
@@ -366,7 +366,7 @@ void describe('[engine-client]: signer and orders', () => {
         }),
       });
 
-      const result = await tc.engine.getOrder({
+      const result = await ctx.engine.getOrder({
         digest,
         productId: TEST_PRODUCT_IDS.PERP_BTC,
       });
@@ -380,7 +380,7 @@ void describe('[engine-client]: signer and orders', () => {
     void test('getSubaccountMultiProductOrders returns orders across products', async () => {
       await placeAndGetDigest(TEST_PRODUCT_IDS.SPOT_BTC, makeSpotOrder());
       await placeAndGetDigest(TEST_PRODUCT_IDS.PERP_BTC, {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.01),
         expiration: getExpiration(),
@@ -388,8 +388,8 @@ void describe('[engine-client]: signer and orders', () => {
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       });
 
-      const result = await tc.engine.getSubaccountMultiProductOrders({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getSubaccountMultiProductOrders({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC, TEST_PRODUCT_IDS.PERP_BTC],
       });
@@ -407,7 +407,7 @@ void describe('[engine-client]: signer and orders', () => {
       const { digest: perpDigest } = await placeAndGetDigest(
         TEST_PRODUCT_IDS.PERP_BTC,
         {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           amount: addDecimals(-0.01),
           expiration: getExpiration(),
@@ -416,13 +416,13 @@ void describe('[engine-client]: signer and orders', () => {
         },
       );
 
-      const result = await tc.engine.cancelOrders({
+      const result = await ctx.engine.cancelOrders({
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC, TEST_PRODUCT_IDS.PERP_BTC],
         digests: [spotDigest, perpDigest],
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Cancel orders result', result);
@@ -431,9 +431,9 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getSubaccountOrders is empty after cancellation', async () => {
-      const result = await tc.engine.getSubaccountOrders({
+      const result = await ctx.engine.getSubaccountOrders({
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -443,8 +443,8 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('getMaxWithdrawable reflects freed margin after cancellation', async () => {
-      const result = await tc.engine.getMaxWithdrawable({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxWithdrawable({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
       });
@@ -469,7 +469,7 @@ void describe('[engine-client]: signer and orders', () => {
       ]) {
         const verifyingAddr = getOrderVerifyingAddress(productId);
         const order: EngineOrderParams = {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           amount: addDecimals(-0.01),
           expiration: getExpiration(),
@@ -477,12 +477,12 @@ void describe('[engine-client]: signer and orders', () => {
           appendix: packOrderAppendix({ orderExecutionType: 'default' }),
         };
 
-        const placeResult = await tc.engine.placeOrder({
+        const placeResult = await ctx.engine.placeOrder({
           verifyingAddr,
           productId,
           order,
           nonce: getOrderNonce(),
-          chainId: tc.chainId,
+          chainId: ctx.chainId,
         });
         debugPrint(`Order placed for product ${productId}`, placeResult);
         assertDefined(placeResult, `placeResult (product ${productId})`);
@@ -497,12 +497,12 @@ void describe('[engine-client]: signer and orders', () => {
     });
 
     void test('cancelProductOrders cancels all open orders', async () => {
-      const result = await tc.engine.cancelProductOrders({
+      const result = await ctx.engine.cancelProductOrders({
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC, TEST_PRODUCT_IDS.PERP_BTC],
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Cancel product orders result', result);
@@ -519,9 +519,9 @@ void describe('[engine-client]: signer and orders', () => {
         TEST_PRODUCT_IDS.SPOT_BTC,
         TEST_PRODUCT_IDS.PERP_BTC,
       ]) {
-        const result = await tc.engine.getSubaccountOrders({
+        const result = await ctx.engine.getSubaccountOrders({
           productId,
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
         });
 

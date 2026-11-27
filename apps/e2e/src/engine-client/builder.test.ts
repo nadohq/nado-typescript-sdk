@@ -101,7 +101,7 @@ void describe('[engine-client]: builder', () => {
   // Shared setup for network-dependent builder tests
   // ---------------------------------------------------------------
   void describe('builder order operations', () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let indexerClient: IndexerClient;
     let publicClient: PublicClient;
     let buyPrice: BigNumber;
@@ -109,11 +109,11 @@ void describe('[engine-client]: builder', () => {
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      tc = createTestContext();
-      publicClient = tc.publicClient;
-      indexerClient = tc.indexer;
+      ctx = createTestContext();
+      publicClient = ctx.publicClient;
+      indexerClient = ctx.indexer;
 
-      const markets = await tc.engine.getAllMarkets();
+      const markets = await ctx.engine.getAllMarkets();
       const oraclePrice = markets.find(
         (m) => m.productId === TEST_PRODUCT_IDS.PERP_BTC,
       )!.product.oraclePrice;
@@ -123,11 +123,11 @@ void describe('[engine-client]: builder', () => {
     after(async () => {
       await delay(TEST_DELAYS.STANDARD);
       await cleanupTestState(
-        { engine: tc.engine, trigger: tc.trigger },
+        { engine: ctx.engine, trigger: ctx.trigger },
         {
-          subaccountOwner: tc.walletClientAddress,
-          endpointAddr: tc.endpointAddr,
-          chainId: tc.chainId,
+          subaccountOwner: ctx.walletClientAddress,
+          endpointAddr: ctx.endpointAddr,
+          chainId: ctx.chainId,
         },
       );
     });
@@ -144,7 +144,7 @@ void describe('[engine-client]: builder', () => {
 
       void test('places an order with builder info', async () => {
         const order: EngineOrderParams = {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           amount: addDecimals(0.01),
           expiration: getExpiration(),
@@ -158,9 +158,9 @@ void describe('[engine-client]: builder', () => {
           }),
         };
 
-        const result = await tc.engine.placeOrder({
+        const result = await ctx.engine.placeOrder({
           verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
-          chainId: tc.chainId,
+          chainId: ctx.chainId,
           productId: TEST_PRODUCT_IDS.PERP_BTC,
           order,
           nonce: getOrderNonce(),
@@ -211,7 +211,7 @@ void describe('[engine-client]: builder', () => {
         const matches = await indexerClient.getMatchEvents({
           subaccounts: [
             {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
           ],
@@ -232,9 +232,9 @@ void describe('[engine-client]: builder', () => {
         assert.ok(orderDigest, 'orderDigest must be set by previous test');
 
         const nadoClient: NadoClient = createNadoClient(
-          { chainEnv: tc.env.chainEnv },
+          { chainEnv: ctx.env.chainEnv },
           {
-            walletClient: tc.walletClient,
+            walletClient: ctx.walletClient,
             publicClient,
           },
         );
@@ -249,7 +249,7 @@ void describe('[engine-client]: builder', () => {
         );
 
         const senderSubaccount = subaccountToHex({
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
         });
         const claimTx = encodeClaimBuilderFeeTx({
@@ -261,8 +261,8 @@ void describe('[engine-client]: builder', () => {
 
         const endpoint = getContract({
           abi: NADO_ABIS.endpoint,
-          address: tc.endpointAddr,
-          client: { public: publicClient, wallet: tc.walletClient },
+          address: ctx.endpointAddr,
+          client: { public: publicClient, wallet: ctx.walletClient },
         });
 
         try {
@@ -279,7 +279,7 @@ void describe('[engine-client]: builder', () => {
             const events = await indexerClient.getEvents({
               subaccounts: [
                 {
-                  subaccountOwner: tc.walletClientAddress,
+                  subaccountOwner: ctx.walletClientAddress,
                   subaccountName: TEST_SUBACCOUNT_NAME,
                 },
               ],
@@ -314,7 +314,7 @@ void describe('[engine-client]: builder', () => {
     void describe('with an invalid builder ID', () => {
       void test('rejects an order referencing a non-existent builder', async () => {
         const order: EngineOrderParams = {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           amount: addDecimals(0.01),
           expiration: getExpiration(),
@@ -330,11 +330,11 @@ void describe('[engine-client]: builder', () => {
 
         await assert.rejects(
           () =>
-            tc.engine.placeOrder({
+            ctx.engine.placeOrder({
               verifyingAddr: getOrderVerifyingAddress(
                 TEST_PRODUCT_IDS.PERP_BTC,
               ),
-              chainId: tc.chainId,
+              chainId: ctx.chainId,
               productId: TEST_PRODUCT_IDS.PERP_BTC,
               order,
               nonce: getOrderNonce(),

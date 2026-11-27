@@ -32,7 +32,7 @@ void describe(
   '[otc-client]: RFQ subscription',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let ws: WebSocket;
     let stream: OtcQuoteStream;
     const inbox: OtcServerRfqMessage[] = [];
@@ -67,17 +67,17 @@ void describe(
     }
 
     before(async () => {
-      tc = createTestContext();
+      ctx = createTestContext();
       stream = {
         type: 'quote',
         productId: TEST_PRODUCT_IDS.PERP_BTC,
         pricerId: TEST_OTC_PRICER_ID,
-        wallet: tc.walletClientAddress,
+        wallet: ctx.walletClientAddress,
         size: addDecimals(-1).toFixed(),
         sizeUnit: 'base',
       };
 
-      ws = new WebSocket(tc.endpoints.otcRfqWs);
+      ws = new WebSocket(ctx.endpoints.otcRfqWs);
       ws.onmessage = (event) => {
         const message = JSON.parse(String(event.data)) as OtcServerRfqMessage;
         const waiter = waiters.shift();

@@ -12,20 +12,20 @@ void describe(
   '[mobile-client]: submit tip admission',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('rejects a malformed Tip submission without authorizing a withdrawal', async () => {
-      const auth = getMobileSignedParams(tc);
+      const auth = getMobileSignedParams(ctx);
       // The inner signature is deliberately empty: no withdrawal can pass owner verification or dispatch.
       // Several fields are invalid; this checks the released operation's admission failure without
       // assuming which validation branch rejects the request first.
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.submitTip({
+          ctx.mobile.submitTip({
             ...auth,
             recipientSubaccount: {
               subaccountOwner: '0x2222222222222222222222222222222222222222',

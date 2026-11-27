@@ -24,14 +24,14 @@ void describe(
   '[nuanze-client]: candles',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let ticker: string;
     let productId: number;
     let venue: 'perp';
 
     before(async () => {
-      tc = createTestContext();
-      const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      ctx = createTestContext();
+      const [first] = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
       ticker = first.ticker;
       productId = first.productId;
@@ -39,13 +39,13 @@ void describe(
     });
 
     void test('resolves the same market by ticker or productId', async () => {
-      const byTicker = await tc.nuanze.getMarketCandles({
+      const byTicker = await ctx.nuanze.getMarketCandles({
         ticker,
         venue,
         interval: '1h',
         limit: 24,
       });
-      const byProductId = await tc.nuanze.getMarketCandles({
+      const byProductId = await ctx.nuanze.getMarketCandles({
         productId,
         venue,
         interval: '1h',
@@ -99,7 +99,7 @@ void describe(
     });
 
     void test('returns candles oldest to newest', async () => {
-      const response = await tc.nuanze.getMarketCandles({
+      const response = await ctx.nuanze.getMarketCandles({
         ticker,
         venue: 'perp',
         interval: '1h',
@@ -143,7 +143,7 @@ void describe(
 
     void test('rejects an unknown interval with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getMarketCandles({
+        await ctx.nuanze.getMarketCandles({
           ticker,
           interval: '1m' as NuanzeCandleInterval,
         });

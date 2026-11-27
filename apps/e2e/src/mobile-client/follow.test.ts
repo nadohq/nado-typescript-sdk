@@ -34,18 +34,18 @@ void describe(
   '[mobile-client]: follow',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('fetches a page of followers without a viewer perspective', async () => {
       const limit = 5;
-      const page = await tc.mobile.getFollowers({
+      const page = await ctx.mobile.getFollowers({
         target: {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
         },
         limit,
@@ -67,10 +67,10 @@ void describe(
     void test('fetches a page of followers as a viewer', async () => {
       const limit = 5;
       const viewer = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
-      const page = await tc.mobile.getFollowers({
+      const page = await ctx.mobile.getFollowers({
         target: viewer,
         viewAs: viewer,
         limit,
@@ -89,10 +89,10 @@ void describe(
     void test('fetches a page of following as a viewer', async () => {
       const limit = 5;
       const viewer = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
-      const page = await tc.mobile.getFollowing({
+      const page = await ctx.mobile.getFollowing({
         target: viewer,
         viewAs: viewer,
         limit,
@@ -111,10 +111,10 @@ void describe(
     });
 
     void test('rejects a self-follow with INVALID_FOLLOW_TARGET', async () => {
-      const signedParams = getMobileSignedParams(tc);
+      const signedParams = getMobileSignedParams(ctx);
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.setFollow({
+          ctx.mobile.setFollow({
             ...signedParams,
             target: {
               subaccountOwner: signedParams.subaccountOwner,
@@ -129,9 +129,9 @@ void describe(
     void test('rejects an isolated target with PROFILE_NOT_FOUND', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getFollowers({
+          ctx.mobile.getFollowers({
             target: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
             },
           }),
@@ -142,13 +142,13 @@ void describe(
     void test('rejects an isolated viewer with PROFILE_NOT_FOUND', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getFollowers({
+          ctx.mobile.getFollowers({
             target: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
             viewAs: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
             },
           }),
@@ -159,9 +159,9 @@ void describe(
     void test('rejects a malformed cursor with INVALID_FOLLOW_CURSOR', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getFollowers({
+          ctx.mobile.getFollowers({
             target: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
             cursor: 'not-a-follow-cursor',
@@ -173,9 +173,9 @@ void describe(
     void test('rejects an oversized page limit with INVALID_FOLLOW_LIMIT', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getFollowing({
+          ctx.mobile.getFollowing({
             target: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
             limit: MOBILE_FOLLOW_LIST_MAX_PAGE_SIZE + 1,

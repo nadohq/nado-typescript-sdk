@@ -39,10 +39,10 @@ const TAKER_SIZE = -0.001;
 const QUOTE_TIMEOUT_MS = 10_000;
 
 void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
-  let tc: RunContext;
+  let ctx: RunContext;
 
   before(() => {
-    tc = createTestContext();
+    ctx = createTestContext();
   });
 
   beforeEach(async () => {
@@ -57,16 +57,16 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     price: BigNumberish,
   ): Promise<OtcServerTakerOrderParams> {
     const order: EngineOrderParams = {
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
       price,
       amount: addDecimals(TAKER_SIZE),
       expiration: getExpiration(60),
       appendix: packOrderAppendix({ orderExecutionType: 'fok' }),
     };
-    const { payload } = await tc.engine.payloadBuilder.buildPlaceOrderPayload({
+    const { payload } = await ctx.engine.payloadBuilder.buildPlaceOrderPayload({
       verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       productId: TEST_PRODUCT_IDS.PERP_BTC,
       order,
       nonce: getOrderNonce(),
@@ -81,7 +81,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
   /** Opens the RFQ socket and resolves with the first `available` quote, or null on timeout. */
   function fetchAvailableQuote(): Promise<OtcServerQuote | null> {
     return new Promise((resolve) => {
-      const ws = new WebSocket(tc.endpoints.otcRfqWs);
+      const ws = new WebSocket(ctx.endpoints.otcRfqWs);
       const finish = (quote: OtcServerQuote | null) => {
         clearTimeout(timer);
         ws.close();
@@ -100,7 +100,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
                   type: 'quote',
                   productId: TEST_PRODUCT_IDS.PERP_BTC,
                   pricerId: TEST_OTC_PRICER_ID,
-                  wallet: tc.walletClientAddress,
+                  wallet: ctx.walletClientAddress,
                   size: addDecimals(TAKER_SIZE).toFixed(),
                   sizeUnit: 'base',
                 },
@@ -126,7 +126,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
   }
 
   void test('rejects an empty body at admission', async () => {
-    const result = await tc.otc.execute({
+    const result = await ctx.otc.execute({
       dealId: '',
       taker: {} as OtcServerTakerOrderParams,
     });
@@ -145,7 +145,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     // Selling far above market cannot fill
     const taker = await signTakerOrder(10_000_000);
 
-    const result = await tc.otc.execute({
+    const result = await ctx.otc.execute({
       dealId,
       taker,
       pricerId: TEST_OTC_PRICER_ID,
@@ -168,7 +168,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     assertHexString(takerDigest, 'taker_digest');
 
     await delay(TEST_DELAYS.LONG);
-    const status = await tc.otc.getExecutionStatus({ dealId, takerDigest });
+    const status = await ctx.otc.getExecutionStatus({ dealId, takerDigest });
     debugPrint('OTC unfillable status', status);
 
     assert.equal(status.status, 'failure');
@@ -190,7 +190,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     const taker = await signTakerOrder(removeDecimals(priceX18));
     assert.equal(toBigNumber(taker.order.priceX18).toFixed(), priceX18);
 
-    const result = await tc.otc.execute({
+    const result = await ctx.otc.execute({
       dealId,
       taker,
       pricerId: TEST_OTC_PRICER_ID,
@@ -206,7 +206,7 @@ void describe('[otc-client]: execute', { timeout: TEST_TIMEOUTS.LONG }, () => {
     assertHexString(result.taker_digest, 'taker_digest');
 
     await delay(TEST_DELAYS.LONG);
-    const status = await tc.otc.getExecutionStatus({
+    const status = await ctx.otc.getExecutionStatus({
       dealId,
       takerDigest: result.taker_digest,
     });
