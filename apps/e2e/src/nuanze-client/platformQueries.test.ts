@@ -23,14 +23,14 @@ void describe(
   '[nuanze-client]: platform',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('returns a windowed activity summary', async () => {
-      const response = await tc.nuanze.getPlatformSummary({ window: '30d' });
+      const response = await ctx.nuanze.getPlatformSummary({ window: '30d' });
       debugPrint('Platform summary', response);
 
       assert.match(
@@ -54,7 +54,7 @@ void describe(
 
     void test('rejects an unknown window with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getPlatformSummary({
+        await ctx.nuanze.getPlatformSummary({
           window: '24h' as NuanzePlatformWindow,
         });
         assert.fail('expected BAD_REQUEST for an unknown window');

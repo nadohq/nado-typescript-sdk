@@ -26,13 +26,13 @@ void describe(
   '[mobile-client]: attribute orders',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let feedItems: MobileSocialFeedItem[];
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
-      feedItems = (await tc.mobile.getForYouFeed({ limit: 50 })).items;
+      ctx = createTestContext();
+      feedItems = (await ctx.mobile.getForYouFeed({ limit: 50 })).items;
     });
 
     const getRandomDigest = () => `0x${randomBytes(32).toString('hex')}`;
@@ -40,7 +40,7 @@ void describe(
     const getIsOwnItem = (item: MobileSocialFeedItem) =>
       subaccountFromHex(
         item.author.subaccount,
-      ).subaccountOwner.toLowerCase() === tc.walletClientAddress.toLowerCase();
+      ).subaccountOwner.toLowerCase() === ctx.walletClientAddress.toLowerCase();
 
     const findAttributableItem = (excludedItemId?: string) =>
       feedItems.find(
@@ -51,8 +51,8 @@ void describe(
       );
 
     const attributeOrders = (itemId: string, orderDigests: string[]) =>
-      tc.mobile.attributeOrders({
-        ...getMobileSignedParams(tc),
+      ctx.mobile.attributeOrders({
+        ...getMobileSignedParams(ctx),
         itemId,
         orderDigests,
       });
@@ -148,9 +148,9 @@ void describe(
 
     void test('rejects the sender’s own item', async (context) => {
       const ownItems = (
-        await tc.mobile.getProfileFeed({
+        await ctx.mobile.getProfileFeed({
           subaccount: {
-            subaccountOwner: tc.walletClientAddress,
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SUBACCOUNT_NAME,
           },
           limit: 20,

@@ -36,25 +36,25 @@ void describe(
   '[mobile-client]: profiles',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('returns base fields for a batch, in the requested order', async () => {
       const subaccounts = [
         {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
         },
         {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SECONDARY_SUBACCOUNT_NAME,
         },
       ];
-      const profiles = await tc.mobile.getProfiles({ subaccounts });
+      const profiles = await ctx.mobile.getProfiles({ subaccounts });
       debugPrint('Profiles batch', profiles);
 
       assert.equal(profiles.length, subaccounts.length);
@@ -73,10 +73,10 @@ void describe(
     });
 
     void test('adds follower totals when follow counts are requested', async () => {
-      const profiles = await tc.mobile.getProfiles({
+      const profiles = await ctx.mobile.getProfiles({
         subaccounts: [
           {
-            subaccountOwner: tc.walletClientAddress,
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SUBACCOUNT_NAME,
           },
         ],
@@ -96,17 +96,17 @@ void describe(
     });
 
     void test('adds a viewer-relative follow summary when requested', async () => {
-      const profiles = await tc.mobile.getProfiles({
+      const profiles = await ctx.mobile.getProfiles({
         subaccounts: [
           {
-            subaccountOwner: tc.walletClientAddress,
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SECONDARY_SUBACCOUNT_NAME,
           },
         ],
         include: {
           followSummary: {
             viewAs: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
           },
@@ -126,7 +126,7 @@ void describe(
     });
 
     void test('resolves a subaccount that has never claimed a username', async () => {
-      const [profile] = await tc.mobile.getProfiles({
+      const [profile] = await ctx.mobile.getProfiles({
         subaccounts: [
           {
             subaccountOwner: privateKeyToAccount(generatePrivateKey()).address,
@@ -149,19 +149,19 @@ void describe(
 
     void test('rejects an empty batch with INVALID_PROFILES_REQUEST', async () => {
       await assertRejectsWithMobileErrorCode(
-        () => tc.mobile.getProfiles({ subaccounts: [] }),
+        () => ctx.mobile.getProfiles({ subaccounts: [] }),
         MOBILE_ERROR_CODES.INVALID_PROFILES_REQUEST,
       );
     });
 
     void test('rejects duplicate subaccounts with INVALID_PROFILES_REQUEST', async () => {
       const subaccount = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
       // Duplicates are rejected rather than deduplicated, so callers must dedupe before asking.
       await assertRejectsWithMobileErrorCode(
-        () => tc.mobile.getProfiles({ subaccounts: [subaccount, subaccount] }),
+        () => ctx.mobile.getProfiles({ subaccounts: [subaccount, subaccount] }),
         MOBILE_ERROR_CODES.INVALID_PROFILES_REQUEST,
       );
     });
@@ -176,7 +176,7 @@ void describe(
         }),
       );
       await assertRejectsWithMobileErrorCode(
-        () => tc.mobile.getProfiles({ subaccounts }),
+        () => ctx.mobile.getProfiles({ subaccounts }),
         MOBILE_ERROR_CODES.INVALID_PROFILES_REQUEST,
       );
     });
@@ -185,14 +185,14 @@ void describe(
       // One isolated member fails the whole batch; the valid entries are not returned alongside it.
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getProfiles({
+          ctx.mobile.getProfiles({
             subaccounts: [
               {
-                subaccountOwner: tc.walletClientAddress,
+                subaccountOwner: ctx.walletClientAddress,
                 subaccountName: TEST_SUBACCOUNT_NAME,
               },
               {
-                subaccountOwner: tc.walletClientAddress,
+                subaccountOwner: ctx.walletClientAddress,
                 subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
               },
             ],
@@ -204,17 +204,17 @@ void describe(
     void test('rejects an isolated follow summary viewer with PROFILE_NOT_FOUND', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.getProfiles({
+          ctx.mobile.getProfiles({
             subaccounts: [
               {
-                subaccountOwner: tc.walletClientAddress,
+                subaccountOwner: ctx.walletClientAddress,
                 subaccountName: TEST_SUBACCOUNT_NAME,
               },
             ],
             include: {
               followSummary: {
                 viewAs: {
-                  subaccountOwner: tc.walletClientAddress,
+                  subaccountOwner: ctx.walletClientAddress,
                   subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
                 },
               },

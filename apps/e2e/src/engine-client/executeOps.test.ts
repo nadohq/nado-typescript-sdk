@@ -35,15 +35,15 @@ import {
 import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: execute operations', () => {
-  let tc: RunContext;
+  let ctx: RunContext;
   let shortLimitPrice: BigNumber;
 
   before(async () => {
     await delay(TEST_DELAYS.LONG);
 
-    tc = createTestContext();
+    ctx = createTestContext();
 
-    const markets = await tc.engine.getAllMarkets();
+    const markets = await ctx.engine.getAllMarkets();
     const oraclePrice = markets.find(
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
     )!.product.oraclePrice;
@@ -52,11 +52,11 @@ void describe('[engine-client]: execute operations', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: tc.engine, trigger: tc.trigger },
+      { engine: ctx.engine, trigger: ctx.trigger },
       {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        endpointAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       },
     );
   });
@@ -70,13 +70,13 @@ void describe('[engine-client]: execute operations', () => {
   // ---------------------------------------------------------------
   void describe('withdrawCollateral', () => {
     void test('withdraws a small amount of quote via the engine', async () => {
-      const result = await tc.engine.withdrawCollateral({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.withdrawCollateral({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
         amount: addDecimals(1, 6),
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Withdraw collateral result', result);
@@ -94,16 +94,16 @@ void describe('[engine-client]: execute operations', () => {
   // ---------------------------------------------------------------
   void describe('withdrawCollateralV2', () => {
     void test('withdraws a small amount of quote to the owner via the engine', async () => {
-      const result = await tc.engine.withdrawCollateralV2({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.withdrawCollateralV2({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
         amount: addDecimals(1, 6),
         // Zero address sends funds to the subaccount owner.
         sendTo: zeroAddress,
         appendix: 0,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Withdraw collateral v2 result', result);
@@ -117,23 +117,23 @@ void describe('[engine-client]: execute operations', () => {
 
     void test('withdraws with a maxFeeX18 bound on the dynamic fee', async () => {
       // The fee cap is the highest the dynamic fee can ever be, so it always succeeds
-      const feeQuote = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const feeQuote = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         kind: 'withdrawal',
         productId: QUOTE_PRODUCT_ID,
       });
 
-      const result = await tc.engine.withdrawCollateralV2({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.withdrawCollateralV2({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productId: QUOTE_PRODUCT_ID,
         amount: addDecimals(1, 6),
         sendTo: zeroAddress,
         appendix: 0,
         maxFeeX18: feeQuote.feeCap,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Withdraw collateral v2 (max fee) result', result);
@@ -146,8 +146,8 @@ void describe('[engine-client]: execute operations', () => {
     });
 
     void test('rejects a withdrawal when maxFeeX18 is below the required fee', async (context) => {
-      const feeQuote = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const feeQuote = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         kind: 'withdrawal',
         productId: QUOTE_PRODUCT_ID,
@@ -157,8 +157,8 @@ void describe('[engine-client]: execute operations', () => {
         context,
         feeQuote.requiredFee,
         () =>
-          tc.engine.withdrawCollateralV2({
-            subaccountOwner: tc.walletClientAddress,
+          ctx.engine.withdrawCollateralV2({
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SUBACCOUNT_NAME,
             productId: QUOTE_PRODUCT_ID,
             amount: addDecimals(1, 6),
@@ -166,8 +166,8 @@ void describe('[engine-client]: execute operations', () => {
             appendix: 0,
             // Only execute while the fee is free
             maxFeeX18: 0,
-            verifyingAddr: tc.endpointAddr,
-            chainId: tc.chainId,
+            verifyingAddr: ctx.endpointAddr,
+            chainId: ctx.chainId,
           }),
         'withdrawCollateralV2',
       );
@@ -182,8 +182,8 @@ void describe('[engine-client]: execute operations', () => {
     const TRANSFER_BACK_AMOUNT = addDecimals(5);
 
     async function getQuoteBalance(subaccountName: string): Promise<BigNumber> {
-      const summary = await tc.engine.getSubaccountSummary({
-        subaccountOwner: tc.walletClientAddress,
+      const summary = await ctx.engine.getSubaccountSummary({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName,
       });
       const quote = summary.balances.find(
@@ -197,13 +197,13 @@ void describe('[engine-client]: execute operations', () => {
       const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
       debugPrint('Default balance before transfer', balanceBefore);
 
-      const result = await tc.engine.transferQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.transferQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         recipientSubaccountName: 'default2',
         amount: TRANSFER_AMOUNT,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Transfer quote result', result);
@@ -224,13 +224,13 @@ void describe('[engine-client]: execute operations', () => {
       const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
       debugPrint('Default balance before transfer back', balanceBefore);
 
-      const result = await tc.engine.transferQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.transferQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: 'default2',
         recipientSubaccountName: TEST_SUBACCOUNT_NAME,
         amount: TRANSFER_BACK_AMOUNT,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Transfer quote back result', result);
@@ -260,8 +260,8 @@ void describe('[engine-client]: execute operations', () => {
     const TRANSFER_BACK_AMOUNT = addDecimals(5);
 
     async function getQuoteBalance(subaccountName: string): Promise<BigNumber> {
-      const summary = await tc.engine.getSubaccountSummary({
-        subaccountOwner: tc.walletClientAddress,
+      const summary = await ctx.engine.getSubaccountSummary({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName,
       });
       const quote = summary.balances.find(
@@ -273,8 +273,8 @@ void describe('[engine-client]: execute operations', () => {
 
     void test('transfers quote to another subaccount with a bounded fee', async () => {
       // The fee cap is the highest the dynamic fee can ever be, so it always succeeds
-      const feeQuote = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const feeQuote = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         kind: 'transfer_quote',
         recipientSubaccountName: 'default2',
@@ -283,14 +283,14 @@ void describe('[engine-client]: execute operations', () => {
 
       const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
 
-      const result = await tc.engine.transferQuoteV2({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.transferQuoteV2({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         recipientSubaccountName: 'default2',
         amount: TRANSFER_AMOUNT,
         maxFeeX18: feeQuote.feeCap,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Transfer quote v2 result', result);
@@ -310,8 +310,8 @@ void describe('[engine-client]: execute operations', () => {
     });
 
     void test('rejects a transfer when maxFeeX18 is below the required fee', async (context) => {
-      const feeQuote = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const feeQuote = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         kind: 'transfer_quote',
         recipientSubaccountName: 'default2',
@@ -321,23 +321,23 @@ void describe('[engine-client]: execute operations', () => {
         context,
         feeQuote.requiredFee,
         () =>
-          tc.engine.transferQuoteV2({
-            subaccountOwner: tc.walletClientAddress,
+          ctx.engine.transferQuoteV2({
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SUBACCOUNT_NAME,
             recipientSubaccountName: 'default2',
             amount: TRANSFER_BACK_AMOUNT,
             // Only execute while the fee is free
             maxFeeX18: 0,
-            verifyingAddr: tc.endpointAddr,
-            chainId: tc.chainId,
+            verifyingAddr: ctx.endpointAddr,
+            chainId: ctx.chainId,
           }),
         'transferQuoteV2',
       );
     });
 
     void test('transfers quote back to restore balance', async () => {
-      const feeQuote = await tc.engine.getDynamicFeeQuote({
-        subaccountOwner: tc.walletClientAddress,
+      const feeQuote = await ctx.engine.getDynamicFeeQuote({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: 'default2',
         kind: 'transfer_quote',
         recipientSubaccountName: TEST_SUBACCOUNT_NAME,
@@ -345,14 +345,14 @@ void describe('[engine-client]: execute operations', () => {
 
       const balanceBefore = await getQuoteBalance(TEST_SUBACCOUNT_NAME);
 
-      const result = await tc.engine.transferQuoteV2({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.transferQuoteV2({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: 'default2',
         recipientSubaccountName: TEST_SUBACCOUNT_NAME,
         amount: TRANSFER_BACK_AMOUNT,
         maxFeeX18: feeQuote.feeCap,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Transfer quote v2 back result', result);
@@ -377,12 +377,12 @@ void describe('[engine-client]: execute operations', () => {
   // ---------------------------------------------------------------
   void describe('cancelAndPlace', () => {
     void test('cancelAndPlace replaces the order', async () => {
-      const placeResult = await tc.engine.placeOrder({
+      const placeResult = await ctx.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         order: {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           amount: addDecimals(-0.01),
           expiration: getExpiration(),
@@ -402,24 +402,24 @@ void describe('[engine-client]: execute operations', () => {
       const orderDigest = getOrderDigest({
         order: placeResult.orderParams,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
       });
 
-      const result = await tc.engine.cancelAndPlace({
+      const result = await ctx.engine.cancelAndPlace({
         cancelOrders: {
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
           digests: [orderDigest],
-          verifyingAddr: tc.endpointAddr,
-          chainId: tc.chainId,
+          verifyingAddr: ctx.endpointAddr,
+          chainId: ctx.chainId,
         },
         placeOrder: {
           verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
-          chainId: tc.chainId,
+          chainId: ctx.chainId,
           productId: TEST_PRODUCT_IDS.SPOT_BTC,
           order: {
-            subaccountOwner: tc.walletClientAddress,
+            subaccountOwner: ctx.walletClientAddress,
             subaccountName: TEST_SUBACCOUNT_NAME,
             amount: addDecimals(-0.01),
             expiration: getExpiration(),
@@ -437,12 +437,12 @@ void describe('[engine-client]: execute operations', () => {
     });
 
     void test('cleans up remaining order', async () => {
-      await tc.engine.cancelProductOrders({
-        subaccountOwner: tc.walletClientAddress,
+      await ctx.engine.cancelProductOrders({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
     });
   });
@@ -456,29 +456,29 @@ void describe('[engine-client]: execute operations', () => {
     void test('setLinkedSigner updates the signing wallet used by client', async () => {
       const linkedSignerPrivKey =
         await createDeterministicLinkedSignerPrivateKey({
-          chainId: tc.chainId,
-          endpointAddress: tc.endpointAddr,
-          walletClient: tc.walletClient,
-          subaccountOwner: tc.walletClientAddress,
+          chainId: ctx.chainId,
+          endpointAddress: ctx.endpointAddr,
+          walletClient: ctx.walletClient,
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
         });
 
       linkedSignerWalletClient = createWalletClient({
-        chain: tc.walletClient.chain,
+        chain: ctx.walletClient.chain,
         account: privateKeyToAccount(linkedSignerPrivKey),
         transport: http(),
       });
 
       // Link the signer on-chain first
-      const linkResult = await tc.engine.linkSigner({
-        chainId: tc.chainId,
+      const linkResult = await ctx.engine.linkSigner({
+        chainId: ctx.chainId,
         signer: subaccountToHex({
           subaccountOwner: linkedSignerWalletClient.account.address,
           subaccountName: '',
         }),
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        verifyingAddr: tc.endpointAddr,
+        verifyingAddr: ctx.endpointAddr,
       });
 
       debugPrint('Link signer result', linkResult);
@@ -487,11 +487,11 @@ void describe('[engine-client]: execute operations', () => {
       // Wait for engine to propagate the linked signer before signing with it
       await delay(TEST_DELAYS.LONG);
 
-      tc.engine.setLinkedSigner(linkedSignerWalletClient);
+      ctx.engine.setLinkedSigner(linkedSignerWalletClient);
 
       // Verify the linked signer is used by placing an order
       const order: EngineOrderParams = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         amount: addDecimals(-0.01),
         expiration: getExpiration(),
@@ -499,9 +499,9 @@ void describe('[engine-client]: execute operations', () => {
         appendix: packOrderAppendix({ orderExecutionType: 'default' }),
       };
 
-      const placeResult = await tc.engine.placeOrder({
+      const placeResult = await ctx.engine.placeOrder({
         verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_BTC),
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         productId: TEST_PRODUCT_IDS.SPOT_BTC,
         order,
         nonce: getOrderNonce(),
@@ -517,28 +517,28 @@ void describe('[engine-client]: execute operations', () => {
       assertHexString(placeResult.data.digest, 'placeResult.data.digest');
 
       // Clean up: cancel order
-      await tc.engine.cancelProductOrders({
-        subaccountOwner: tc.walletClientAddress,
+      await ctx.engine.cancelProductOrders({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         productIds: [TEST_PRODUCT_IDS.SPOT_BTC],
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
     });
 
     void test('setLinkedSigner(null) reverts to chain signer', async () => {
-      tc.engine.setLinkedSigner(null);
+      ctx.engine.setLinkedSigner(null);
 
       // Revoke the linked signer on-chain
-      const revokeResult = await tc.engine.linkSigner({
-        chainId: tc.chainId,
+      const revokeResult = await ctx.engine.linkSigner({
+        chainId: ctx.chainId,
         signer: subaccountToHex({
           subaccountOwner: zeroAddress,
           subaccountName: '',
         }),
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        verifyingAddr: tc.endpointAddr,
+        verifyingAddr: ctx.endpointAddr,
       });
 
       debugPrint('Revoke signer result', revokeResult);

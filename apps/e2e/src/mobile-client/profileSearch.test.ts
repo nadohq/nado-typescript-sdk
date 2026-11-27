@@ -37,16 +37,16 @@ void describe(
   '[mobile-client]: profile search',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('returns matches in ascending username order without follow data', async () => {
       const limit = 5;
-      const page = await tc.mobile.searchProfiles({ query: PREFIX, limit });
+      const page = await ctx.mobile.searchProfiles({ query: PREFIX, limit });
       debugPrint('Profile search page', page);
       assertProfileSearchPageShape(page, PREFIX, limit);
 
@@ -59,7 +59,10 @@ void describe(
     });
 
     void test('continues strictly after the previous page, whatever the letter case of the query', async () => {
-      const first = await tc.mobile.searchProfiles({ query: PREFIX, limit: 1 });
+      const first = await ctx.mobile.searchProfiles({
+        query: PREFIX,
+        limit: 1,
+      });
       debugPrint('First profile search page', first);
       assert.ok(
         first.nextCursor !== null,
@@ -68,7 +71,7 @@ void describe(
 
       await delay(TEST_DELAYS.SHORT);
       // Only letter case may differ from the query the cursor was issued for.
-      const second = await tc.mobile.searchProfiles({
+      const second = await ctx.mobile.searchProfiles({
         query: PREFIX.toUpperCase(),
         cursor: first.nextCursor,
         limit: 1,
@@ -89,14 +92,14 @@ void describe(
     });
 
     void test('adds follower totals and a viewer-relative follow summary when requested', async () => {
-      const page = await tc.mobile.searchProfiles({
+      const page = await ctx.mobile.searchProfiles({
         query: PREFIX,
         limit: 1,
         include: {
           followCounts: true,
           followSummary: {
             viewAs: {
-              subaccountOwner: tc.walletClientAddress,
+              subaccountOwner: ctx.walletClientAddress,
               subaccountName: TEST_SUBACCOUNT_NAME,
             },
           },
@@ -124,7 +127,7 @@ void describe(
       // The exported pattern lets callers reject the same input before spending a request on it.
       assert.equal(MOBILE_PROFILE_SEARCH_QUERY_PATTERN.test(query), false);
       await assertRejectsWithMobileErrorCode(
-        () => tc.mobile.searchProfiles({ query }),
+        () => ctx.mobile.searchProfiles({ query }),
         MOBILE_ERROR_CODES.INVALID_PROFILE_SEARCH_REQUEST,
       );
     });
@@ -132,7 +135,7 @@ void describe(
     void test('rejects an oversized page limit with INVALID_PROFILE_SEARCH_REQUEST', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.searchProfiles({
+          ctx.mobile.searchProfiles({
             query: PREFIX,
             limit: MOBILE_PROFILE_SEARCH_MAX_PAGE_SIZE + 1,
           }),
@@ -144,7 +147,7 @@ void describe(
       // The same limit is fine without an include, so this is the include lowering the ceiling.
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.searchProfiles({
+          ctx.mobile.searchProfiles({
             query: PREFIX,
             limit: MOBILE_PROFILE_SEARCH_MAX_ENRICHED_PAGE_SIZE + 1,
             include: { followCounts: true },
@@ -156,7 +159,7 @@ void describe(
     void test('rejects a malformed cursor with INVALID_PROFILE_SEARCH_CURSOR', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.searchProfiles({
+          ctx.mobile.searchProfiles({
             query: PREFIX,
             cursor: 'not-a-search-cursor',
           }),
@@ -167,12 +170,12 @@ void describe(
     void test('rejects an isolated follow summary viewer with PROFILE_NOT_FOUND', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.searchProfiles({
+          ctx.mobile.searchProfiles({
             query: PREFIX,
             include: {
               followSummary: {
                 viewAs: {
-                  subaccountOwner: tc.walletClientAddress,
+                  subaccountOwner: ctx.walletClientAddress,
                   subaccountName: TEST_ISOLATED_SUBACCOUNT_NAME,
                 },
               },

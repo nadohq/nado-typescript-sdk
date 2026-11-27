@@ -22,12 +22,12 @@ void describe(
   '[engine-client]: NLP operations',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     beforeEach(async () => {
@@ -35,8 +35,8 @@ void describe(
     });
 
     void test('getMaxMintNlpAmount returns the max mintable amount', async () => {
-      const result = await tc.engine.getMaxMintNlpAmount({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxMintNlpAmount({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         spotLeverage: true,
       });
@@ -49,12 +49,12 @@ void describe(
     // TODO: Enable the NLP deposit for connected wallet address
     void test('mintNlp mints NLP tokens into the subaccount', async () => {
       try {
-        const result = await tc.engine.mintNlp({
-          subaccountOwner: tc.walletClientAddress,
+        const result = await ctx.engine.mintNlp({
+          subaccountOwner: ctx.walletClientAddress,
           subaccountName: TEST_SUBACCOUNT_NAME,
           quoteAmount: addDecimals(10),
-          verifyingAddr: tc.endpointAddr,
-          chainId: tc.chainId,
+          verifyingAddr: ctx.endpointAddr,
+          chainId: ctx.chainId,
         });
 
         debugPrint('Mint NLP result', result);
@@ -78,8 +78,8 @@ void describe(
     });
 
     void test('NLP balance appears in subaccount after minting', async () => {
-      const subaccountInfo = await tc.engine.getSubaccountSummary({
-        subaccountOwner: tc.walletClientAddress,
+      const subaccountInfo = await ctx.engine.getSubaccountSummary({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -92,8 +92,8 @@ void describe(
     });
 
     void test('getMaxBurnNlpAmount returns the max burnable amount', async () => {
-      const result = await tc.engine.getMaxBurnNlpAmount({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getMaxBurnNlpAmount({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -103,8 +103,8 @@ void describe(
     });
 
     void test('burnNlp burns available NLP tokens', async () => {
-      const maxBurnable = await tc.engine.getMaxBurnNlpAmount({
-        subaccountOwner: tc.walletClientAddress,
+      const maxBurnable = await ctx.engine.getMaxBurnNlpAmount({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -115,12 +115,12 @@ void describe(
 
       // Burn a tiny fixed amount capped by max burnable (accounts for health)
       const burnAmount = BigNumber.min(addDecimals(0.001), maxBurnable);
-      const result = await tc.engine.burnNlp({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.burnNlp({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
         nlpAmount: burnAmount,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
 
       debugPrint('Burn NLP result', result);
@@ -129,8 +129,8 @@ void describe(
     });
 
     void test('getNlpLockedBalances returns locked balance info', async () => {
-      const result = await tc.engine.getNlpLockedBalances({
-        subaccountOwner: tc.walletClientAddress,
+      const result = await ctx.engine.getNlpLockedBalances({
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       });
 
@@ -140,7 +140,7 @@ void describe(
     });
 
     void test('getNlpPoolInfo returns pool information', async () => {
-      const result = await tc.engine.getNlpPoolInfo();
+      const result = await ctx.engine.getNlpPoolInfo();
 
       debugPrint('NLP Pool Info', result);
       assertDefined(result, 'nlpPoolInfo');

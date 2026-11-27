@@ -14,21 +14,21 @@ void describe(
   '[mobile-client]: position lookup',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let subaccount: Subaccount;
     let mobile: MobileClient;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
       subaccount = {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       };
-      mobile = new MobileClient({ url: tc.endpoints.mobile });
+      mobile = new MobileClient({ url: ctx.endpoints.mobile });
     });
 
     void test('resolves an indexed lifecycle into a readable position UUID without a wallet', async (context) => {
-      const { positions } = await tc.indexer.getPositions({
+      const { positions } = await ctx.indexer.getPositions({
         subaccount,
         productId: TEST_PRODUCT_IDS.PERP_ETH,
         isolated: false,

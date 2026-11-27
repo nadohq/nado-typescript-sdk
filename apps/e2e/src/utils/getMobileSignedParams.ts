@@ -7,12 +7,12 @@ import { RunContext } from './types';
  * keyed by the owning wallet, so any subaccount of the wallet authenticates the same data.
  */
 export function getMobileSignedParams(
-  tc: RunContext,
+  ctx: RunContext,
 ): MobileSignedRequestParams {
   return {
-    subaccountOwner: tc.walletClientAddress,
+    subaccountOwner: ctx.walletClientAddress,
     subaccountName: TEST_SUBACCOUNT_NAME,
-    chainId: tc.chainId,
-    verifyingAddr: tc.endpointAddr,
+    chainId: ctx.chainId,
+    verifyingAddr: ctx.endpointAddr,
   };
 }

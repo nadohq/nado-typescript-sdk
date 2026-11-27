@@ -23,7 +23,7 @@ import {
 import { RunContext } from '../utils/types';
 
 void describe('[trigger-client]: cancellation', () => {
-  let tc: RunContext;
+  let ctx: RunContext;
 
   // Digests captured during setup for cancel / list-by-digest tests
   let ethDigest: string;
@@ -33,7 +33,7 @@ void describe('[trigger-client]: cancellation', () => {
   before(async () => {
     await delay(TEST_DELAYS.LONG);
 
-    tc = createTestContext();
+    ctx = createTestContext();
 
     // Place 3 orders across 2 products so we can test cancel-by-digest
     // and cancel-by-product independently.
@@ -49,7 +49,7 @@ void describe('[trigger-client]: cancellation', () => {
       expiration: getExpiration(),
       price,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       appendix: packOrderAppendix({
         orderExecutionType: 'default',
         triggerType: 'price',
@@ -61,7 +61,7 @@ void describe('[trigger-client]: cancellation', () => {
       productId: number,
       verifyingAddr: string,
     ): TriggerPlaceOrderParams => ({
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       order,
       productId,
       spotLeverage: true,
@@ -77,21 +77,21 @@ void describe('[trigger-client]: cancellation', () => {
     });
 
     const [r1, r2, r3] = await Promise.all([
-      tc.trigger.placeTriggerOrder(
+      ctx.trigger.placeTriggerOrder(
         makeTriggerParams(
           makeOrder(1000),
           TEST_PRODUCT_IDS.SPOT_ETH,
           ethVerifyingAddr,
         ),
       ),
-      tc.trigger.placeTriggerOrder(
+      ctx.trigger.placeTriggerOrder(
         makeTriggerParams(
           makeOrder(60000),
           TEST_PRODUCT_IDS.PERP_BTC,
           btcVerifyingAddr,
         ),
       ),
-      tc.trigger.placeTriggerOrder(
+      ctx.trigger.placeTriggerOrder(
         makeTriggerParams(
           makeOrder(1001),
           TEST_PRODUCT_IDS.SPOT_ETH,
@@ -110,11 +110,11 @@ void describe('[trigger-client]: cancellation', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: tc.engine, trigger: tc.trigger },
+      { engine: ctx.engine, trigger: ctx.trigger },
       {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        endpointAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       },
     );
   });
@@ -125,13 +125,13 @@ void describe('[trigger-client]: cancellation', () => {
 
   void describe('cancel operations', () => {
     void test('cancels an order via digest', async () => {
-      const result = await tc.trigger.cancelTriggerOrders({
+      const result = await ctx.trigger.cancelTriggerOrders({
         digests: [ethDigest],
         productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
       debugPrint('Cancel via digest result', result);
 
@@ -144,12 +144,12 @@ void describe('[trigger-client]: cancellation', () => {
     });
 
     void test('cancels orders via product', async () => {
-      const result = await tc.trigger.cancelProductOrders({
+      const result = await ctx.trigger.cancelProductOrders({
         productIds: [TEST_PRODUCT_IDS.SPOT_ETH, TEST_PRODUCT_IDS.PERP_BTC],
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       });
       debugPrint('Cancel via product result', result);
 
@@ -164,12 +164,12 @@ void describe('[trigger-client]: cancellation', () => {
 
   void describe('post-cancellation queries', () => {
     void test('lists orders after cancellation', async () => {
-      const result = await tc.trigger.listOrders({
-        chainId: tc.chainId,
+      const result = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
       });
       debugPrint('Non-pending list orders result', result);
 
@@ -178,11 +178,11 @@ void describe('[trigger-client]: cancellation', () => {
     });
 
     void test('retrieves orders by specific digests', async () => {
-      const result = await tc.trigger.listOrders({
-        chainId: tc.chainId,
-        verifyingAddr: tc.endpointAddr,
+      const result = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
+        verifyingAddr: ctx.endpointAddr,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         digests: [ethDigest, btcDigest, ethDigest2],
       });
       debugPrint('List orders by digest result', result);

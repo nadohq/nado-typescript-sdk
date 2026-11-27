@@ -28,14 +28,14 @@ void describe(
   '[nuanze-client]: flows',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('lists collateral events newest first', async () => {
-      const response = await tc.nuanze.getCollateralFlows({
+      const response = await ctx.nuanze.getCollateralFlows({
         timeframe: '24h',
         limit: 20,
       });
@@ -60,7 +60,7 @@ void describe(
     });
 
     void test('returns flow aggregates', async () => {
-      const response = await tc.nuanze.getCollateralFlowSummary({
+      const response = await ctx.nuanze.getCollateralFlowSummary({
         timeframe: '24h',
       });
       debugPrint('Collateral flow summary', response);
@@ -76,7 +76,7 @@ void describe(
 
     void test('rejects an unknown event type with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getCollateralFlows({
+        await ctx.nuanze.getCollateralFlows({
           eventType: 'transfer' as NuanzeFlowEventTypeFilter,
         });
         assert.fail('expected BAD_REQUEST for an unknown event type');

@@ -38,14 +38,14 @@ void describe(
   '[nuanze-client]: markets',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('fetches the full market universe', async () => {
-      const response = await tc.nuanze.getMarkets();
+      const response = await ctx.nuanze.getMarkets();
       debugPrint('Markets', response);
 
       assert.match(
@@ -71,7 +71,7 @@ void describe(
     });
 
     void test('filters by venue', async () => {
-      const response = await tc.nuanze.getMarkets({ venue: 'perp' });
+      const response = await ctx.nuanze.getMarkets({ venue: 'perp' });
       debugPrint('Perp markets', response);
 
       assert.ok(
@@ -86,10 +86,10 @@ void describe(
     });
 
     void test('matches a ticker case-insensitively', async () => {
-      const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      const [first] = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market to filter on');
 
-      const response = await tc.nuanze.getMarkets({
+      const response = await ctx.nuanze.getMarkets({
         ticker: first.ticker.toLowerCase(),
       });
       debugPrint('Ticker-filtered markets', response);
@@ -101,7 +101,7 @@ void describe(
     });
 
     void test('reports a null or valid marketValue on every market', async () => {
-      const response = await tc.nuanze.getMarkets();
+      const response = await ctx.nuanze.getMarkets();
       debugPrint(
         'Market values',
         response.markets.map(({ productId, ticker, marketValue }) => ({
@@ -121,7 +121,7 @@ void describe(
     });
 
     void test('sorts markets by marketValue descending with nulls last by default', async () => {
-      const response = await tc.nuanze.getMarkets({ sortBy: 'marketValue' });
+      const response = await ctx.nuanze.getMarkets({ sortBy: 'marketValue' });
       debugPrint('Markets by marketValue', response);
 
       assert.equal(response.count, response.markets.length);
@@ -134,7 +134,7 @@ void describe(
     });
 
     void test('sorts markets by marketValue ascending with nulls still last', async () => {
-      const response = await tc.nuanze.getMarkets({
+      const response = await ctx.nuanze.getMarkets({
         sortBy: 'marketValue',
         sortDirection: 'asc',
       });
@@ -149,7 +149,7 @@ void describe(
 
     void test('sorts markets by latest ticker fields descending with nulls last by default', async () => {
       for (const sortBy of LATEST_TICKER_SORT_KEYS) {
-        const response = await tc.nuanze.getMarkets({ sortBy });
+        const response = await ctx.nuanze.getMarkets({ sortBy });
         debugPrint(`Markets by ${sortBy}`, response);
 
         assert.ok(
@@ -164,7 +164,7 @@ void describe(
 
     void test('rejects an unknown venue with BAD_REQUEST', async () => {
       try {
-        await tc.nuanze.getMarkets({
+        await ctx.nuanze.getMarkets({
           // Only reachable from untyped callers, but the API is the contract we care about here.
           venue: 'options' as NuanzeMarketVenue,
         });
@@ -181,10 +181,10 @@ void describe(
     });
 
     void test('resolves a market by ticker', async () => {
-      const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      const [first] = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market to resolve');
 
-      const response = await tc.nuanze.getMarketByTicker({
+      const response = await ctx.nuanze.getMarketByTicker({
         ticker: first.ticker.toLowerCase(),
         venue: 'perp',
       });
@@ -205,7 +205,7 @@ void describe(
     });
 
     void test('carries the list marketValue on a resolved market', async () => {
-      const valued = (await tc.nuanze.getMarkets()).markets.find(
+      const valued = (await ctx.nuanze.getMarkets()).markets.find(
         (market) => market.marketValue !== null,
       );
       assert.ok(
@@ -213,7 +213,7 @@ void describe(
         'expected at least one market with a marketValue to resolve',
       );
 
-      const response = await tc.nuanze.getMarketByTicker({
+      const response = await ctx.nuanze.getMarketByTicker({
         productId: valued.productId,
       });
       debugPrint('Market by productId with marketValue', response);
@@ -228,14 +228,14 @@ void describe(
     });
 
     void test('resolves the same market by ticker or productId', async () => {
-      const [market] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      const [market] = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(market, 'expected at least one perp market to resolve');
 
-      const byTicker = await tc.nuanze.getMarketByTicker({
+      const byTicker = await ctx.nuanze.getMarketByTicker({
         ticker: market.ticker,
         venue: 'perp',
       });
-      const byProductId = await tc.nuanze.getMarketByTicker({
+      const byProductId = await ctx.nuanze.getMarketByTicker({
         productId: market.productId,
         venue: 'perp',
       });
@@ -250,35 +250,35 @@ void describe(
     });
 
     void test('accepts an existing ticker selector parameter shape', async () => {
-      const [market] = (await tc.nuanze.getMarkets()).markets;
+      const [market] = (await ctx.nuanze.getMarkets()).markets;
       assert.ok(market, 'expected at least one market to resolve');
       const createSelector = (): { ticker: string; productId?: number } => ({
         ticker: market.ticker,
       });
       const selector: { ticker: string; productId?: number } = createSelector();
 
-      const response = await tc.nuanze.getMarketByTicker(selector);
+      const response = await ctx.nuanze.getMarketByTicker(selector);
 
       assert.equal(response.ticker, market.ticker);
       assertMarketShape(response, 'market');
     });
 
     void test('accepts an existing productId selector parameter shape', async () => {
-      const [market] = (await tc.nuanze.getMarkets()).markets;
+      const [market] = (await ctx.nuanze.getMarkets()).markets;
       assert.ok(market, 'expected at least one market to resolve');
       const createSelector = (): { productId: number; ticker?: string } => ({
         productId: market.productId,
       });
       const selector: { productId: number; ticker?: string } = createSelector();
 
-      const response = await tc.nuanze.getMarketByTicker(selector);
+      const response = await ctx.nuanze.getMarketByTicker(selector);
 
       assertSameMarketIdentity(response, market, 'market');
       assertMarketShape(response, 'market');
     });
 
     void test('prefers productId when ticker and productId disagree', async () => {
-      const markets = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      const markets = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(
         markets.length >= 2,
         'expected at least two perp markets for precedence',
@@ -290,11 +290,11 @@ void describe(
         'precedence test needs distinct productIds',
       );
 
-      const byProductId = await tc.nuanze.getMarketByTicker({
+      const byProductId = await ctx.nuanze.getMarketByTicker({
         productId: productIdMarket.productId,
         venue: 'perp',
       });
-      const byPrecedence = await tc.nuanze.getMarketByTicker({
+      const byPrecedence = await ctx.nuanze.getMarketByTicker({
         ticker: tickerMarket.ticker,
         productId: productIdMarket.productId,
         venue: 'perp',
@@ -316,7 +316,7 @@ void describe(
 
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
-        await tc.nuanze.getMarketByTicker({ ticker: 'NOTAREALTICKERXYZ' });
+        await ctx.nuanze.getMarketByTicker({ ticker: 'NOTAREALTICKERXYZ' });
         assert.fail('expected MARKET_NOT_FOUND for an unknown ticker');
       } catch (error) {
         assert.ok(

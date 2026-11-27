@@ -9,15 +9,15 @@ void describe(
   '[mobile-client]: creator earnings',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(() => {
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('reads the signing Identity’s Creator Rate and earnings', async () => {
-      const summary = await tc.mobile.getCreatorEarningsSummary(
-        getMobileSignedParams(tc),
+      const summary = await ctx.mobile.getCreatorEarningsSummary(
+        getMobileSignedParams(ctx),
       );
 
       assert.ok(Number.isInteger(summary.creatorRateBps));

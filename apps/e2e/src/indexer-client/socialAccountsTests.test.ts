@@ -47,9 +47,9 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      const tc = createTestContext();
-      client = tc.indexer;
-      walletAddress = tc.walletClientAddress as Address;
+      const ctx = createTestContext();
+      client = ctx.indexer;
+      walletAddress = ctx.walletClientAddress as Address;
     });
 
     beforeEach(async () => {

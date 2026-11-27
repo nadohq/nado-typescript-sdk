@@ -32,11 +32,11 @@ void describe(
   '[mobile-client]: identity',
   { timeout: TEST_TIMEOUTS.LONG },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
     });
 
     void test('reports availability for a well-formed display name', async () => {
@@ -46,7 +46,7 @@ void describe(
         MOBILE_DISPLAY_NAME_PATTERN,
         'test display name should satisfy the 3-20 char display name rules',
       );
-      const result = await tc.mobile.getUsernameAvailability({ displayName });
+      const result = await ctx.mobile.getUsernameAvailability({ displayName });
       debugPrint('Username availability result', result);
 
       assertDefined(result, 'availabilityResult');
@@ -56,13 +56,13 @@ void describe(
 
     void test('rejects a malformed display name with INVALID_DISPLAY_NAME', async () => {
       await assertRejectsWithMobileErrorCode(
-        () => tc.mobile.getUsernameAvailability({ displayName: '!!' }),
+        () => ctx.mobile.getUsernameAvailability({ displayName: '!!' }),
         MOBILE_ERROR_CODES.INVALID_DISPLAY_NAME,
       );
     });
 
     void test('returns the avatar catalogue with unique IDs and image URLs', async () => {
-      const presets = await tc.mobile.getAvatarPresets();
+      const presets = await ctx.mobile.getAvatarPresets();
       assert.ok(Array.isArray(presets), 'presets should be an array');
       assert.equal(new Set(presets.map(({ id }) => id)).size, presets.length);
       for (const preset of presets) {
@@ -72,27 +72,27 @@ void describe(
     });
 
     void test('sets and clears the bio, then restores the original', async () => {
-      const params = getMobileSignedParams(tc);
-      const { bio: originalBio } = await getTestSubaccountProfile(tc);
+      const params = getMobileSignedParams(ctx);
+      const { bio: originalBio } = await getTestSubaccountProfile(ctx);
       assertNullableString(originalBio, 'originalBio');
       const bio = 'SDK E2E 中文 🚀\nProfile biography';
 
       try {
-        await tc.mobile.setBio({ ...params, bio });
+        await ctx.mobile.setBio({ ...params, bio });
         await delay(TEST_DELAYS.STANDARD);
-        const updated = await getTestSubaccountProfile(tc);
+        const updated = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after bio set', updated);
         assert.equal(updated.bio, bio);
 
-        await tc.mobile.setBio({ ...params, bio: ' \n ' });
+        await ctx.mobile.setBio({ ...params, bio: ' \n ' });
         await delay(TEST_DELAYS.STANDARD);
-        const cleared = await getTestSubaccountProfile(tc);
+        const cleared = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after bio clear', cleared);
         assert.equal(cleared.bio, null);
       } finally {
-        await tc.mobile.setBio({ ...params, bio: originalBio ?? '' });
+        await ctx.mobile.setBio({ ...params, bio: originalBio ?? '' });
         await delay(TEST_DELAYS.STANDARD);
-        const restored = await getTestSubaccountProfile(tc);
+        const restored = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after bio restore', restored);
         assert.equal(restored.bio, originalBio);
       }
@@ -101,8 +101,8 @@ void describe(
     void test('rejects an overlong bio with INVALID_BIO', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.setBio({
-            ...getMobileSignedParams(tc),
+          ctx.mobile.setBio({
+            ...getMobileSignedParams(ctx),
             bio: 'a'.repeat(MOBILE_BIO_MAX_LENGTH + 1),
           }),
         MOBILE_ERROR_CODES.INVALID_BIO,
@@ -112,8 +112,8 @@ void describe(
     void test('rejects an empty avatar upload with INVALID_AVATAR', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.createAvatarUpload({
-            ...getMobileSignedParams(tc),
+          ctx.mobile.createAvatarUpload({
+            ...getMobileSignedParams(ctx),
             contentLength: 0,
           }),
         MOBILE_ERROR_CODES.INVALID_AVATAR,
@@ -123,8 +123,8 @@ void describe(
     void test('rejects an unknown avatar preset with INVALID_AVATAR', async () => {
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.setAvatar({
-            ...getMobileSignedParams(tc),
+          ctx.mobile.setAvatar({
+            ...getMobileSignedParams(ctx),
             avatar: { type: 'preset', id: '__sdk_e2e_invalid_preset__' },
           }),
         MOBILE_ERROR_CODES.INVALID_AVATAR,
@@ -132,10 +132,10 @@ void describe(
     });
 
     void test('sets preset and uploaded avatars, clears and restores the original', async (context) => {
-      const params = getMobileSignedParams(tc);
-      const { avatarUrl: originalUrl } = await getTestSubaccountProfile(tc);
+      const params = getMobileSignedParams(ctx);
+      const { avatarUrl: originalUrl } = await getTestSubaccountProfile(ctx);
       assertNullableString(originalUrl, 'originalAvatarUrl');
-      const presets = await tc.mobile.getAvatarPresets();
+      const presets = await ctx.mobile.getAvatarPresets();
       const originalPreset = presets.find(
         ({ avatarUrl }) => avatarUrl === originalUrl,
       );
@@ -158,16 +158,16 @@ void describe(
       );
 
       try {
-        await tc.mobile.setAvatar({
+        await ctx.mobile.setAvatar({
           ...params,
           avatar: { type: 'preset', id: preset.id },
         });
         await delay(TEST_DELAYS.STANDARD);
-        const presetProfile = await getTestSubaccountProfile(tc);
+        const presetProfile = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after preset avatar set', presetProfile);
         assert.equal(presetProfile.avatarUrl, preset.avatarUrl);
 
-        const grant = await tc.mobile.createAvatarUpload({
+        const grant = await ctx.mobile.createAvatarUpload({
           ...params,
           contentLength: image.byteLength,
         });
@@ -187,12 +187,12 @@ void describe(
         });
         assert.ok(upload.ok, `Avatar upload failed with HTTP ${upload.status}`);
 
-        await tc.mobile.setAvatar({
+        await ctx.mobile.setAvatar({
           ...params,
           avatar: { type: 'upload', uploadKey: grant.uploadKey },
         });
         await delay(TEST_DELAYS.STANDARD);
-        const uploadedProfile = await getTestSubaccountProfile(tc);
+        const uploadedProfile = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after uploaded avatar set', uploadedProfile);
         const { avatarUrl } = uploadedProfile;
         assertDefined(avatarUrl, 'publishedAvatarUrl');
@@ -208,15 +208,15 @@ void describe(
         assert.equal(published.headers.get('content-type'), 'image/jpeg');
         assert.ok((await published.arrayBuffer()).byteLength > 0);
 
-        await tc.mobile.setAvatar({ ...params, avatar: null });
+        await ctx.mobile.setAvatar({ ...params, avatar: null });
         await delay(TEST_DELAYS.STANDARD);
-        const cleared = await getTestSubaccountProfile(tc);
+        const cleared = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after avatar clear', cleared);
         assert.equal(cleared.avatarUrl, null);
       } finally {
-        await tc.mobile.setAvatar({ ...params, avatar: originalAvatar });
+        await ctx.mobile.setAvatar({ ...params, avatar: originalAvatar });
         await delay(TEST_DELAYS.STANDARD);
-        const restored = await getTestSubaccountProfile(tc);
+        const restored = await getTestSubaccountProfile(ctx);
         debugPrint('Identity after avatar restore', restored);
         assert.equal(restored.avatarUrl, originalUrl);
       }
@@ -225,22 +225,22 @@ void describe(
     // setUsername upserts, so one test covers both claiming a first username and renaming an existing one:
     // whichever state the shared test subaccount is already in, the same call applies.
     void test('sets the display name and restores any original', async () => {
-      const identityParams = getMobileSignedParams(tc);
+      const identityParams = getMobileSignedParams(ctx);
 
-      const identity = await getTestSubaccountProfile(tc);
+      const identity = await getTestSubaccountProfile(ctx);
       const originalDisplayName = identity.displayName;
       debugPrint('Identity before set', identity);
 
       const newDisplayName = `E2E_${Date.now()}`;
       assert.match(newDisplayName, MOBILE_DISPLAY_NAME_PATTERN);
 
-      await tc.mobile.setUsername({
+      await ctx.mobile.setUsername({
         ...identityParams,
         displayName: newDisplayName,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const updatedIdentity = await getTestSubaccountProfile(tc);
+      const updatedIdentity = await getTestSubaccountProfile(ctx);
       debugPrint('Identity after set', updatedIdentity);
       assert.equal(updatedIdentity.displayName, newDisplayName);
       assert.equal(updatedIdentity.username, newDisplayName.toLowerCase());
@@ -250,21 +250,21 @@ void describe(
         return;
       }
 
-      await tc.mobile.setUsername({
+      await ctx.mobile.setUsername({
         ...identityParams,
         displayName: originalDisplayName,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restoredIdentity = await getTestSubaccountProfile(tc);
+      const restoredIdentity = await getTestSubaccountProfile(ctx);
       debugPrint('Identity after restore', restoredIdentity);
       assert.equal(restoredIdentity.displayName, originalDisplayName);
     });
 
     void test('rejects a name held by another subaccount with USERNAME_UNAVAILABLE', async () => {
-      const identityParams = getMobileSignedParams(tc);
+      const identityParams = getMobileSignedParams(ctx);
 
-      const identity = await getTestSubaccountProfile(tc);
+      const identity = await getTestSubaccountProfile(ctx);
       const { displayName } = identity;
 
       if (displayName === null) {
@@ -276,7 +276,7 @@ void describe(
       // name the default subaccount already holds. Signing still works because the owner is unchanged.
       await assertRejectsWithMobileErrorCode(
         () =>
-          tc.mobile.setUsername({
+          ctx.mobile.setUsername({
             ...identityParams,
             subaccountName: TEST_SECONDARY_SUBACCOUNT_NAME,
             displayName,
@@ -287,29 +287,29 @@ void describe(
 
     // Private Mode works before a username is claimed, so this needs no claimed-identity branch.
     void test('toggles private mode and restores the original value', async () => {
-      const identityParams = getMobileSignedParams(tc);
+      const identityParams = getMobileSignedParams(ctx);
 
-      const identity = await getTestSubaccountProfile(tc);
+      const identity = await getTestSubaccountProfile(ctx);
 
       const originalPrivateMode = identity.privateMode;
 
-      await tc.mobile.setPrivateMode({
+      await ctx.mobile.setPrivateMode({
         ...identityParams,
         privateMode: !originalPrivateMode,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const toggledIdentity = await getTestSubaccountProfile(tc);
+      const toggledIdentity = await getTestSubaccountProfile(ctx);
       debugPrint('Identity after private mode toggle', toggledIdentity);
       assert.equal(toggledIdentity.privateMode, !originalPrivateMode);
 
-      await tc.mobile.setPrivateMode({
+      await ctx.mobile.setPrivateMode({
         ...identityParams,
         privateMode: originalPrivateMode,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restoredIdentity = await getTestSubaccountProfile(tc);
+      const restoredIdentity = await getTestSubaccountProfile(ctx);
       debugPrint('Identity after private mode restore', restoredIdentity);
       assert.equal(restoredIdentity.privateMode, originalPrivateMode);
     });
@@ -322,12 +322,12 @@ void describe(
  * and the includes themselves.
  */
 async function getTestSubaccountProfile(
-  tc: RunContext,
+  ctx: RunContext,
 ): Promise<MobilePublicProfile> {
-  const [profile] = await tc.mobile.getProfiles({
+  const [profile] = await ctx.mobile.getProfiles({
     subaccounts: [
       {
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       },
     ],

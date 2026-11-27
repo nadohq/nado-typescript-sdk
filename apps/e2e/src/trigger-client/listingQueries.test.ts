@@ -30,27 +30,27 @@ void describe(
   '[trigger-client]: listing queries',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      tc = createTestContext();
+      ctx = createTestContext();
 
-      const marketPrice = await tc.engine.getMarketPrice({
+      const marketPrice = await ctx.engine.getMarketPrice({
         productId: TEST_PRODUCT_IDS.SPOT_ETH,
       });
       const midPrice = marketPrice.ask.plus(marketPrice.bid).div(2);
       const verifyingAddr = getOrderVerifyingAddress(TEST_PRODUCT_IDS.SPOT_ETH);
 
       const reduceOnlyOrder: TriggerPlaceOrderParams = {
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         order: {
           amount: addDecimals(0.1),
           expiration: getExpiration(),
           price: 1000,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           appendix: packOrderAppendix({
             reduceOnly: true,
             orderExecutionType: 'default',
@@ -70,13 +70,13 @@ void describe(
       };
 
       const twapOrder: TriggerPlaceOrderParams = {
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         order: {
           amount: addDecimals(1),
           expiration: getExpiration(),
           price: 950,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           appendix: packOrderAppendix({
             orderExecutionType: 'ioc',
             triggerType: 'twap',
@@ -93,13 +93,13 @@ void describe(
       };
 
       const priceOrder: TriggerPlaceOrderParams = {
-        chainId: tc.chainId,
+        chainId: ctx.chainId,
         order: {
           amount: addDecimals(0.1),
           expiration: getExpiration(),
           price: 1000,
           subaccountName: TEST_SUBACCOUNT_NAME,
-          subaccountOwner: tc.walletClientAddress,
+          subaccountOwner: ctx.walletClientAddress,
           appendix: packOrderAppendix({
             orderExecutionType: 'default',
             triggerType: 'price',
@@ -119,19 +119,19 @@ void describe(
       };
 
       await Promise.all([
-        tc.trigger.placeTriggerOrder(reduceOnlyOrder),
-        tc.trigger.placeTriggerOrder(twapOrder),
-        tc.trigger.placeTriggerOrder(priceOrder),
+        ctx.trigger.placeTriggerOrder(reduceOnlyOrder),
+        ctx.trigger.placeTriggerOrder(twapOrder),
+        ctx.trigger.placeTriggerOrder(priceOrder),
       ]);
     });
 
     after(async () => {
       await cleanupTestState(
-        { engine: tc.engine, trigger: tc.trigger },
+        { engine: ctx.engine, trigger: ctx.trigger },
         {
-          subaccountOwner: tc.walletClientAddress,
-          endpointAddr: tc.endpointAddr,
-          chainId: tc.chainId,
+          subaccountOwner: ctx.walletClientAddress,
+          endpointAddr: ctx.endpointAddr,
+          chainId: ctx.chainId,
         },
       );
     });
@@ -141,12 +141,12 @@ void describe(
     });
 
     void test('lists pending reduce-only orders', async () => {
-      const result = await tc.trigger.listOrders({
-        chainId: tc.chainId,
+      const result = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
         reduceOnly: true,
       });
       debugPrint('Pending reduce-only orders result', result);
@@ -161,12 +161,12 @@ void describe(
     });
 
     void test('lists pending TWAP orders', async () => {
-      const result = await tc.trigger.listOrders({
-        chainId: tc.chainId,
+      const result = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
         triggerTypes: ['time_trigger'],
       });
       debugPrint('Pending TWAP orders result', result);
@@ -181,12 +181,12 @@ void describe(
     });
 
     void test('lists all pending trigger orders', async () => {
-      const result = await tc.trigger.listOrders({
-        chainId: tc.chainId,
+      const result = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
       });
       debugPrint('Pending list all trigger orders result', result);
 
@@ -200,12 +200,12 @@ void describe(
     });
 
     void test('lists pending orders filtered by product', async () => {
-      const result = await tc.trigger.listOrders({
-        chainId: tc.chainId,
+      const result = await ctx.trigger.listOrders({
+        chainId: ctx.chainId,
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
-        verifyingAddr: tc.endpointAddr,
+        subaccountOwner: ctx.walletClientAddress,
+        verifyingAddr: ctx.endpointAddr,
         productIds: [TEST_PRODUCT_IDS.SPOT_ETH],
       });
       debugPrint('Pending list orders for product result', result);
@@ -220,10 +220,10 @@ void describe(
     });
 
     void test('lists pending orders without a signature', async () => {
-      const result = await tc.trigger.listOrdersUnsigned({
+      const result = await ctx.trigger.listOrdersUnsigned({
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
       });
       debugPrint('Pending unsigned list orders result', result);
 
@@ -238,13 +238,13 @@ void describe(
 
     void test('lists a subaccount pending orders from a wallet-less client', async () => {
       const walletlessTrigger = new TriggerClient({
-        url: tc.endpoints.trigger,
+        url: ctx.endpoints.trigger,
       });
 
       const result = await walletlessTrigger.listOrdersUnsigned({
         statusTypes: PENDING_TRIGGER_STATUS_TYPES,
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
       });
       debugPrint('Wallet-less unsigned list orders result', result);
 

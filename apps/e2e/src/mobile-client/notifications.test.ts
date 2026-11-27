@@ -22,7 +22,7 @@ void describe(
   '[mobile-client]: notifications',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     /**
      * Preference reads and writes are authorized by possession of an active Expo push token, so the
      * preference tests share one token registered here rather than each registering their own.
@@ -31,10 +31,10 @@ void describe(
 
     before(async () => {
       await delay(TEST_DELAYS.LONG);
-      tc = createTestContext();
+      ctx = createTestContext();
       preferencesExpoToken = createTestExpoToken().expoToken;
-      await tc.mobile.registerExpoToken({
-        ...getMobileSignedParams(tc),
+      await ctx.mobile.registerExpoToken({
+        ...getMobileSignedParams(ctx),
         expoToken: preferencesExpoToken,
         platform: 'ios',
         appVersion: '0.0.1-e2e',
@@ -45,8 +45,8 @@ void describe(
     void test('registers, resolves, and unregisters an Expo push token', async () => {
       const { expoToken, fingerprintPrefix } = createTestExpoToken();
 
-      await tc.mobile.registerExpoToken({
-        ...getMobileSignedParams(tc),
+      await ctx.mobile.registerExpoToken({
+        ...getMobileSignedParams(ctx),
         expoToken,
         platform: 'ios',
         locale: 'en-US',
@@ -54,34 +54,34 @@ void describe(
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const registration = await tc.mobile.getRegisteredWallet({ expoToken });
+      const registration = await ctx.mobile.getRegisteredWallet({ expoToken });
       debugPrint('Registered wallet after register', registration);
 
       assert.equal(
         registration.wallet.toLowerCase(),
-        tc.walletClientAddress.toLowerCase(),
+        ctx.walletClientAddress.toLowerCase(),
       );
       assert.equal(registration.platform, 'ios');
       assert.equal(registration.locale, 'en-US');
       assert.equal(registration.appVersion, '0.0.1-e2e');
       assert.equal(registration.tokenFingerprintPrefix, fingerprintPrefix);
 
-      await tc.mobile.unregisterExpoToken({ expoToken });
+      await ctx.mobile.unregisterExpoToken({ expoToken });
       await delay(TEST_DELAYS.STANDARD);
 
       // An unregistered token is no longer a valid credential, so the lookup fails rather than reporting an
       // inactive registration.
       await assertRejectsWithInvalidExpoToken(
-        tc.mobile.getRegisteredWallet({ expoToken }),
+        ctx.mobile.getRegisteredWallet({ expoToken }),
       );
 
       // Unregister is keyed by the token alone and idempotent, so replaying it on an inactive token succeeds.
-      await tc.mobile.unregisterExpoToken({ expoToken });
+      await ctx.mobile.unregisterExpoToken({ expoToken });
     });
 
     void test('rejects a registered wallet lookup for an unregistered Expo push token', async () => {
       await assertRejectsWithInvalidExpoToken(
-        tc.mobile.getRegisteredWallet({
+        ctx.mobile.getRegisteredWallet({
           expoToken: createTestExpoToken().expoToken,
         }),
       );
@@ -89,8 +89,8 @@ void describe(
 
     void test('rejects a malformed Expo push token', async () => {
       await assert.rejects(
-        tc.mobile.registerExpoToken({
-          ...getMobileSignedParams(tc),
+        ctx.mobile.registerExpoToken({
+          ...getMobileSignedParams(ctx),
           expoToken: 'not-an-expo-token',
           platform: 'android',
         }),
@@ -106,14 +106,14 @@ void describe(
 
     void test('rejects a preference read for an unregistered Expo push token', async () => {
       await assertRejectsWithInvalidExpoToken(
-        tc.mobile.getNotificationPreferences({
+        ctx.mobile.getNotificationPreferences({
           expoToken: createTestExpoToken().expoToken,
         }),
       );
     });
 
     void test('fetches default-shaped notification preferences', async () => {
-      const preferences = await tc.mobile.getNotificationPreferences({
+      const preferences = await ctx.mobile.getNotificationPreferences({
         expoToken: preferencesExpoToken,
       });
       debugPrint('Notification preferences', preferences);
@@ -122,7 +122,7 @@ void describe(
     });
 
     void test('toggles a category preference and restores the original', async () => {
-      const original = await tc.mobile.getNotificationPreferences({
+      const original = await ctx.mobile.getNotificationPreferences({
         expoToken: preferencesExpoToken,
       });
       assertPreferencesShape(original);
@@ -136,13 +136,13 @@ void describe(
         ),
       };
 
-      await tc.mobile.updateNotificationPreferences({
+      await ctx.mobile.updateNotificationPreferences({
         expoToken: preferencesExpoToken,
         preferences: toggled,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const updated = await tc.mobile.getNotificationPreferences({
+      const updated = await ctx.mobile.getNotificationPreferences({
         expoToken: preferencesExpoToken,
       });
       debugPrint('Preferences after toggle', updated);
@@ -153,13 +153,13 @@ void describe(
           ?.enabled,
       );
 
-      await tc.mobile.updateNotificationPreferences({
+      await ctx.mobile.updateNotificationPreferences({
         expoToken: preferencesExpoToken,
         preferences: original,
       });
       await delay(TEST_DELAYS.STANDARD);
 
-      const restored = await tc.mobile.getNotificationPreferences({
+      const restored = await ctx.mobile.getNotificationPreferences({
         expoToken: preferencesExpoToken,
       });
       debugPrint('Preferences after restore', restored);
@@ -167,7 +167,7 @@ void describe(
     });
 
     after(async () => {
-      await tc.mobile.unregisterExpoToken({ expoToken: preferencesExpoToken });
+      await ctx.mobile.unregisterExpoToken({ expoToken: preferencesExpoToken });
     });
   },
 );

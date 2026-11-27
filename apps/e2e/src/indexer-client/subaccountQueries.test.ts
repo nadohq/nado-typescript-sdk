@@ -51,11 +51,11 @@ void describe(
     before(async () => {
       await delay(TEST_DELAYS.LONG);
 
-      const tc = createTestContext();
-      client = tc.indexer;
+      const ctx = createTestContext();
+      client = ctx.indexer;
       subaccount = {
         subaccountName: TEST_SUBACCOUNT_NAME,
-        subaccountOwner: tc.walletClientAddress,
+        subaccountOwner: ctx.walletClientAddress,
       };
     });
 

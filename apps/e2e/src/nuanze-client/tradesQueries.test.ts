@@ -25,14 +25,14 @@ void describe(
   '[nuanze-client]: trades',
   { timeout: TEST_TIMEOUTS.DEFAULT },
   () => {
-    let tc: RunContext;
+    let ctx: RunContext;
     let ticker: string;
     let productId: number;
     let venue: (typeof NUANZE_MARKET_VENUES)[number];
 
     before(async () => {
-      tc = createTestContext();
-      const [first] = (await tc.nuanze.getMarkets({ venue: 'perp' })).markets;
+      ctx = createTestContext();
+      const [first] = (await ctx.nuanze.getMarkets({ venue: 'perp' })).markets;
       assert.ok(first, 'expected at least one perp market');
       ticker = first.ticker;
       productId = first.productId;
@@ -40,12 +40,12 @@ void describe(
     });
 
     void test('resolves the same market by ticker or productId', async () => {
-      const byTicker = await tc.nuanze.getMarketTrades({
+      const byTicker = await ctx.nuanze.getMarketTrades({
         ticker,
         venue,
         limit: 20,
       });
-      const byProductId = await tc.nuanze.getMarketTrades({
+      const byProductId = await ctx.nuanze.getMarketTrades({
         productId,
         venue,
         limit: 20,
@@ -77,7 +77,7 @@ void describe(
     });
 
     void test('lists one page of taker-side market trades', async () => {
-      const response = await tc.nuanze.getMarketTrades({
+      const response = await ctx.nuanze.getMarketTrades({
         ticker,
         venue: 'perp',
         limit: 20,
@@ -106,7 +106,7 @@ void describe(
 
     void test('rejects an unknown ticker with MARKET_NOT_FOUND', async () => {
       try {
-        await tc.nuanze.getMarketTrades({ ticker: 'NOTAREALTICKERXYZ' });
+        await ctx.nuanze.getMarketTrades({ ticker: 'NOTAREALTICKERXYZ' });
         assert.fail('expected MARKET_NOT_FOUND for an unknown ticker');
       } catch (error) {
         assert.ok(

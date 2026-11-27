@@ -27,7 +27,7 @@ import {
 import { RunContext } from '../utils/types';
 
 void describe('[engine-client]: linked signer lifecycle', () => {
-  let tc: RunContext;
+  let ctx: RunContext;
   let shortLimitPrice: BigNumber;
   let linkedSignerWalletClient: WalletClientWithAccount;
 
@@ -35,9 +35,9 @@ void describe('[engine-client]: linked signer lifecycle', () => {
     // Extra delay to avoid 429 rate-limit errors from preceding test suites
     await delay(TEST_DELAYS.LONG * 3);
 
-    tc = createTestContext();
+    ctx = createTestContext();
 
-    const markets = await tc.engine.getAllMarkets();
+    const markets = await ctx.engine.getAllMarkets();
     const oraclePrice = markets.find(
       (m) => m.productId === TEST_PRODUCT_IDS.SPOT_BTC,
     )!.product.oraclePrice;
@@ -46,11 +46,11 @@ void describe('[engine-client]: linked signer lifecycle', () => {
 
   after(async () => {
     await cleanupTestState(
-      { engine: tc.engine, trigger: tc.trigger },
+      { engine: ctx.engine, trigger: ctx.trigger },
       {
-        subaccountOwner: tc.walletClientAddress,
-        endpointAddr: tc.endpointAddr,
-        chainId: tc.chainId,
+        subaccountOwner: ctx.walletClientAddress,
+        endpointAddr: ctx.endpointAddr,
+        chainId: ctx.chainId,
       },
     );
   });
@@ -62,16 +62,16 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   void test('creates and links a deterministic signer', async () => {
     const linkedSignerPrivKey = await createDeterministicLinkedSignerPrivateKey(
       {
-        chainId: tc.chainId,
-        endpointAddress: tc.endpointAddr,
-        walletClient: tc.walletClient,
-        subaccountOwner: tc.walletClientAddress,
+        chainId: ctx.chainId,
+        endpointAddress: ctx.endpointAddr,
+        walletClient: ctx.walletClient,
+        subaccountOwner: ctx.walletClientAddress,
         subaccountName: TEST_SUBACCOUNT_NAME,
       },
     );
 
     linkedSignerWalletClient = createWalletClient({
-      chain: tc.walletClient.chain,
+      chain: ctx.walletClient.chain,
       account: privateKeyToAccount(linkedSignerPrivKey),
       transport: http(),
     });
@@ -80,15 +80,15 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       linkedSignerWalletClient.account.address,
     );
 
-    const result = await tc.engine.linkSigner({
-      chainId: tc.chainId,
+    const result = await ctx.engine.linkSigner({
+      chainId: ctx.chainId,
       signer: subaccountToHex({
         subaccountOwner: linkedSignerWalletClient.account.address,
         subaccountName: '',
       }),
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      verifyingAddr: tc.endpointAddr,
+      verifyingAddr: ctx.endpointAddr,
     });
 
     debugPrint('Link signer result', result);
@@ -97,8 +97,8 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   void test('getLinkedSigner returns the linked signer address', async () => {
-    const result = await tc.engine.getLinkedSigner({
-      subaccountOwner: tc.walletClientAddress,
+    const result = await ctx.engine.getLinkedSigner({
+      subaccountOwner: ctx.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
     });
 
@@ -108,12 +108,12 @@ void describe('[engine-client]: linked signer lifecycle', () => {
 
     // Wait for engine to propagate before signing with the linked signer
     await delay(TEST_DELAYS.LONG);
-    tc.engine.setLinkedSigner(linkedSignerWalletClient);
+    ctx.engine.setLinkedSigner(linkedSignerWalletClient);
   });
 
   void test('places an isolated position using the linked signer', async () => {
     const iocOrder: EngineOrderParams = {
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
       amount: addDecimals(0.03),
       expiration: getExpiration(),
@@ -126,9 +126,9 @@ void describe('[engine-client]: linked signer lifecycle', () => {
       }),
     };
 
-    const result = await tc.engine.placeOrder({
+    const result = await ctx.engine.placeOrder({
       verifyingAddr: getOrderVerifyingAddress(TEST_PRODUCT_IDS.PERP_BTC),
-      chainId: tc.chainId,
+      chainId: ctx.chainId,
       productId: TEST_PRODUCT_IDS.PERP_BTC,
       order: iocOrder,
       nonce: getOrderNonce(),
@@ -144,8 +144,8 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   void test('getIsolatedPositions returns positions for the subaccount', async () => {
-    const result = await tc.engine.getIsolatedPositions({
-      subaccountOwner: tc.walletClientAddress,
+    const result = await ctx.engine.getIsolatedPositions({
+      subaccountOwner: ctx.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
     });
 
@@ -154,18 +154,18 @@ void describe('[engine-client]: linked signer lifecycle', () => {
   });
 
   void test('revokes the linked signer', async () => {
-    const result = await tc.engine.linkSigner({
-      chainId: tc.chainId,
+    const result = await ctx.engine.linkSigner({
+      chainId: ctx.chainId,
       signer: subaccountToHex({
         subaccountOwner: zeroAddress,
         subaccountName: '',
       }),
-      subaccountOwner: tc.walletClientAddress,
+      subaccountOwner: ctx.walletClientAddress,
       subaccountName: TEST_SUBACCOUNT_NAME,
-      verifyingAddr: tc.endpointAddr,
+      verifyingAddr: ctx.endpointAddr,
     });
 
-    tc.engine.setLinkedSigner(null);
+    ctx.engine.setLinkedSigner(null);
 
     debugPrint('Revoke signer result', result);
     assertDefined(result, 'revokeSignerResult');
